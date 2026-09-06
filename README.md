@@ -1,36 +1,109 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SHINE 26 — Event Management Platform
 
-## Getting Started
+> Flagship intercollegiate fest hosted by the **Department of Computer Applications (PG), Sacred Heart College (Autonomous), Tirupattur**.
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## 🚀 Tech Stack
+
+- **Framework**: [Next.js 16](https://nextjs.org) (App Router, TypeScript)
+- **Database**: PostgreSQL
+- **ORM**: [Prisma v6](https://www.prisma.io)
+- **Auth**: [NextAuth.js](https://next-auth.js.org) with credentials provider & role-based sessions
+- **Styling**: Tailwind CSS with custom glassmorphism design tokens
+- **Fonts**: Outfit (display) & Inter (body)
+
+---
+
+## 👥 Roles & Access Control
+
+1. **Public Visitor**: Browse fest details, search competitions, and register for events.
+2. **Student**: Logged-in participant viewing their registered events, approval status, and published results.
+3. **Event Coordinator**: Scoped portal to manage registrations, verify attendees, and submit competition results for assigned events.
+4. **Admin**: Master console with fest statistics, revenue breakdown, full event CRUD, and coordinator/admin account management.
+
+---
+
+## 🔑 Demo & Test Credentials
+
+| Role | Email | Password | Target Portal |
+|---|---|---|---|
+| **Admin** | `admin@shctpt.edu` | `admin123` | `/admin` |
+| **Coordinator (Tech Lead)** | `coord.alex@shctpt.edu` | `coord123` | `/coordinator` |
+| **Coordinator (Event Lead)** | `coord.priya@shctpt.edu` | `coord123` | `/coordinator` |
+| **Student (Registered)** | `student@example.com` | `student123` | `/dashboard` |
+
+> *Tip: The `/login` page includes 1-click **Quick-Fill Demo Credentials** buttons.*
+
+---
+
+## 🌐 Routes Overview
+
+### Public Routes
+- `/` — Landing page with Hero, About, Categories, Venue, Schedule, and Contacts.
+- `/events` — Searchable and filterable directory of all on-stage and off-stage events.
+- `/register` — Registration form for students (supports outside-college participants, multi-event selection, and fee calculations).
+- `/login` — NextAuth credentials sign-in for students, coordinators, and administrators.
+
+### Protected Dashboards (Middleware Enforced)
+- `/dashboard` — **Student Portal**: Live registration status (`PENDING`, `CONFIRMED`, `REJECTED`) and published competition rankings.
+- `/coordinator` — **Coordinator Console**: Overview of assigned events with participant counts.
+- `/coordinator/[eventId]` — **Event Participant Manager**: Scoped attendee table with status toggles (`Confirm`/`Reject`), result input, and CSV export.
+- `/admin` — **Admin Master Control**: Real-time stats (registrations, confirmed revenue, per-event breakdown) and instant status overrides.
+- `/admin/events` — **Event CRUD**: Create, edit, delete competitions and assign faculty coordinators.
+- `/admin/users` — **User Management**: Create and manage coordinator and administrator accounts.
+
+---
+
+## ⚙️ Local Development Setup
+
+### 1. Environment Variables (`.env`)
+```env
+DATABASE_URL="postgresql://user:password@localhost:5432/shine26?schema=public"
+NEXTAUTH_SECRET="your-secret-key-change-in-production"
+NEXTAUTH_URL="http://localhost:3000"
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Install Dependencies
+```bash
+npm install
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 3. Database Migration & Seed
+```bash
+# Push Prisma schema to PostgreSQL
+npx prisma db push
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+# Seed Admin, Coordinators, Sample Student, 10 Events, and Sample Registrations
+npm run seed
+```
 
-## Learn More
+### 4. Run Development Server
+```bash
+npm run dev
+```
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-To learn more about Next.js, take a look at the following resources:
+### 5. Production Build
+```bash
+npm run build
+npm run start
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 📡 API Reference
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `GET /api/events` — Fetch list of all public events
+- `POST /api/events` — Create new event (*Admin only*)
+- `GET/PUT/DELETE /api/events/[id]` — Event CRUD (*Admin only*)
+- `POST /api/register` — Public registration endpoint (creates student user + pending registrations)
+- `GET /api/student/registrations` — Current user's registrations (*Authenticated*)
+- `GET /api/coordinator/events` — Assigned events for coordinator (*Coordinator/Admin*)
+- `GET /api/coordinator/events/[id]/registrations` — Scoped participant list (*Coordinator/Admin*)
+- `PATCH /api/coordinator/registrations/[id]` — Update status and award result (*Coordinator/Admin*)
+- `GET /api/admin/stats` — Summary metrics and event breakdown (*Admin only*)
+- `GET /api/admin/registrations` — All fest registrations (*Admin only*)
+- `PATCH /api/admin/registrations` — Override any registration status (*Admin only*)
+- `GET/POST /api/admin/users` — List and create coordinators/admins (*Admin only*)
+- `DELETE /api/admin/users/[id]` — Delete user account (*Admin only*)

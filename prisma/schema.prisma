@@ -1,0 +1,87 @@
+// Prisma Schema for SHINE 26 Event Management Platform
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ===== Enums =====
+
+enum Role {
+  STUDENT
+  COORDINATOR
+  ADMIN
+}
+
+enum EventCategory {
+  ON_STAGE
+  OFF_STAGE
+}
+
+enum RegistrationStatus {
+  PENDING
+  CONFIRMED
+  REJECTED
+}
+
+// ===== Models =====
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  phone        String?
+  passwordHash String?
+  role         Role     @default(STUDENT)
+  college      String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  registrations Registration[]   // Events the user has registered for (as student)
+  coordEvents   Event[]          // Events the user coordinates
+
+  @@map("users")
+}
+
+model Event {
+  id            String        @id @default(cuid())
+  name          String
+  description   String?
+  category      EventCategory
+  fee           Float         @default(0)
+  capacity      Int?
+  venue         String?
+  dateTime      DateTime
+  coordinatorId String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  // Relations
+  coordinator   User?          @relation(fields: [coordinatorId], references: [id])
+  registrations Registration[]
+
+  @@map("events")
+}
+
+model Registration {
+  id        String             @id @default(cuid())
+  userId    String
+  eventId   String
+  status    RegistrationStatus @default(PENDING)
+  result    String?
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  // Relations
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  // A user can only register once per event
+  @@unique([userId, eventId])
+  @@map("registrations")
+}
