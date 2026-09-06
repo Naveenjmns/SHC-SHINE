@@ -18,17 +18,22 @@ import {
   ExternalLink,
 } from "lucide-react";
 
-import { Prisma } from "@prisma/client";
-
 export const dynamic = "force-dynamic";
 
-type EventWithCoord = Prisma.EventGetPayload<{
-  include: {
-    coordinator: {
-      select: { name: true; email: true };
-    };
-  };
-}>;
+interface EventWithCoord {
+  id: string;
+  name: string;
+  description: string | null;
+  category: "ON_STAGE" | "OFF_STAGE";
+  fee: number;
+  capacity: number | null;
+  venue: string | null;
+  dateTime: Date;
+  coordinator?: {
+    name: string;
+    email: string;
+  } | null;
+}
 
 export default async function Home() {
   let events: EventWithCoord[] = [];

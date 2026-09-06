@@ -1,5 +1,22 @@
-import { PrismaClient, Role, EventCategory, RegistrationStatus } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+
+const Role = {
+  STUDENT: "STUDENT",
+  COORDINATOR: "COORDINATOR",
+  ADMIN: "ADMIN",
+} as const;
+
+const EventCategory = {
+  ON_STAGE: "ON_STAGE",
+  OFF_STAGE: "OFF_STAGE",
+} as const;
+
+const RegistrationStatus = {
+  PENDING: "PENDING",
+  CONFIRMED: "CONFIRMED",
+  REJECTED: "REJECTED",
+} as const;
 
 const prisma = new PrismaClient();
 
