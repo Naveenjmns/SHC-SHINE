@@ -21,19 +21,59 @@ const RegistrationStatus = {
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log("🌱 Starting database seed for SHINE 26...");
+  console.log("🌱 Starting database seed for SHINE Reusable Platform...");
 
-  // Clean existing data if any
+  // Clean existing data
   await prisma.registration.deleteMany();
   await prisma.event.deleteMany();
+  await prisma.navigationItem.deleteMany();
+  await prisma.sponsor.deleteMany();
+  await prisma.eventEdition.deleteMany();
   await prisma.user.deleteMany();
 
-  // Hash passwords
+  // 1. Create Active Event Edition (SHINE 2026)
+  const activeEdition = await prisma.eventEdition.create({
+    data: {
+      name: "SHINE",
+      edition: "2026",
+      slug: "shine-2026",
+      isActive: true,
+      status: "LIVE",
+      tagline: "Where Ideas Begin to Shine",
+      metadataText: "TECHNOLOGY • INNOVATION • CREATIVITY",
+      description: "SHINE 26 is the annual intercollegiate flagship symposium organized by the Department of Computer Applications (PG), Sacred Heart College (Autonomous), Tirupattur.",
+      venue: "SGB Main Auditorium, Sacred Heart College (Autonomous), Tirupattur",
+      startDate: new Date("2026-10-15T09:00:00Z"),
+      endDate: new Date("2026-10-15T18:00:00Z"),
+      primaryCtaText: "EXPLORE SHINE →",
+      primaryCtaLink: "#events",
+      themePrimaryAccent: "#FF6B1A",
+      themeSecondaryAccent: "#D9A441",
+      themeBgColor: "#FAF8F5",
+    },
+  });
+  console.log(`✅ Active Event Edition created: ${activeEdition.name} ${activeEdition.edition}`);
+
+  // 2. Navigation Items for Active Edition
+  const navItems = [
+    { label: "About", url: "#about", order: 1, isEnabled: true },
+    { label: "Schedule", url: "#schedule", order: 2, isEnabled: true },
+    { label: "Events", url: "#events", order: 3, isEnabled: true },
+    { label: "Rules", url: "#rules", order: 4, isEnabled: true },
+    { label: "Stage View", url: "/leaderboard", order: 5, isEnabled: true },
+  ];
+  for (const nav of navItems) {
+    await prisma.navigationItem.create({
+      data: { ...nav, editionId: activeEdition.id },
+    });
+  }
+  console.log(`✅ Navigation items created (${navItems.length}).`);
+
+  // 3. Create Users (Admin, Coordinators, Student)
   const adminPasswordHash = await bcrypt.hash("admin123", 10);
   const coordPasswordHash = await bcrypt.hash("coord123", 10);
   const studentPasswordHash = await bcrypt.hash("student123", 10);
 
-  // 1. Create Admin
   const admin = await prisma.user.create({
     data: {
       name: "SHINE Admin",
@@ -44,9 +84,7 @@ async function main() {
       college: "Sacred Heart College (Autonomous), Tirupattur",
     },
   });
-  console.log(`✅ Admin created: ${admin.email}`);
 
-  // 2. Create Coordinators
   const coordAlex = await prisma.user.create({
     data: {
       name: "Prof. Alex (Tech Lead)",
@@ -68,9 +106,7 @@ async function main() {
       college: "Sacred Heart College (Autonomous)",
     },
   });
-  console.log(`✅ Coordinators created: ${coordAlex.email}, ${coordPriya.email}`);
 
-  // 3. Create Sample Student
   const studentRahul = await prisma.user.create({
     data: {
       name: "Rahul Sharma",
@@ -81,13 +117,13 @@ async function main() {
       college: "Loyola College, Chennai",
     },
   });
-  console.log(`✅ Student created: ${studentRahul.email}`);
 
-  // 4. Create Events
+  console.log(`✅ Admin, Coordinators, and Student created.`);
+
+  // 4. Create Events linked to Active Edition
   const baseDate = new Date("2026-10-15T09:30:00Z");
 
   const eventsData = [
-    // On-Stage
     {
       name: "Code & Conquer",
       description: "High-octane algorithmic coding battle under strict time constraints. Test data structures, logic, and speed.",
@@ -95,8 +131,9 @@ async function main() {
       fee: 100,
       capacity: 50,
       venue: "Main Auditorium",
-      dateTime: new Date(baseDate.getTime() + 1000 * 60 * 60 * 1), // 10:30 AM
+      dateTime: new Date(baseDate.getTime() + 1000 * 60 * 60 * 1),
       coordinatorId: coordAlex.id,
+      editionId: activeEdition.id,
     },
     {
       name: "Tech Quiz",
@@ -107,6 +144,7 @@ async function main() {
       venue: "Seminar Hall A",
       dateTime: new Date(baseDate.getTime() + 1000 * 60 * 60 * 2),
       coordinatorId: coordAlex.id,
+      editionId: activeEdition.id,
     },
     {
       name: "Paper Presentation",
@@ -117,6 +155,7 @@ async function main() {
       venue: "Conference Room",
       dateTime: new Date(baseDate.getTime() + 1000 * 60 * 60 * 3),
       coordinatorId: coordPriya.id,
+      editionId: activeEdition.id,
     },
     {
       name: "Debate",
@@ -127,9 +166,8 @@ async function main() {
       venue: "Main Auditorium",
       dateTime: new Date(baseDate.getTime() + 1000 * 60 * 60 * 4),
       coordinatorId: coordPriya.id,
+      editionId: activeEdition.id,
     },
-
-    // Off-Stage
     {
       name: "Web Design",
       description: "Create responsive, accessible, and stunning user interfaces within 90 minutes from a secret design prompt.",
@@ -139,6 +177,7 @@ async function main() {
       venue: "Computer Lab 1",
       dateTime: new Date(baseDate.getTime() + 1000 * 60 * 60 * 1.5),
       coordinatorId: coordPriya.id,
+      editionId: activeEdition.id,
     },
     {
       name: "Poster Design",
@@ -149,6 +188,7 @@ async function main() {
       venue: "Computer Lab 2",
       dateTime: new Date(baseDate.getTime() + 1000 * 60 * 60 * 2.5),
       coordinatorId: coordAlex.id,
+      editionId: activeEdition.id,
     },
     {
       name: "Treasure Hunt",
@@ -159,6 +199,7 @@ async function main() {
       venue: "Across Campus",
       dateTime: new Date(baseDate.getTime() + 1000 * 60 * 60 * 3.5),
       coordinatorId: coordAlex.id,
+      editionId: activeEdition.id,
     },
     {
       name: "Gaming Zone",
@@ -169,6 +210,7 @@ async function main() {
       venue: "Recreation Hall",
       dateTime: new Date(baseDate.getTime() + 1000 * 60 * 60 * 4.5),
       coordinatorId: coordAlex.id,
+      editionId: activeEdition.id,
     },
     {
       name: "Photography",
@@ -179,6 +221,7 @@ async function main() {
       venue: "Campus Grounds",
       dateTime: new Date(baseDate.getTime() + 1000 * 60 * 60 * 2),
       coordinatorId: coordPriya.id,
+      editionId: activeEdition.id,
     },
     {
       name: "IT Manager",
@@ -189,6 +232,7 @@ async function main() {
       venue: "Seminar Hall B",
       dateTime: new Date(baseDate.getTime() + 1000 * 60 * 60 * 3),
       coordinatorId: coordPriya.id,
+      editionId: activeEdition.id,
     },
   ];
 
@@ -197,35 +241,26 @@ async function main() {
     const ev = await prisma.event.create({ data: e });
     createdEvents.push(ev);
   }
-  console.log(`✅ Created ${createdEvents.length} events.`);
+  console.log(`✅ Created ${createdEvents.length} events for ${activeEdition.name} ${activeEdition.edition}.`);
 
-  // 5. Create Sample Registrations for studentRahul
-  const reg1 = await prisma.registration.create({
+  // 5. Sample Registrations
+  await prisma.registration.create({
     data: {
       userId: studentRahul.id,
-      eventId: createdEvents[0].id, // Code & Conquer
+      eventId: createdEvents[0].id,
       status: RegistrationStatus.CONFIRMED,
       result: "1st Place Winner",
     },
   });
 
-  const reg2 = await prisma.registration.create({
+  await prisma.registration.create({
     data: {
       userId: studentRahul.id,
-      eventId: createdEvents[1].id, // Tech Quiz
+      eventId: createdEvents[1].id,
       status: RegistrationStatus.PENDING,
     },
   });
 
-  const reg3 = await prisma.registration.create({
-    data: {
-      userId: studentRahul.id,
-      eventId: createdEvents[4].id, // Web Design
-      status: RegistrationStatus.CONFIRMED,
-    },
-  });
-
-  console.log(`Created 3 sample registrations for ${studentRahul.name}.`);
   console.log("Seeding completed successfully!");
 }
 

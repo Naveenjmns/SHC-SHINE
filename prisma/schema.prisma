@@ -48,8 +48,92 @@ model User {
   @@map("users")
 }
 
+model EventEdition {
+  id                   String   @id @default(cuid())
+  name                 String   @default("SHINE")
+  edition              String   @default("2026")
+  slug                 String   @unique
+  isActive             Boolean  @default(true)
+  status               String   @default("LIVE") // DRAFT, UPCOMING, LIVE, COMPLETED
+  tagline              String?  @default("Where Ideas Begin to Shine")
+  metadataText         String?  @default("TECHNOLOGY • INNOVATION • CREATIVITY")
+  description          String?  @default("SHINE is the annual flagship intercollegiate symposium organized by the Dept. of Computer Applications (PG), Sacred Heart College (Autonomous).")
+  venue                String?  @default("SGB Main Auditorium, Sacred Heart College, Tirupattur")
+  startDate            DateTime?
+  endDate              DateTime?
+  logoUrl              String?
+  secondaryLogoUrl     String?
+  faviconUrl           String?
+  heroBgUrl            String?
+  primaryCtaText       String?  @default("EXPLORE SHINE →")
+  primaryCtaLink       String?  @default("#events")
+  themePrimaryAccent   String?  @default("#FF6B1A")
+  themeSecondaryAccent String?  @default("#D9A441")
+  themeBgColor         String?  @default("#FAF8F5")
+
+  // Stage View College Header Banner (CMS Driven)
+  institutionName      String?  @default("SACRED HEART COLLEGE (AUTONOMOUS), TIRUPATTUR")
+  institutionCrestUrl  String?
+  accreditationText    String?  @default("Accredited by NAAC (5th Cycle - Under RAF) with a CGPA of 3.53/4 at 'A++' Grade, Affiliated to Thiruvalluvar University Tirupattur - 635 601")
+  jubileeBadgeUrl      String?
+  hostDepartment       String?  @default("DEPARTMENT OF COMPUTER APPLICATIONS (PG)")
+  acronymExpansion     String?  @default("SACRED HEART INFORMATICS NETWORK FOR ENTERPRISES")
+  deptLogoUrl          String?
+  stageHeaderBannerUrl String?
+
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  events        Event[]
+  navItems      NavigationItem[]
+  sponsors      Sponsor[]
+  scheduleItems ScheduleItem[]
+
+  @@map("event_editions")
+}
+
+model ScheduleItem {
+  id          String       @id @default(cuid())
+  editionId   String
+  time        String
+  title       String
+  venue       String?
+  description String?
+  tag         String?
+  order       Int          @default(0)
+  edition     EventEdition @relation(fields: [editionId], references: [id], onDelete: Cascade)
+
+  @@map("schedule_items")
+}
+
+model NavigationItem {
+  id        String       @id @default(cuid())
+  editionId String
+  label     String
+  url       String
+  order     Int          @default(0)
+  isEnabled Boolean      @default(true)
+  edition   EventEdition @relation(fields: [editionId], references: [id], onDelete: Cascade)
+
+  @@map("navigation_items")
+}
+
+model Sponsor {
+  id         String       @id @default(cuid())
+  editionId  String
+  name       String
+  logoUrl    String
+  tier       String?      @default("TITLE") // TITLE, GOLD, MEDIA, PARTNER
+  websiteUrl String?
+  order      Int          @default(0)
+  edition    EventEdition @relation(fields: [editionId], references: [id], onDelete: Cascade)
+
+  @@map("sponsors")
+}
+
 model Event {
   id            String        @id @default(cuid())
+  editionId     String?
   name          String
   description   String?
   category      EventCategory
@@ -62,6 +146,7 @@ model Event {
   updatedAt     DateTime      @updatedAt
 
   // Relations
+  edition       EventEdition?  @relation(fields: [editionId], references: [id])
   coordinator   User?          @relation(fields: [coordinatorId], references: [id])
   registrations Registration[]
 
@@ -85,3 +170,4 @@ model Registration {
   @@unique([userId, eventId])
   @@map("registrations")
 }
+

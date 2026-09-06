@@ -131,30 +131,30 @@ function RegisterForm() {
       {successData ? (
         <div className="fest-card p-8 sm:p-12 text-center border-amber-500/30">
           <div className="w-16 h-16 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl flex items-center justify-center mx-auto mb-6">
-            <CheckCircle2 className="w-8 h-8 text-emerald-400" />
+            <CheckCircle2 className="w-8 h-8 text-emerald-600" />
           </div>
           <span className="status-badge status-badge-confirmed mb-3">
             Registration Submitted
           </span>
           <h2
-            className="text-fluid-h1 font-extrabold text-white mb-3"
+            className="text-fluid-h1 font-extrabold text-[#1C1917] mb-3"
             style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
           >
             Welcome to SHINE 26!
           </h2>
-          <p className="text-sm text-[#9CA3AF] max-w-md mx-auto mb-8">
+          <p className="text-sm text-[#57534E] max-w-md mx-auto mb-8">
             Your registration has been logged with status <strong className="text-[#D9A441]">PENDING</strong>.
             Event coordinators will review and confirm your participation.
           </p>
 
-          <div className="bg-[#141212] border border-white/10 rounded-xl p-6 mb-8 text-left max-w-md mx-auto">
+          <div className="bg-stone-50 border border-stone-200 rounded-xl p-6 mb-8 text-left max-w-md mx-auto">
             <h4 className="text-xs font-bold text-[#D9A441] uppercase tracking-wider mb-3">
               Selected Competitions
             </h4>
             <ul className="space-y-2 mb-4">
               {successData.registrations.map((r, i) => (
                 <li key={i} className="flex justify-between text-xs sm:text-sm">
-                  <span className="text-white font-medium">{r.eventName}</span>
+                  <span className="text-[#1C1917] font-medium">{r.eventName}</span>
                   <span className="status-badge status-badge-pending text-[10px] inline-flex items-center gap-1">
                     <Clock className="w-2.5 h-2.5" />
                     <span>{r.status}</span>
@@ -162,8 +162,8 @@ function RegisterForm() {
                 </li>
               ))}
             </ul>
-            <div className="border-t border-white/10 pt-3 flex justify-between items-center text-sm font-bold">
-              <span className="text-[#9CA3AF]">Total Payable Fee:</span>
+            <div className="border-t border-stone-200 pt-3 flex justify-between items-center text-sm font-bold">
+              <span className="text-[#57534E]">Total Payable Fee:</span>
               <span className="text-[#D9A441] text-base tabular-nums">₹{successData.totalFee}</span>
             </div>
           </div>
@@ -191,12 +191,12 @@ function RegisterForm() {
               Intercollegiate Fest Registration
             </span>
             <h1
-              className="text-fluid-h1 font-black text-white tracking-tight"
+              className="text-fluid-h1 font-black text-[#1C1917] tracking-tight"
               style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
             >
               Register for <span className="hero-wordmark-gradient">SHINE 26</span>
             </h1>
-            <p className="text-xs sm:text-sm text-[#9CA3AF] mt-2 max-w-lg mx-auto">
+            <p className="text-xs sm:text-sm text-[#57534E] mt-2 max-w-lg mx-auto">
               Open to students from all universities & colleges. Step through your details and pick your events below.
             </p>
           </div>
@@ -209,12 +209,12 @@ function RegisterForm() {
               className={`tap-target px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
                 currentStep === 1
                   ? "bg-[#FF6B1A] text-white shadow-sm"
-                  : "bg-[#252222] text-[#9CA3AF] hover:text-white"
+                  : "bg-stone-200/70 text-[#57534E] hover:text-[#1C1917]"
               }`}
             >
               1. Participant Info
             </button>
-            <span className="text-white/20">→</span>
+            <span className="text-[#1C1917]/30">→</span>
             <button
               type="button"
               onClick={() => {
@@ -223,7 +223,7 @@ function RegisterForm() {
               className={`tap-target px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
                 currentStep === 2
                   ? "bg-[#FF6B1A] text-white shadow-sm"
-                  : "bg-[#252222] text-[#9CA3AF] hover:text-white"
+                  : "bg-stone-200/70 text-[#57534E] hover:text-[#1C1917]"
               }`}
             >
               2. Event Selection ({selectedEventIds.length})
@@ -231,8 +231,8 @@ function RegisterForm() {
           </div>
 
           {errorMessage && (
-            <div className="bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs sm:text-sm p-3.5 rounded-xl mb-6 flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+            <div className="bg-rose-500/10 border border-rose-500/30 text-rose-700 text-xs sm:text-sm p-3.5 rounded-xl mb-6 flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
               <span>{errorMessage}</span>
             </div>
           )}
@@ -243,7 +243,7 @@ function RegisterForm() {
               <div className="space-y-4 animate-in fade-in duration-200">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-semibold text-[#9CA3AF] mb-1.5">
+                    <label className="block text-xs font-bold text-[#1C1917] mb-1.5">
                       Full Name *
                     </label>
                     <input
@@ -252,12 +252,12 @@ function RegisterForm() {
                       placeholder="e.g. Priya Sundaram"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      className="w-full h-11 bg-[#1A1818] border border-[#2A2626] rounded-xl px-3.5 text-sm text-white focus:outline-none focus:border-[#FF6B1A] transition-colors"
+                      className="w-full h-11 bg-white border border-[#1C1917]/15 rounded-xl px-3.5 text-sm text-[#1C1917] placeholder-[#78716C] focus:outline-none focus:border-[#FF6B1A] transition-colors shadow-2xs"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-[#9CA3AF] mb-1.5">
+                    <label className="block text-xs font-bold text-[#1C1917] mb-1.5">
                       Email Address *
                     </label>
                     <input
@@ -266,12 +266,12 @@ function RegisterForm() {
                       placeholder="e.g. priya@college.ac.in"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full h-11 bg-[#1A1818] border border-[#2A2626] rounded-xl px-3.5 text-sm text-white focus:outline-none focus:border-[#FF6B1A] transition-colors"
+                      className="w-full h-11 bg-white border border-[#1C1917]/15 rounded-xl px-3.5 text-sm text-[#1C1917] placeholder-[#78716C] focus:outline-none focus:border-[#FF6B1A] transition-colors shadow-2xs"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-[#9CA3AF] mb-1.5">
+                    <label className="block text-xs font-bold text-[#1C1917] mb-1.5">
                       WhatsApp / Phone Number *
                     </label>
                     <input
@@ -280,12 +280,12 @@ function RegisterForm() {
                       placeholder="e.g. +91 9840123456"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
-                      className="w-full h-11 bg-[#1A1818] border border-[#2A2626] rounded-xl px-3.5 text-sm text-white focus:outline-none focus:border-[#FF6B1A] transition-colors"
+                      className="w-full h-11 bg-white border border-[#1C1917]/15 rounded-xl px-3.5 text-sm text-[#1C1917] placeholder-[#78716C] focus:outline-none focus:border-[#FF6B1A] transition-colors shadow-2xs"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-[#9CA3AF] mb-1.5">
+                    <label className="block text-xs font-bold text-[#1C1917] mb-1.5">
                       College / Institution Name *
                     </label>
                     <input
@@ -294,12 +294,12 @@ function RegisterForm() {
                       placeholder="e.g. Loyola College / Sacred Heart College"
                       value={college}
                       onChange={(e) => setCollege(e.target.value)}
-                      className="w-full h-11 bg-[#1A1818] border border-[#2A2626] rounded-xl px-3.5 text-sm text-white focus:outline-none focus:border-[#FF6B1A] transition-colors"
+                      className="w-full h-11 bg-white border border-[#1C1917]/15 rounded-xl px-3.5 text-sm text-[#1C1917] placeholder-[#78716C] focus:outline-none focus:border-[#FF6B1A] transition-colors shadow-2xs"
                     />
                   </div>
 
                   <div className="sm:col-span-2">
-                    <label className="block text-xs font-semibold text-[#9CA3AF] mb-1.5">
+                    <label className="block text-xs font-bold text-[#1C1917] mb-1.5">
                       Portal Password (Optional — default is your phone number)
                     </label>
                     <input
@@ -307,15 +307,15 @@ function RegisterForm() {
                       placeholder="Create a password for your Student Dashboard"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full h-11 bg-[#1A1818] border border-[#2A2626] rounded-xl px-3.5 text-sm text-white focus:outline-none focus:border-[#FF6B1A] transition-colors"
+                      className="w-full h-11 bg-white border border-[#1C1917]/15 rounded-xl px-3.5 text-sm text-[#1C1917] placeholder-[#78716C] focus:outline-none focus:border-[#FF6B1A] transition-colors shadow-2xs"
                     />
-                    <p className="text-[11px] text-[#9CA3AF]/70 mt-1">
+                    <p className="text-[11px] text-[#57534E]/80 mt-1">
                       You will use your email and this password to log in and track your approval status and live results.
                     </p>
                   </div>
                 </div>
 
-                <div className="pt-6 border-t border-white/5 flex justify-end">
+                <div className="pt-6 border-t border-[#1C1917]/10 flex justify-end">
                   <button
                     type="button"
                     onClick={() => {
@@ -333,7 +333,7 @@ function RegisterForm() {
             {currentStep === 2 && (
               <div className="space-y-6 animate-in fade-in duration-200">
                 <div className="flex justify-between items-center">
-                  <div className="text-xs text-[#9CA3AF]">
+                  <div className="text-xs text-[#57534E]">
                     Choose the competitions you wish to participate in:
                   </div>
                   <div className="text-xs font-bold text-[#D9A441]">
@@ -342,7 +342,7 @@ function RegisterForm() {
                 </div>
 
                 {loadingEvents ? (
-                  <div className="py-12 text-center text-xs text-[#9CA3AF]">
+                  <div className="py-12 text-center text-xs text-[#57534E]">
                     Loading competitions list...
                   </div>
                 ) : (
@@ -355,8 +355,8 @@ function RegisterForm() {
                           onClick={() => toggleEvent(ev.id)}
                           className={`tap-target p-3.5 rounded-xl border cursor-pointer transition-all flex items-start gap-3 select-none text-left ${
                             isSelected
-                              ? "bg-[#FF6B1A]/10 border-[#FF6B1A] shadow-sm"
-                              : "bg-[#141212] border-[#2A2626] hover:border-white/20"
+                              ? "bg-[#FF6B1A]/8 border-[#FF6B1A] shadow-2xs"
+                              : "bg-white border-[#E7E5E4] hover:border-[#FF6B1A]/40"
                           }`}
                         >
                           <input
@@ -367,14 +367,14 @@ function RegisterForm() {
                           />
                           <div className="flex-1 min-w-0">
                             <div className="flex justify-between items-center gap-2">
-                              <span className="text-sm font-bold text-white truncate">
+                              <span className="text-sm font-bold text-[#1C1917] truncate">
                                 {ev.name}
                               </span>
-                              <span className="text-xs font-bold text-[#D9A441] tabular-nums shrink-0">
+                              <span className="text-xs font-bold text-[#B45309] tabular-nums shrink-0">
                                 ₹{ev.fee}
                               </span>
                             </div>
-                            <div className="flex items-center gap-2 mt-0.5 text-[11px] text-[#9CA3AF]">
+                            <div className="flex items-center gap-2 mt-0.5 text-[11px] text-[#57534E]">
                               <span className="badge badge-purple text-[10px] px-1.5 py-0.5 inline-flex items-center gap-1">
                                 {ev.category === "ON_STAGE" ? (
                                   <>
@@ -398,20 +398,20 @@ function RegisterForm() {
                 )}
 
                 {/* Summary & Submit */}
-                <div className="pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="pt-6 border-t border-[#1C1917]/10 flex flex-col sm:flex-row items-center justify-between gap-4">
                   <button
                     type="button"
                     onClick={() => setCurrentStep(1)}
-                    className="tap-target text-xs font-semibold text-[#9CA3AF] hover:text-white"
+                    className="tap-target text-xs font-semibold text-[#57534E] hover:text-[#1C1917]"
                   >
                     ← Back to Student Info
                   </button>
 
                   <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
                     <div className="text-center sm:text-right">
-                      <div className="text-[11px] text-[#9CA3AF] uppercase">Total Entry Fee</div>
+                      <div className="text-[11px] text-[#57534E] uppercase">Total Entry Fee</div>
                       <div
-                        className="text-2xl font-black text-white tabular-nums"
+                        className="text-2xl font-black text-[#1C1917] tabular-nums"
                         style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
                       >
                         ₹{totalFee}
@@ -445,10 +445,10 @@ function RegisterForm() {
 
 export default function RegisterPage() {
   return (
-    <main className="min-h-screen flex flex-col bg-[#0B0A0A] text-[#F3F4F6]">
+    <main className="min-h-screen flex flex-col bg-[#FAF8F5] text-[#1C1917]">
       <Navbar />
       <div className="pt-24 flex-1">
-        <Suspense fallback={<div className="text-center py-20 text-xs text-[#9CA3AF]">Loading registration...</div>}>
+        <Suspense fallback={<div className="text-center py-20 text-xs text-[#57534E]">Loading registration...</div>}>
           <RegisterForm />
         </Suspense>
       </div>

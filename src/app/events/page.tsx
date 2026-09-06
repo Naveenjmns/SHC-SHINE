@@ -58,22 +58,22 @@ export default function EventsPage() {
   });
 
   return (
-    <main className="min-h-screen flex flex-col bg-[#0B0A0A] text-[#F3F4F6]">
+    <main className="min-h-screen flex flex-col bg-[#FAF8F5] text-[#1C1917]">
       <Navbar />
 
       {/* Header Banner */}
-      <section className="pt-32 pb-14 border-b border-white/10 bg-[#0E0D0D]">
+      <section className="pt-32 pb-14 border-b border-[#1C1917]/10 bg-white/70">
         <div className="container-shine text-center">
           <span className="inline-block px-3 py-1 rounded-full bg-[#FF6B1A]/10 text-[#FF6B1A] border border-[#FF6B1A]/20 text-xs font-bold uppercase tracking-wider mb-3">
             Competitions Directory
           </span>
           <h1
-            className="text-fluid-h1 font-black text-white tracking-tight mb-4"
+            className="text-fluid-h1 font-black text-[#1C1917] tracking-tight mb-4"
             style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
           >
             All 10 Fest <span className="hero-wordmark-gradient">Arenas</span>
           </h1>
-          <p className="text-fluid-body text-[#9CA3AF] max-w-2xl mx-auto">
+          <p className="text-fluid-body text-[#57534E] max-w-2xl mx-auto">
             Review event descriptions, venues, rules, and entry fees. Register individually or select multiple events in one go.
           </p>
 
@@ -85,10 +85,10 @@ export default function EventsPage() {
                 placeholder="Search event name, topic, or venue..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full h-12 bg-[#1A1818] border border-[#2A2626] rounded-xl px-4 pl-11 text-sm text-white placeholder-[#9CA3AF]/60 focus:outline-none focus:border-[#FF6B1A] transition-colors"
+                className="w-full h-12 bg-white border border-[#1C1917]/15 rounded-xl px-4 pl-11 text-sm text-[#1C1917] placeholder-[#78716C] focus:outline-none focus:border-[#FF6B1A] transition-colors shadow-2xs"
               />
               <svg
-                className="w-5 h-5 absolute left-3.5 top-3.5 text-[#9CA3AF]"
+                className="w-5 h-5 absolute left-3.5 top-3.5 text-[#78716C]"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -97,7 +97,7 @@ export default function EventsPage() {
               </svg>
             </div>
 
-            <div className="flex bg-[#1A1818] border border-[#2A2626] rounded-xl p-1 shrink-0 self-center sm:self-auto">
+            <div className="flex bg-stone-200/60 border border-[#1C1917]/10 rounded-xl p-1 shrink-0 self-center sm:self-auto">
               {(["ALL", "ON_STAGE", "OFF_STAGE"] as const).map((tab) => (
                 <button
                   key={tab}
@@ -105,7 +105,7 @@ export default function EventsPage() {
                   className={`tap-target px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1.5 ${
                     activeTab === tab
                       ? "bg-[#FF6B1A] text-white shadow-sm"
-                      : "text-[#9CA3AF] hover:text-white"
+                      : "text-[#57534E] hover:text-[#1C1917]"
                   }`}
                 >
                   {tab === "ALL" && "All Arenas"}
@@ -133,15 +133,15 @@ export default function EventsPage() {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-24">
             <div className="w-10 h-10 border-3 border-[#FF6B1A]/20 border-t-[#FF6B1A] rounded-full animate-spin mb-4" />
-            <p className="text-sm text-[#9CA3AF]">Loading competitions...</p>
+            <p className="text-sm text-[#57534E]">Loading competitions...</p>
           </div>
         ) : filteredEvents.length === 0 ? (
           <div className="fest-card p-12 text-center max-w-md mx-auto">
-            <Search className="w-10 h-10 text-[#9CA3AF] mx-auto mb-3" />
-            <h3 className="text-xl font-bold text-white mb-2" style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>
+            <Search className="w-10 h-10 text-[#57534E] mx-auto mb-3" />
+            <h3 className="text-xl font-bold text-[#1C1917] mb-2" style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif" }}>
               No Competitions Found
             </h3>
-            <p className="text-xs text-[#9CA3AF] mb-6">
+            <p className="text-xs text-[#57534E] mb-6">
               No events matched your search query or filter. Try a different keyword or view all arenas.
             </p>
             <button
@@ -174,32 +174,32 @@ export default function EventsPage() {
                       <span
                         className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${
                           isOnStage
-                            ? "bg-[#FF6B1A]/10 text-[#FF6B1A] border border-[#FF6B1A]/20"
-                            : "bg-[#D9A441]/10 text-[#F2C94C] border border-[#D9A441]/25"
+                            ? "bg-[#FF6B1A]/10 text-[#EA580C] border border-[#FF6B1A]/20"
+                            : "bg-[#D9A441]/12 text-[#B45309] border border-[#D9A441]/30"
                         }`}
                       >
                         {isOnStage ? <Theater className="w-3.5 h-3.5" /> : <Laptop className="w-3.5 h-3.5" />}
                         {isOnStage ? "On-Stage" : "Off-Stage"}
                       </span>
 
-                      <span className="text-sm font-bold text-white bg-[#252222] px-2.5 py-0.5 rounded-lg border border-white/5 tabular-nums">
+                      <span className="text-sm font-bold text-[#1C1917] bg-[#FAF8F5] px-2.5 py-0.5 rounded-lg border border-[#1C1917]/15 tabular-nums">
                         ₹{ev.fee}
                       </span>
                     </div>
 
                     <h3
-                      className="text-xl font-bold text-white mb-2 group-hover:text-[#FF7A29] transition-colors"
+                      className="text-xl font-bold text-[#1C1917] mb-2 group-hover:text-[#FF6B1A] transition-colors"
                       style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
                     >
                       {ev.name}
                     </h3>
 
-                    <p className="text-sm text-[#9CA3AF] leading-relaxed mb-6 line-clamp-3">
+                    <p className="text-sm text-[#57534E] leading-relaxed mb-6 line-clamp-3">
                       {ev.description || "Compete against peer colleges in this signature SHINE 26 challenge."}
                     </p>
 
                     {/* Metadata */}
-                    <div className="space-y-2 text-xs text-[#9CA3AF] pt-4 border-t border-white/5 mb-6">
+                    <div className="space-y-2 text-xs text-[#57534E] pt-4 border-t border-[#1C1917]/10 mb-6">
                       {ev.venue && (
                         <div className="flex items-center gap-2">
                           <MapPin className="w-3.5 h-3.5 text-[#D9A441] shrink-0" />
@@ -213,7 +213,7 @@ export default function EventsPage() {
                       </div>
                       {ev.coordinator && (
                         <div className="flex items-center gap-2">
-                          <User className="w-3.5 h-3.5 text-white/60 shrink-0" />
+                          <User className="w-3.5 h-3.5 text-[#57534E]/80 shrink-0" />
                           <span className="truncate">Coord: {ev.coordinator.name}</span>
                         </div>
                       )}

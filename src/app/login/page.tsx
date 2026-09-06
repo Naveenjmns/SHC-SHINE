@@ -73,26 +73,26 @@ function LoginForm() {
             Portal Access
           </span>
           <h1
-            className="text-fluid-h2 font-extrabold text-white"
+            className="text-fluid-h2 font-extrabold text-[#1C1917]"
             style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
           >
             Sign In to <span className="hero-wordmark-gradient">SHINE 26</span>
           </h1>
-          <p className="text-xs text-[#9CA3AF] mt-1">
+          <p className="text-xs text-[#57534E] mt-1">
             Access your registrations, coordinator events, or fest control panel.
           </p>
         </div>
 
         {errorMsg && (
-          <div className="bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs p-3 rounded-xl mb-6 flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+          <div className="bg-rose-500/10 border border-rose-500/30 text-rose-700 text-xs p-3 rounded-xl mb-6 flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
             <span>{errorMsg}</span>
           </div>
         )}
 
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-[#9CA3AF] mb-1.5">
+            <label className="block text-xs font-bold text-[#1C1917] mb-1.5">
               Email Address
             </label>
             <input
@@ -101,12 +101,12 @@ function LoginForm() {
               placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full h-11 bg-[#141212] border border-[#2A2626] rounded-xl px-3.5 text-sm text-white focus:outline-none focus:border-[#FF6B1A] transition-colors"
+              className="w-full h-11 bg-white border border-[#1C1917]/15 rounded-xl px-3.5 text-sm text-[#1C1917] placeholder-[#78716C] focus:outline-none focus:border-[#FF6B1A] transition-colors shadow-2xs"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-[#9CA3AF] mb-1.5">
+            <label className="block text-xs font-bold text-[#1C1917] mb-1.5">
               Password
             </label>
             <input
@@ -115,7 +115,7 @@ function LoginForm() {
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full h-11 bg-[#141212] border border-[#2A2626] rounded-xl px-3.5 text-sm text-white focus:outline-none focus:border-[#FF6B1A] transition-colors"
+              className="w-full h-11 bg-white border border-[#1C1917]/15 rounded-xl px-3.5 text-sm text-[#1C1917] placeholder-[#78716C] focus:outline-none focus:border-[#FF6B1A] transition-colors shadow-2xs"
             />
           </div>
 
@@ -136,7 +136,7 @@ function LoginForm() {
         </form>
 
         {/* Demo Credentials Helper */}
-        <div className="mt-8 pt-6 border-t border-white/10">
+        <div className="mt-8 pt-6 border-t border-[#1C1917]/10">
           <div className="text-[11px] font-bold text-[#D9A441] uppercase tracking-wider mb-3 text-center">
             Quick-Fill Demo Credentials
           </div>
@@ -144,33 +144,33 @@ function LoginForm() {
             <button
               type="button"
               onClick={() => fillTestAccount("admin@shctpt.edu", "admin123")}
-              className="tap-target flex-col p-2 rounded-xl bg-[#141212] border border-[#2A2626] hover:border-[#FF6B1A] text-center transition-colors cursor-pointer"
+              className="tap-target flex-col p-2 rounded-xl bg-stone-50 border border-stone-200 hover:border-[#FF6B1A] text-center transition-colors cursor-pointer"
             >
-              <span className="font-bold text-xs text-white">Admin</span>
-              <span className="text-[10px] text-[#9CA3AF]">admin123</span>
+              <span className="font-bold text-xs text-[#1C1917]">Admin</span>
+              <span className="text-[10px] text-[#57534E]">admin123</span>
             </button>
 
             <button
               type="button"
               onClick={() => fillTestAccount("coord.alex@shctpt.edu", "coord123")}
-              className="tap-target flex-col p-2 rounded-xl bg-[#141212] border border-[#2A2626] hover:border-[#D9A441] text-center transition-colors cursor-pointer"
+              className="tap-target flex-col p-2 rounded-xl bg-stone-50 border border-stone-200 hover:border-[#D9A441] text-center transition-colors cursor-pointer"
             >
-              <span className="font-bold text-xs text-[#D9A441]">Coordinator</span>
-              <span className="text-[10px] text-[#9CA3AF]">coord123</span>
+              <span className="font-bold text-xs text-[#B45309]">Coordinator</span>
+              <span className="text-[10px] text-[#57534E]">coord123</span>
             </button>
 
             <button
               type="button"
               onClick={() => fillTestAccount("student@example.com", "student123")}
-              className="tap-target flex-col p-2 rounded-xl bg-[#141212] border border-[#2A2626] hover:border-emerald-400 text-center transition-colors cursor-pointer"
+              className="tap-target flex-col p-2 rounded-xl bg-stone-50 border border-stone-200 hover:border-emerald-600 text-center transition-colors cursor-pointer"
             >
-              <span className="font-bold text-xs text-emerald-400">Student</span>
-              <span className="text-[10px] text-[#9CA3AF]">student123</span>
+              <span className="font-bold text-xs text-emerald-700">Student</span>
+              <span className="text-[10px] text-[#57534E]">student123</span>
             </button>
           </div>
         </div>
 
-        <div className="mt-6 text-center text-xs text-[#9CA3AF]">
+        <div className="mt-6 text-center text-xs text-[#57534E]">
           New student participant?{" "}
           <Link href="/register" className="text-[#FF6B1A] font-bold hover:underline">
             Register for Events
@@ -183,10 +183,10 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <main className="min-h-screen flex flex-col bg-[#0B0A0A] text-[#F3F4F6]">
+    <main className="min-h-screen flex flex-col bg-[#FAF8F5] text-[#1C1917]">
       <Navbar />
       <div className="pt-24 flex-1 flex items-center justify-center">
-        <Suspense fallback={<div className="text-xs text-[#9CA3AF]">Loading sign in...</div>}>
+        <Suspense fallback={<div className="text-xs text-[#57534E]">Loading sign in...</div>}>
           <LoginForm />
         </Suspense>
       </div>

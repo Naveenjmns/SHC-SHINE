@@ -3,12 +3,17 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
+import { ActiveEditionConfig } from "@/lib/eventService";
+import { Sparkles, User, LogOut, LayoutDashboard, Monitor, Menu, X } from "lucide-react";
 
-import { Trophy, Zap } from "lucide-react";
+interface NavbarProps {
+  edition?: ActiveEditionConfig;
+}
 
-export default function Navbar() {
+export default function Navbar({ edition }: NavbarProps) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [activeEdition, setActiveEdition] = useState<ActiveEditionConfig | undefined>(edition);
   const { data: session } = useSession();
 
   useEffect(() => {
@@ -16,6 +21,19 @@ export default function Navbar() {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  useEffect(() => {
+    if (!activeEdition) {
+      fetch("/api/edition/active")
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success && data.edition) {
+            setActiveEdition(data.edition);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [activeEdition]);
 
   const getDashboardUrl = () => {
     if (!session) return "/login";
@@ -25,210 +43,165 @@ export default function Navbar() {
   };
 
   const getDashboardLabel = () => {
-    if (!session) return "Dashboard";
+    if (!session) return "Sign In";
     if (session.user.role === "ADMIN") return "Admin Console";
     if (session.user.role === "COORDINATOR") return "Coordinator Console";
     return "Student Portal";
   };
 
+  const eventName = activeEdition?.name || "SHINE";
+  const editionYear = activeEdition?.edition || "2026";
+  const logoUrl = activeEdition?.logoUrl;
+  const navItems = activeEdition?.navItems || [
+    { id: "1", label: "About", url: "#about", order: 1, isEnabled: true },
+    { id: "2", label: "Schedule", url: "#schedule", order: 2, isEnabled: true },
+    { id: "3", label: "Events", url: "#events", order: 3, isEnabled: true },
+    { id: "4", label: "Rules", url: "#rules", order: 4, isEnabled: true },
+    { id: "5", label: "Stage View", url: "/leaderboard", order: 5, isEnabled: true },
+  ];
+
   return (
     <nav
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         scrolled
-          ? "py-3 bg-[#0B0A0A]/90 backdrop-blur-md border-b border-white/10 shadow-lg shadow-black/40"
+          ? "py-3 bg-[#FAF8F5]/90 backdrop-blur-md border-b border-[#1C1917]/10 shadow-md"
           : "py-5 bg-transparent"
       }`}
     >
       <div className="container-shine flex items-center justify-between">
-        {/* Fest Brand Logo */}
+        {/* Brand Logo & Title */}
         <Link href="/" className="flex items-center gap-3 group tap-target">
-          <div className="relative">
-            <div
-              className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FF6B1A] to-[#D9A441] flex items-center justify-center text-white font-black text-xl shadow-md shadow-orange-500/20 group-hover:scale-105 transition-transform"
-              style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
-            >
-              S
+          {logoUrl ? (
+            <img
+              src={logoUrl}
+              alt={eventName}
+              className="h-9 w-auto object-contain group-hover:scale-105 transition-transform"
+            />
+          ) : (
+            <div className="relative">
+              <div
+                className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FF6B1A] to-[#D9A441] flex items-center justify-center text-white font-black text-xl shadow-md shadow-orange-500/20 group-hover:scale-105 transition-transform"
+                style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
+              >
+                {eventName.charAt(0)}
+              </div>
+              <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-[#FF6B1A] ring-2 ring-[#FAF8F5] animate-pulse" />
             </div>
-            <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-[#FF6B1A] ring-2 ring-[#0B0A0A] animate-pulse" />
-          </div>
+          )}
+
           <div>
             <span
-              className="text-xl font-extrabold tracking-tight text-white flex items-center gap-1.5"
+              className="text-xl font-extrabold tracking-tight text-[#1C1917] flex items-center gap-1.5"
               style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
             >
-              SHINE <span className="hero-wordmark-gradient font-black">26</span>
+              {eventName}{" "}
+              <span className="hero-wordmark-gradient font-black">
+                {editionYear}
+              </span>
             </span>
-            <p className="text-[10px] text-[#9CA3AF] tracking-wider uppercase hidden sm:block font-medium">
-              Sacred Heart College (Autonomous)
-            </p>
+            <span className="text-[10px] uppercase font-bold tracking-widest text-[#57534E] block -mt-1">
+              Sacred Heart College
+            </span>
           </div>
         </Link>
 
-        {/* Desktop Links */}
+        {/* Desktop Navigation */}
         <div className="hidden md:flex items-center gap-7">
-          <Link
-            href="/#about"
-            className="text-sm font-medium text-[#9CA3AF] hover:text-white transition-colors duration-200"
-          >
-            About
-          </Link>
-          <Link
-            href="/events"
-            className="text-sm font-medium text-[#9CA3AF] hover:text-white transition-colors duration-200"
-          >
-            Events Directory
-          </Link>
-          <Link
-            href="/#venue"
-            className="text-sm font-medium text-[#9CA3AF] hover:text-white transition-colors duration-200"
-          >
-            Venue & Date
-          </Link>
-          <Link
-            href="/leaderboard"
-            className="text-sm font-semibold text-[#D9A441] hover:text-[#F2C94C] transition-colors flex items-center gap-1.5"
-          >
-            <Trophy className="w-4 h-4 text-[#D9A441]" /> Live Results
-          </Link>
-          <Link
-            href="/#contact"
-            className="text-sm font-medium text-[#9CA3AF] hover:text-white transition-colors duration-200"
-          >
-            Contact
-          </Link>
+          {navItems.map((item) => (
+            <Link
+              key={item.id}
+              href={item.url}
+              className="text-sm font-semibold text-[#44403C] hover:text-[#FF6B1A] transition-colors relative py-1 after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-[#FF6B1A] after:scale-x-0 hover:after:scale-x-100 after:transition-transform"
+            >
+              {item.label}
+            </Link>
+          ))}
         </div>
 
-        {/* Desktop CTA / Auth */}
+        {/* Desktop User Actions */}
         <div className="hidden md:flex items-center gap-3">
+          <Link
+            href="/leaderboard"
+            className="flex items-center gap-1.5 text-xs font-semibold text-[#57534E] hover:text-[#FF6B1A] bg-white border border-[#1C1917]/10 px-3 py-2 rounded-xl transition shadow-2xs"
+            title="Stage Presentation Mode"
+          >
+            <Monitor className="w-3.5 h-3.5 text-[#D9A441]" />
+            <span>Stage View</span>
+          </Link>
+
           {session ? (
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <Link
                 href={getDashboardUrl()}
-                className="btn-ember text-xs !py-2 !px-4 flex items-center gap-1.5"
+                className="btn-ember !py-2 !px-4 text-xs font-bold"
               >
-                <Zap className="w-3.5 h-3.5 text-white" />
-                {getDashboardLabel()}
+                <LayoutDashboard className="w-3.5 h-3.5" />
+                <span>{getDashboardLabel()}</span>
               </Link>
               <button
                 onClick={() => signOut({ callbackUrl: "/" })}
-                className="text-xs font-semibold text-[#9CA3AF] hover:text-rose-400 px-3 py-2 rounded-lg border border-white/10 hover:border-rose-500/30 transition-colors tap-target cursor-pointer"
+                className="p-2 text-[#57534E] hover:text-red-600 rounded-xl hover:bg-stone-100 transition tap-target"
+                title="Sign Out"
               >
-                Sign Out
+                <LogOut className="w-4 h-4" />
               </button>
             </div>
           ) : (
             <div className="flex items-center gap-2">
               <Link
                 href="/login"
-                className="text-sm font-medium text-[#9CA3AF] hover:text-white px-4 py-2 tap-target transition-colors"
+                className="text-xs font-bold text-[#1C1917] hover:text-[#FF6B1A] px-3.5 py-2 rounded-xl transition"
               >
-                Sign In
+                Login
               </Link>
-              <Link
-                href="/register"
-                className="btn-ember text-xs sm:text-sm !py-2.5 !px-5"
-              >
+              <Link href="/register" className="btn-ember !py-2 !px-4 text-xs font-bold">
                 Register Now
               </Link>
             </div>
           )}
         </div>
 
-        {/* Mobile menu hamburger (44px min tap target) */}
+        {/* Mobile Menu Button */}
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
-          className="md:hidden tap-target p-2 text-white hover:text-orange-400 focus:outline-none"
-          aria-label="Toggle Navigation Menu"
+          className="md:hidden p-2 text-[#1C1917] hover:bg-stone-100 rounded-xl tap-target"
+          aria-label="Toggle Menu"
         >
-          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            {mobileOpen ? (
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-            ) : (
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
-            )}
-          </svg>
+          {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
       </div>
 
       {/* Mobile Drawer */}
       {mobileOpen && (
-        <div className="md:hidden bg-[#141212] border-b border-white/10 px-5 py-6 space-y-4 animate-in fade-in duration-200">
-          <div className="flex flex-col space-y-2">
+        <div className="md:hidden bg-[#FAF8F5] border-b border-[#1C1917]/10 px-6 py-6 space-y-4 shadow-xl animate-fade-in">
+          {navItems.map((item) => (
             <Link
-              href="/#about"
+              key={item.id}
+              href={item.url}
               onClick={() => setMobileOpen(false)}
-              className="tap-target justify-start text-base font-medium text-[#9CA3AF] hover:text-white"
+              className="block text-base font-bold text-[#1C1917] hover:text-[#FF6B1A] py-1.5"
             >
-              About Fest
+              {item.label}
             </Link>
+          ))}
+          <div className="pt-4 border-t border-[#1C1917]/10 flex flex-col gap-3">
             <Link
-              href="/events"
+              href={getDashboardUrl()}
               onClick={() => setMobileOpen(false)}
-              className="tap-target justify-start text-base font-medium text-[#9CA3AF] hover:text-white"
+              className="btn-ember w-full text-center py-2.5"
             >
-              Events Directory
+              {getDashboardLabel()}
             </Link>
-            <Link
-              href="/#venue"
-              onClick={() => setMobileOpen(false)}
-              className="tap-target justify-start text-base font-medium text-[#9CA3AF] hover:text-white"
-            >
-              Venue & Schedule
-            </Link>
-            <Link
-              href="/leaderboard"
-              onClick={() => setMobileOpen(false)}
-              className="tap-target justify-start text-base font-semibold text-[#D9A441] flex items-center gap-2"
-            >
-              <Trophy className="w-4 h-4 text-[#D9A441]" />
-              Live Results & Leaderboard
-            </Link>
-            <Link
-              href="/#contact"
-              onClick={() => setMobileOpen(false)}
-              className="tap-target justify-start text-base font-medium text-[#9CA3AF] hover:text-white"
-            >
-              Contact Coordinators
-            </Link>
-          </div>
-
-          <div className="pt-4 border-t border-white/10 flex flex-col gap-3">
-            {session ? (
-              <>
-                <Link
-                  href={getDashboardUrl()}
-                  onClick={() => setMobileOpen(false)}
-                  className="btn-ember w-full text-center"
-                >
-                  Go to {getDashboardLabel()}
-                </Link>
-                <button
-                  onClick={() => {
-                    setMobileOpen(false);
-                    signOut({ callbackUrl: "/" });
-                  }}
-                  className="w-full tap-target text-sm font-semibold text-rose-400 border border-rose-500/30 rounded-xl"
-                >
-                  Sign Out
-                </button>
-              </>
-            ) : (
-              <div className="grid grid-cols-2 gap-3">
-                <Link
-                  href="/login"
-                  onClick={() => setMobileOpen(false)}
-                  className="btn-gold-outline w-full text-center text-sm"
-                >
-                  Sign In
-                </Link>
-                <Link
-                  href="/register"
-                  onClick={() => setMobileOpen(false)}
-                  className="btn-ember w-full text-center text-sm"
-                >
-                  Register
-                </Link>
-              </div>
+            {session && (
+              <button
+                onClick={() => {
+                  setMobileOpen(false);
+                  signOut({ callbackUrl: "/" });
+                }}
+                className="w-full text-center py-2 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-xl"
+              >
+                Sign Out
+              </button>
             )}
           </div>
         </div>
