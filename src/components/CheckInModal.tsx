@@ -138,7 +138,7 @@ export default function CheckInModal({
               fps: 10,
               qrbox: { width: 250, height: 250 },
             },
-            (decodedText) => {
+            (decodedText: string) => {
               // Successfully decoded QR code
               console.log("QR Decoded successfully:", decodedText);
               handleLookup(decodedText);

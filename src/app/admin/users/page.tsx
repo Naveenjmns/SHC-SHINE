@@ -327,108 +327,111 @@ export default function AdminUsersPage() {
 
         {/* Modal: Create Coordinator / Admin User */}
         {showModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-            <div className="bg-white rounded-2xl max-w-md w-full p-6 sm:p-8 border border-slate-200 shadow-2xl">
-              <div className="flex justify-between items-center mb-6">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="bg-white rounded-2xl max-w-md w-full border border-slate-200 shadow-2xl max-h-[90vh] flex flex-col overflow-hidden my-auto">
+              <div className="flex justify-between items-center p-5 sm:p-6 border-b border-slate-100 bg-slate-50/50 shrink-0">
                 <h3 className="text-xl font-black text-slate-900 tracking-tight">
                   Add Coordinator / Admin Account
                 </h3>
                 <button
+                  type="button"
                   onClick={() => setShowModal(false)}
-                  className="tap-target text-slate-400 hover:text-slate-900 cursor-pointer p-1"
+                  className="tap-target text-slate-400 hover:text-slate-900 cursor-pointer p-1.5 rounded-xl hover:bg-slate-200/60 transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              {errorMsg && (
-                <div className="bg-rose-50 border border-rose-200 text-rose-700 text-xs p-3 rounded-xl mb-4">
-                  {errorMsg}
-                </div>
-              )}
+              <form onSubmit={handleCreateUser} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+                <div className="p-5 sm:p-6 space-y-4 overflow-y-auto flex-1">
+                  {errorMsg && (
+                    <div className="bg-rose-50 border border-rose-200 text-rose-700 text-xs p-3 rounded-xl">
+                      {errorMsg}
+                    </div>
+                  )}
 
-              <form onSubmit={handleCreateUser} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Account Role *</label>
-                  <select
-                    value={role}
-                    onChange={(e) => setRole(e.target.value as "COORDINATOR" | "ADMIN")}
-                    className="w-full h-11 bg-white border border-slate-300 rounded-xl px-3.5 text-sm text-slate-900 focus:outline-none focus:border-orange-500"
-                  >
-                    <option value="COORDINATOR">Event Coordinator</option>
-                    <option value="ADMIN">System Administrator</option>
-                  </select>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Account Role *</label>
+                    <select
+                      value={role}
+                      onChange={(e) => setRole(e.target.value as "COORDINATOR" | "ADMIN")}
+                      className="w-full h-11 bg-white border border-slate-300 rounded-xl px-3.5 text-sm text-slate-900 focus:outline-none focus:border-orange-500"
+                    >
+                      <option value="COORDINATOR">Event Coordinator</option>
+                      <option value="ADMIN">System Administrator</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Full Name *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Prof. Ramesh Kumar"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className="w-full h-11 bg-white border border-slate-300 rounded-xl px-3.5 text-sm text-slate-900 focus:outline-none focus:border-orange-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Email Address *</label>
+                    <input
+                      type="email"
+                      required
+                      placeholder="e.g. ramesh@shctpt.edu"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full h-11 bg-white border border-slate-300 rounded-xl px-3.5 text-sm text-slate-900 focus:outline-none focus:border-orange-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Phone Number</label>
+                    <input
+                      type="tel"
+                      placeholder="e.g. +91 9840123456"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      className="w-full h-11 bg-white border border-slate-300 rounded-xl px-3.5 text-sm text-slate-900 focus:outline-none focus:border-orange-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">College / Institution</label>
+                    <input
+                      type="text"
+                      value={college}
+                      onChange={(e) => setCollege(e.target.value)}
+                      className="w-full h-11 bg-white border border-slate-300 rounded-xl px-3.5 text-sm text-slate-900 focus:outline-none focus:border-orange-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Initial Password *</label>
+                    <input
+                      type="password"
+                      required
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full h-11 bg-white border border-slate-300 rounded-xl px-3.5 text-sm text-slate-900 focus:outline-none focus:border-orange-500"
+                    />
+                  </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Full Name *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Prof. Ramesh Kumar"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="w-full h-11 bg-white border border-slate-300 rounded-xl px-3.5 text-sm text-slate-900 focus:outline-none focus:border-orange-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Email Address *</label>
-                  <input
-                    type="email"
-                    required
-                    placeholder="e.g. ramesh@shctpt.edu"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full h-11 bg-white border border-slate-300 rounded-xl px-3.5 text-sm text-slate-900 focus:outline-none focus:border-orange-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Phone Number</label>
-                  <input
-                    type="tel"
-                    placeholder="e.g. +91 9840123456"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    className="w-full h-11 bg-white border border-slate-300 rounded-xl px-3.5 text-sm text-slate-900 focus:outline-none focus:border-orange-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">College / Institution</label>
-                  <input
-                    type="text"
-                    value={college}
-                    onChange={(e) => setCollege(e.target.value)}
-                    className="w-full h-11 bg-white border border-slate-300 rounded-xl px-3.5 text-sm text-slate-900 focus:outline-none focus:border-orange-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Initial Password *</label>
-                  <input
-                    type="password"
-                    required
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full h-11 bg-white border border-slate-300 rounded-xl px-3.5 text-sm text-slate-900 focus:outline-none focus:border-orange-500"
-                  />
-                </div>
-
-                <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
+                <div className="flex items-center justify-end gap-3 p-4 sm:p-5 border-t border-slate-100 bg-slate-50 shrink-0">
                   <button
                     type="button"
                     onClick={() => setShowModal(false)}
-                    className="tap-target px-4 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 cursor-pointer"
+                    className="tap-target px-4 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 cursor-pointer rounded-xl hover:bg-slate-200/50 transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="tap-target px-6 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors"
+                    className="tap-target px-6 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors disabled:opacity-50"
                   >
                     {submitting ? "Creating..." : "Create Account"}
                   </button>

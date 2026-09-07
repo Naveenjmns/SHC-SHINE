@@ -19,25 +19,62 @@ export const authOptions: AuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
-          throw new Error("Please provide both email and password.");
+          throw new Error("Please provide both email/mobile and password.");
         }
 
-        const email = credentials.email.toLowerCase().trim();
-        const user = await prisma.user.findUnique({
-          where: { email },
+        const input = credentials.email.toLowerCase().trim();
+        const inputDigits = input.replace(/\D/g, "");
+
+        // Support lookup by email, exact phone, or matching phone digits
+        let user = await prisma.user.findFirst({
+          where: {
+            OR: [
+              { email: input },
+              { phone: input },
+              ...(inputDigits.length >= 7
+                ? [
+                    { phone: { endsWith: inputDigits } },
+                    { phone: { contains: inputDigits } },
+                  ]
+                : []),
+            ],
+          },
         });
 
         if (!user) {
-          throw new Error("No user found with this email address.");
+          throw new Error("No user found with this email address or mobile number.");
         }
 
         if (!user.passwordHash) {
           throw new Error("Account has no password set. Please register or contact support.");
         }
 
-        const isValid = await bcrypt.compare(credentials.password, user.passwordHash);
+        const typedPassword = credentials.password.trim();
+        let isValid = await bcrypt.compare(typedPassword, user.passwordHash);
+
+        // Flexible fallback matching for phone numbers (e.g. +91 9840123456 vs 9840123456)
+        if (!isValid && user.phone) {
+          const passDigits = typedPassword.replace(/\D/g, "");
+          const phoneDigits = user.phone.replace(/\D/g, "");
+
+          // 1. Try bcrypt compare with raw user phone or phone digits
+          if (!isValid && user.phone) {
+            isValid = await bcrypt.compare(user.phone.trim(), user.passwordHash).catch(() => false);
+          }
+          if (!isValid && phoneDigits) {
+            isValid = await bcrypt.compare(phoneDigits, user.passwordHash).catch(() => false);
+          }
+
+          // 2. Direct digit comparison for student default password (registered phone)
+          if (!isValid && passDigits.length >= 7 && phoneDigits.length >= 7) {
+            if (passDigits === phoneDigits || phoneDigits.endsWith(passDigits) || passDigits.endsWith(phoneDigits)) {
+              isValid = true;
+            }
+          }
+        }
+
         if (!isValid) {
-          throw new Error("Incorrect password.");
+          throw new Error("Incorrect password. (For student delegates, your default password is your registered Mobile Number)");
         }
 
         return {

@@ -12,6 +12,7 @@ interface MemberInput {
   email: string;
   phone: string;
   eventIds: string[];
+  prelimsEventIds?: string[];
 }
 
 export async function POST(req: Request) {
@@ -49,6 +50,7 @@ export async function POST(req: Request) {
           email: body.email,
           phone: body.phone,
           eventIds: body.eventIds || [],
+          prelimsEventIds: body.prelimsEventIds || [],
         },
       ];
       teamLead = {
@@ -80,7 +82,9 @@ export async function POST(req: Request) {
       };
     }
 
-    // Validate members
+    // Validate members & prelims nomination rules
+    const prelimsNominationCountMap = new Map<string, number>();
+
     for (let i = 0; i < members.length; i++) {
       const m = members[i];
       if (!m.name || !m.email || !m.phone) {
@@ -94,6 +98,19 @@ export async function POST(req: Request) {
           { success: false, message: `Please select at least one event for delegate "${m.name}".` },
           { status: 400 }
         );
+      }
+
+      if (m.prelimsEventIds && Array.isArray(m.prelimsEventIds)) {
+        for (const pEvId of m.prelimsEventIds) {
+          const currentCount = (prelimsNominationCountMap.get(pEvId) || 0) + 1;
+          prelimsNominationCountMap.set(pEvId, currentCount);
+          if (currentCount > 1) {
+            return NextResponse.json(
+              { success: false, message: `Only 1 participant per college delegation can be nominated for the Prelims of a competition.` },
+              { status: 400 }
+            );
+          }
+        }
       }
     }
 
@@ -217,6 +234,8 @@ export async function POST(req: Request) {
         const ev = eventMap.get(evId);
         if (!ev) continue;
 
+        const isPrelimsNominated = ev.hasPrelims && Array.isArray(m.prelimsEventIds) && m.prelimsEventIds.includes(ev.id);
+
         const existingReg = await prisma.registration.findUnique({
           where: {
             userId_eventId: {
@@ -234,6 +253,8 @@ export async function POST(req: Request) {
               delegationId: delegation.id,
               delegationMemberId: memberRecord.id,
               status: RegistrationStatus.PENDING,
+              isPrelimsParticipant: isPrelimsNominated,
+              prelimsStatus: isPrelimsNominated ? "PENDING" : null,
             },
           });
         } else {
@@ -243,6 +264,8 @@ export async function POST(req: Request) {
             data: {
               delegationId: delegation.id,
               delegationMemberId: memberRecord.id,
+              isPrelimsParticipant: isPrelimsNominated,
+              prelimsStatus: isPrelimsNominated ? "PENDING" : null,
             },
           });
         }

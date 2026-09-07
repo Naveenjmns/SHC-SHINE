@@ -16,6 +16,14 @@ import {
   Check,
   X,
   MapPin,
+  QrCode,
+  Utensils,
+  ExternalLink,
+  Ticket,
+  Building,
+  Sparkles,
+  Users,
+  ShieldCheck,
 } from "lucide-react";
 
 interface RegistrationItem {
@@ -35,7 +43,47 @@ interface RegistrationItem {
       email: string;
       phone: string | null;
     } | null;
+    staffCoordinator?: {
+      name: string;
+      email: string;
+      phone: string | null;
+    } | null;
+    studentCoordinator?: {
+      name: string;
+      email: string;
+      phone: string | null;
+    } | null;
   };
+}
+
+interface PassData {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  isTeamLead: boolean;
+  badgeCode: string;
+  foodTokenCode: string;
+  eventCheckedIn: boolean;
+  foodTokenClaimed: boolean;
+  qrData: string | null;
+  foodQrData: string | null;
+  badgeUrl: string;
+}
+
+interface DelegationData {
+  id: string;
+  collegeName: string;
+  department: string | null;
+  teamName: string | null;
+  teamLeadName: string;
+  teamLeadEmail: string;
+  teamLeadPhone: string;
+  staffInchargeName: string | null;
+  staffInchargeEmail: string | null;
+  totalFee: number;
+  paymentStatus: string;
+  memberCount: number;
 }
 
 export default function StudentDashboard() {
@@ -43,6 +91,9 @@ export default function StudentDashboard() {
   const router = useRouter();
 
   const [registrations, setRegistrations] = useState<RegistrationItem[]>([]);
+  const [isApproved, setIsApproved] = useState(false);
+  const [pass, setPass] = useState<PassData | null>(null);
+  const [delegation, setDelegation] = useState<DelegationData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -52,26 +103,35 @@ export default function StudentDashboard() {
     }
 
     if (status === "authenticated") {
-      async function loadRegistrations() {
+      async function loadData() {
         try {
           const res = await fetch("/api/student/registrations");
-          const data = await safeJson(res, { success: false, registrations: [] });
-          if (data.success && data.registrations) {
-            setRegistrations(data.registrations);
+          const data = await safeJson(res, {
+            success: false,
+            isApproved: false,
+            registrations: [],
+            pass: null,
+            delegation: null,
+          });
+          if (data.success) {
+            setRegistrations(data.registrations || []);
+            setIsApproved(!!data.isApproved);
+            setPass(data.pass || null);
+            setDelegation(data.delegation || null);
           }
         } catch (err) {
-          console.error("Failed to load registrations:", err);
+          console.error("Failed to load student portal data:", err);
         } finally {
           setLoading(false);
         }
       }
-      loadRegistrations();
+      loadData();
     }
   }, [status, router]);
 
   if (status === "loading" || loading) {
     return (
-      <main className="dash-layout flex items-center justify-center p-8">
+      <main className="dash-layout flex items-center justify-center p-8 min-h-screen">
         <div className="text-center">
           <div className="w-10 h-10 border-3 border-orange-500/20 border-t-orange-600 rounded-full animate-spin mx-auto mb-3" />
           <p className="text-xs font-semibold text-slate-500">Loading student portal...</p>
@@ -82,11 +142,10 @@ export default function StudentDashboard() {
 
   const confirmed = registrations.filter((r) => r.status === "CONFIRMED");
   const pending = registrations.filter((r) => r.status === "PENDING");
-  const rejected = registrations.filter((r) => r.status === "REJECTED");
 
   return (
     <main className="dash-layout flex flex-col min-h-screen">
-      {/* Calm Top Navigation */}
+      {/* Top Navigation */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-20">
         <div className="container-shine py-3.5 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -106,7 +165,7 @@ export default function StudentDashboard() {
 
           <div className="flex items-center gap-3">
             <Link
-              href="/events"
+              href="/register"
               className="tap-target px-3.5 py-1.5 text-xs font-bold text-orange-600 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors"
             >
               + Register More
@@ -120,7 +179,7 @@ export default function StudentDashboard() {
             </Link>
             <button
               onClick={() => signOut({ callbackUrl: "/" })}
-              className="tap-target px-3 py-1.5 text-xs font-medium text-slate-500 hover:text-rose-600 transition-colors"
+              className="tap-target px-3 py-1.5 text-xs font-medium text-slate-500 hover:text-rose-600 transition-colors cursor-pointer"
             >
               Sign Out
             </button>
@@ -136,12 +195,12 @@ export default function StudentDashboard() {
             <div>
               <div className="flex items-center gap-2 mb-1.5">
                 <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                  Verified Participant
+                  Verified Participant Portal
                 </span>
-                {session?.user?.college && (
+                {(session?.user?.college || delegation?.collegeName) && (
                   <span className="text-xs text-slate-500 font-medium inline-flex items-center gap-1">
                     • <GraduationCap className="w-3.5 h-3.5 text-slate-400" />
-                    <span>{session.user.college}</span>
+                    <span>{session?.user?.college || delegation?.collegeName}</span>
                   </span>
                 )}
               </div>
@@ -161,6 +220,229 @@ export default function StudentDashboard() {
             </div>
           </div>
         </div>
+
+        {/* 🎫 Official Digital Pass & Contingent Dossier Section */}
+        {pass && (
+          <div className="bg-white border border-amber-200/90 rounded-3xl p-6 sm:p-8 mb-8 shadow-sm relative overflow-hidden">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-stone-200">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 text-[11px] font-bold uppercase tracking-wider border border-amber-300">
+                    Contingent Pass & Dossier
+                  </span>
+                  {delegation?.collegeName && (
+                    <span className="text-xs text-stone-500 font-medium flex items-center gap-1">
+                      • <Building className="w-3.5 h-3.5 text-stone-400" />
+                      <strong>{delegation.collegeName}</strong>
+                    </span>
+                  )}
+                </div>
+                <h2 className="text-xl sm:text-2xl font-black text-stone-900 tracking-tight">
+                  {delegation?.teamName || "College Delegation Roster"}
+                </h2>
+                <p className="text-xs text-stone-600 mt-0.5">
+                  {delegation?.teamLeadName ? `Contingent Lead: ${delegation.teamLeadName}` : ""}
+                  {delegation?.staffInchargeName ? ` • Faculty: ${delegation.staffInchargeName}` : ""}
+                </p>
+              </div>
+
+              {/* Verification & Approval Status */}
+              <div className="bg-stone-50 border border-stone-200 rounded-2xl p-4 flex items-center justify-between gap-4">
+                <div>
+                  <div className="text-[10px] uppercase font-bold text-stone-400 tracking-wider">
+                    Verification & Approval Status
+                  </div>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span
+                      className={`text-xs font-black px-2.5 py-0.5 rounded-md ${
+                        isApproved
+                          ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                          : "bg-amber-100 text-amber-900 border border-amber-300"
+                      }`}
+                    >
+                      {isApproved
+                        ? "✓ Registration Approved & Badges Active"
+                        : "⏳ Pending Coordinator / Admin Approval"}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="text-right border-l border-stone-200 pl-4 hidden sm:block">
+                  <div className="text-[10px] text-stone-500">Participant Fee</div>
+                  <div className="text-base font-black text-stone-900 font-mono">
+                    ₹{delegation?.totalFee || 0}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* IF NOT YET APPROVED: Render Pending Review Banner & Lock QR Passes */}
+            {!isApproved ? (
+              <div className="mt-6 bg-amber-50/80 border border-amber-200 rounded-2xl p-6 text-amber-950 space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-amber-100 border border-amber-300 flex items-center justify-center shrink-0">
+                    <Clock className="w-5 h-5 text-amber-700" />
+                  </div>
+                  <div className="space-y-1">
+                    <h3 className="text-base font-extrabold text-amber-950">
+                      Registration Under Review & Pending Approval
+                    </h3>
+                    <p className="text-xs leading-relaxed text-amber-900/90 max-w-2xl">
+                      Your contingent registration for <strong>{delegation?.collegeName || "your college"}</strong> ({delegation?.memberCount || 1} participant(s)) has been submitted and is currently under verification by the Fest Admin & Event Coordinators.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="bg-white/80 border border-amber-200 rounded-xl p-4 text-xs space-y-2 text-stone-700">
+                  <div className="flex items-center gap-2 font-bold text-stone-900">
+                    <ShieldCheck className="w-4 h-4 text-amber-600" />
+                    <span>Pass Activation Notice:</span>
+                  </div>
+                  <p className="text-stone-600 leading-relaxed">
+                    Your 2 official QR badges (<strong>Event Entry QR Code</strong> + <strong>Food Token QR Code</strong>) and <strong>Printable ID Card</strong> will automatically unlock right here in your portal as soon as an Admin or Event Coordinator approves your registration.
+                  </p>
+                  <div className="pt-2 border-t border-stone-200/80 flex flex-wrap items-center justify-between text-[11px] text-stone-500">
+                    <span>Team Lead Contact: <strong>{delegation?.teamLeadName}</strong> ({delegation?.teamLeadPhone})</span>
+                    <span>Fee Amount: <strong>₹{delegation?.totalFee || 0}</strong></span>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              /* IF APPROVED: Render Official Digital Passes, QR Codes, Food Tokens, and Print Link */
+              <div className="mt-6">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-xs font-black text-stone-900 uppercase tracking-wider flex items-center gap-2">
+                    <Ticket className="w-4 h-4 text-[#FF6B1A]" />
+                    <span>Official Activated Pass ({pass.badgeCode})</span>
+                  </h3>
+                  <span className="text-[11px] font-mono font-bold text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded border border-emerald-300">
+                    ✓ APPROVED & VERIFIED
+                  </span>
+                </div>
+
+                <div className="bg-[#FAF8F5] border border-stone-200 rounded-2xl p-5 sm:p-6 hover:border-amber-400 transition-all shadow-2xs">
+                  <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+                    <div className="space-y-3 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-mono text-xs font-black text-amber-700 bg-amber-100 px-2.5 py-0.5 rounded-md border border-amber-300">
+                          {pass.badgeCode}
+                        </span>
+                        {pass.isTeamLead && (
+                          <span className="text-[10px] font-extrabold bg-stone-900 text-white px-2 py-0.5 rounded-md uppercase tracking-wider">
+                            Team Lead
+                          </span>
+                        )}
+                      </div>
+
+                      <div>
+                        <h4 className="text-xl font-extrabold text-stone-900">{pass.name}</h4>
+                        <div className="text-xs text-stone-500 mt-0.5">
+                          {pass.email} • {pass.phone}
+                        </div>
+                      </div>
+
+                      {/* Status badges */}
+                      <div className="flex flex-wrap items-center gap-2 pt-1">
+                        <span
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded inline-flex items-center gap-1 ${
+                            pass.eventCheckedIn
+                              ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                              : "bg-stone-200/80 text-stone-700"
+                          }`}
+                        >
+                          <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                          {pass.eventCheckedIn ? "Event Checked In" : "Venue Pass Ready"}
+                        </span>
+
+                        <span
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded inline-flex items-center gap-1 ${
+                            pass.foodTokenClaimed
+                              ? "bg-amber-200 text-amber-900 border border-amber-400"
+                              : "bg-amber-100/70 text-amber-800 border border-amber-200"
+                          }`}
+                        >
+                          <Utensils className="w-3 h-3 text-amber-700" />
+                          {pass.foodTokenClaimed ? "Lunch Token Claimed" : "Food Token Active"}
+                        </span>
+                      </div>
+
+                      {/* Food & Lunch Token Box */}
+                      <div className="bg-amber-100/70 border border-amber-300/80 rounded-xl p-3 flex items-center justify-between text-xs max-w-sm">
+                        <div className="flex items-center gap-2 text-amber-950 font-bold">
+                          <Utensils className="w-4 h-4 text-amber-700" />
+                          <span>Food & Lunch Token</span>
+                        </div>
+                        <span className="font-mono font-black text-stone-900 bg-white px-2.5 py-0.5 rounded border border-amber-300 shadow-2xs">
+                          {pass.foodTokenCode}
+                        </span>
+                      </div>
+
+                      {/* Events Enrolled */}
+                      <div className="text-xs text-stone-600">
+                        <div className="text-[10px] font-bold uppercase text-stone-400 mb-1">
+                          Events Participating ({registrations.length})
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {registrations.map((reg) => (
+                            <span
+                              key={reg.id}
+                              className="text-[11px] bg-white border border-stone-200 rounded px-2.5 py-0.5 text-stone-800 font-bold shadow-2xs"
+                            >
+                              {reg.event.name}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* QR Codes & View & Print ID Card Action */}
+                    <div className="flex flex-col sm:flex-row lg:flex-col items-center gap-4 shrink-0 w-full lg:w-auto pt-4 lg:pt-0 border-t lg:border-t-0 border-stone-200">
+                      <div className="flex items-center gap-4">
+                        {pass.qrData && (
+                          <div className="text-center">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={pass.qrData}
+                              alt={`Event Pass QR for ${pass.badgeCode}`}
+                              className="w-20 h-20 rounded-xl border border-stone-300 p-1.5 bg-white shadow-2xs"
+                            />
+                            <span className="text-[9px] font-bold text-stone-600 block mt-1 uppercase tracking-wider">
+                              Event Entry QR
+                            </span>
+                          </div>
+                        )}
+
+                        {pass.foodQrData && (
+                          <div className="text-center">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={pass.foodQrData}
+                              alt={`Food QR for ${pass.foodTokenCode}`}
+                              className="w-20 h-20 rounded-xl border border-amber-300 p-1.5 bg-white shadow-2xs"
+                            />
+                            <span className="text-[9px] font-bold text-amber-800 block mt-1 uppercase tracking-wider">
+                              Food Token QR
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      <Link
+                        href={`/badge/${encodeURIComponent(pass.badgeCode)}`}
+                        target="_blank"
+                        className="btn-ember w-full text-center text-xs font-bold py-2.5 px-4 rounded-xl flex items-center justify-center gap-2"
+                      >
+                        <QrCode className="w-4 h-4" />
+                        <span>View & Print ID Card</span>
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* High-Scannability Summary Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
@@ -203,7 +485,7 @@ export default function StudentDashboard() {
           </div>
         </div>
 
-        {/* Registrations List with Priority Left Borders */}
+        {/* Registrations List */}
         <div>
           <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center justify-between">
             <span>My Registered Competitions</span>
@@ -222,10 +504,10 @@ export default function StudentDashboard() {
                 You have not registered for any SHINE 26 competitions yet. Browse the lineup and enroll today!
               </p>
               <Link
-                href="/events"
+                href="/register"
                 className="tap-target px-5 py-2.5 bg-orange-600 text-white rounded-lg text-xs font-bold"
               >
-                Explore Events
+                Explore & Register Events
               </Link>
             </div>
           ) : (
@@ -311,9 +593,9 @@ export default function StudentDashboard() {
                           <span>
                             Fee: <strong className="text-slate-900 tabular-nums">₹{reg.event.fee}</strong>
                           </span>
-                          {reg.event.coordinator && (
+                          {(reg.event.staffCoordinator || reg.event.coordinator) && (
                             <span>
-                              Coordinator: <strong className="text-slate-700">{reg.event.coordinator.name}</strong>
+                              Coordinator: <strong className="text-slate-700">{(reg.event.staffCoordinator || reg.event.coordinator)?.name}</strong>
                             </span>
                           )}
                         </div>
@@ -337,7 +619,7 @@ export default function StudentDashboard() {
         </div>
       </div>
 
-      {/* Calm Light Footer */}
+      {/* Footer */}
       <footer className="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500">
         SHINE 26 • Department of Computer Applications (PG), Sacred Heart College (Autonomous), Tirupattur
       </footer>

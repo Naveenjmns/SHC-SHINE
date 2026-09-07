@@ -17,7 +17,7 @@ export async function PATCH(
 
     const { id: registrationId } = await params;
     const body = await req.json();
-    const { status, result, score } = body;
+    const { status, result, score, prelimsStatus, prelimsScore, prelimsNotes, attended } = body;
 
     const registration = await prisma.registration.findUnique({
       where: { id: registrationId },
@@ -66,15 +66,40 @@ export async function PATCH(
       );
     }
 
-    const updateData: { status?: RegistrationStatus; result?: string | null; score?: number | null } = {};
+    const updateData: {
+      status?: RegistrationStatus;
+      result?: string | null;
+      score?: number | null;
+      prelimsStatus?: string | null;
+      prelimsScore?: number | null;
+      prelimsNotes?: string | null;
+      attended?: boolean;
+    } = {};
+
+    // Only Admin can update main registration approval status
     if (status && Object.values(RegistrationStatus).includes(status)) {
-      updateData.status = status as RegistrationStatus;
+      if (session.user.role === "ADMIN") {
+        updateData.status = status as RegistrationStatus;
+      }
     }
+
     if (result !== undefined) {
       updateData.result = result ? result.trim() : null;
     }
     if (score !== undefined) {
       updateData.score = score === "" || score === null ? null : parseFloat(score);
+    }
+    if (prelimsStatus !== undefined) {
+      updateData.prelimsStatus = prelimsStatus ? prelimsStatus.trim() : "PENDING";
+    }
+    if (prelimsScore !== undefined) {
+      updateData.prelimsScore = prelimsScore === "" || prelimsScore === null ? null : parseFloat(prelimsScore);
+    }
+    if (prelimsNotes !== undefined) {
+      updateData.prelimsNotes = prelimsNotes ? prelimsNotes.trim() : null;
+    }
+    if (attended !== undefined) {
+      updateData.attended = Boolean(attended);
     }
 
     const updated = await prisma.registration.update({

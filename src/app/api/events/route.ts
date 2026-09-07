@@ -98,6 +98,10 @@ export async function POST(req: Request) {
       staffCoordinatorId,
       studentCoordinatorId,
       coordinatorId,
+      hasPrelims,
+      prelimsDateTime,
+      prelimsVenue,
+      prelimsRules,
     } = body;
 
     if (!name || !category || !dateTime) {
@@ -134,6 +138,10 @@ export async function POST(req: Request) {
         staffCoordinatorId: staffCoordinatorId || coordinatorId || null,
         studentCoordinatorId: studentCoordinatorId || null,
         coordinatorId: coordinatorId || staffCoordinatorId || null,
+        hasPrelims: Boolean(hasPrelims),
+        prelimsDateTime: prelimsDateTime ? new Date(prelimsDateTime) : null,
+        prelimsVenue: prelimsVenue?.trim() || null,
+        prelimsRules: prelimsRules?.trim() || null,
       },
       include: {
         staffCoordinator: { select: { id: true, name: true, email: true, phone: true, avatarUrl: true } },

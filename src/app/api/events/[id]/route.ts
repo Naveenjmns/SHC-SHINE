@@ -91,6 +91,10 @@ export async function PUT(
       staffCoordinatorId,
       studentCoordinatorId,
       coordinatorId,
+      hasPrelims,
+      prelimsDateTime,
+      prelimsVenue,
+      prelimsRules,
     } = body;
 
     const updated = await prisma.event.update({
@@ -116,6 +120,10 @@ export async function PUT(
         staffCoordinatorId: staffCoordinatorId !== undefined ? staffCoordinatorId || null : undefined,
         studentCoordinatorId: studentCoordinatorId !== undefined ? studentCoordinatorId || null : undefined,
         coordinatorId: coordinatorId !== undefined ? coordinatorId || null : undefined,
+        hasPrelims: hasPrelims !== undefined ? Boolean(hasPrelims) : undefined,
+        prelimsDateTime: prelimsDateTime !== undefined ? (prelimsDateTime ? new Date(prelimsDateTime) : null) : undefined,
+        prelimsVenue: prelimsVenue !== undefined ? prelimsVenue?.trim() || null : undefined,
+        prelimsRules: prelimsRules !== undefined ? prelimsRules?.trim() || null : undefined,
       },
       include: {
         staffCoordinator: { select: { id: true, name: true, email: true, phone: true, avatarUrl: true } },

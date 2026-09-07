@@ -124,10 +124,50 @@ export async function PATCH(req: Request) {
     const protocol = hostHeader.includes("localhost") ? "http" : "https";
     const origin = `${protocol}://${hostHeader}`;
 
-    // Handle Desk Payment Collection & Delegation Approval
-    if (action === "COLLECT_PAYMENT_APPROVE_DELEGATION" || delegationId && action === "APPROVE") {
+    // Handle College / Delegation Batch Approval & Rejection
+    if (action === "REJECT_COLLEGE") {
+      const collegeName = body.collegeName;
+      if (delegationId) {
+        await prisma.delegation.update({
+          where: { id: delegationId },
+          data: { paymentStatus: "REJECTED" },
+        });
+        await prisma.registration.updateMany({
+          where: { delegationId },
+          data: { status: RegistrationStatus.REJECTED },
+        });
+      } else if (collegeName) {
+        const users = await prisma.user.findMany({
+          where: { college: { equals: collegeName.trim(), mode: "insensitive" } },
+          select: { id: true },
+        });
+        const userIds = users.map((u) => u.id);
+        await prisma.registration.updateMany({
+          where: { userId: { in: userIds } },
+          data: { status: RegistrationStatus.REJECTED },
+        });
+      }
+      return NextResponse.json({ success: true, message: `Registrations for ${collegeName || "this college"} have been REJECTED.` });
+    }
+
+    if (action === "COLLECT_PAYMENT_APPROVE_DELEGATION" || action === "APPROVE_COLLEGE" || (delegationId && action === "APPROVE")) {
+      const collegeName = body.collegeName;
+      if (!delegationId && collegeName) {
+        // Direct individual registrants grouped by college
+        const users = await prisma.user.findMany({
+          where: { college: { equals: collegeName.trim(), mode: "insensitive" } },
+          select: { id: true },
+        });
+        const userIds = users.map((u) => u.id);
+        await prisma.registration.updateMany({
+          where: { userId: { in: userIds } },
+          data: { status: RegistrationStatus.CONFIRMED },
+        });
+        return NextResponse.json({ success: true, message: `All student registrations for ${collegeName} have been APPROVED!` });
+      }
+
       if (!delegationId) {
-        return NextResponse.json({ success: false, message: "Delegation ID is required." }, { status: 400 });
+        return NextResponse.json({ success: false, message: "Delegation ID or College Name is required." }, { status: 400 });
       }
 
       const delegation = await prisma.delegation.findUnique({

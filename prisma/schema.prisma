@@ -224,6 +224,10 @@ model Event {
   staffCoordinatorId         String?
   studentCoordinatorId       String?
   coordinatorId              String?
+  hasPrelims                 Boolean       @default(false)
+  prelimsDateTime            DateTime?
+  prelimsVenue               String?
+  prelimsRules               String?       @db.Text
   createdAt                  DateTime      @default(now())
   updatedAt                  DateTime      @updatedAt
 
@@ -249,6 +253,10 @@ model Registration {
   attended           Boolean            @default(false)
   checkedInAt        DateTime?
   checkedInBy        String?
+  isPrelimsParticipant Boolean          @default(false)
+  prelimsStatus      String?            @default("PENDING")
+  prelimsScore       Float?
+  prelimsNotes       String?
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
 

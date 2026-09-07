@@ -94,12 +94,12 @@ function LoginForm() {
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
             <label className="block text-xs font-bold text-[#1C1917] mb-1.5">
-              Email Address
+              Email Address or Mobile Number
             </label>
             <input
-              type="email"
+              type="text"
               required
-              placeholder="you@example.com"
+              placeholder="you@example.com or 9840123456"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full h-11 bg-white border border-[#1C1917]/15 rounded-xl px-3.5 text-sm text-[#1C1917] placeholder-[#78716C] focus:outline-none focus:border-[#FF6B1A] transition-colors shadow-2xs"
@@ -118,6 +118,9 @@ function LoginForm() {
               onChange={(e) => setPassword(e.target.value)}
               className="w-full h-11 bg-white border border-[#1C1917]/15 rounded-xl px-3.5 text-sm text-[#1C1917] placeholder-[#78716C] focus:outline-none focus:border-[#FF6B1A] transition-colors shadow-2xs"
             />
+            <p className="text-[10px] text-[#78716C] mt-1">
+              💡 For registered student delegates, your default password is your registered Mobile Number.
+            </p>
           </div>
 
           <button
