@@ -327,7 +327,7 @@ export default async function Home() {
               <Theater className="w-5 h-5" />
               <span>On-Stage Events</span>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-5 sm:gap-6">
               {onStage.map((ev, index) => (
                 <EventCard
                   key={ev.id}
@@ -364,7 +364,7 @@ export default async function Home() {
               <Laptop className="w-5 h-5" />
               <span>Off-Stage Events</span>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-5 sm:gap-6">
               {offStage.map((ev, index) => (
                 <EventCard
                   key={ev.id}

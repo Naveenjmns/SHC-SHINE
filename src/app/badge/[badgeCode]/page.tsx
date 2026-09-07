@@ -27,7 +27,11 @@ interface BadgeData {
   phone: string;
   foodTokenCode: string;
   foodTokenClaimed: boolean;
+  foodClaimedAt?: string | null;
+  eventCheckedIn?: boolean;
+  eventCheckedInAt?: string | null;
   qrData: string;
+  foodQrData?: string | null;
   createdAt: string;
   delegation: {
     id: string;
@@ -268,8 +272,19 @@ export default function BadgeDetailPage() {
                 {badge.badgeCode}
               </span>
               <span className="text-[9px] text-stone-500 uppercase tracking-wider font-semibold mt-0.5">
-                Scan at Gate Verification
+                1. Event Registration Pass
               </span>
+              {badge.eventCheckedIn ? (
+                <span className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-300 text-[10px] font-bold">
+                  <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                  <span>Checked In</span>
+                </span>
+              ) : (
+                <span className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-300 text-[10px] font-bold">
+                  <Clock className="w-3 h-3 text-amber-600" />
+                  <span>Gate Check-In</span>
+                </span>
+              )}
             </div>
 
             {/* Delegate Details */}
@@ -332,33 +347,60 @@ export default function BadgeDetailPage() {
             </div>
           </div>
 
-          <div className="bg-amber-50/80 border-2 border-amber-300/80 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-            <div className="flex items-center gap-3 text-center sm:text-left">
-              <div className="w-12 h-12 rounded-xl bg-amber-400/20 border border-amber-400/40 flex items-center justify-center shrink-0">
-                <Utensils className="w-6 h-6 text-amber-700" />
+          <div className="bg-amber-50/80 border-2 border-amber-300/80 rounded-2xl p-4 sm:p-5">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-5">
+              {/* Food QR Code (2nd QR) */}
+              <div className="shrink-0 flex flex-col items-center">
+                <div className="p-2 bg-white border-2 border-amber-400 rounded-xl shadow-xs">
+                  {badge.foodQrData ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                      src={badge.foodQrData}
+                      alt={`Food QR for ${badge.foodTokenCode}`}
+                      className="w-28 h-28 object-contain rounded-md"
+                    />
+                  ) : (
+                    <div className="w-28 h-28 bg-amber-100 flex items-center justify-center text-xs text-amber-700 font-mono font-bold">
+                      {badge.foodTokenCode}
+                    </div>
+                  )}
+                </div>
+                <span className="mt-1 text-[9px] font-black text-amber-900 uppercase tracking-wider">
+                  2. Food Token QR
+                </span>
               </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-black text-amber-950 uppercase tracking-wider">
-                    Official Lunch & Refreshment Token
+
+              {/* Food Details */}
+              <div className="flex-1 text-center sm:text-left min-w-0">
+                <div className="flex items-center justify-center sm:justify-start gap-2">
+                  <span className="text-xs font-black text-amber-950 uppercase tracking-wider flex items-center gap-1.5">
+                    <Utensils className="w-3.5 h-3.5 text-amber-700" />
+                    <span>Official Lunch & Refreshment Token</span>
                   </span>
-                  <span className="bg-amber-200/70 text-amber-900 text-[9px] font-bold px-1.5 py-0.5 rounded">
-                    1x Meal Pass
+                  <span className="bg-amber-200/80 text-amber-900 text-[9px] font-bold px-2 py-0.5 rounded-full">
+                    1x Meal
                   </span>
                 </div>
-                <p className="text-[11px] text-amber-900/80">
-                  Valid at Fest Dining Hall on event day. Present token code or badge QR.
+                <p className="text-[11px] text-amber-900/80 mt-1 leading-relaxed">
+                  Valid at Fest Dining Hall on event day. Scan this dedicated Food QR code or enter token code to receive meal.
                 </p>
-              </div>
-            </div>
 
-            <div className="text-center sm:text-right shrink-0">
-              <div className="text-[10px] text-amber-800/70 font-semibold uppercase tracking-wider">Token Code</div>
-              <div className="font-mono text-sm font-black text-stone-900 tracking-wider bg-white px-3 py-1 rounded-lg border border-amber-300 shadow-2xs">
-                {badge.foodTokenCode}
-              </div>
-              <div className="text-[9px] text-amber-700 font-medium mt-0.5">
-                {badge.foodTokenClaimed ? "Already Claimed" : "Active & Unclaimed"}
+                <div className="mt-3 flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                  <div className="font-mono text-xs font-black text-stone-900 bg-white px-3 py-1 rounded-lg border border-amber-300 shadow-2xs">
+                    {badge.foodTokenCode}
+                  </div>
+                  {badge.foodTokenClaimed ? (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-stone-200 text-stone-700 text-[10px] font-bold">
+                      <CheckCircle2 className="w-3 h-3 text-stone-600" />
+                      <span>Food Received</span>
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10px] font-bold">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
+                      <span>Ready to Claim</span>
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           </div>

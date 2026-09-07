@@ -25,6 +25,9 @@ import {
   Calendar,
   Sparkles,
   ShieldCheck,
+  Lock,
+  Clock,
+  ReceiptIndianRupee,
 } from "lucide-react";
 import { safeJson } from "@/lib/safeFetch";
 
@@ -51,6 +54,7 @@ interface RegisteredDelegate {
   badgeCode: string;
   foodTokenCode: string;
   qrData: string;
+  foodQrData?: string;
   events: Array<{
     id: string;
     name: string;
@@ -83,6 +87,10 @@ function RegisterForm() {
   const [festEdition, setFestEdition] = useState("2026");
   const [participantFee, setParticipantFee] = useState<number>(0);
   const [institutionName, setInstitutionName] = useState("");
+  const [isRegistrationOpen, setIsRegistrationOpen] = useState(true);
+  const [registrationClosedNotice, setRegistrationClosedNotice] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
+  const [contactPhone, setContactPhone] = useState("");
 
   // Step 1: College Representation
   const [collegeName, setCollegeName] = useState("");
@@ -137,6 +145,13 @@ function RegisterForm() {
           setFestEdition(editionData.edition.edition || "2026");
           setParticipantFee(editionData.edition.participantFee || 0);
           setInstitutionName(editionData.edition.institutionName || "");
+          setIsRegistrationOpen(editionData.edition.isRegistrationOpen ?? true);
+          setRegistrationClosedNotice(
+            editionData.edition.registrationClosedNotice ||
+              "Registrations for this edition are currently closed. Please contact the event coordinators for queries."
+          );
+          setContactEmail(editionData.edition.contactEmail || "");
+          setContactPhone(editionData.edition.contactPhone || "");
         }
       } catch (err) {
         console.error("Error loading events & edition data:", err);
@@ -256,6 +271,13 @@ function RegisterForm() {
     e.preventDefault();
     setErrorMessage("");
 
+    if (!isRegistrationOpen) {
+      setErrorMessage(
+        registrationClosedNotice || "Registrations are currently closed by the administration."
+      );
+      return;
+    }
+
     if (!validateStep1()) {
       setCurrentStep(1);
       return;
@@ -314,15 +336,35 @@ function RegisterForm() {
 
   // SUCCESS VIEW: Digital ID Passes, QR codes & Food Tokens
   if (successData) {
+    const isPaid = successData.delegation.paymentStatus === "PAID";
+
     return (
       <div className="container-shine py-12 max-w-4xl mx-auto">
-        <div className="bg-white border-2 border-emerald-500/30 rounded-3xl p-6 sm:p-10 shadow-xl text-center">
-          <div className="w-16 h-16 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <CheckCircle2 className="w-8 h-8 text-emerald-600" />
+        <div className={`bg-white border-2 ${isPaid ? "border-emerald-500/30" : "border-amber-500/40"} rounded-3xl p-6 sm:p-10 shadow-xl text-center`}>
+          <div className={`w-16 h-16 ${isPaid ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-600" : "bg-amber-500/10 border-amber-500/30 text-amber-600"} border rounded-2xl flex items-center justify-center mx-auto mb-4`}>
+            {isPaid ? (
+              <CheckCircle2 className="w-8 h-8" />
+            ) : (
+              <Clock className="w-8 h-8" />
+            )}
           </div>
 
-          <span className="status-badge status-badge-confirmed mb-2">
-            Delegation Registered Successfully
+          <span
+            className={`status-badge ${
+              isPaid ? "status-badge-confirmed" : "status-badge-pending"
+            } mb-2 inline-flex items-center gap-1.5`}
+          >
+            {isPaid ? (
+              <>
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>Registration Confirmed & Passes Active</span>
+              </>
+            ) : (
+              <>
+                <Clock className="w-3.5 h-3.5" />
+                <span>Status: Pending Payment at Venue Desk</span>
+              </>
+            )}
           </span>
 
           <h2
@@ -333,18 +375,46 @@ function RegisterForm() {
           </h2>
 
           <p className="text-xs sm:text-sm text-stone-600 max-w-xl mx-auto mb-6">
-            Your college contingent has been registered with{" "}
-            <strong>{successData.delegates.length} delegate(s)</strong>. Official digital ID badges, gate verification QR codes, and meal coupons have been issued.
+            Your college contingent registration has been submitted with{" "}
+            <strong>{successData.delegates.length} delegate(s)</strong>.
+            {!isPaid && " Please complete payment at the venue desk to activate event check-in & meal services."}
           </p>
 
-          {/* Email alert confirmation callout */}
-          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 max-w-2xl mx-auto mb-8 text-left flex items-start gap-3">
-            <ShieldCheck className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-            <div className="text-xs text-amber-950">
-              <strong className="block font-bold mb-0.5">Automated Notifications Triggered:</strong>
-              Each delegate has been dispatched an official email with their digital ID pass, schedule, and food token. The event staff and student coordinators have also received the contingent roster.
+          {/* Payment Counter Callout for PENDING status */}
+          {!isPaid && (
+            <div className="bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-amber-500/10 border-2 border-amber-500/30 rounded-2xl p-5 max-w-2xl mx-auto mb-8 text-left">
+              <div className="flex items-start gap-3.5">
+                <ReceiptIndianRupee className="w-6 h-6 text-amber-700 shrink-0 mt-0.5" />
+                <div className="text-xs text-amber-950 space-y-1.5">
+                  <div className="font-extrabold text-sm text-amber-900 flex items-center gap-2">
+                    <span>Mandatory Next Step: Spot Registration Desk & Fee Clearance</span>
+                    <span className="text-xs bg-amber-200/80 text-amber-900 px-2 py-0.5 rounded font-black">
+                      Pay ₹{successData.delegation.totalFee}
+                    </span>
+                  </div>
+                  <p className="leading-relaxed text-stone-700">
+                    On arrival at Sacred Heart College, please report to the <strong>Registration & Finance Desk</strong> with your Contingent Lead (<strong>{successData.delegation.teamLeadName}</strong>).
+                    Pay the contingent fee of <strong>₹{successData.delegation.totalFee}</strong> to the desk coordinator.
+                  </p>
+                  <p className="text-[11px] text-stone-600 bg-white/70 p-2.5 rounded-xl border border-amber-200/60 leading-normal">
+                    ✓ Once payment is recorded as <strong>APPROVED</strong>, your 2 official QR badges (Event Entry QR + Food Token QR) are instantly activated.
+                    <br />
+                    ✓ All delegates will receive an email dispatch with their individual passes, and the Team Lead will receive the consolidated dossier for all {successData.delegates.length} members.
+                  </p>
+                </div>
+              </div>
             </div>
-          </div>
+          )}
+
+          {isPaid && (
+            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 max-w-2xl mx-auto mb-8 text-left flex items-start gap-3">
+              <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+              <div className="text-xs text-emerald-950">
+                <strong className="block font-bold mb-0.5">Automated Notifications Triggered:</strong>
+                Each delegate has been dispatched an official email with their digital ID pass, schedule, and food token. The event coordinators have also received the contingent roster.
+              </div>
+            </div>
+          )}
 
           {/* Delegation Delegates Cards Grid */}
           <div className="text-left mb-8">
@@ -376,14 +446,30 @@ function RegisterForm() {
                         <div className="text-[11px] text-stone-500">{del.email} • {del.phone}</div>
                       </div>
 
-                      {del.qrData && (
-                        /* eslint-disable-next-line @next/next/no-img-element */
-                        <img
-                          src={del.qrData}
-                          alt={`QR for ${del.badgeCode}`}
-                          className="w-16 h-16 rounded-lg border border-stone-300 p-1 bg-white shrink-0"
-                        />
-                      )}
+                      <div className="flex items-center gap-2 shrink-0">
+                        {del.qrData && (
+                          <div className="text-center">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={del.qrData}
+                              alt={`Event QR for ${del.badgeCode}`}
+                              className="w-14 h-14 rounded-lg border border-stone-300 p-1 bg-white"
+                            />
+                            <span className="text-[8px] font-bold text-stone-500 block mt-0.5">Event QR</span>
+                          </div>
+                        )}
+                        {del.foodQrData && (
+                          <div className="text-center">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={del.foodQrData}
+                              alt={`Food QR for ${del.foodTokenCode}`}
+                              className="w-14 h-14 rounded-lg border border-amber-300 p-1 bg-white"
+                            />
+                            <span className="text-[8px] font-bold text-amber-800 block mt-0.5">Food QR</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     {/* Food Token Box */}
@@ -480,8 +566,76 @@ function RegisterForm() {
           </div>
         </div>
 
-        {/* Stepper Tabs */}
-        <div className="flex items-center justify-center gap-2 sm:gap-4 mb-8 overflow-x-auto pb-1">
+        {!isRegistrationOpen ? (
+          <div className="py-8 text-center max-w-xl mx-auto space-y-6 animate-fade-in">
+            <div className="w-16 h-16 rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 mx-auto flex items-center justify-center shadow-xs">
+              <Lock className="w-8 h-8" />
+            </div>
+
+            <div className="space-y-2">
+              <span className="inline-block px-3 py-1 rounded-full bg-rose-100 text-rose-800 border border-rose-300 text-xs font-bold uppercase tracking-wider">
+                Registrations Closed
+              </span>
+              <h2
+                className="text-2xl sm:text-3xl font-black text-[#1C1917]"
+                style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
+              >
+                Portal Currently Closed
+              </h2>
+              <p className="text-xs sm:text-sm text-[#57534E] leading-relaxed">
+                {registrationClosedNotice ||
+                  "Registrations for this edition of the symposium are currently closed by the event coordinators."}
+              </p>
+            </div>
+
+            {(contactEmail || contactPhone) && (
+              <div className="p-4 rounded-xl bg-stone-50 border border-stone-200 text-left space-y-2">
+                <span className="text-xs font-bold text-stone-900 block">
+                  Event Coordination Helpdesk:
+                </span>
+                <div className="flex flex-wrap items-center gap-4 text-xs text-stone-600">
+                  {contactPhone && (
+                    <a
+                      href={`tel:${contactPhone}`}
+                      className="flex items-center gap-1.5 hover:text-[#FF6B1A] transition font-medium"
+                    >
+                      <Phone className="w-3.5 h-3.5 text-stone-400" />
+                      <span>{contactPhone}</span>
+                    </a>
+                  )}
+                  {contactEmail && (
+                    <a
+                      href={`mailto:${contactEmail}`}
+                      className="flex items-center gap-1.5 hover:text-[#FF6B1A] transition font-medium"
+                    >
+                      <Mail className="w-3.5 h-3.5 text-stone-400" />
+                      <span>{contactEmail}</span>
+                    </a>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+              <Link
+                href="/"
+                className="btn-ember text-xs sm:text-sm font-bold px-6 py-2.5 rounded-xl inline-flex items-center gap-2 shadow-xs"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Return to Home</span>
+              </Link>
+              <Link
+                href="/#events"
+                className="tap-target px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-[#1C1917] bg-stone-100 hover:bg-stone-200 transition"
+              >
+                Explore Competitions
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Stepper Tabs */}
+            <div className="flex items-center justify-center gap-2 sm:gap-4 mb-8 overflow-x-auto pb-1">
           <button
             type="button"
             onClick={() => setCurrentStep(1)}
@@ -1034,7 +1188,9 @@ function RegisterForm() {
             </div>
           )}
         </form>
-      </div>
+      </>
+    )}
+  </div>
     </div>
   );
 }

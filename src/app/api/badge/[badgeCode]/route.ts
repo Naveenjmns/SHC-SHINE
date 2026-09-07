@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getActiveEdition } from "@/lib/eventService";
+import { generateFoodTokenQr, generateEventPassQr } from "@/lib/badgeService";
 
 export async function GET(
   req: Request,
@@ -15,7 +16,7 @@ export async function GET(
       );
     }
 
-    const member = await prisma.delegationMember.findUnique({
+    let member = await prisma.delegationMember.findUnique({
       where: { badgeCode: badgeCode.toUpperCase() },
       include: {
         delegation: true,
@@ -39,6 +40,43 @@ export async function GET(
       );
     }
 
+    // Auto-generate missing foodQrData or qrData if necessary for existing records
+    if (!member.foodQrData || !member.qrData) {
+      const qrData =
+        member.qrData ||
+        (await generateEventPassQr({
+          badgeCode: member.badgeCode,
+          name: member.name,
+          college: member.delegation.collegeName,
+        }));
+
+      const foodQrData =
+        member.foodQrData ||
+        (await generateFoodTokenQr({
+          foodTokenCode: member.foodTokenCode,
+          badgeCode: member.badgeCode,
+          name: member.name,
+        }));
+
+      member = await prisma.delegationMember.update({
+        where: { id: member.id },
+        data: { qrData, foodQrData },
+        include: {
+          delegation: true,
+          registrations: {
+            include: {
+              event: {
+                include: {
+                  staffCoordinator: { select: { name: true, phone: true } },
+                  studentCoordinator: { select: { name: true, phone: true } },
+                },
+              },
+            },
+          },
+        },
+      });
+    }
+
     const edition = await getActiveEdition();
 
     return NextResponse.json({
@@ -49,8 +87,12 @@ export async function GET(
         email: member.email,
         phone: member.phone,
         foodTokenCode: member.foodTokenCode,
+        eventCheckedIn: member.eventCheckedIn,
+        eventCheckedInAt: member.eventCheckedInAt,
         foodTokenClaimed: member.foodTokenClaimed,
+        foodClaimedAt: member.foodClaimedAt,
         qrData: member.qrData,
+        foodQrData: member.foodQrData,
         createdAt: member.createdAt,
         delegation: {
           id: member.delegation.id,

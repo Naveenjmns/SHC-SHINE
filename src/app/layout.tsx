@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Outfit, Inter } from "next/font/google";
 import "./globals.css";
 
@@ -16,10 +16,21 @@ const inter = Inter({
   weight: ["300", "400", "500", "600", "700"],
 });
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
+  viewportFit: "cover",
+  themeColor: "#FF6B1A",
+};
+
 export const metadata: Metadata = {
   title: "SHINE 26 | Department of Computer Applications (PG) — Sacred Heart College",
   description:
     "SHINE 26 is the premier intercollegiate fest organized by the Department of Computer Applications (PG), Sacred Heart College (Autonomous), Tirupattur. Register now for exciting on-stage and off-stage events!",
+  applicationName: "SHINE 26",
+  manifest: "/manifest.webmanifest",
   keywords: [
     "SHINE 26",
     "Sacred Heart College",
@@ -31,6 +42,23 @@ export const metadata: Metadata = {
     "tech fest",
   ],
   authors: [{ name: "Department of Computer Applications (PG), Sacred Heart College" }],
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "SHINE 26",
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  icons: {
+    icon: [
+      { url: "/icons/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
+    ],
+    apple: [
+      { url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+  },
   openGraph: {
     title: "SHINE 26 | Sacred Heart College Fest",
     description:
@@ -42,6 +70,8 @@ export const metadata: Metadata = {
 
 import AuthProvider from "@/components/AuthProvider";
 import { ToastProvider } from "@/components/ToastProvider";
+import PwaRegister from "@/components/PwaRegister";
+import InstallPwaPrompt from "@/components/InstallPwaPrompt";
 
 export default function RootLayout({
   children,
@@ -57,6 +87,8 @@ export default function RootLayout({
         <AuthProvider>
           <ToastProvider>
             {children}
+            <PwaRegister />
+            <InstallPwaPrompt />
           </ToastProvider>
         </AuthProvider>
       </body>

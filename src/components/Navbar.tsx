@@ -103,19 +103,19 @@ export default function Navbar({ edition }: NavbarProps) {
                 {editionYear}
               </span>
             </span>
-            <span className="text-[10px] uppercase font-bold tracking-widest text-[#57534E] block -mt-1 truncate max-w-[220px]">
+            <span className="text-[10px] uppercase font-bold tracking-widest text-[#57534E] block -mt-1 truncate max-w-[150px] sm:max-w-[240px]">
               {activeEdition?.institutionShortName || activeEdition?.institutionName || "College Symposium"}
             </span>
           </div>
         </Link>
 
         {/* Desktop Navigation */}
-        <div className="hidden md:flex items-center gap-7">
+        <div className="hidden md:flex items-center gap-6 lg:gap-7">
           {navItems.map((item) => (
             <Link
               key={item.id}
               href={item.url}
-              className="text-sm font-semibold text-[#44403C] hover:text-[#FF6B1A] transition-colors relative py-1 after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-[#FF6B1A] after:scale-x-0 hover:after:scale-x-100 after:transition-transform"
+              className="text-xs lg:text-sm font-semibold text-[#44403C] hover:text-[#FF6B1A] transition-colors relative py-1 after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-[#FF6B1A] after:scale-x-0 hover:after:scale-x-100 after:transition-transform"
             >
               {item.label}
             </Link>
@@ -154,7 +154,7 @@ export default function Navbar({ edition }: NavbarProps) {
             <div className="flex items-center gap-2">
               <Link
                 href="/login"
-                className="text-xs font-bold text-[#1C1917] hover:text-[#FF6B1A] px-3.5 py-2 rounded-xl transition"
+                className="text-xs font-bold text-[#1C1917] hover:text-[#FF6B1A] px-3.5 py-2 rounded-xl transition tap-target"
               >
                 Login
               </Link>
@@ -165,47 +165,105 @@ export default function Navbar({ edition }: NavbarProps) {
           )}
         </div>
 
-        {/* Mobile Menu Button */}
+        {/* Mobile Menu Button (44px min tap target) */}
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
-          className="md:hidden p-2 text-[#1C1917] hover:bg-stone-100 rounded-xl tap-target"
+          className="md:hidden p-2.5 text-[#1C1917] hover:bg-stone-100 rounded-xl tap-target"
           aria-label="Toggle Menu"
         >
           {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
       </div>
 
-      {/* Mobile Drawer */}
+      {/* Mobile Drawer with Comprehensive Options & PWA Install */}
       {mobileOpen && (
-        <div className="md:hidden bg-[#FAF8F5] border-b border-[#1C1917]/10 px-6 py-6 space-y-4 shadow-xl animate-fade-in">
+        <div className="md:hidden bg-[#FAF8F5] border-b border-[#1C1917]/10 px-5 py-5 space-y-3 shadow-xl animate-fade-in max-h-[85vh] overflow-y-auto">
           {navItems.map((item) => (
             <Link
               key={item.id}
               href={item.url}
               onClick={() => setMobileOpen(false)}
-              className="block text-base font-bold text-[#1C1917] hover:text-[#FF6B1A] py-1.5"
+              className="block text-sm font-bold text-[#1C1917] hover:text-[#FF6B1A] py-2 border-b border-stone-100"
             >
               {item.label}
             </Link>
           ))}
-          <div className="pt-4 border-t border-[#1C1917]/10 flex flex-col gap-3">
-            <Link
-              href={getDashboardUrl()}
-              onClick={() => setMobileOpen(false)}
-              className="btn-ember w-full text-center py-2.5"
-            >
-              {getDashboardLabel()}
-            </Link>
-            {session && (
-              <button
-                onClick={() => {
-                  setMobileOpen(false);
-                  signOut({ callbackUrl: "/" });
-                }}
-                className="w-full text-center py-2 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-xl"
-              >
-                Sign Out
-              </button>
+
+          {/* Stage View Link */}
+          <Link
+            href="/leaderboard"
+            onClick={() => setMobileOpen(false)}
+            className="flex items-center justify-between py-2 text-sm font-bold text-[#D97706] hover:text-[#FF6B1A] border-b border-stone-100"
+          >
+            <div className="flex items-center gap-2">
+              <Monitor className="w-4 h-4" />
+              <span>Stage Presentation View</span>
+            </div>
+            <span className="text-[10px] font-extrabold uppercase tracking-widest bg-amber-100 text-amber-900 px-2 py-0.5 rounded">
+              Auditorium
+            </span>
+          </Link>
+
+          {/* PWA Install Button */}
+          <button
+            type="button"
+            onClick={() => {
+              setMobileOpen(false);
+              window.dispatchEvent(new Event("trigger-pwa-install"));
+            }}
+            className="tap-target flex items-center justify-between w-full px-4 py-2.5 rounded-xl bg-gradient-to-r from-orange-500/10 via-amber-500/10 to-orange-500/10 border border-orange-500/20 text-[#1C1917] text-xs font-bold transition-all cursor-pointer text-left"
+          >
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-orange-600 shrink-0" />
+              <div>
+                <div className="font-extrabold">Install SHINE 26 App</div>
+                <div className="text-[10px] text-stone-500 font-normal">Fast offline passes & results</div>
+              </div>
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-wider bg-orange-600 text-white px-2 py-0.5 rounded shadow-2xs">
+              Install
+            </span>
+          </button>
+
+          {/* Mobile User Actions */}
+          <div className="pt-3 flex flex-col gap-2.5">
+            {session ? (
+              <>
+                <Link
+                  href={getDashboardUrl()}
+                  onClick={() => setMobileOpen(false)}
+                  className="btn-ember w-full text-center py-2.5 text-xs font-bold flex items-center justify-center gap-2"
+                >
+                  <LayoutDashboard className="w-4 h-4" />
+                  <span>{getDashboardLabel()}</span>
+                </Link>
+                <button
+                  onClick={() => {
+                    setMobileOpen(false);
+                    signOut({ callbackUrl: "/" });
+                  }}
+                  className="tap-target w-full text-center py-2 text-xs font-semibold text-red-600 hover:bg-red-50 rounded-xl transition"
+                >
+                  Sign Out
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/register"
+                  onClick={() => setMobileOpen(false)}
+                  className="btn-ember w-full text-center py-2.5 text-xs font-bold"
+                >
+                  Register Delegation Now
+                </Link>
+                <Link
+                  href="/login"
+                  onClick={() => setMobileOpen(false)}
+                  className="tap-target w-full text-center py-2.5 text-xs font-bold text-stone-700 bg-stone-100 hover:bg-stone-200 rounded-xl transition"
+                >
+                  Sign In to Portal
+                </Link>
+              </>
             )}
           </div>
         </div>

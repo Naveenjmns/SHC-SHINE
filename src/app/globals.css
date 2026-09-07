@@ -201,24 +201,106 @@ body {
 }
 
 .container-shine {
+  width: 100%;
   max-width: 1280px;
   margin-left: auto;
   margin-right: auto;
-  padding-left: 1.25rem;
-  padding-right: 1.25rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 640px) {
+  .container-shine {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
   .container-shine {
     padding-left: 2rem;
     padding-right: 2rem;
   }
 }
 
-@media (min-width: 1280px) {
+@media (min-width: 1536px) {
   .container-shine {
+    max-width: 1536px;
     padding-left: 2.5rem;
     padding-right: 2.5rem;
+  }
+}
+
+/* Dashboard Working Theme & Card Utilities */
+.dash-layout {
+  background-color: var(--dash-bg);
+  min-height: 100vh;
+  color: var(--dash-ink);
+  font-family: var(--font-ui);
+}
+
+.dash-card {
+  background-color: var(--dash-surface);
+  border: 1px solid var(--dash-border);
+  border-radius: 1rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dash-card:hover {
+  box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
+}
+
+/* Status Badges */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 9999px;
+  line-height: 1;
+}
+
+.status-badge-confirmed {
+  background-color: var(--status-confirmed-bg);
+  color: var(--status-confirmed-text);
+  border: 1px solid var(--status-confirmed-border);
+}
+
+.status-badge-pending {
+  background-color: var(--status-pending-bg);
+  color: var(--status-pending-text);
+  border: 1px solid var(--status-pending-border);
+}
+
+.status-badge-rejected {
+  background-color: var(--status-rejected-bg);
+  color: var(--status-rejected-text);
+  border: 1px solid var(--status-rejected-border);
+}
+
+/* Dashboard Row Priority Left Borders */
+.dash-row-confirmed {
+  border-left: 4px solid var(--status-confirmed-border);
+}
+
+.dash-row-pending {
+  border-left: 4px solid var(--status-pending-border);
+}
+
+.dash-row-rejected {
+  border-left: 4px solid var(--status-rejected-border);
+}
+
+/* High-Contrast Auditorium Projector Mode Styles */
+@media (min-width: 1920px) {
+  .text-fluid-hero {
+    font-size: clamp(4rem, 6vw + 1rem, 7rem);
+  }
+  .text-fluid-h1 {
+    font-size: clamp(2.5rem, 3.5vw + 0.5rem, 4.25rem);
   }
 }
 

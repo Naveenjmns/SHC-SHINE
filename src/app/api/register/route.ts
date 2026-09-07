@@ -3,7 +3,7 @@ import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { Role, RegistrationStatus } from "@prisma/client";
 import { logActivity } from "@/lib/activityLogger";
-import { generateBadgeCode, generateFoodTokenCode, generateQrCodeDataUrl } from "@/lib/badgeService";
+import { generateBadgeCode, generateFoodTokenCode, generateEventPassQr, generateFoodTokenQr } from "@/lib/badgeService";
 import { sendDelegateRegistrationEmail, sendCoordinatorRegistrationAlert } from "@/lib/emailService";
 import { getActiveEdition } from "@/lib/eventService";
 
@@ -16,6 +16,21 @@ interface MemberInput {
 
 export async function POST(req: Request) {
   try {
+    // 1. Check if registrations are currently open
+    const activeEdition = await getActiveEdition();
+    if (activeEdition && activeEdition.isRegistrationOpen === false) {
+      return NextResponse.json(
+        {
+          success: false,
+          isRegistrationOpen: false,
+          message:
+            activeEdition.registrationClosedNotice ||
+            "Registrations are currently closed by the administration. Please contact the event coordinators for assistance.",
+        },
+        { status: 403 }
+      );
+    }
+
     const body = await req.json();
 
     // Support both Delegation format and Single student format
@@ -82,8 +97,7 @@ export async function POST(req: Request) {
       }
     }
 
-    // Fetch active edition
-    const activeEdition = await getActiveEdition();
+    // Verify active edition ID
     const editionId = activeEdition.id && activeEdition.id !== "default-shine" ? activeEdition.id : null;
     if (!editionId) {
       return NextResponse.json(
@@ -166,13 +180,18 @@ export async function POST(req: Request) {
       const foodTokenCode = generateFoodTokenCode(badgeCode);
       const verifyUrl = `${origin}/badge/${badgeCode}`;
 
-      // Generate QR Code data URL
-      const qrData = await generateQrCodeDataUrl({
+      // Generate 2 QR codes: 1 for Event Entry & 1 for Food Token
+      const qrData = await generateEventPassQr({
         badgeCode,
         name: m.name.trim(),
         college: collegeName.trim(),
-        foodTokenCode,
         verifyUrl,
+      });
+
+      const foodQrData = await generateFoodTokenQr({
+        foodTokenCode,
+        badgeCode,
+        name: m.name.trim(),
       });
 
       // Create DelegationMember record
@@ -185,8 +204,10 @@ export async function POST(req: Request) {
           isTeamLead: isLead,
           badgeCode,
           foodTokenCode,
+          eventCheckedIn: false,
           foodTokenClaimed: false,
           qrData,
+          foodQrData,
         },
       });
 
@@ -256,6 +277,9 @@ export async function POST(req: Request) {
         badgeCode: memberRecord.badgeCode,
         foodTokenCode: memberRecord.foodTokenCode,
         qrData: memberRecord.qrData,
+        foodQrData: memberRecord.foodQrData,
+        eventCheckedIn: memberRecord.eventCheckedIn,
+        foodTokenClaimed: memberRecord.foodTokenClaimed,
         badgeUrl: verifyUrl,
         events: memberEvents,
       });

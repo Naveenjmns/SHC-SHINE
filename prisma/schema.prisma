@@ -93,7 +93,9 @@ model EventEdition {
   contactEmail         String?  @default("shine@shctpt.edu")
   contactPhone         String?  @default("+91 4175 240464")
   websiteUrl           String?
-  participantFee       Float    @default(0)
+  participantFee            Float    @default(0)
+  isRegistrationOpen        Boolean  @default(true)
+  registrationClosedNotice  String?  @default("Registrations for this edition are currently closed. Please contact the event coordinators for queries.")
 
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
@@ -142,8 +144,14 @@ model DelegationMember {
   isTeamLead       Boolean        @default(false)
   badgeCode        String         @unique
   foodTokenCode    String         @unique
-  foodTokenClaimed Boolean        @default(false)
-  qrData           String?        @db.Text
+  eventCheckedIn    Boolean        @default(false)
+  eventCheckedInAt  DateTime?
+  eventCheckedInBy  String?
+  foodTokenClaimed  Boolean        @default(false)
+  foodClaimedAt     DateTime?
+  foodClaimedBy     String?
+  qrData            String?        @db.Text // Event Pass QR Code Data URL
+  foodQrData        String?        @db.Text // Food Token QR Code Data URL
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 
@@ -237,6 +245,10 @@ model Registration {
   delegationMemberId String?
   status             RegistrationStatus @default(PENDING)
   result             String?
+  score              Float?
+  attended           Boolean            @default(false)
+  checkedInAt        DateTime?
+  checkedInBy        String?
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
 

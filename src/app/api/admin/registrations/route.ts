@@ -80,7 +80,11 @@ export async function GET(req: Request) {
             collegeName: true,
             teamName: true,
             teamLeadName: true,
+            teamLeadEmail: true,
+            teamLeadPhone: true,
             staffInchargeName: true,
+            totalFee: true,
+            paymentStatus: true,
           },
         },
         delegationMember: {
@@ -88,6 +92,10 @@ export async function GET(req: Request) {
             id: true,
             badgeCode: true,
             foodTokenCode: true,
+            eventCheckedIn: true,
+            eventCheckedInAt: true,
+            foodTokenClaimed: true,
+            foodClaimedAt: true,
           },
         },
       },
@@ -101,7 +109,7 @@ export async function GET(req: Request) {
   }
 }
 
-// PATCH /api/admin/registrations - Admin can override any registration
+// PATCH /api/admin/registrations - Admin can approve registrations or collect payment for entire delegation
 export async function PATCH(req: Request) {
   try {
     const session = await getServerSession(authOptions);
@@ -110,24 +118,167 @@ export async function PATCH(req: Request) {
     }
 
     const body = await req.json();
-    const { registrationId, status, result } = body;
+    const { registrationId, delegationId, action, status, result, score } = body;
+
+    const hostHeader = req.headers.get("host") || "localhost:3000";
+    const protocol = hostHeader.includes("localhost") ? "http" : "https";
+    const origin = `${protocol}://${hostHeader}`;
+
+    // Handle Desk Payment Collection & Delegation Approval
+    if (action === "COLLECT_PAYMENT_APPROVE_DELEGATION" || delegationId && action === "APPROVE") {
+      if (!delegationId) {
+        return NextResponse.json({ success: false, message: "Delegation ID is required." }, { status: 400 });
+      }
+
+      const delegation = await prisma.delegation.findUnique({
+        where: { id: delegationId },
+        include: {
+          members: {
+            include: {
+              registrations: {
+                include: {
+                  event: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (!delegation) {
+        return NextResponse.json({ success: false, message: "Delegation not found." }, { status: 404 });
+      }
+
+      // Mark delegation payment as PAID
+      await prisma.delegation.update({
+        where: { id: delegationId },
+        data: { paymentStatus: "PAID" },
+      });
+
+      // Mark all registrations of this delegation as CONFIRMED
+      await prisma.registration.updateMany({
+        where: { delegationId },
+        data: { status: RegistrationStatus.CONFIRMED },
+      });
+
+      // Dispatch individual approved pass emails to all delegates
+      const memberRoster = [];
+      const { sendApprovedDelegatePassEmail, sendTeamLeadConsolidatedPassEmail } = await import("@/lib/emailService");
+
+      for (const member of delegation.members) {
+        const memberEvents = member.registrations.map((r) => ({
+          name: r.event.name,
+          category: r.event.category,
+          venue: r.event.venue,
+          time: r.event.dateTime ? new Date(r.event.dateTime).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) : null,
+        }));
+
+        const badgeUrl = `${origin}/badge/${member.badgeCode}`;
+
+        memberRoster.push({
+          name: member.name,
+          email: member.email,
+          phone: member.phone,
+          isTeamLead: member.isTeamLead,
+          badgeCode: member.badgeCode,
+          foodTokenCode: member.foodTokenCode,
+          badgeUrl,
+          events: memberEvents,
+        });
+
+        // Send individual approved pass email
+        sendApprovedDelegatePassEmail({
+          toEmail: member.email,
+          delegateName: member.name,
+          collegeName: delegation.collegeName,
+          teamName: delegation.teamName,
+          badgeCode: member.badgeCode,
+          foodTokenCode: member.foodTokenCode,
+          badgeUrl,
+          events: memberEvents,
+        }).catch((err) => console.error(`Failed to send approved pass to ${member.email}:`, err));
+      }
+
+      // Send consolidated team dossier email to Team Lead
+      sendTeamLeadConsolidatedPassEmail({
+        teamLeadEmail: delegation.teamLeadEmail,
+        teamLeadName: delegation.teamLeadName,
+        collegeName: delegation.collegeName,
+        teamName: delegation.teamName,
+        totalFee: delegation.totalFee,
+        members: memberRoster,
+      }).catch((err) => console.error(`Failed to send team lead dossier to ${delegation.teamLeadEmail}:`, err));
+
+      const { logActivity } = await import("@/lib/activityLogger");
+      await logActivity({
+        action: "REGISTRATION_DESK_PAYMENT_COLLECTED",
+        actorId: session.user.id,
+        actorName: session.user.name || "Registration Desk Admin",
+        actorEmail: session.user.email,
+        actorRole: session.user.role,
+        targetType: "Delegation",
+        targetId: delegation.id,
+        targetTitle: `Payment Collected & Approved: ${delegation.collegeName} (${delegation.teamName || "Delegation"})`,
+        details: {
+          delegationId: delegation.id,
+          collegeName: delegation.collegeName,
+          totalFee: delegation.totalFee,
+          memberCount: delegation.members.length,
+        },
+      });
+
+      return NextResponse.json({
+        success: true,
+        message: `Payment collected (₹${delegation.totalFee}) and all ${delegation.members.length} delegate passes approved! Emails dispatched to students and team lead.`,
+      });
+    }
 
     if (!registrationId) {
       return NextResponse.json({ success: false, message: "Registration ID is required." }, { status: 400 });
     }
 
-    const updateData: { status?: RegistrationStatus; result?: string | null } = {};
+    const updateData: { status?: RegistrationStatus; result?: string | null; score?: number | null } = {};
     if (status && Object.values(RegistrationStatus).includes(status)) {
       updateData.status = status as RegistrationStatus;
     }
     if (result !== undefined) {
       updateData.result = result ? result.trim() : null;
     }
+    if (score !== undefined) {
+      updateData.score = score === "" || score === null ? null : parseFloat(score);
+    }
 
     const updated = await prisma.registration.update({
       where: { id: registrationId },
       data: updateData,
+      include: {
+        user: true,
+        event: true,
+        delegation: true,
+        delegationMember: true,
+      },
     });
+
+    // If marked CONFIRMED individually, send approved pass email
+    if (status === "CONFIRMED" && updated.delegationMember) {
+      const { sendApprovedDelegatePassEmail } = await import("@/lib/emailService");
+      sendApprovedDelegatePassEmail({
+        toEmail: updated.user.email,
+        delegateName: updated.user.name,
+        collegeName: updated.delegation?.collegeName || updated.user.college || "SHINE 26",
+        teamName: updated.delegation?.teamName,
+        badgeCode: updated.delegationMember.badgeCode,
+        foodTokenCode: updated.delegationMember.foodTokenCode,
+        badgeUrl: `${origin}/badge/${updated.delegationMember.badgeCode}`,
+        events: [
+          {
+            name: updated.event.name,
+            category: updated.event.category,
+            venue: updated.event.venue,
+          },
+        ],
+      }).catch((e) => console.error("Approved single delegate pass email error:", e));
+    }
 
     return NextResponse.json({ success: true, registration: updated });
   } catch (error) {

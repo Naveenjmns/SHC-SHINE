@@ -17,7 +17,7 @@ export async function PATCH(
 
     const { id: registrationId } = await params;
     const body = await req.json();
-    const { status, result } = body;
+    const { status, result, score } = body;
 
     const registration = await prisma.registration.findUnique({
       where: { id: registrationId },
@@ -29,6 +29,8 @@ export async function PATCH(
             staffCoordinatorId: true,
             studentCoordinatorId: true,
             coordinatorId: true,
+            staffCoordinatorEmail: true,
+            studentCoordinatorEmail: true,
           },
         },
         user: {
@@ -51,7 +53,11 @@ export async function PATCH(
       session.user.role === "ADMIN" ||
       registration.event.staffCoordinatorId === session.user.id ||
       registration.event.studentCoordinatorId === session.user.id ||
-      registration.event.coordinatorId === session.user.id;
+      registration.event.coordinatorId === session.user.id ||
+      (registration.event.staffCoordinatorEmail &&
+        registration.event.staffCoordinatorEmail.toLowerCase() === session.user.email?.toLowerCase()) ||
+      (registration.event.studentCoordinatorEmail &&
+        registration.event.studentCoordinatorEmail.toLowerCase() === session.user.email?.toLowerCase());
 
     if (!isManager) {
       return NextResponse.json(
@@ -60,12 +66,15 @@ export async function PATCH(
       );
     }
 
-    const updateData: { status?: RegistrationStatus; result?: string | null } = {};
+    const updateData: { status?: RegistrationStatus; result?: string | null; score?: number | null } = {};
     if (status && Object.values(RegistrationStatus).includes(status)) {
       updateData.status = status as RegistrationStatus;
     }
     if (result !== undefined) {
       updateData.result = result ? result.trim() : null;
+    }
+    if (score !== undefined) {
+      updateData.score = score === "" || score === null ? null : parseFloat(score);
     }
 
     const updated = await prisma.registration.update({

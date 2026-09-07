@@ -17,6 +17,8 @@ import {
   Crown,
   Sparkles,
   ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 interface ResultEntry {
@@ -62,6 +64,26 @@ export default function StageLeaderboardPage() {
 
     loadStageData();
   }, []);
+
+  // Keyboard shortcut navigation for Projector operators
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "f" || e.key === "F") {
+        toggleFullscreen();
+      } else if (e.code === "Space") {
+        e.preventDefault();
+        setAutoRotate((prev) => !prev);
+      } else if (e.key === "ArrowRight") {
+        setActiveEventIndex((prev) => (prev + 1) % Math.max(1, events.length));
+        setAutoRotate(false);
+      } else if (e.key === "ArrowLeft") {
+        setActiveEventIndex((prev) => (prev - 1 + Math.max(1, events.length)) % Math.max(1, events.length));
+        setAutoRotate(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [events.length]);
 
   // Auto-rotate every 7 seconds if enabled
   useEffect(() => {
@@ -180,16 +202,42 @@ export default function StageLeaderboardPage() {
               )}
             </div>
 
-            {/* Event Name */}
-            <h2
-              className="text-3xl sm:text-5xl lg:text-6xl font-black text-[#1C1917] tracking-tight mb-3"
-              style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
-            >
-              {currentEvent.name}
-            </h2>
+            {/* Event Name with Previous & Next Controls for Stage Remotes */}
+            <div className="flex items-center justify-center gap-2 sm:gap-5 mb-3 max-w-4xl mx-auto">
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveEventIndex((prev) => (prev - 1 + Math.max(1, events.length)) % Math.max(1, events.length));
+                  setAutoRotate(false);
+                }}
+                className="tap-target p-2 sm:p-3 rounded-2xl bg-white border border-stone-200 hover:border-orange-500 text-stone-700 hover:text-orange-600 shadow-sm transition-all cursor-pointer shrink-0"
+                title="Previous Competition (Left Arrow key)"
+              >
+                <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
+              </button>
+
+              <h2
+                className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-[#1C1917] tracking-tight leading-tight flex-1 text-center"
+                style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
+              >
+                {currentEvent.name}
+              </h2>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveEventIndex((prev) => (prev + 1) % Math.max(1, events.length));
+                  setAutoRotate(false);
+                }}
+                className="tap-target p-2 sm:p-3 rounded-2xl bg-white border border-stone-200 hover:border-orange-500 text-stone-700 hover:text-orange-600 shadow-sm transition-all cursor-pointer shrink-0"
+                title="Next Competition (Right Arrow key)"
+              >
+                <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
+              </button>
+            </div>
 
             {/* Venue Location */}
-            <p className="text-sm sm:text-base font-semibold text-[#57534E] mb-10 flex items-center justify-center gap-1.5">
+            <p className="text-xs sm:text-sm md:text-base font-semibold text-[#57534E] mb-8 sm:mb-10 flex items-center justify-center gap-1.5">
               <MapPin className="w-4 h-4 text-[#D9A441]" />
               <span>{currentEvent.venue || "Sacred Heart College Campus"}</span>
             </p>
@@ -295,11 +343,20 @@ export default function StageLeaderboardPage() {
       {/* Bottom Event Carousel Selector */}
       <footer className="bg-white/80 border-t border-[#1C1917]/10 p-4 sm:p-6 backdrop-blur-md">
         <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between text-xs text-[#57534E] mb-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-[#57534E] mb-3">
             <span className="font-extrabold uppercase tracking-wider text-[#1C1917]">
               Select Competition Display ({events.length > 0 ? activeEventIndex + 1 : 0} of {events.length})
             </span>
-            <span className="hidden sm:inline">Click any competition tab to lock stage view</span>
+            <div className="flex items-center gap-3 text-[11px] font-semibold text-stone-500">
+              <span className="hidden sm:inline">Click any competition tab to lock stage view</span>
+              <span className="hidden md:inline-flex items-center gap-1.5 bg-stone-100 px-2.5 py-0.5 rounded-lg border border-stone-200">
+                <kbd className="font-mono bg-white px-1 rounded shadow-2xs text-[10px] text-stone-800">F</kbd> Fullscreen
+                <span className="text-stone-300">•</span>
+                <kbd className="font-mono bg-white px-1 rounded shadow-2xs text-[10px] text-stone-800">Space</kbd> Pause
+                <span className="text-stone-300">•</span>
+                <kbd className="font-mono bg-white px-1 rounded shadow-2xs text-[10px] text-stone-800">←/→</kbd> Cycle
+              </span>
+            </div>
           </div>
 
           <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
