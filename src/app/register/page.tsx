@@ -25,6 +25,7 @@ import {
   Calendar,
   Sparkles,
   ShieldCheck,
+  Lock,
 } from "lucide-react";
 import { safeJson } from "@/lib/safeFetch";
 
@@ -51,6 +52,7 @@ interface RegisteredDelegate {
   badgeCode: string;
   foodTokenCode: string;
   qrData: string;
+  foodQrData?: string;
   events: Array<{
     id: string;
     name: string;
@@ -83,6 +85,10 @@ function RegisterForm() {
   const [festEdition, setFestEdition] = useState("2026");
   const [participantFee, setParticipantFee] = useState<number>(0);
   const [institutionName, setInstitutionName] = useState("");
+  const [isRegistrationOpen, setIsRegistrationOpen] = useState(true);
+  const [registrationClosedNotice, setRegistrationClosedNotice] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
+  const [contactPhone, setContactPhone] = useState("");
 
   // Step 1: College Representation
   const [collegeName, setCollegeName] = useState("");
@@ -137,6 +143,13 @@ function RegisterForm() {
           setFestEdition(editionData.edition.edition || "2026");
           setParticipantFee(editionData.edition.participantFee || 0);
           setInstitutionName(editionData.edition.institutionName || "");
+          setIsRegistrationOpen(editionData.edition.isRegistrationOpen ?? true);
+          setRegistrationClosedNotice(
+            editionData.edition.registrationClosedNotice ||
+              "Registrations for this edition are currently closed. Please contact the event coordinators for queries."
+          );
+          setContactEmail(editionData.edition.contactEmail || "");
+          setContactPhone(editionData.edition.contactPhone || "");
         }
       } catch (err) {
         console.error("Error loading events & edition data:", err);
@@ -255,6 +268,13 @@ function RegisterForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage("");
+
+    if (!isRegistrationOpen) {
+      setErrorMessage(
+        registrationClosedNotice || "Registrations are currently closed by the administration."
+      );
+      return;
+    }
 
     if (!validateStep1()) {
       setCurrentStep(1);
@@ -376,14 +396,30 @@ function RegisterForm() {
                         <div className="text-[11px] text-stone-500">{del.email} • {del.phone}</div>
                       </div>
 
-                      {del.qrData && (
-                        /* eslint-disable-next-line @next/next/no-img-element */
-                        <img
-                          src={del.qrData}
-                          alt={`QR for ${del.badgeCode}`}
-                          className="w-16 h-16 rounded-lg border border-stone-300 p-1 bg-white shrink-0"
-                        />
-                      )}
+                      <div className="flex items-center gap-2 shrink-0">
+                        {del.qrData && (
+                          <div className="text-center">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={del.qrData}
+                              alt={`Event QR for ${del.badgeCode}`}
+                              className="w-14 h-14 rounded-lg border border-stone-300 p-1 bg-white"
+                            />
+                            <span className="text-[8px] font-bold text-stone-500 block mt-0.5">Event QR</span>
+                          </div>
+                        )}
+                        {del.foodQrData && (
+                          <div className="text-center">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={del.foodQrData}
+                              alt={`Food QR for ${del.foodTokenCode}`}
+                              className="w-14 h-14 rounded-lg border border-amber-300 p-1 bg-white"
+                            />
+                            <span className="text-[8px] font-bold text-amber-800 block mt-0.5">Food QR</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     {/* Food Token Box */}
@@ -480,8 +516,76 @@ function RegisterForm() {
           </div>
         </div>
 
-        {/* Stepper Tabs */}
-        <div className="flex items-center justify-center gap-2 sm:gap-4 mb-8 overflow-x-auto pb-1">
+        {!isRegistrationOpen ? (
+          <div className="py-8 text-center max-w-xl mx-auto space-y-6 animate-fade-in">
+            <div className="w-16 h-16 rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 mx-auto flex items-center justify-center shadow-xs">
+              <Lock className="w-8 h-8" />
+            </div>
+
+            <div className="space-y-2">
+              <span className="inline-block px-3 py-1 rounded-full bg-rose-100 text-rose-800 border border-rose-300 text-xs font-bold uppercase tracking-wider">
+                Registrations Closed
+              </span>
+              <h2
+                className="text-2xl sm:text-3xl font-black text-[#1C1917]"
+                style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
+              >
+                Portal Currently Closed
+              </h2>
+              <p className="text-xs sm:text-sm text-[#57534E] leading-relaxed">
+                {registrationClosedNotice ||
+                  "Registrations for this edition of the symposium are currently closed by the event coordinators."}
+              </p>
+            </div>
+
+            {(contactEmail || contactPhone) && (
+              <div className="p-4 rounded-xl bg-stone-50 border border-stone-200 text-left space-y-2">
+                <span className="text-xs font-bold text-stone-900 block">
+                  Event Coordination Helpdesk:
+                </span>
+                <div className="flex flex-wrap items-center gap-4 text-xs text-stone-600">
+                  {contactPhone && (
+                    <a
+                      href={`tel:${contactPhone}`}
+                      className="flex items-center gap-1.5 hover:text-[#FF6B1A] transition font-medium"
+                    >
+                      <Phone className="w-3.5 h-3.5 text-stone-400" />
+                      <span>{contactPhone}</span>
+                    </a>
+                  )}
+                  {contactEmail && (
+                    <a
+                      href={`mailto:${contactEmail}`}
+                      className="flex items-center gap-1.5 hover:text-[#FF6B1A] transition font-medium"
+                    >
+                      <Mail className="w-3.5 h-3.5 text-stone-400" />
+                      <span>{contactEmail}</span>
+                    </a>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+              <Link
+                href="/"
+                className="btn-ember text-xs sm:text-sm font-bold px-6 py-2.5 rounded-xl inline-flex items-center gap-2 shadow-xs"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Return to Home</span>
+              </Link>
+              <Link
+                href="/#events"
+                className="tap-target px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-[#1C1917] bg-stone-100 hover:bg-stone-200 transition"
+              >
+                Explore Competitions
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Stepper Tabs */}
+            <div className="flex items-center justify-center gap-2 sm:gap-4 mb-8 overflow-x-auto pb-1">
           <button
             type="button"
             onClick={() => setCurrentStep(1)}
@@ -1034,7 +1138,9 @@ function RegisterForm() {
             </div>
           )}
         </form>
-      </div>
+      </>
+    )}
+  </div>
     </div>
   );
 }

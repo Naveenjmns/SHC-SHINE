@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Trophy, FolderOpen, Theater, Laptop, MapPin, Clock, CheckCircle2 } from "lucide-react";
+import { Trophy, FolderOpen, Theater, Laptop, MapPin, Clock, CheckCircle2, QrCode } from "lucide-react";
 import { safeJson } from "@/lib/safeFetch";
+import CheckInModal from "@/components/CheckInModal";
 
 interface CoordEvent {
   id: string;
@@ -44,6 +45,7 @@ export default function CoordinatorDashboard() {
 
   const [events, setEvents] = useState<CoordEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showCheckInModal, setShowCheckInModal] = useState(false);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -121,6 +123,13 @@ export default function CoordinatorDashboard() {
           </div>
 
           <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowCheckInModal(true)}
+              className="tap-target px-3.5 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 rounded-lg transition-colors flex items-center gap-1.5 shadow-sm cursor-pointer"
+            >
+              <QrCode className="w-3.5 h-3.5" />
+              <span>QR Check-In Hub</span>
+            </button>
             {session?.user?.role === "ADMIN" && (
               <Link
                 href="/admin"
@@ -308,6 +317,11 @@ export default function CoordinatorDashboard() {
       <footer className="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500">
         SHINE 26 • Department of Computer Applications (PG), Sacred Heart College (Autonomous)
       </footer>
+
+      <CheckInModal
+        isOpen={showCheckInModal}
+        onClose={() => setShowCheckInModal(false)}
+      />
     </main>
   );
 }

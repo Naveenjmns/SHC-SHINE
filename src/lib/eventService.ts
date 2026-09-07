@@ -43,6 +43,8 @@ export interface ActiveEditionConfig {
   contactPhone: string | null;
   websiteUrl: string | null;
   participantFee: number;
+  isRegistrationOpen: boolean;
+  registrationClosedNotice: string | null;
 
   navItems: {
     id: string;
@@ -107,6 +109,8 @@ export const DEFAULT_EDITION_CONFIG: ActiveEditionConfig = {
   contactPhone: "+91 4175 240464",
   websiteUrl: null,
   participantFee: 0,
+  isRegistrationOpen: true,
+  registrationClosedNotice: "Registrations for this edition are currently closed. Please contact the event coordinators for queries.",
 
   navItems: [
     { id: "1", label: "About", url: "#about", order: 1, isEnabled: true },
@@ -180,6 +184,8 @@ export async function getActiveEdition(): Promise<ActiveEditionConfig> {
       contactPhone: active.contactPhone || DEFAULT_EDITION_CONFIG.contactPhone,
       websiteUrl: active.websiteUrl || DEFAULT_EDITION_CONFIG.websiteUrl,
       participantFee: active.participantFee ?? 0,
+      isRegistrationOpen: active.isRegistrationOpen ?? true,
+      registrationClosedNotice: active.registrationClosedNotice || DEFAULT_EDITION_CONFIG.registrationClosedNotice,
 
       navItems: active.navItems && active.navItems.length > 0 ? active.navItems : DEFAULT_EDITION_CONFIG.navItems,
       scheduleItems: active.scheduleItems || [],

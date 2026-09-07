@@ -34,7 +34,12 @@ import {
   Phone,
   Globe,
   History,
+  Lock,
+  Unlock,
+  QrCode,
+  Utensils,
 } from "lucide-react";
+import CheckInModal from "@/components/CheckInModal";
 
 interface StatsData {
   totalUsers: number;
@@ -63,6 +68,9 @@ interface RegistrationRecord {
   status: "PENDING" | "CONFIRMED" | "REJECTED";
   result: string | null;
   createdAt: string;
+  attended?: boolean;
+  checkedInAt?: string | null;
+  checkedInBy?: string | null;
   user: {
     name: string;
     email: string;
@@ -85,6 +93,10 @@ interface RegistrationRecord {
     id: string;
     badgeCode: string;
     foodTokenCode: string;
+    eventCheckedIn?: boolean;
+    eventCheckedInAt?: string | null;
+    foodTokenClaimed?: boolean;
+    foodClaimedAt?: string | null;
   } | null;
 }
 
@@ -127,6 +139,8 @@ interface EventEditionItem {
   contactPhone?: string | null;
   websiteUrl?: string | null;
   participantFee?: number;
+  isRegistrationOpen?: boolean;
+  registrationClosedNotice?: string | null;
 
   navItems: { id: string; label: string; url: string; order: number; isEnabled: boolean }[];
   scheduleItems?: { id: string; time: string; title: string; venue?: string | null; description?: string | null; tag?: string | null; order: number }[];
@@ -168,6 +182,7 @@ export default function AdminOverviewPage() {
 
   // New Edition Modal Form State
   const [showNewEditionModal, setShowNewEditionModal] = useState(false);
+  const [showCheckInModal, setShowCheckInModal] = useState(false);
   const [newEditionData, setNewEditionData] = useState({
     name: "SHINE",
     edition: "2027",
@@ -212,6 +227,8 @@ export default function AdminOverviewPage() {
     contactPhone: "+91 4175 240464",
     websiteUrl: "",
     participantFee: 0,
+    isRegistrationOpen: true,
+    registrationClosedNotice: "Registrations for this edition are currently closed. Please contact the event coordinators for queries.",
   });
 
   // SMTP Settings State
@@ -322,6 +339,10 @@ export default function AdminOverviewPage() {
             contactPhone: currentActive.contactPhone || "+91 4175 240464",
             websiteUrl: currentActive.websiteUrl || "",
             participantFee: currentActive.participantFee || 0,
+            isRegistrationOpen: currentActive.isRegistrationOpen ?? true,
+            registrationClosedNotice:
+              currentActive.registrationClosedNotice ||
+              "Registrations for this edition are currently closed. Please contact the event coordinators for queries.",
           });
         }
       }
@@ -424,6 +445,51 @@ export default function AdminOverviewPage() {
         await loadAdminData();
       } else {
         toast.error("Failed to save settings: " + data.error);
+      }
+    } catch (err: any) {
+      toast.error("Error: " + err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleToggleRegistration = async (targetState?: boolean) => {
+    if (!activeEdition) return;
+    const currentState = activeEdition.isRegistrationOpen ?? true;
+    const nextState = typeof targetState === "boolean" ? targetState : !currentState;
+    const actionLabel = nextState ? "Open" : "Close";
+
+    const ok = await confirmAction({
+      title: `${actionLabel} Registrations?`,
+      message: nextState
+        ? "Opening registrations will allow delegates and college teams to register on /register."
+        : "Closing registrations will immediately lock the public registration gateway and prevent new team registrations.",
+      confirmText: nextState ? "Yes, Open Registrations" : "Yes, Close Registrations",
+      isDestructive: !nextState,
+    });
+    if (!ok) return;
+
+    setSaving(true);
+    try {
+      const res = await fetch("/api/admin/edition", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: activeEdition.id,
+          isRegistrationOpen: nextState,
+        }),
+      });
+      const data = await safeJson(res, { success: false, error: "Server error" });
+      if (data.success) {
+        toast.success(
+          nextState
+            ? "Public registrations are now OPEN!"
+            : "Public registrations are now CLOSED."
+        );
+        setBrandingForm((prev) => ({ ...prev, isRegistrationOpen: nextState }));
+        await loadAdminData();
+      } else {
+        toast.error("Failed to update registration status: " + (data.error || "Unknown error"));
       }
     } catch (err: any) {
       toast.error("Error: " + err.message);
@@ -771,7 +837,47 @@ export default function AdminOverviewPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            {/* Quick Registration Status Toggle Button */}
+            {activeEdition && (
+              <button
+                type="button"
+                onClick={() => handleToggleRegistration()}
+                disabled={saving}
+                title={
+                  activeEdition.isRegistrationOpen ?? true
+                    ? "Click to Freeze & Close Public Registrations"
+                    : "Click to Re-Open Public Registrations"
+                }
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition border cursor-pointer ${
+                  activeEdition.isRegistrationOpen ?? true
+                    ? "bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-rose-50 hover:text-rose-800 hover:border-rose-300"
+                    : "bg-rose-50 text-rose-800 border-rose-300 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300"
+                }`}
+              >
+                <span
+                  className={`w-2 h-2 rounded-full ${
+                    activeEdition.isRegistrationOpen ?? true
+                      ? "bg-emerald-500 animate-pulse"
+                      : "bg-rose-500"
+                  }`}
+                />
+                <span className="hidden sm:inline">
+                  {activeEdition.isRegistrationOpen ?? true
+                    ? "Registration: OPEN"
+                    : "Registration: CLOSED"}
+                </span>
+                <span className="sm:hidden">
+                  {activeEdition.isRegistrationOpen ?? true ? "OPEN" : "CLOSED"}
+                </span>
+                {activeEdition.isRegistrationOpen ?? true ? (
+                  <Lock className="w-3.5 h-3.5 opacity-70" />
+                ) : (
+                  <Unlock className="w-3.5 h-3.5 opacity-70" />
+                )}
+              </button>
+            )}
+
             <Link
               href="/"
               target="_blank"
@@ -893,6 +999,98 @@ export default function AdminOverviewPage() {
         {/* TAB 1: ANALYTICS OVERVIEW */}
         {activeTab === "overview" && stats && (
           <div className="space-y-8 animate-fade-in">
+            {/* Registration Gateway Controller Banner */}
+            <div
+              className={`dash-card p-5 sm:p-6 border-l-4 transition-all duration-300 ${
+                activeEdition?.isRegistrationOpen ?? true
+                  ? "border-emerald-500 bg-gradient-to-r from-emerald-50/60 via-white to-white"
+                  : "border-rose-500 bg-gradient-to-r from-rose-50/60 via-white to-white"
+              }`}
+            >
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+                <div className="space-y-1.5">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span
+                      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${
+                        activeEdition?.isRegistrationOpen ?? true
+                          ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                          : "bg-rose-100 text-rose-800 border border-rose-300"
+                      }`}
+                    >
+                      <span
+                        className={`w-2 h-2 rounded-full ${
+                          activeEdition?.isRegistrationOpen ?? true
+                            ? "bg-emerald-500 animate-pulse"
+                            : "bg-rose-500"
+                        }`}
+                      />
+                      {activeEdition?.isRegistrationOpen ?? true
+                        ? "REGISTRATION IS OPEN"
+                        : "REGISTRATION IS CLOSED"}
+                    </span>
+
+                    <span className="text-xs text-[#64748B] font-mono bg-stone-100 px-2 py-0.5 rounded-md border border-stone-200">
+                      Active: {activeEdition ? `${activeEdition.name} ${activeEdition.edition}` : "Fest Edition"}
+                    </span>
+                  </div>
+
+                  <h3 className="text-base sm:text-lg font-black text-[#0F172A]">
+                    {activeEdition?.isRegistrationOpen ?? true
+                      ? "Public Registration Gateway is Active"
+                      : "Public Registration Gateway is Frozen"}
+                  </h3>
+                  <p className="text-xs sm:text-sm text-[#64748B] max-w-2xl leading-relaxed">
+                    {activeEdition?.isRegistrationOpen ?? true
+                      ? "External college contingents, team leads, and student delegates can register and obtain QR ID passes online at /register."
+                      : "The public registration portal is frozen. No new delegates or college delegations can be submitted. Existing passes and coordinator verification continue to work."}
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => handleToggleRegistration()}
+                    disabled={saving}
+                    className={`tap-target px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer flex items-center gap-2 shadow-sm ${
+                      activeEdition?.isRegistrationOpen ?? true
+                        ? "bg-rose-600 hover:bg-rose-700 text-white"
+                        : "bg-emerald-600 hover:bg-emerald-700 text-white"
+                    }`}
+                  >
+                    {activeEdition?.isRegistrationOpen ?? true ? (
+                      <>
+                        <Lock className="w-4 h-4" />
+                        <span>Close Registrations Now</span>
+                      </>
+                    ) : (
+                      <>
+                        <Unlock className="w-4 h-4" />
+                        <span>Re-Open Registrations Now</span>
+                      </>
+                    )}
+                  </button>
+
+                  <Link
+                    href="/register"
+                    target="_blank"
+                    className="tap-target px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-[#0F172A] bg-white border border-[#CBD5E1] hover:bg-stone-50 transition flex items-center gap-1.5"
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                    <span>View /register</span>
+                  </Link>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowCheckInModal(true)}
+                    className="tap-target px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-white bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 transition flex items-center gap-1.5 shadow-sm cursor-pointer"
+                  >
+                    <QrCode className="w-4 h-4" />
+                    <span>QR Check-In Hub</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
             {/* Stat Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
               <div className="dash-card p-5">
@@ -954,7 +1152,6 @@ export default function AdminOverviewPage() {
                       <th className="py-3 px-4">Event Name</th>
                       <th className="py-3 px-4">Category</th>
                       <th className="py-3 px-4">Coordinator</th>
-                      <th className="py-3 px-4">Fee</th>
                       <th className="py-3 px-4">Registrations</th>
                     </tr>
                   </thead>
@@ -974,7 +1171,6 @@ export default function AdminOverviewPage() {
                           </span>
                         </td>
                         <td className="py-3 px-4 text-[#64748B]">{ev.coordinatorName}</td>
-                        <td className="py-3 px-4 font-mono font-semibold">₹{ev.fee}</td>
                         <td className="py-3 px-4 font-bold text-[#0F172A] tabular-nums">
                           {ev.registrationsCount}
                         </td>
@@ -1450,6 +1646,10 @@ export default function AdminOverviewPage() {
                           contactPhone: ed.contactPhone || "+91 4175 240464",
                           websiteUrl: ed.websiteUrl || "",
                           participantFee: ed.participantFee || 0,
+                          isRegistrationOpen: ed.isRegistrationOpen ?? true,
+                          registrationClosedNotice:
+                            ed.registrationClosedNotice ||
+                            "Registrations for this edition are currently closed. Please contact the event coordinators for queries.",
                         });
                         setActiveTab("branding");
                       }}
@@ -1593,6 +1793,85 @@ export default function AdminOverviewPage() {
                     <p className="text-[11px] text-[#64748B] mt-1">
                       This entry fee is charged once per student participant delegate across the fest, replacing per-event ticket fees.
                     </p>
+                  </div>
+
+                  {/* Public Registration Gateway Status Toggle */}
+                  <div className="pt-4 border-t border-stone-200">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl border bg-stone-50/80">
+                      <div>
+                        <span className="text-xs font-bold text-[#0F172A] flex items-center gap-2">
+                          <span
+                            className={`w-2 h-2 rounded-full ${
+                              brandingForm.isRegistrationOpen
+                                ? "bg-emerald-500 animate-pulse"
+                                : "bg-rose-500"
+                            }`}
+                          />
+                          <span>
+                            Public Registration Gateway:{" "}
+                            <strong
+                              className={
+                                brandingForm.isRegistrationOpen
+                                  ? "text-emerald-700"
+                                  : "text-rose-700"
+                              }
+                            >
+                              {brandingForm.isRegistrationOpen ? "OPEN" : "CLOSED"}
+                            </strong>
+                          </span>
+                        </span>
+                        <p className="text-[11px] text-[#64748B] mt-0.5">
+                          Controls whether public visitors can access the delegation registration flow at /register.
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setBrandingForm((prev) => ({
+                            ...prev,
+                            isRegistrationOpen: !prev.isRegistrationOpen,
+                          }))
+                        }
+                        className={`tap-target px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 cursor-pointer ${
+                          brandingForm.isRegistrationOpen
+                            ? "bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100"
+                            : "bg-emerald-600 text-white hover:bg-emerald-700 shadow-xs"
+                        }`}
+                      >
+                        {brandingForm.isRegistrationOpen ? (
+                          <>
+                            <Lock className="w-3.5 h-3.5" />
+                            <span>Switch to Closed</span>
+                          </>
+                        ) : (
+                          <>
+                            <Unlock className="w-3.5 h-3.5" />
+                            <span>Switch to Open</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    {!brandingForm.isRegistrationOpen && (
+                      <div className="mt-3 animate-fade-in">
+                        <label className="block text-xs font-bold text-[#64748B] mb-1">
+                          Notice Displayed to Users When Registration is Closed
+                        </label>
+                        <textarea
+                          rows={2}
+                          value={brandingForm.registrationClosedNotice}
+                          onChange={(e) =>
+                            setBrandingForm({
+                              ...brandingForm,
+                              registrationClosedNotice: e.target.value,
+                            })
+                          }
+                          placeholder="e.g. Registrations are closed. Please contact student coordinators for spot registration inquiries."
+                          className="w-full px-3 py-2 text-xs sm:text-sm border border-[#CBD5E1] rounded-xl focus:ring-2 focus:ring-[#FF6B1A] outline-none resize-none"
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -2385,6 +2664,15 @@ export default function AdminOverviewPage() {
                   <option value="CONFIRMED">Confirmed</option>
                   <option value="REJECTED">Rejected</option>
                 </select>
+
+                <button
+                  type="button"
+                  onClick={() => setShowCheckInModal(true)}
+                  className="px-3.5 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 rounded-xl transition flex items-center gap-1.5 shadow-sm shrink-0 cursor-pointer"
+                >
+                  <QrCode className="w-3.5 h-3.5" />
+                  <span>Scan & Check-In</span>
+                </button>
               </div>
             </div>
 
@@ -2395,6 +2683,7 @@ export default function AdminOverviewPage() {
                     <th className="py-3 px-4">Student</th>
                     <th className="py-3 px-4">College</th>
                     <th className="py-3 px-4">Registered Event</th>
+                    <th className="py-3 px-4">Gate & Meal Status</th>
                     <th className="py-3 px-4">Status</th>
                     <th className="py-3 px-4">Actions</th>
                   </tr>
@@ -2429,6 +2718,39 @@ export default function AdminOverviewPage() {
                         )}
                       </td>
                       <td className="py-3 px-4 font-semibold text-[#0F172A]">{reg.event.name}</td>
+
+                      {/* Gate & Meal Status Badges */}
+                      <td className="py-3 px-4">
+                        <div className="flex flex-col gap-1.5">
+                          {(reg.attended || reg.delegationMember?.eventCheckedIn) ? (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded w-fit">
+                              <Check className="w-3 h-3" />
+                              Present
+                              {reg.delegationMember?.eventCheckedInAt && (
+                                <span className="text-[9px] font-normal text-emerald-600 ml-1">
+                                  {new Date(reg.delegationMember.eventCheckedInAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                                </span>
+                              )}
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded w-fit">
+                              Absent
+                            </span>
+                          )}
+
+                          {reg.delegationMember?.foodTokenClaimed ? (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded w-fit">
+                              <Utensils className="w-3 h-3" />
+                              Food Received
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-400 bg-slate-50 px-2 py-0.5 rounded w-fit">
+                              Meal Pending
+                            </span>
+                          )}
+                        </div>
+                      </td>
+
                       <td className="py-3 px-4">
                         <span
                           className={`status-badge ${
@@ -2475,38 +2797,34 @@ export default function AdminOverviewPage() {
 
       {/* CREATE NEW EDITION MODAL */}
       {showNewEditionModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
-            <h3 className="text-lg font-bold text-[#0F172A]">Create New Event Edition</h3>
-            <p className="text-xs text-[#64748B]">
-              Configure a future edition (e.g., SHINE 2027). You can activate it now or later.
-            </p>
-
+            <h3 className="text-base font-black text-[#0F172A]">Create New SHINE Edition</h3>
             <form onSubmit={handleCreateEdition} className="space-y-3">
               <div>
-                <label className="block text-xs font-bold text-[#64748B] mb-1">Event Name</label>
+                <label className="text-xs font-bold text-[#64748B] block mb-1">Fest Name</label>
                 <input
                   type="text"
+                  required
                   value={newEditionData.name}
                   onChange={(e) => setNewEditionData({ ...newEditionData, name: e.target.value })}
-                  className="w-full px-3 py-2 text-sm border rounded-xl outline-none"
-                  required
+                  className="w-full px-3 py-2 text-sm border rounded-xl outline-none font-bold"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[#64748B] mb-1">Edition / Year</label>
+                <label className="text-xs font-bold text-[#64748B] block mb-1">Edition (e.g. 2027)</label>
                 <input
                   type="text"
+                  required
                   value={newEditionData.edition}
                   onChange={(e) => setNewEditionData({ ...newEditionData, edition: e.target.value })}
                   className="w-full px-3 py-2 text-sm border rounded-xl outline-none"
-                  required
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[#64748B] mb-1">Tagline</label>
+                <label className="text-xs font-bold text-[#64748B] block mb-1">Tagline</label>
                 <input
                   type="text"
                   value={newEditionData.tagline}
@@ -2547,6 +2865,12 @@ export default function AdminOverviewPage() {
           </div>
         </div>
       )}
+
+      <CheckInModal
+        isOpen={showCheckInModal}
+        onClose={() => setShowCheckInModal(false)}
+        onCheckInComplete={loadAdminData}
+      />
     </div>
   );
 }

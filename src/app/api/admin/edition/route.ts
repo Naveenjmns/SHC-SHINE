@@ -148,6 +148,8 @@ export async function PATCH(req: NextRequest) {
       "contactPhone",
       "websiteUrl",
       "participantFee",
+      "isRegistrationOpen",
+      "registrationClosedNotice",
       "isActive",
       "status",
     ];
@@ -160,6 +162,8 @@ export async function PATCH(req: NextRequest) {
           sanitizedData[key] = new Date(val);
         } else if (key === "participantFee") {
           sanitizedData[key] = parseFloat(val) || 0;
+        } else if (key === "isRegistrationOpen") {
+          sanitizedData[key] = Boolean(val);
         } else {
           sanitizedData[key] = val === "" ? null : val;
         }
@@ -175,18 +179,25 @@ export async function PATCH(req: NextRequest) {
       data: sanitizedData,
     });
 
+    const isRegistrationToggled = "isRegistrationOpen" in updateData;
     await logActivity({
-      action: "EDITION_UPDATED",
+      action: isRegistrationToggled
+        ? (updated.isRegistrationOpen ? "REGISTRATION_OPENED" : "REGISTRATION_CLOSED")
+        : "EDITION_UPDATED",
       actorId: session.user.id,
       actorName: session.user.name,
       actorEmail: session.user.email,
       actorRole: session.user.role,
       targetType: "System",
       targetId: updated.id,
-      targetTitle: `Edition Updated: ${updated.name} ${updated.edition}`,
+      targetTitle: isRegistrationToggled
+        ? `Registration ${updated.isRegistrationOpen ? "Opened" : "Closed"}: ${updated.name} ${updated.edition}`
+        : `Edition Updated: ${updated.name} ${updated.edition}`,
       details: {
         editionName: `${updated.name} ${updated.edition}`,
         participantFee: updated.participantFee,
+        isRegistrationOpen: updated.isRegistrationOpen,
+        registrationClosedNotice: updated.registrationClosedNotice,
       },
     });
 

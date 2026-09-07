@@ -1,18 +1,22 @@
 "use client";
 
-import { useEffect, useState, use } from "react";
+import { useEffect, useState, use, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ShieldAlert, Download, Theater, Laptop, MapPin, Clock, Check, X } from "lucide-react";
+import { ShieldAlert, Download, Theater, Laptop, MapPin, Clock, Check, X, QrCode, Utensils } from "lucide-react";
 import { useToast } from "@/components/ToastProvider";
 import { safeJson } from "@/lib/safeFetch";
+import CheckInModal from "@/components/CheckInModal";
 
 interface RegistrationRow {
   id: string;
   status: "PENDING" | "CONFIRMED" | "REJECTED";
   result: string | null;
   createdAt: string;
+  attended?: boolean;
+  checkedInAt?: string | null;
+  checkedInBy?: string | null;
   user: {
     id: string;
     name: string;
@@ -33,6 +37,10 @@ interface RegistrationRow {
     id: string;
     badgeCode: string;
     foodTokenCode: string;
+    eventCheckedIn?: boolean;
+    eventCheckedInAt?: string | null;
+    foodTokenClaimed?: boolean;
+    foodClaimedAt?: string | null;
   } | null;
 }
 
@@ -76,6 +84,7 @@ export default function CoordinatorEventDetailPage({
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [showCheckInModal, setShowCheckInModal] = useState(false);
 
   // Search & filter
   const [search, setSearch] = useState("");
@@ -84,6 +93,32 @@ export default function CoordinatorEventDetailPage({
   // Editing results state: { [regId]: string }
   const [resultInputs, setResultInputs] = useState<{ [regId: string]: string }>({});
 
+  const loadEventData = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/coordinator/events/${eventId}/registrations`);
+      const data = await safeJson(res, { success: false, message: "Network error loading data." });
+      if (!res.ok || !data.success) {
+        setErrorMsg(data.message || "Failed to load event registrations.");
+        setLoading(false);
+        return;
+      }
+
+      setEvent(data.event);
+      setRegistrations(data.registrations || []);
+
+      const initialResults: { [regId: string]: string } = {};
+      (data.registrations || []).forEach((r: RegistrationRow) => {
+        initialResults[r.id] = r.result || "";
+      });
+      setResultInputs(initialResults);
+    } catch (err) {
+      console.error("Error loading event participants:", err);
+      setErrorMsg("Could not connect to the database.");
+    } finally {
+      setLoading(false);
+    }
+  }, [eventId]);
+
   useEffect(() => {
     if (status === "unauthenticated") {
       router.push(`/login?callbackUrl=/coordinator/${eventId}`);
@@ -91,34 +126,9 @@ export default function CoordinatorEventDetailPage({
     }
 
     if (status === "authenticated") {
-      async function loadEventData() {
-        try {
-          const res = await fetch(`/api/coordinator/events/${eventId}/registrations`);
-          const data = await safeJson(res, { success: false, message: "Network error loading data." });
-          if (!res.ok || !data.success) {
-            setErrorMsg(data.message || "Failed to load event registrations.");
-            setLoading(false);
-            return;
-          }
-
-          setEvent(data.event);
-          setRegistrations(data.registrations || []);
-
-          const initialResults: { [regId: string]: string } = {};
-          (data.registrations || []).forEach((r: RegistrationRow) => {
-            initialResults[r.id] = r.result || "";
-          });
-          setResultInputs(initialResults);
-        } catch (err) {
-          console.error("Error loading event participants:", err);
-          setErrorMsg("Could not connect to the database.");
-        } finally {
-          setLoading(false);
-        }
-      }
       loadEventData();
     }
-  }, [status, eventId, router]);
+  }, [status, eventId, router, loadEventData]);
 
   const handleUpdateStatus = async (regId: string, newStatus: "PENDING" | "CONFIRMED" | "REJECTED") => {
     setSavingId(regId);
@@ -252,6 +262,13 @@ export default function CoordinatorEventDetailPage({
 
           <div className="flex items-center gap-3">
             <button
+              onClick={() => setShowCheckInModal(true)}
+              className="tap-target px-3.5 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 shadow-sm"
+            >
+              <QrCode className="w-3.5 h-3.5" />
+              <span>QR Check-In & Food</span>
+            </button>
+            <button
               onClick={exportCSV}
               className="tap-target px-3.5 py-1.5 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer flex items-center gap-1.5"
             >
@@ -375,14 +392,15 @@ export default function CoordinatorEventDetailPage({
                   <th className="p-4">Student Participant</th>
                   <th className="p-4">College</th>
                   <th className="p-4">Contact</th>
-                  <th className="p-4">Verification Status & Action</th>
+                  <th className="p-4">Event Check-In & Food</th>
+                  <th className="p-4">Approval Status</th>
                   <th className="p-4">Competition Award / Result</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="p-10 text-center text-xs text-slate-500">
+                    <td colSpan={6} className="p-10 text-center text-xs text-slate-500">
                       No participants found matching the selected filter.
                     </td>
                   </tr>
@@ -439,6 +457,38 @@ export default function CoordinatorEventDetailPage({
                         <td className="p-4 text-xs space-y-0.5">
                           <div className="text-slate-900">{reg.user.email}</div>
                           <div className="text-slate-500 font-mono tabular-nums">{reg.user.phone || "—"}</div>
+                        </td>
+
+                        {/* Event Check-In & Food Claim Badges */}
+                        <td className="p-4">
+                          <div className="flex flex-col gap-1.5">
+                            {(reg.attended || reg.delegationMember?.eventCheckedIn) ? (
+                              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded w-fit">
+                                <Check className="w-3 h-3" />
+                                Present
+                                {reg.delegationMember?.eventCheckedInAt && (
+                                  <span className="text-[9px] font-normal text-emerald-600 ml-1">
+                                    {new Date(reg.delegationMember.eventCheckedInAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                                  </span>
+                                )}
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded w-fit">
+                                Absent
+                              </span>
+                            )}
+
+                            {reg.delegationMember?.foodTokenClaimed ? (
+                              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded w-fit">
+                                <Utensils className="w-3 h-3" />
+                                Food Received
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-400 bg-slate-50 px-2 py-0.5 rounded w-fit">
+                                Meal Pending
+                              </span>
+                            )}
+                          </div>
                         </td>
 
                         {/* Status Toggles (44px min tap target) */}
@@ -526,6 +576,13 @@ export default function CoordinatorEventDetailPage({
       <footer className="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500">
         SHINE 26 Event Management System • Sacred Heart College (Autonomous)
       </footer>
+
+      <CheckInModal
+        isOpen={showCheckInModal}
+        onClose={() => setShowCheckInModal(false)}
+        activeEventId={eventId}
+        onCheckInComplete={loadEventData}
+      />
     </main>
   );
 }

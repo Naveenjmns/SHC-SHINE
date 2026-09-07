@@ -22,22 +22,23 @@ export function generateFoodTokenCode(badgeCode?: string): string {
 }
 
 /**
- * Generates a scannable QR code data URL representing the delegate pass.
+ * Generates an Event Entry Pass QR Code Data URL.
  */
-export async function generateQrCodeDataUrl(payload: {
+export async function generateEventPassQr(payload: {
   badgeCode: string;
   name: string;
-  college: string;
-  foodTokenCode: string;
+  college?: string;
   verifyUrl?: string;
 }): Promise<string> {
   try {
-    const rawContent = payload.verifyUrl || JSON.stringify({
-      b: payload.badgeCode,
-      n: payload.name,
-      c: payload.college,
-      f: payload.foodTokenCode,
-    });
+    const rawContent =
+      payload.verifyUrl ||
+      JSON.stringify({
+        type: "EVENT_ENTRY",
+        code: payload.badgeCode,
+        name: payload.name,
+        college: payload.college || "",
+      });
 
     return await QRCode.toDataURL(rawContent, {
       errorCorrectionLevel: "M",
@@ -49,7 +50,59 @@ export async function generateQrCodeDataUrl(payload: {
       },
     });
   } catch (error) {
-    console.error("Error generating QR code:", error);
+    console.error("Error generating Event Pass QR code:", error);
     return "";
   }
+}
+
+/**
+ * Generates a Food & Meal Token QR Code Data URL.
+ */
+export async function generateFoodTokenQr(payload: {
+  foodTokenCode: string;
+  badgeCode: string;
+  name: string;
+  verifyUrl?: string;
+}): Promise<string> {
+  try {
+    const rawContent =
+      payload.verifyUrl ||
+      JSON.stringify({
+        type: "FOOD_TOKEN",
+        code: payload.foodTokenCode,
+        badge: payload.badgeCode,
+        name: payload.name,
+      });
+
+    return await QRCode.toDataURL(rawContent, {
+      errorCorrectionLevel: "M",
+      margin: 2,
+      scale: 6,
+      color: {
+        dark: "#78350F", // Amber-900 warm tone for food court scanner
+        light: "#FFFFFF",
+      },
+    });
+  } catch (error) {
+    console.error("Error generating Food Token QR code:", error);
+    return "";
+  }
+}
+
+/**
+ * Generates a scannable QR code data URL representing the delegate pass (backward compatibility).
+ */
+export async function generateQrCodeDataUrl(payload: {
+  badgeCode: string;
+  name: string;
+  college: string;
+  foodTokenCode: string;
+  verifyUrl?: string;
+}): Promise<string> {
+  return generateEventPassQr({
+    badgeCode: payload.badgeCode,
+    name: payload.name,
+    college: payload.college,
+    verifyUrl: payload.verifyUrl,
+  });
 }
