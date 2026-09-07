@@ -125,7 +125,7 @@ export const authOptions: AuthOptions = {
   events: {
     async signIn({ user }) {
       if (user) {
-        await logActivity({
+        logActivity({
           action: "USER_LOGIN",
           actorId: user.id,
           actorName: user.name,
@@ -137,7 +137,7 @@ export const authOptions: AuthOptions = {
             role: (user as any).role,
             college: (user as any).college,
           },
-        });
+        }).catch((err) => console.error("Login activity log error:", err));
       }
     },
   },
