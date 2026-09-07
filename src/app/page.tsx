@@ -206,7 +206,7 @@ export default async function Home() {
           {/* Key Metrics Strip */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { num: "10+", label: "Competitive Events", icon: <Zap className="w-5 h-5 text-[#FF6B1A] mx-auto" /> },
+              { num: events.length > 0 ? `${events.length}+` : "0+", label: "Competitive Events", icon: <Zap className="w-5 h-5 text-[#FF6B1A] mx-auto" /> },
               { num: "₹25K+", label: "Cash Prize Pool", icon: <Trophy className="w-5 h-5 text-[#D9A441] mx-auto" /> },
               { num: "500+", label: "Expected Delegates", icon: <Users className="w-5 h-5 text-[#FF6B1A] mx-auto" /> },
               { num: "09:30 AM", label: "Sept 17, 2026", icon: <Calendar className="w-5 h-5 text-[#D9A441] mx-auto" /> },
