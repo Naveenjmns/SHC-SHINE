@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5">
+  <title>Offline | SHINE 26 — Sacred Heart College</title>
+  <link rel="icon" href="/icons/favicon-32x32.png">
+  <style>
+    :root {
+      --fest-bg: #FAF8F5;
+      --fest-ember: #FF6B1A;
+      --fest-gold: #D9A441;
+      --fest-text: #1C1917;
+      --fest-muted: #57534E;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--fest-bg);
+      color: var(--fest-text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 1.5rem;
+      text-align: center;
+    }
+    .card {
+      background: #FFFFFF;
+      border: 1px solid #E7E5E4;
+      border-radius: 1.5rem;
+      padding: 2.5rem 2rem;
+      max-width: 440px;
+      width: 100%;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+    }
+    .icon-badge {
+      width: 64px;
+      height: 64px;
+      border-radius: 1rem;
+      background: linear-gradient(135deg, #FF6B1A 0%, #D9A441 100%);
+      color: #FFFFFF;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      font-weight: 900;
+      margin: 0 auto 1.5rem auto;
+      box-shadow: 0 8px 20px rgba(255, 107, 26, 0.25);
+    }
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 900;
+      margin-bottom: 0.5rem;
+      color: var(--fest-text);
+      letter-spacing: -0.02em;
+    }
+    p {
+      font-size: 0.875rem;
+      color: var(--fest-muted);
+      line-height: 1.6;
+      margin-bottom: 1.75rem;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #FF6B1A 0%, #E8551F 100%);
+      color: #FFFFFF;
+      font-size: 0.875rem;
+      font-weight: 700;
+      padding: 0.85rem 1.75rem;
+      border-radius: 0.75rem;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(255, 107, 26, 0.3);
+      transition: all 0.2s;
+      text-decoration: none;
+      min-height: 44px;
+      width: 100%;
+    }
+    .btn:hover {
+      opacity: 0.95;
+      transform: translateY(-1px);
+    }
+    .status-tag {
+      display: inline-block;
+      margin-top: 1.25rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #92400E;
+      background-color: #FEF3C7;
+      border: 1px solid #FCD34D;
+      padding: 0.35rem 0.75rem;
+      border-radius: 9999px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon-badge">⚡</div>
+    <h1>You are currently Offline</h1>
+    <p>
+      It seems you have lost connection to the symposium network. Your cached passes and local schedules remain accessible once connection restores.
+    </p>
+    <button class="btn" onclick="window.location.reload()">
+      Retry Connection
+    </button>
+    <div>
+      <span class="status-tag">SHINE 26 Offline Mode Active</span>
+    </div>
+  </div>
+</body>
+</html>

@@ -74,36 +74,36 @@ export default function HeroSection({ edition }: HeroSectionProps) {
 
         {/* Acronym Expansion right under SHINE 26 */}
         {acronymExpansion && (
-          <div className="mb-5 md:mb-6 animate-stage-title">
-            <span className="inline-block px-4 py-1.5 rounded-full bg-gradient-to-r from-[#FF6B1A]/10 via-[#D9A441]/15 to-[#FF6B1A]/10 border border-[#D9A441]/30 text-xs sm:text-sm md:text-base font-extrabold text-[#D97706] tracking-[0.18em] uppercase shadow-2xs">
+          <div className="mb-5 md:mb-6 animate-stage-title px-2">
+            <span className="inline-block px-3.5 sm:px-4 py-1.5 rounded-full bg-gradient-to-r from-[#FF6B1A]/10 via-[#D9A441]/15 to-[#FF6B1A]/10 border border-[#D9A441]/30 text-[10px] sm:text-xs md:text-sm font-extrabold text-[#D97706] tracking-wider sm:tracking-[0.15em] uppercase shadow-2xs break-words max-w-[92vw]">
               {acronymExpansion}
             </span>
           </div>
         )}
 
         {/* Stage 4: Configurable Metadata */}
-        <div className="animate-stage-meta mb-5 md:mb-6">
-          <p className="text-xs sm:text-sm md:text-base font-bold tracking-[0.3em] text-[#57534E] uppercase">
+        <div className="animate-stage-meta mb-5 md:mb-6 px-3">
+          <p className="text-[11px] sm:text-xs md:text-sm font-bold tracking-[0.2em] sm:tracking-[0.3em] text-[#57534E] uppercase break-words">
             {metadataText}
           </p>
         </div>
 
         {/* Stage 5: Configurable Tagline */}
         {tagline && (
-          <div className="max-w-3xl mx-auto mb-10 md:mb-12 animate-stage-tagline">
-            <p className="text-fluid-body text-[#44403C] font-semibold italic text-lg sm:text-xl md:text-2xl">
+          <div className="max-w-3xl mx-auto mb-8 sm:mb-10 md:mb-12 animate-stage-tagline px-4">
+            <p className="text-fluid-body text-[#44403C] font-semibold italic text-base sm:text-xl md:text-2xl">
               "{tagline}"
             </p>
           </div>
         )}
 
-        {/* Stage 6: Premium Configurable CTA Buttons */}
-        <div className="flex flex-wrap items-center justify-center gap-5 animate-stage-cta">
-          <Link href={primaryCtaLink} className="btn-ember group text-base !py-4 !px-9 text-lg">
+        {/* Stage 6: Premium Configurable CTA Buttons (Responsive Stacking) */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3.5 sm:gap-5 animate-stage-cta w-full max-w-sm sm:max-w-none px-4 sm:px-0">
+          <Link href={primaryCtaLink} className="btn-ember group text-sm sm:text-base !py-3.5 sm:!py-4 !px-7 sm:!px-9 font-bold flex items-center justify-center">
             <span>{primaryCtaText}</span>
-            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+            <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />
           </Link>
-          <Link href="/events" className="btn-gold-outline text-base !py-4 !px-9 text-lg">
+          <Link href="/events" className="btn-gold-outline text-sm sm:text-base !py-3.5 sm:!py-4 !px-7 sm:!px-9 font-bold flex items-center justify-center">
             View All Events
           </Link>
         </div>

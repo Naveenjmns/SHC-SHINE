@@ -927,10 +927,10 @@ export default function AdminOverviewPage() {
         
         {/* Navigation Tabs */}
         <div className="flex flex-wrap items-center justify-between gap-4 mb-8 border-b border-[#CBD5E1] pb-3">
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-2 overflow-x-auto whitespace-nowrap pb-1 scrollbar-none">
             <button
               onClick={() => setActiveTab("overview")}
-              className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition ${
+              className={`tap-target px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition shrink-0 ${
                 activeTab === "overview"
                   ? "bg-[#0F172A] text-white shadow-md"
                   : "bg-white text-[#64748B] hover:text-[#0F172A] border border-stone-200"
@@ -941,7 +941,7 @@ export default function AdminOverviewPage() {
 
             <button
               onClick={() => setActiveTab("institution")}
-              className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-1.5 ${
+              className={`tap-target px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-1.5 shrink-0 ${
                 activeTab === "institution"
                   ? "bg-[#0F172A] text-white shadow-md"
                   : "bg-white text-[#64748B] hover:text-[#0F172A] border border-stone-200"
@@ -953,7 +953,7 @@ export default function AdminOverviewPage() {
 
             <button
               onClick={() => setActiveTab("editions")}
-              className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-1.5 ${
+              className={`tap-target px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-1.5 shrink-0 ${
                 activeTab === "editions"
                   ? "bg-[#0F172A] text-white shadow-md"
                   : "bg-white text-[#64748B] hover:text-[#0F172A] border border-stone-200"
@@ -965,7 +965,7 @@ export default function AdminOverviewPage() {
 
             <button
               onClick={() => setActiveTab("branding")}
-              className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-1.5 ${
+              className={`tap-target px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-1.5 shrink-0 ${
                 activeTab === "branding"
                   ? "bg-[#0F172A] text-white shadow-md"
                   : "bg-white text-[#64748B] hover:text-[#0F172A] border border-stone-200"
@@ -977,7 +977,7 @@ export default function AdminOverviewPage() {
 
             <button
               onClick={() => setActiveTab("smtp")}
-              className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-1.5 ${
+              className={`tap-target px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-1.5 shrink-0 ${
                 activeTab === "smtp"
                   ? "bg-[#0F172A] text-white shadow-md"
                   : "bg-white text-[#64748B] hover:text-[#0F172A] border border-stone-200"
@@ -989,7 +989,7 @@ export default function AdminOverviewPage() {
 
             <button
               onClick={() => setActiveTab("registrations")}
-              className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition ${
+              className={`tap-target px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition shrink-0 ${
                 activeTab === "registrations"
                   ? "bg-[#0F172A] text-white shadow-md"
                   : "bg-white text-[#64748B] hover:text-[#0F172A] border border-stone-200"

@@ -458,12 +458,12 @@ export default function CoordinatorEventDetailPage({
           </div>
         </div>
 
-        {/* Navigation Tabs */}
-        <div className="flex items-center gap-2 border-b border-slate-200 mb-6">
+        {/* Navigation Tabs (Horizontal swipeable on mobile) */}
+        <div className="flex items-center gap-2 border-b border-slate-200 mb-6 overflow-x-auto whitespace-nowrap scrollbar-none">
           <button
             type="button"
             onClick={() => setActiveTab("participants")}
-            className={`px-4 py-2.5 text-xs sm:text-sm font-bold border-b-2 transition-all cursor-pointer flex items-center gap-2 ${
+            className={`px-4 py-2.5 text-xs sm:text-sm font-bold border-b-2 transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
               activeTab === "participants"
                 ? "border-orange-600 text-orange-600"
                 : "border-transparent text-slate-500 hover:text-slate-800"
