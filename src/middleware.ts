@@ -14,10 +14,21 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  const token = await getToken({
-    req,
-    secret: process.env.NEXTAUTH_SECRET || "shine26-fallback-secret-key-development",
-  });
+  const secret =
+    process.env.NEXTAUTH_SECRET || "shine26-fallback-secret-key-development";
+
+  // 1. Try standard auto-detection
+  let token = await getToken({ req, secret });
+
+  // 2. Try explicit secureCookie (HTTPS behind Railway reverse proxies)
+  if (!token) {
+    token = await getToken({ req, secret, secureCookie: true });
+  }
+
+  // 3. Try explicit non-secure cookie fallback
+  if (!token) {
+    token = await getToken({ req, secret, secureCookie: false });
+  }
 
   // If not authenticated, redirect to login
   if (!token) {
@@ -37,7 +48,12 @@ export async function middleware(req: NextRequest) {
   }
 
   // Coordinator route protection: COORDINATOR, ADMIN, or assigned event coordinator
-  if (isCoordinator && role !== "COORDINATOR" && role !== "ADMIN" && !token.isEventCoordinator) {
+  if (
+    isCoordinator &&
+    role !== "COORDINATOR" &&
+    role !== "ADMIN" &&
+    !token.isEventCoordinator
+  ) {
     return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
