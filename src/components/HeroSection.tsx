@@ -55,7 +55,7 @@ export default function HeroSection({ edition }: HeroSectionProps) {
               </div>
               <div className="flex items-center gap-2 text-xs md:text-sm font-extrabold uppercase tracking-widest text-[#FF6B1A] mt-4">
                 <Sparkles className="w-4 h-4 text-[#D9A441]" />
-                <span>Sacred Heart College • Symposium</span>
+                <span>{edition?.institutionShortName || edition?.institutionName || "College"} • Symposium</span>
               </div>
             </div>
           )}

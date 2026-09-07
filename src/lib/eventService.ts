@@ -33,6 +33,17 @@ export interface ActiveEditionConfig {
   deptLogoUrl: string | null;
   stageHeaderBannerUrl: string | null;
 
+  // Reusable Institution & Department Details
+  institutionShortName: string | null;
+  institutionLocation: string | null;
+  institutionAbout: string | null;
+  departmentAbout: string | null;
+  departmentProgram: string | null;
+  contactEmail: string | null;
+  contactPhone: string | null;
+  websiteUrl: string | null;
+  participantFee: number;
+
   navItems: {
     id: string;
     label: string;
@@ -85,6 +96,17 @@ export const DEFAULT_EDITION_CONFIG: ActiveEditionConfig = {
   acronymExpansion: "SACRED HEART INFORMATICS NETWORK FOR ENTERPRISES",
   deptLogoUrl: null,
   stageHeaderBannerUrl: null,
+
+  // Reusable Institution & Department Details
+  institutionShortName: "SHC",
+  institutionLocation: "Tirupattur — 635 601, Tamil Nadu",
+  institutionAbout: "Premier institution recognized with NAAC accreditation, providing world-class infrastructure, research excellence, and academic distinction.",
+  departmentAbout: "Nurturing top-tier engineers, developers, and technical leaders through state-of-the-art labs, hands-on curricula, and hackathons.",
+  departmentProgram: "MCA Program",
+  contactEmail: "shine@shctpt.edu",
+  contactPhone: "+91 4175 240464",
+  websiteUrl: null,
+  participantFee: 0,
 
   navItems: [
     { id: "1", label: "About", url: "#about", order: 1, isEnabled: true },
@@ -147,6 +169,17 @@ export async function getActiveEdition(): Promise<ActiveEditionConfig> {
       acronymExpansion: active.acronymExpansion || DEFAULT_EDITION_CONFIG.acronymExpansion,
       deptLogoUrl: active.deptLogoUrl,
       stageHeaderBannerUrl: active.stageHeaderBannerUrl,
+
+      // Reusable Institution & Department Details
+      institutionShortName: active.institutionShortName || DEFAULT_EDITION_CONFIG.institutionShortName,
+      institutionLocation: active.institutionLocation || DEFAULT_EDITION_CONFIG.institutionLocation,
+      institutionAbout: active.institutionAbout || DEFAULT_EDITION_CONFIG.institutionAbout,
+      departmentAbout: active.departmentAbout || DEFAULT_EDITION_CONFIG.departmentAbout,
+      departmentProgram: active.departmentProgram || DEFAULT_EDITION_CONFIG.departmentProgram,
+      contactEmail: active.contactEmail || DEFAULT_EDITION_CONFIG.contactEmail,
+      contactPhone: active.contactPhone || DEFAULT_EDITION_CONFIG.contactPhone,
+      websiteUrl: active.websiteUrl || DEFAULT_EDITION_CONFIG.websiteUrl,
+      participantFee: active.participantFee ?? 0,
 
       navItems: active.navItems && active.navItems.length > 0 ? active.navItems : DEFAULT_EDITION_CONFIG.navItems,
       scheduleItems: active.scheduleItems || [],

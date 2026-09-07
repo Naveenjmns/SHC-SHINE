@@ -5,6 +5,7 @@ import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Trophy, FolderOpen, Theater, Laptop, MapPin, Clock, CheckCircle2 } from "lucide-react";
+import { safeJson } from "@/lib/safeFetch";
 
 interface CoordEvent {
   id: string;
@@ -14,6 +15,15 @@ interface CoordEvent {
   capacity: number | null;
   venue: string | null;
   dateTime: string;
+  rules?: string | null;
+  staffCoordinator?: {
+    name: string;
+    email: string;
+  } | null;
+  studentCoordinator?: {
+    name: string;
+    email: string;
+  } | null;
   coordinator?: {
     name: string;
     email: string;
@@ -42,7 +52,12 @@ export default function CoordinatorDashboard() {
     }
 
     if (status === "authenticated") {
-      if (session.user.role !== "COORDINATOR" && session.user.role !== "ADMIN") {
+      const isCoordinatorRole =
+        session.user.role === "COORDINATOR" ||
+        session.user.role === "ADMIN" ||
+        (session.user as any).isEventCoordinator;
+
+      if (!isCoordinatorRole) {
         router.push("/dashboard");
         return;
       }
@@ -50,8 +65,8 @@ export default function CoordinatorDashboard() {
       async function loadCoordinatorEvents() {
         try {
           const res = await fetch("/api/coordinator/events");
-          const data = await res.json();
-          if (data.success) {
+          const data = await safeJson(res, { success: false, events: [] });
+          if (data.success && data.events) {
             setEvents(data.events);
           }
         } catch (err) {

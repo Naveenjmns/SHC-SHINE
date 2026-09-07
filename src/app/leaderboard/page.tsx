@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import StageHeaderBanner from "@/components/StageHeaderBanner";
 import { ActiveEditionConfig } from "@/lib/eventService";
+import { safeJson } from "@/lib/safeFetch";
 import {
   RotateCw,
   Pause,
@@ -47,7 +48,7 @@ export default function StageLeaderboardPage() {
     async function loadStageData() {
       try {
         const res = await fetch("/api/leaderboard");
-        const data = await res.json();
+        const data = await safeJson(res, { success: false, edition: null, events: [] });
         if (data.success) {
           if (data.edition) setEdition(data.edition);
           if (data.events) setEvents(data.events);

@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { EventCategory } from "@prisma/client";
+import { logActivity } from "@/lib/activityLogger";
 
 export async function GET(
   req: Request,
@@ -13,12 +14,31 @@ export async function GET(
     const event = await prisma.event.findUnique({
       where: { id },
       include: {
+        staffCoordinator: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+            avatarUrl: true,
+          },
+        },
+        studentCoordinator: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+            avatarUrl: true,
+          },
+        },
         coordinator: {
           select: {
             id: true,
             name: true,
             email: true,
             phone: true,
+            avatarUrl: true,
           },
         },
         _count: {
@@ -50,7 +70,28 @@ export async function PUT(
 
     const { id } = await params;
     const body = await req.json();
-    const { name, description, category, fee, capacity, venue, dateTime, coordinatorId } = body;
+    const {
+      name,
+      description,
+      category,
+      capacity,
+      venue,
+      dateTime,
+      rules,
+      imageUrl,
+      logoUrl,
+      staffCoordinatorName,
+      staffCoordinatorEmail,
+      staffCoordinatorPhone,
+      staffCoordinatorImageUrl,
+      studentCoordinatorName,
+      studentCoordinatorEmail,
+      studentCoordinatorPhone,
+      studentCoordinatorImageUrl,
+      staffCoordinatorId,
+      studentCoordinatorId,
+      coordinatorId,
+    } = body;
 
     const updated = await prisma.event.update({
       where: { id },
@@ -58,11 +99,45 @@ export async function PUT(
         name: name !== undefined ? name.trim() : undefined,
         description: description !== undefined ? description?.trim() || null : undefined,
         category: category !== undefined ? (category as EventCategory) : undefined,
-        fee: fee !== undefined ? parseFloat(fee) : undefined,
         capacity: capacity !== undefined ? (capacity ? parseInt(capacity, 10) : null) : undefined,
         venue: venue !== undefined ? venue?.trim() || null : undefined,
         dateTime: dateTime !== undefined ? new Date(dateTime) : undefined,
+        rules: rules !== undefined ? rules?.trim() || null : undefined,
+        imageUrl: imageUrl !== undefined ? imageUrl?.trim() || null : undefined,
+        logoUrl: logoUrl !== undefined ? logoUrl?.trim() || null : undefined,
+        staffCoordinatorName: staffCoordinatorName !== undefined ? staffCoordinatorName?.trim() || null : undefined,
+        staffCoordinatorEmail: staffCoordinatorEmail !== undefined ? staffCoordinatorEmail?.trim() || null : undefined,
+        staffCoordinatorPhone: staffCoordinatorPhone !== undefined ? staffCoordinatorPhone?.trim() || null : undefined,
+        staffCoordinatorImageUrl: staffCoordinatorImageUrl !== undefined ? staffCoordinatorImageUrl?.trim() || null : undefined,
+        studentCoordinatorName: studentCoordinatorName !== undefined ? studentCoordinatorName?.trim() || null : undefined,
+        studentCoordinatorEmail: studentCoordinatorEmail !== undefined ? studentCoordinatorEmail?.trim() || null : undefined,
+        studentCoordinatorPhone: studentCoordinatorPhone !== undefined ? studentCoordinatorPhone?.trim() || null : undefined,
+        studentCoordinatorImageUrl: studentCoordinatorImageUrl !== undefined ? studentCoordinatorImageUrl?.trim() || null : undefined,
+        staffCoordinatorId: staffCoordinatorId !== undefined ? staffCoordinatorId || null : undefined,
+        studentCoordinatorId: studentCoordinatorId !== undefined ? studentCoordinatorId || null : undefined,
         coordinatorId: coordinatorId !== undefined ? coordinatorId || null : undefined,
+      },
+      include: {
+        staffCoordinator: { select: { id: true, name: true, email: true, phone: true, avatarUrl: true } },
+        studentCoordinator: { select: { id: true, name: true, email: true, phone: true, avatarUrl: true } },
+      },
+    });
+
+    await logActivity({
+      action: "EVENT_UPDATED",
+      actorId: session.user.id,
+      actorName: session.user.name,
+      actorEmail: session.user.email,
+      actorRole: session.user.role,
+      targetType: "Event",
+      targetId: updated.id,
+      targetTitle: `Event Updated: "${updated.name}"`,
+      details: {
+        category: updated.category,
+        venue: updated.venue,
+        capacity: updated.capacity ?? "Unlimited",
+        staffCoordinator: updated.staffCoordinator?.name || null,
+        studentCoordinator: updated.studentCoordinator?.name || null,
       },
     });
 
@@ -84,9 +159,28 @@ export async function DELETE(
     }
 
     const { id } = await params;
+    const existing = await prisma.event.findUnique({
+      where: { id },
+      select: { id: true, name: true },
+    });
+
     await prisma.event.delete({
       where: { id },
     });
+
+    if (existing) {
+      await logActivity({
+        action: "EVENT_DELETED",
+        actorId: session.user.id,
+        actorName: session.user.name,
+        actorEmail: session.user.email,
+        actorRole: session.user.role,
+        targetType: "Event",
+        targetId: existing.id,
+        targetTitle: `Event Deleted: "${existing.name}"`,
+        details: { eventName: existing.name },
+      });
+    }
 
     return NextResponse.json({ success: true, message: "Event deleted successfully." });
   } catch (error) {

@@ -33,9 +33,37 @@ interface EventWithCoord {
   capacity: number | null;
   venue: string | null;
   dateTime: Date;
-  coordinator?: {
+  rules?: string | null;
+  imageUrl?: string | null;
+  logoUrl?: string | null;
+  staffCoordinatorName?: string | null;
+  staffCoordinatorEmail?: string | null;
+  staffCoordinatorPhone?: string | null;
+  staffCoordinatorImageUrl?: string | null;
+  studentCoordinatorName?: string | null;
+  studentCoordinatorEmail?: string | null;
+  studentCoordinatorPhone?: string | null;
+  studentCoordinatorImageUrl?: string | null;
+  staffCoordinator?: {
+    id?: string;
     name: string;
     email: string;
+    phone?: string | null;
+    avatarUrl?: string | null;
+  } | null;
+  studentCoordinator?: {
+    id?: string;
+    name: string;
+    email: string;
+    phone?: string | null;
+    avatarUrl?: string | null;
+  } | null;
+  coordinator?: {
+    id?: string;
+    name: string;
+    email: string;
+    phone?: string | null;
+    avatarUrl?: string | null;
   } | null;
 }
 
@@ -44,28 +72,31 @@ export default async function Home() {
 
   let events: EventWithCoord[] = [];
   try {
-    if (activeEdition.id && activeEdition.id !== "default-shine") {
-      events = await prisma.event.findMany({
-        where: { editionId: activeEdition.id },
-        include: {
-          coordinator: {
-            select: { name: true, email: true },
-          },
-        },
-        orderBy: { dateTime: "asc" },
-      });
-    }
+    const activeEditionCondition =
+      activeEdition.id && activeEdition.id !== "default-shine"
+        ? {
+            OR: [
+              { editionId: activeEdition.id },
+              { editionId: null },
+            ],
+          }
+        : {};
 
-    if (events.length === 0) {
-      events = await prisma.event.findMany({
-        include: {
-          coordinator: {
-            select: { name: true, email: true },
-          },
+    events = await prisma.event.findMany({
+      where: activeEditionCondition,
+      include: {
+        staffCoordinator: {
+          select: { id: true, name: true, email: true, phone: true, avatarUrl: true },
         },
-        orderBy: { dateTime: "asc" },
-      });
-    }
+        studentCoordinator: {
+          select: { id: true, name: true, email: true, phone: true, avatarUrl: true },
+        },
+        coordinator: {
+          select: { id: true, name: true, email: true, phone: true, avatarUrl: true },
+        },
+      },
+      orderBy: { dateTime: "asc" },
+    });
   } catch (e) {
     console.error("Failed to load events for landing page:", e);
   }
@@ -109,48 +140,64 @@ export default async function Home() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch mb-12">
-            {/* Sacred Heart College Card */}
+            {/* Dynamic Institution Card */}
             <div className="fest-card p-8 flex flex-col justify-between">
               <div>
                 <div className="w-12 h-12 rounded-2xl bg-[#FF6B1A]/10 border border-[#FF6B1A]/20 flex items-center justify-center text-[#FF6B1A] mb-5">
-                  <Landmark className="w-6 h-6" />
+                  {activeEdition.institutionCrestUrl ? (
+                    <img
+                      src={activeEdition.institutionCrestUrl}
+                      alt={activeEdition.institutionName || "Institution"}
+                      className="w-8 h-8 object-contain"
+                    />
+                  ) : (
+                    <Landmark className="w-6 h-6" />
+                  )}
                 </div>
                 <h3
                   className="text-2xl font-bold text-[#1C1917] mb-3"
                   style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
                 >
-                  Sacred Heart College (Autonomous)
+                  {activeEdition.institutionName || "Host Institution"}
                 </h3>
                 <p className="text-sm text-[#57534E] leading-relaxed mb-6">
-                  Established in 1951 by the Salesians of Don Bosco, Sacred Heart College is a premier institution recognized with NAAC 'A+' Grade accreditation and affiliated with Thiruvalluvar University. With a rich history of academic distinction, the college provides world-class infrastructure, research excellence, and a vibrant community.
+                  {activeEdition.institutionAbout || activeEdition.accreditationText || "Premier educational institution committed to academic excellence, innovation, and holistic student development."}
                 </p>
               </div>
 
               <div className="pt-4 border-t border-[#1C1917]/10 flex items-center justify-between text-xs text-[#57534E]">
-                <span>Tirupattur — 635 601, Tamil Nadu</span>
-                <span className="text-[#D9A441] font-semibold">Autonomous Status</span>
+                <span>{activeEdition.institutionLocation || activeEdition.venue || "Campus Venue"}</span>
+                <span className="text-[#D9A441] font-semibold">{activeEdition.institutionShortName || "Host Institution"}</span>
               </div>
             </div>
 
-            {/* MCA PG Department Card */}
+            {/* Dynamic Host Department Card */}
             <div className="fest-card p-8 flex flex-col justify-between">
               <div>
                 <div className="w-12 h-12 rounded-2xl bg-[#D9A441]/10 border border-[#D9A441]/20 flex items-center justify-center text-[#D9A441] mb-5">
-                  <Laptop className="w-6 h-6" />
+                  {activeEdition.deptLogoUrl ? (
+                    <img
+                      src={activeEdition.deptLogoUrl}
+                      alt={activeEdition.hostDepartment || "Department"}
+                      className="w-8 h-8 object-contain"
+                    />
+                  ) : (
+                    <Laptop className="w-6 h-6" />
+                  )}
                 </div>
                 <h3
                   className="text-2xl font-bold text-[#1C1917] mb-3"
                   style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
                 >
-                  Department of Computer Applications (PG)
+                  {activeEdition.hostDepartment || "Host Department"}
                 </h3>
                 <p className="text-sm text-[#57534E] leading-relaxed mb-6">
-                  The Master of Computer Applications (MCA) department has been nurturing top-tier software engineers, data scientists, and technical leaders for decades. Through state-of-the-art labs, hands-on industry curricula, and hackathons, our graduates make impact across global tech giants.
+                  {activeEdition.departmentAbout || "Nurturing top-tier engineers, developers, and technical innovators through state-of-the-art labs, hands-on curricula, and competitions."}
                 </p>
               </div>
 
               <div className="pt-4 border-t border-[#1C1917]/10 flex items-center justify-between text-xs text-[#57534E]">
-                <span>MCA Program</span>
+                <span>{activeEdition.departmentProgram || "Academic Department"}</span>
                 <span className="text-[#FF6B1A] font-semibold">Host of {eventName} {editionYear}</span>
               </div>
             </div>
@@ -288,8 +335,23 @@ export default async function Home() {
                   name={ev.name}
                   description={ev.description || ""}
                   category={ev.category}
-                  fee={ev.fee}
+                  capacity={ev.capacity}
                   venue={ev.venue || ""}
+                  dateTime={ev.dateTime}
+                  rules={ev.rules}
+                  imageUrl={ev.imageUrl}
+                  logoUrl={ev.logoUrl}
+                  staffCoordinator={ev.staffCoordinator}
+                  studentCoordinator={ev.studentCoordinator}
+                  coordinator={ev.coordinator}
+                  staffCoordinatorName={ev.staffCoordinatorName}
+                  staffCoordinatorEmail={ev.staffCoordinatorEmail}
+                  staffCoordinatorPhone={ev.staffCoordinatorPhone}
+                  staffCoordinatorImageUrl={ev.staffCoordinatorImageUrl}
+                  studentCoordinatorName={ev.studentCoordinatorName}
+                  studentCoordinatorEmail={ev.studentCoordinatorEmail}
+                  studentCoordinatorPhone={ev.studentCoordinatorPhone}
+                  studentCoordinatorImageUrl={ev.studentCoordinatorImageUrl}
                   index={index}
                 />
               ))}
@@ -310,8 +372,23 @@ export default async function Home() {
                   name={ev.name}
                   description={ev.description || ""}
                   category={ev.category}
-                  fee={ev.fee}
+                  capacity={ev.capacity}
                   venue={ev.venue || ""}
+                  dateTime={ev.dateTime}
+                  rules={ev.rules}
+                  imageUrl={ev.imageUrl}
+                  logoUrl={ev.logoUrl}
+                  staffCoordinator={ev.staffCoordinator}
+                  studentCoordinator={ev.studentCoordinator}
+                  coordinator={ev.coordinator}
+                  staffCoordinatorName={ev.staffCoordinatorName}
+                  staffCoordinatorEmail={ev.staffCoordinatorEmail}
+                  staffCoordinatorPhone={ev.staffCoordinatorPhone}
+                  staffCoordinatorImageUrl={ev.staffCoordinatorImageUrl}
+                  studentCoordinatorName={ev.studentCoordinatorName}
+                  studentCoordinatorEmail={ev.studentCoordinatorEmail}
+                  studentCoordinatorPhone={ev.studentCoordinatorPhone}
+                  studentCoordinatorImageUrl={ev.studentCoordinatorImageUrl}
                   index={index}
                 />
               ))}
@@ -365,14 +442,14 @@ export default async function Home() {
               </div>
               <h3 className="text-lg font-bold text-[#1C1917] mb-2">Overall Championship</h3>
               <p className="text-sm text-[#57534E] leading-relaxed">
-                The institution securing maximum cumulative points across both On-Stage and Off-Stage events will be crowned the SHINE Overall Champions.
+                The institution securing maximum cumulative points across both On-Stage and Off-Stage events will be crowned the {eventName} Overall Champions.
               </p>
             </div>
           </div>
         </div>
       </section>
 
-      <Footer />
+      <Footer edition={activeEdition} />
     </main>
   );
 }

@@ -41,6 +41,7 @@ export const metadata: Metadata = {
 };
 
 import AuthProvider from "@/components/AuthProvider";
+import { ToastProvider } from "@/components/ToastProvider";
 
 export default function RootLayout({
   children,
@@ -54,7 +55,9 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col" style={{ fontFamily: 'var(--font-inter), Inter, sans-serif' }}>
         <AuthProvider>
-          {children}
+          <ToastProvider>
+            {children}
+          </ToastProvider>
         </AuthProvider>
       </body>
     </html>

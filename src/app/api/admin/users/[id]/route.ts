@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import bcrypt from "bcryptjs";
 import { Role } from "@prisma/client";
+import { logActivity } from "@/lib/activityLogger";
 
 export async function DELETE(
   req: Request,
@@ -22,9 +23,28 @@ export async function DELETE(
       return NextResponse.json({ success: false, message: "Cannot delete your own admin account." }, { status: 400 });
     }
 
+    const existing = await prisma.user.findUnique({
+      where: { id },
+      select: { id: true, name: true, email: true, role: true },
+    });
+
     await prisma.user.delete({
       where: { id },
     });
+
+    if (existing) {
+      await logActivity({
+        action: "USER_DELETED",
+        actorId: session.user.id,
+        actorName: session.user.name,
+        actorEmail: session.user.email,
+        actorRole: session.user.role,
+        targetType: "User",
+        targetId: existing.id,
+        targetTitle: `User Deleted: ${existing.name} (${existing.email})`,
+        details: { role: existing.role, email: existing.email },
+      });
+    }
 
     return NextResponse.json({ success: true, message: "User deleted successfully." });
   } catch (error) {
@@ -76,6 +96,18 @@ export async function PUT(
         college: true,
         role: true,
       },
+    });
+
+    await logActivity({
+      action: "USER_UPDATED",
+      actorId: session.user.id,
+      actorName: session.user.name,
+      actorEmail: session.user.email,
+      actorRole: session.user.role,
+      targetType: "User",
+      targetId: updated.id,
+      targetTitle: `User Updated: ${updated.name}`,
+      details: { role: updated.role, email: updated.email },
     });
 
     return NextResponse.json({ success: true, user: updated });

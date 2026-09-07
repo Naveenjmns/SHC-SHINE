@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { RegistrationStatus } from "@prisma/client";
+import { logActivity } from "@/lib/activityLogger";
 
 export async function PATCH(
   req: Request,
@@ -10,7 +11,7 @@ export async function PATCH(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || (session.user.role !== "COORDINATOR" && session.user.role !== "ADMIN")) {
+    if (!session) {
       return NextResponse.json({ success: false, message: "Unauthorized." }, { status: 403 });
     }
 
@@ -22,7 +23,21 @@ export async function PATCH(
       where: { id: registrationId },
       include: {
         event: {
-          select: { coordinatorId: true },
+          select: {
+            id: true,
+            name: true,
+            staffCoordinatorId: true,
+            studentCoordinatorId: true,
+            coordinatorId: true,
+          },
+        },
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            college: true,
+          },
         },
       },
     });
@@ -31,8 +46,14 @@ export async function PATCH(
       return NextResponse.json({ success: false, message: "Registration not found." }, { status: 404 });
     }
 
-    // Access control: Coordinator must own the event unless Admin
-    if (session.user.role === "COORDINATOR" && registration.event.coordinatorId !== session.user.id) {
+    // Access control: User must be Admin, Staff Coordinator, Student Coordinator, or Legacy Coordinator
+    const isManager =
+      session.user.role === "ADMIN" ||
+      registration.event.staffCoordinatorId === session.user.id ||
+      registration.event.studentCoordinatorId === session.user.id ||
+      registration.event.coordinatorId === session.user.id;
+
+    if (!isManager) {
       return NextResponse.json(
         { success: false, message: "Access forbidden. You do not manage this event." },
         { status: 403 }
@@ -51,6 +72,52 @@ export async function PATCH(
       where: { id: registrationId },
       data: updateData,
     });
+
+    // Record activity logs
+    if (status && status !== registration.status) {
+      const actionType =
+        status === "CONFIRMED"
+          ? "REGISTRATION_APPROVED"
+          : status === "REJECTED"
+          ? "REGISTRATION_REJECTED"
+          : "REGISTRATION_STATUS_UPDATE";
+
+      await logActivity({
+        action: actionType,
+        actorId: session.user.id,
+        actorName: session.user.name,
+        actorEmail: session.user.email,
+        actorRole: session.user.role,
+        targetType: "Registration",
+        targetId: registrationId,
+        targetTitle: `${registration.user.name} for ${registration.event.name} marked as ${status}`,
+        details: {
+          eventName: registration.event.name,
+          studentName: registration.user.name,
+          studentEmail: registration.user.email,
+          previousStatus: registration.status,
+          newStatus: status,
+        },
+      });
+    }
+
+    if (result !== undefined && result !== registration.result) {
+      await logActivity({
+        action: "RESULT_UPDATED",
+        actorId: session.user.id,
+        actorName: session.user.name,
+        actorEmail: session.user.email,
+        actorRole: session.user.role,
+        targetType: "Event",
+        targetId: registration.event.id,
+        targetTitle: `Result for ${registration.user.name} set to "${result || "None"}"`,
+        details: {
+          eventName: registration.event.name,
+          studentName: registration.user.name,
+          positionAward: result || null,
+        },
+      });
+    }
 
     return NextResponse.json({ success: true, registration: updated });
   } catch (error) {

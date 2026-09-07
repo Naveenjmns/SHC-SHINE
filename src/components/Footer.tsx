@@ -1,7 +1,21 @@
 import Link from "next/link";
 import { Trophy, Theater, Laptop } from "lucide-react";
+import { ActiveEditionConfig } from "@/lib/eventService";
 
-export default function Footer() {
+interface FooterProps {
+  edition?: ActiveEditionConfig;
+}
+
+export default function Footer({ edition }: FooterProps) {
+  const eventName = edition?.name || "Event Fest";
+  const editionYear = edition?.edition || "2026";
+  const institutionName = edition?.institutionName || "College Campus";
+  const hostDepartment = edition?.hostDepartment || "Academic Department";
+  const contactEmail = edition?.contactEmail || "fest@college.edu";
+  const contactPhone = edition?.contactPhone || "+91 4175 240464";
+  const location = edition?.institutionLocation || edition?.venue || "Campus Venue";
+  const logoUrl = edition?.logoUrl;
+
   return (
     <footer className="border-t border-[#1C1917] bg-[#1C1917] text-stone-300 text-xs">
       <div className="container-shine py-14">
@@ -9,25 +23,37 @@ export default function Footer() {
           {/* Col 1: Logo & Mission */}
           <div>
             <Link href="/" className="inline-flex items-center gap-2.5 mb-4 group">
-              <div
-                className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#FF6B1A] to-[#D9A441] flex items-center justify-center text-white font-black text-base shadow-sm"
-                style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
-              >
-                S
-              </div>
+              {logoUrl ? (
+                <img src={logoUrl} alt={eventName} className="h-8 w-auto object-contain" />
+              ) : (
+                <div
+                  className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#FF6B1A] to-[#D9A441] flex items-center justify-center text-white font-black text-base shadow-sm"
+                  style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
+                >
+                  {eventName.charAt(0)}
+                </div>
+              )}
               <span
                 className="text-lg font-extrabold text-white"
                 style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
               >
-                SHINE <span className="hero-wordmark-gradient">26</span>
+                {eventName} <span className="hero-wordmark-gradient">{editionYear}</span>
               </span>
             </Link>
             <p className="leading-relaxed mb-4 text-stone-400">
-              Annual Intercollegiate Technical & Management Symposium hosted by the Department of Computer Applications (PG), Sacred Heart College (Autonomous), Tirupattur.
+              {edition?.description ||
+                `Annual Intercollegiate Symposium organized by ${hostDepartment}, ${institutionName}.`}
             </p>
-            <div className="text-[#D9A441] font-bold">
-              Thursday, October 15, 2026
-            </div>
+            {edition?.startDate && (
+              <div className="text-[#D9A441] font-bold">
+                {new Date(edition.startDate).toLocaleDateString("en-US", {
+                  weekday: "long",
+                  month: "long",
+                  day: "numeric",
+                  year: "numeric",
+                })}
+              </div>
+            )}
           </div>
 
           {/* Col 2: Navigation */}
@@ -37,13 +63,13 @@ export default function Footer() {
             </h4>
             <ul className="space-y-2.5">
               <li>
-                <Link href="/#about" className="hover:text-white transition-colors">About SHINE 26</Link>
+                <Link href="/#about" className="hover:text-white transition-colors">About {eventName}</Link>
               </li>
               <li>
-                <Link href="/events" className="hover:text-white transition-colors">All 10 Competitions</Link>
+                <Link href="/events" className="hover:text-white transition-colors">All Competitions</Link>
               </li>
               <li>
-                <Link href="/#venue" className="hover:text-white transition-colors">Venue & Schedule</Link>
+                <Link href="/#schedule" className="hover:text-white transition-colors">Schedule & Timeline</Link>
               </li>
               <li>
                 <Link href="/leaderboard" className="text-[#D9A441] hover:text-amber-300 font-semibold transition-colors inline-flex items-center gap-1.5">
@@ -67,13 +93,13 @@ export default function Footer() {
               <li>
                 <Link href="/events?category=ON_STAGE" className="hover:text-white transition-colors inline-flex items-center gap-1.5">
                   <Theater className="w-3.5 h-3.5 text-[#FF6B1A] shrink-0" />
-                  <span>On-Stage: Code & Conquer, Tech Quiz, Debate, Paper Presentation</span>
+                  <span>On-Stage Competitions & Live Presentations</span>
                 </Link>
               </li>
               <li>
                 <Link href="/events?category=OFF_STAGE" className="hover:text-white transition-colors inline-flex items-center gap-1.5">
                   <Laptop className="w-3.5 h-3.5 text-[#D9A441] shrink-0" />
-                  <span>Off-Stage: Web Design, Poster Design, Treasure Hunt, Gaming Zone, Photography, IT Manager</span>
+                  <span>Off-Stage Technical & Creative Challenges</span>
                 </Link>
               </li>
             </ul>
@@ -85,10 +111,13 @@ export default function Footer() {
               Reach Us
             </h4>
             <div className="space-y-2 leading-relaxed text-stone-400">
-              <div className="text-white font-bold">Sacred Heart College (Autonomous)</div>
-              <div>Tirupattur — 635 601, Tamil Nadu, India</div>
-              <div>Email: <a href="mailto:shine@shctpt.edu" className="text-[#D9A441] hover:underline font-semibold">shine@shctpt.edu</a></div>
-              <div>Phone: <a href="tel:+914175240464" className="text-[#D9A441] hover:underline font-semibold">+91 4175 240464</a></div>
+              <div className="text-white font-bold">{institutionName}</div>
+              <div>{location}</div>
+              <div>Email: <a href={`mailto:${contactEmail}`} className="text-[#D9A441] hover:underline font-semibold">{contactEmail}</a></div>
+              <div>Phone: <a href={`tel:${contactPhone}`} className="text-[#D9A441] hover:underline font-semibold">{contactPhone}</a></div>
+              {edition?.websiteUrl && (
+                <div>Web: <a href={edition.websiteUrl} target="_blank" rel="noopener noreferrer" className="text-sky-400 hover:underline">{edition.websiteUrl}</a></div>
+              )}
             </div>
           </div>
         </div>
@@ -96,12 +125,12 @@ export default function Footer() {
         {/* Bottom Bar */}
         <div className="mt-12 pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-stone-400">
           <div>
-            © 2026 Department of Computer Applications (PG), Sacred Heart College. All rights reserved.
+            © {new Date().getFullYear()} {hostDepartment}, {institutionName}. All rights reserved.
           </div>
           <div className="flex items-center gap-4">
-            <Link href="/login" className="hover:text-white transition-colors">Staff & Student Login</Link>
+            <Link href="/login" className="hover:text-white transition-colors">Portal Login</Link>
             <span>•</span>
-            <span className="text-stone-500">Built for SHINE 26</span>
+            <span className="text-stone-500">Event Management Platform</span>
           </div>
         </div>
       </div>

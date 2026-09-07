@@ -74,6 +74,22 @@ export async function GET(req: Request) {
             },
           },
         },
+        delegation: {
+          select: {
+            id: true,
+            collegeName: true,
+            teamName: true,
+            teamLeadName: true,
+            staffInchargeName: true,
+          },
+        },
+        delegationMember: {
+          select: {
+            id: true,
+            badgeCode: true,
+            foodTokenCode: true,
+          },
+        },
       },
       orderBy: { createdAt: "desc" },
     });

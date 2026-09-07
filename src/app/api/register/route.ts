@@ -2,126 +2,364 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { Role, RegistrationStatus } from "@prisma/client";
+import { logActivity } from "@/lib/activityLogger";
+import { generateBadgeCode, generateFoodTokenCode, generateQrCodeDataUrl } from "@/lib/badgeService";
+import { sendDelegateRegistrationEmail, sendCoordinatorRegistrationAlert } from "@/lib/emailService";
+import { getActiveEdition } from "@/lib/eventService";
+
+interface MemberInput {
+  name: string;
+  email: string;
+  phone: string;
+  eventIds: string[];
+}
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { name, email, phone, college, password, eventIds } = body;
 
-    // Validation
-    if (!name || !email || !college || !phone) {
-      return NextResponse.json(
-        { success: false, message: "Name, email, phone number, and college are required." },
-        { status: 400 }
-      );
-    }
+    // Support both Delegation format and Single student format
+    let collegeName = body.collegeName || body.college;
+    let department = body.department || "";
+    let teamName = body.teamName || "";
+    let teamLead = body.teamLead;
+    let staffIncharge = body.staffIncharge || null;
+    let members: MemberInput[] = body.members;
 
-    if (!eventIds || !Array.isArray(eventIds) || eventIds.length === 0) {
-      return NextResponse.json(
-        { success: false, message: "Please select at least one event to register." },
-        { status: 400 }
-      );
-    }
-
-    const normalizedEmail = email.toLowerCase().trim();
-
-    // Check if user exists
-    let user = await prisma.user.findUnique({
-      where: { email: normalizedEmail },
-    });
-
-    if (!user) {
-      // New student user
-      const userPassword = password ? password.trim() : (phone.trim() || "shine2026");
-      const passwordHash = await bcrypt.hash(userPassword, 10);
-
-      user = await prisma.user.create({
-        data: {
-          name: name.trim(),
-          email: normalizedEmail,
-          phone: phone.trim(),
-          college: college.trim(),
-          passwordHash,
-          role: Role.STUDENT,
+    // Backward compatibility if single student format submitted
+    if (!members && body.name && body.email) {
+      members = [
+        {
+          name: body.name,
+          email: body.email,
+          phone: body.phone,
+          eventIds: body.eventIds || [],
         },
-      });
-    } else {
-      // Update details if missing
-      const updateData: { name?: string; phone?: string; college?: string; passwordHash?: string } = {};
-      if (!user.name && name) updateData.name = name.trim();
-      if (!user.phone && phone) updateData.phone = phone.trim();
-      if (!user.college && college) updateData.college = college.trim();
-      if (!user.passwordHash && password) {
-        updateData.passwordHash = await bcrypt.hash(password.trim(), 10);
-      }
+      ];
+      teamLead = {
+        name: body.name,
+        email: body.email,
+        phone: body.phone,
+      };
+    }
 
-      if (Object.keys(updateData).length > 0) {
-        user = await prisma.user.update({
-          where: { id: user.id },
-          data: updateData,
-        });
+    if (!collegeName || !collegeName.trim()) {
+      return NextResponse.json(
+        { success: false, message: "College/Institution name is required." },
+        { status: 400 }
+      );
+    }
+
+    if (!members || !Array.isArray(members) || members.length === 0) {
+      return NextResponse.json(
+        { success: false, message: "Please add at least one student delegate to register." },
+        { status: 400 }
+      );
+    }
+
+    if (!teamLead || !teamLead.name || !teamLead.email || !teamLead.phone) {
+      teamLead = {
+        name: members[0].name,
+        email: members[0].email,
+        phone: members[0].phone,
+      };
+    }
+
+    // Validate members
+    for (let i = 0; i < members.length; i++) {
+      const m = members[i];
+      if (!m.name || !m.email || !m.phone) {
+        return NextResponse.json(
+          { success: false, message: `Delegate #${i + 1} is missing required name, email, or mobile number.` },
+          { status: 400 }
+        );
+      }
+      if (!m.eventIds || !Array.isArray(m.eventIds) || m.eventIds.length === 0) {
+        return NextResponse.json(
+          { success: false, message: `Please select at least one event for delegate "${m.name}".` },
+          { status: 400 }
+        );
       }
     }
 
-    // Verify events exist
-    const validEvents = await prisma.event.findMany({
-      where: {
-        id: { in: eventIds },
+    // Fetch active edition
+    const activeEdition = await getActiveEdition();
+    const editionId = activeEdition.id && activeEdition.id !== "default-shine" ? activeEdition.id : null;
+    if (!editionId) {
+      return NextResponse.json(
+        { success: false, message: "No active event edition found to register against." },
+        { status: 400 }
+      );
+    }
+
+    // Calculate total delegation fee: Head count * participantFee
+    const participantFee = activeEdition.participantFee || 0;
+    const totalFee = members.length * participantFee;
+
+    // Collect all event IDs referenced across all members
+    const allEventIds = Array.from(new Set(members.flatMap((m) => m.eventIds)));
+    const eventsInDb = await prisma.event.findMany({
+      where: { id: { in: allEventIds } },
+      include: {
+        staffCoordinator: { select: { id: true, name: true, email: true, phone: true } },
+        studentCoordinator: { select: { id: true, name: true, email: true, phone: true } },
+        coordinator: { select: { id: true, name: true, email: true, phone: true } },
       },
-      select: { id: true, name: true, fee: true },
+    });
+    const eventMap = new Map(eventsInDb.map((e) => [e.id, e]));
+
+    // Host domain / origin for QR verification URLs
+    const hostHeader = req.headers.get("host") || "localhost:3000";
+    const protocol = hostHeader.includes("localhost") ? "http" : "https";
+    const origin = `${protocol}://${hostHeader}`;
+
+    // Create Delegation in Database
+    const delegation = await prisma.delegation.create({
+      data: {
+        editionId,
+        collegeName: collegeName.trim(),
+        department: department.trim() || null,
+        teamName: teamName.trim() || `${collegeName.trim()} Delegation`,
+        teamLeadName: teamLead.name.trim(),
+        teamLeadEmail: teamLead.email.toLowerCase().trim(),
+        teamLeadPhone: teamLead.phone.trim(),
+        staffInchargeName: staffIncharge?.name ? staffIncharge.name.trim() : null,
+        staffInchargeEmail: staffIncharge?.email ? staffIncharge.email.toLowerCase().trim() : null,
+        staffInchargePhone: staffIncharge?.phone ? staffIncharge.phone.trim() : null,
+        totalFee,
+        paymentStatus: totalFee === 0 ? "PAID" : "PENDING",
+      },
     });
 
-    if (validEvents.length === 0) {
-      return NextResponse.json(
-        { success: false, message: "None of the selected events were found." },
-        { status: 400 }
-      );
-    }
+    const registeredDelegates = [];
+    // Map of eventId -> array of participants entering this event
+    const eventParticipantsMap = new Map<string, Array<{ name: string; email: string; phone: string; badgeCode: string }>>();
 
-    // Create registrations
-    const registrationResults = [];
-    for (const ev of validEvents) {
-      const existing = await prisma.registration.findUnique({
-        where: {
-          userId_eventId: {
-            userId: user.id,
-            eventId: ev.id,
+    for (let i = 0; i < members.length; i++) {
+      const m = members[i];
+      const normalizedEmail = m.email.toLowerCase().trim();
+      const isLead = i === 0 || normalizedEmail === teamLead.email.toLowerCase().trim();
+
+      // Find or create User account for this student
+      let user = await prisma.user.findUnique({
+        where: { email: normalizedEmail },
+      });
+
+      if (!user) {
+        const defaultPassword = m.phone.trim() || "shine2027";
+        const passwordHash = await bcrypt.hash(defaultPassword, 10);
+
+        user = await prisma.user.create({
+          data: {
+            name: m.name.trim(),
+            email: normalizedEmail,
+            phone: m.phone.trim(),
+            college: collegeName.trim(),
+            passwordHash,
+            role: Role.STUDENT,
           },
+        });
+      }
+
+      // Generate unique badge ID & Food Token
+      const badgeCode = generateBadgeCode(activeEdition.edition);
+      const foodTokenCode = generateFoodTokenCode(badgeCode);
+      const verifyUrl = `${origin}/badge/${badgeCode}`;
+
+      // Generate QR Code data URL
+      const qrData = await generateQrCodeDataUrl({
+        badgeCode,
+        name: m.name.trim(),
+        college: collegeName.trim(),
+        foodTokenCode,
+        verifyUrl,
+      });
+
+      // Create DelegationMember record
+      const memberRecord = await prisma.delegationMember.create({
+        data: {
+          delegationId: delegation.id,
+          name: m.name.trim(),
+          email: normalizedEmail,
+          phone: m.phone.trim(),
+          isTeamLead: isLead,
+          badgeCode,
+          foodTokenCode,
+          foodTokenClaimed: false,
+          qrData,
         },
       });
 
-      if (!existing) {
-        const newReg = await prisma.registration.create({
-          data: {
-            userId: user.id,
-            eventId: ev.id,
-            status: RegistrationStatus.PENDING,
+      // Register student for their selected competitions
+      const memberEvents = [];
+      for (const evId of m.eventIds) {
+        const ev = eventMap.get(evId);
+        if (!ev) continue;
+
+        const existingReg = await prisma.registration.findUnique({
+          where: {
+            userId_eventId: {
+              userId: user.id,
+              eventId: ev.id,
+            },
           },
         });
-        registrationResults.push({ eventName: ev.name, status: "CREATED", id: newReg.id });
-      } else {
-        registrationResults.push({ eventName: ev.name, status: "ALREADY_REGISTERED", id: existing.id });
+
+        if (!existingReg) {
+          await prisma.registration.create({
+            data: {
+              userId: user.id,
+              eventId: ev.id,
+              delegationId: delegation.id,
+              delegationMemberId: memberRecord.id,
+              status: RegistrationStatus.PENDING,
+            },
+          });
+        } else {
+          // Update linkage to delegation
+          await prisma.registration.update({
+            where: { id: existingReg.id },
+            data: {
+              delegationId: delegation.id,
+              delegationMemberId: memberRecord.id,
+            },
+          });
+        }
+
+        memberEvents.push({
+          name: ev.name,
+          category: ev.category,
+          venue: ev.venue,
+          time: ev.dateTime ? new Date(ev.dateTime).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) : null,
+          staffCoordinator: ev.staffCoordinator?.name || ev.coordinator?.name || null,
+          studentCoordinator: ev.studentCoordinator?.name || null,
+        });
+
+        // Group for coordinator alert
+        if (!eventParticipantsMap.has(ev.id)) {
+          eventParticipantsMap.set(ev.id, []);
+        }
+        eventParticipantsMap.get(ev.id)!.push({
+          name: m.name.trim(),
+          email: normalizedEmail,
+          phone: m.phone.trim(),
+          badgeCode,
+        });
+      }
+
+      registeredDelegates.push({
+        id: memberRecord.id,
+        name: memberRecord.name,
+        email: memberRecord.email,
+        phone: memberRecord.phone,
+        isTeamLead: memberRecord.isTeamLead,
+        badgeCode: memberRecord.badgeCode,
+        foodTokenCode: memberRecord.foodTokenCode,
+        qrData: memberRecord.qrData,
+        badgeUrl: verifyUrl,
+        events: memberEvents,
+      });
+
+      // Trigger background confirmation email to this delegate
+      sendDelegateRegistrationEmail({
+        toEmail: normalizedEmail,
+        delegateName: m.name.trim(),
+        collegeName: collegeName.trim(),
+        teamName: delegation.teamName,
+        badgeCode,
+        foodTokenCode,
+        badgeUrl: verifyUrl,
+        events: memberEvents,
+      }).catch((e) => console.error("Delegate email error:", e));
+    }
+
+    // Trigger coordinator alerts for all affected events
+    for (const [evId, participants] of eventParticipantsMap.entries()) {
+      const ev = eventMap.get(evId);
+      if (!ev) continue;
+
+      const staffIncharge = ev.staffCoordinator || ev.coordinator;
+      const studentIncharge = ev.studentCoordinator;
+
+      const coordinatorPortalUrl = `${origin}/coordinator/${ev.id}`;
+
+      // Notify Staff Coordinator
+      if (staffIncharge?.email) {
+        sendCoordinatorRegistrationAlert({
+          coordinatorEmail: staffIncharge.email,
+          coordinatorName: staffIncharge.name,
+          roleType: "Staff Incharge",
+          eventName: ev.name,
+          collegeName: delegation.collegeName,
+          teamName: delegation.teamName,
+          participants,
+          staffIncharge: delegation.staffInchargeName ? {
+            name: delegation.staffInchargeName,
+            email: delegation.staffInchargeEmail,
+            phone: delegation.staffInchargePhone,
+          } : null,
+          coordinatorPortalUrl,
+        }).catch((e) => console.error("Coordinator alert error (staff):", e));
+      }
+
+      // Notify Student Coordinator
+      if (studentIncharge?.email && studentIncharge.email !== staffIncharge?.email) {
+        sendCoordinatorRegistrationAlert({
+          coordinatorEmail: studentIncharge.email,
+          coordinatorName: studentIncharge.name,
+          roleType: "Student Incharge",
+          eventName: ev.name,
+          collegeName: delegation.collegeName,
+          teamName: delegation.teamName,
+          participants,
+          staffIncharge: delegation.staffInchargeName ? {
+            name: delegation.staffInchargeName,
+            email: delegation.staffInchargeEmail,
+            phone: delegation.staffInchargePhone,
+          } : null,
+          coordinatorPortalUrl,
+        }).catch((e) => console.error("Coordinator alert error (student):", e));
       }
     }
 
-    const totalFee = validEvents.reduce((sum, e) => sum + e.fee, 0);
+    // Record comprehensive Activity Log
+    await logActivity({
+      action: "REGISTRATION_CREATED",
+      actorName: delegation.teamLeadName,
+      actorEmail: delegation.teamLeadEmail,
+      actorRole: "STUDENT",
+      targetType: "Delegation",
+      targetId: delegation.id,
+      targetTitle: `Delegation Registered: "${delegation.collegeName}" (${registeredDelegates.length} delegates)`,
+      details: {
+        collegeName: delegation.collegeName,
+        teamName: delegation.teamName,
+        delegateCount: registeredDelegates.length,
+        totalFee,
+        eventsEntered: Array.from(eventParticipantsMap.keys()).map((id) => eventMap.get(id)?.name || id),
+        staffIncharge: delegation.staffInchargeName || null,
+      },
+    });
 
     return NextResponse.json({
       success: true,
-      message: `Registration submitted successfully for ${registrationResults.length} event(s)!`,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        college: user.college,
+      message: `Delegation successfully registered with ${registeredDelegates.length} student delegate(s)!`,
+      delegation: {
+        id: delegation.id,
+        collegeName: delegation.collegeName,
+        department: delegation.department,
+        teamName: delegation.teamName,
+        teamLeadName: delegation.teamLeadName,
+        staffInchargeName: delegation.staffInchargeName,
+        totalFee,
+        paymentStatus: delegation.paymentStatus,
       },
-      totalFee,
-      registrations: registrationResults,
+      delegates: registeredDelegates,
     });
-  } catch (error) {
-    console.error("Registration error:", error);
+  } catch (error: any) {
+    console.error("Delegation registration error:", error);
     return NextResponse.json(
-      { success: false, message: "An error occurred during registration. Please try again." },
+      { success: false, message: error.message || "An unexpected error occurred during delegation registration." },
       { status: 500 }
     );
   }

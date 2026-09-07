@@ -25,9 +25,13 @@ export default function Navbar({ edition }: NavbarProps) {
   useEffect(() => {
     if (!activeEdition) {
       fetch("/api/edition/active")
-        .then((res) => res.json())
+        .then(async (res) => {
+          if (!res.ok) return null;
+          const text = await res.text();
+          return text ? JSON.parse(text) : null;
+        })
         .then((data) => {
-          if (data.success && data.edition) {
+          if (data?.success && data.edition) {
             setActiveEdition(data.edition);
           }
         })
@@ -99,8 +103,8 @@ export default function Navbar({ edition }: NavbarProps) {
                 {editionYear}
               </span>
             </span>
-            <span className="text-[10px] uppercase font-bold tracking-widest text-[#57534E] block -mt-1">
-              Sacred Heart College
+            <span className="text-[10px] uppercase font-bold tracking-widest text-[#57534E] block -mt-1 truncate max-w-[220px]">
+              {activeEdition?.institutionShortName || activeEdition?.institutionName || "College Symposium"}
             </span>
           </div>
         </Link>

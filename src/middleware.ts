@@ -36,8 +36,8 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
-  // Coordinator route protection: COORDINATOR or ADMIN
-  if (isCoordinator && role !== "COORDINATOR" && role !== "ADMIN") {
+  // Coordinator route protection: COORDINATOR, ADMIN, or assigned event coordinator
+  if (isCoordinator && role !== "COORDINATOR" && role !== "ADMIN" && !token.isEventCoordinator) {
     return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 

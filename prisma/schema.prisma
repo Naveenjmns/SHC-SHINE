@@ -38,12 +38,15 @@ model User {
   passwordHash String?
   role         Role     @default(STUDENT)
   college      String?
+  avatarUrl    String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   // Relations
-  registrations Registration[]   // Events the user has registered for (as student)
-  coordEvents   Event[]          // Events the user coordinates
+  registrations      Registration[]   // Events the user has registered for (as student)
+  coordEvents        Event[]          @relation("LegacyCoordinatorEvents")
+  staffCoordEvents   Event[]          @relation("StaffCoordinatorEvents")
+  studentCoordEvents Event[]          @relation("StudentCoordinatorEvents")
 
   @@map("users")
 }
@@ -81,6 +84,17 @@ model EventEdition {
   deptLogoUrl          String?
   stageHeaderBannerUrl String?
 
+  // Reusable Institution & Department Details
+  institutionShortName String?  @default("SHC")
+  institutionLocation  String?  @default("Tirupattur — 635 601, Tamil Nadu")
+  institutionAbout     String?  @default("Premier institution recognized with NAAC accreditation, providing world-class infrastructure, research excellence, and academic distinction.")
+  departmentAbout      String?  @default("Nurturing top-tier engineers, developers, and technical leaders through state-of-the-art labs, hands-on curricula, and hackathons.")
+  departmentProgram    String?  @default("MCA Program")
+  contactEmail         String?  @default("shine@shctpt.edu")
+  contactPhone         String?  @default("+91 4175 240464")
+  websiteUrl           String?
+  participantFee       Float    @default(0)
+
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 
@@ -89,7 +103,54 @@ model EventEdition {
   sponsors      Sponsor[]
   scheduleItems ScheduleItem[]
 
+  delegations   Delegation[]
+
   @@map("event_editions")
+}
+
+model Delegation {
+  id                 String             @id @default(cuid())
+  editionId          String
+  collegeName        String
+  department         String?
+  teamName           String?
+  teamLeadName       String
+  teamLeadEmail      String
+  teamLeadPhone      String
+  staffInchargeName  String?
+  staffInchargeEmail String?
+  staffInchargePhone String?
+  totalFee           Float              @default(0)
+  paymentStatus      String             @default("PENDING") // PENDING, PAID, VERIFIED
+  notes              String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  edition            EventEdition       @relation(fields: [editionId], references: [id], onDelete: Cascade)
+  members            DelegationMember[]
+  registrations      Registration[]
+
+  @@map("delegations")
+}
+
+model DelegationMember {
+  id               String         @id @default(cuid())
+  delegationId     String
+  name             String
+  email            String
+  phone            String
+  isTeamLead       Boolean        @default(false)
+  badgeCode        String         @unique
+  foodTokenCode    String         @unique
+  foodTokenClaimed Boolean        @default(false)
+  qrData           String?        @db.Text
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  delegation       Delegation     @relation(fields: [delegationId], references: [id], onDelete: Cascade)
+  registrations    Registration[]
+
+  @@map("delegation_members")
 }
 
 model ScheduleItem {
@@ -132,42 +193,109 @@ model Sponsor {
 }
 
 model Event {
-  id            String        @id @default(cuid())
-  editionId     String?
-  name          String
-  description   String?
-  category      EventCategory
-  fee           Float         @default(0)
-  capacity      Int?
-  venue         String?
-  dateTime      DateTime
-  coordinatorId String?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  id                   String        @id @default(cuid())
+  editionId            String?
+  name                 String
+  description          String?
+  category             EventCategory
+  fee                  Float         @default(0)
+  capacity             Int?
+  venue                String?
+  dateTime             DateTime
+  rules                      String?       @db.Text
+  imageUrl                   String?
+  logoUrl                    String?
+  staffCoordinatorName       String?
+  staffCoordinatorEmail      String?
+  staffCoordinatorPhone      String?
+  staffCoordinatorImageUrl   String?
+  studentCoordinatorName     String?
+  studentCoordinatorEmail    String?
+  studentCoordinatorPhone    String?
+  studentCoordinatorImageUrl String?
+  staffCoordinatorId         String?
+  studentCoordinatorId       String?
+  coordinatorId              String?
+  createdAt                  DateTime      @default(now())
+  updatedAt                  DateTime      @updatedAt
 
   // Relations
-  edition       EventEdition?  @relation(fields: [editionId], references: [id])
-  coordinator   User?          @relation(fields: [coordinatorId], references: [id])
-  registrations Registration[]
+  edition            EventEdition?  @relation(fields: [editionId], references: [id])
+  coordinator        User?          @relation("LegacyCoordinatorEvents", fields: [coordinatorId], references: [id])
+  staffCoordinator   User?          @relation("StaffCoordinatorEvents", fields: [staffCoordinatorId], references: [id])
+  studentCoordinator User?          @relation("StudentCoordinatorEvents", fields: [studentCoordinatorId], references: [id])
+  registrations      Registration[]
 
   @@map("events")
 }
 
 model Registration {
-  id        String             @id @default(cuid())
-  userId    String
-  eventId   String
-  status    RegistrationStatus @default(PENDING)
-  result    String?
-  createdAt DateTime           @default(now())
-  updatedAt DateTime           @updatedAt
+  id                 String             @id @default(cuid())
+  userId             String
+  eventId            String
+  delegationId       String?
+  delegationMemberId String?
+  status             RegistrationStatus @default(PENDING)
+  result             String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
 
   // Relations
-  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event            Event             @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  delegation       Delegation?       @relation(fields: [delegationId], references: [id], onDelete: SetNull)
+  delegationMember DelegationMember? @relation(fields: [delegationMemberId], references: [id], onDelete: SetNull)
 
   // A user can only register once per event
   @@unique([userId, eventId])
   @@map("registrations")
+}
+
+model SmtpSetting {
+  id        String   @id @default("default")
+  host      String   @default("")
+  port      Int      @default(587)
+  secure    Boolean  @default(false)
+  user      String   @default("")
+  password  String   @default("")
+  fromEmail String   @default("")
+  fromName  String   @default("")
+  replyTo   String?
+  updatedAt DateTime @updatedAt
+
+  @@map("smtp_settings")
+}
+
+model EmailBroadcast {
+  id             String   @id @default(cuid())
+  subject        String
+  message        String
+  targetAudience String   @default("ALL") // ALL, EVENT
+  targetEventId  String?
+  recipientCount Int      @default(0)
+  status         String   @default("SENT") // SENT, FAILED, PARTIAL
+  sentBy         String?
+  sentAt         DateTime @default(now())
+
+  @@map("email_broadcasts")
+}
+
+model ActivityLog {
+  id          String   @id @default(cuid())
+  action      String   // e.g. "USER_LOGIN", "USER_REGISTER", "EVENT_REGISTRATION", "REGISTRATION_STATUS_UPDATE", "RESULT_UPDATE", "EVENT_CREATE", "EVENT_UPDATE", "EVENT_DELETE", "EMAIL_BROADCAST", "SMTP_UPDATE", "EDITION_UPDATE"
+  actorId     String?
+  actorName   String?
+  actorEmail  String?
+  actorRole   String?
+  targetType  String?  // e.g. "Event", "Registration", "User", "Email", "System"
+  targetId    String?
+  targetTitle String?  // e.g. Event name, User name, Subject
+  details     String?  @db.Text
+  ipAddress   String?
+  createdAt   DateTime @default(now())
+
+  @@index([action])
+  @@index([createdAt])
+  @@map("activity_logs")
 }
 

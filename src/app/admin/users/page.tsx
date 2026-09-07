@@ -4,7 +4,9 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { X } from "lucide-react";
+import { X, History } from "lucide-react";
+import { useToast } from "@/components/ToastProvider";
+import { safeJson } from "@/lib/safeFetch";
 
 interface UserItem {
   id: string;
@@ -23,6 +25,7 @@ interface UserItem {
 export default function AdminUsersPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { toast, confirmAction } = useToast();
 
   const [users, setUsers] = useState<UserItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -59,8 +62,8 @@ export default function AdminUsersPage() {
   const loadUsers = async () => {
     try {
       const res = await fetch("/api/admin/users");
-      const data = await res.json();
-      if (data.success) {
+      const data = await safeJson(res, { success: false, users: [] });
+      if (data.success && data.users) {
         setUsers(data.users);
       }
     } catch (err) {
@@ -82,8 +85,9 @@ export default function AdminUsersPage() {
         body: JSON.stringify({ name, email, phone, college, role, password }),
       });
 
-      const data = await res.json();
+      const data = await safeJson(res, { success: false, message: "Network error occurred." });
       if (data.success) {
+        toast.success(`User "${name}" created successfully.`);
         setShowModal(false);
         setName("");
         setEmail("");
@@ -103,25 +107,33 @@ export default function AdminUsersPage() {
 
   const handleDeleteUser = async (userId: string, userName: string) => {
     if (session?.user?.id === userId) {
-      alert("You cannot delete your own active administrator account.");
+      toast.warning("You cannot delete your own active administrator account.", "Action Blocked");
       return;
     }
 
-    if (!confirm(`Are you sure you want to delete user "${userName}"?`)) {
+    const confirmed = await confirmAction({
+      title: "Delete User Account",
+      message: `Are you sure you want to delete user "${userName}"? This will invalidate their credentials and remove their dashboard access.`,
+      confirmText: "Delete User",
+      cancelText: "Cancel",
+      isDestructive: true,
+    });
+    if (!confirmed) {
       return;
     }
 
     try {
       const res = await fetch(`/api/admin/users/${userId}`, { method: "DELETE" });
-      const data = await res.json();
+      const data = await safeJson(res, { success: false, message: "Network error occurred." });
       if (data.success) {
         setUsers((prev) => prev.filter((u) => u.id !== userId));
+        toast.success(`User "${userName}" has been removed.`);
       } else {
-        alert(data.message || "Failed to delete user.");
+        toast.error(data.message || "Failed to delete user.");
       }
     } catch (err) {
       console.error("Delete user error:", err);
-      alert("Error deleting user.");
+      toast.error("Error deleting user.");
     }
   };
 
@@ -159,6 +171,13 @@ export default function AdminUsersPage() {
           </div>
 
           <div className="flex items-center gap-3">
+            <Link
+              href="/admin/logs"
+              className="tap-target px-3 py-1.5 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors flex items-center gap-1.5"
+            >
+              <History className="w-3.5 h-3.5 text-orange-600" />
+              <span>Activity Logs</span>
+            </Link>
             <button
               onClick={() => setShowModal(true)}
               className="tap-target px-4 py-1.5 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer"

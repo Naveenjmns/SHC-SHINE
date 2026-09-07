@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { logActivity } from "@/lib/activityLogger";
 
 export const dynamic = "force-dynamic";
 
@@ -138,6 +139,15 @@ export async function PATCH(req: NextRequest) {
       "acronymExpansion",
       "deptLogoUrl",
       "stageHeaderBannerUrl",
+      "institutionShortName",
+      "institutionLocation",
+      "institutionAbout",
+      "departmentAbout",
+      "departmentProgram",
+      "contactEmail",
+      "contactPhone",
+      "websiteUrl",
+      "participantFee",
       "isActive",
       "status",
     ];
@@ -148,6 +158,8 @@ export async function PATCH(req: NextRequest) {
         const val = updateData[key];
         if ((key === "startDate" || key === "endDate") && val) {
           sanitizedData[key] = new Date(val);
+        } else if (key === "participantFee") {
+          sanitizedData[key] = parseFloat(val) || 0;
         } else {
           sanitizedData[key] = val === "" ? null : val;
         }
@@ -161,6 +173,21 @@ export async function PATCH(req: NextRequest) {
     const updated = await prisma.eventEdition.update({
       where: { id },
       data: sanitizedData,
+    });
+
+    await logActivity({
+      action: "EDITION_UPDATED",
+      actorId: session.user.id,
+      actorName: session.user.name,
+      actorEmail: session.user.email,
+      actorRole: session.user.role,
+      targetType: "System",
+      targetId: updated.id,
+      targetTitle: `Edition Updated: ${updated.name} ${updated.edition}`,
+      details: {
+        editionName: `${updated.name} ${updated.edition}`,
+        participantFee: updated.participantFee,
+      },
     });
 
     return NextResponse.json({ success: true, edition: updated });

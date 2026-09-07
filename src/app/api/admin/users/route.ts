@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import bcrypt from "bcryptjs";
 import { Role } from "@prisma/client";
+import { logActivity } from "@/lib/activityLogger";
 
 // GET /api/admin/users - List users with filters
 export async function GET(req: Request) {
@@ -98,6 +99,22 @@ export async function POST(req: Request) {
         college: true,
         role: true,
         createdAt: true,
+      },
+    });
+
+    await logActivity({
+      action: "USER_CREATED",
+      actorId: session.user.id,
+      actorName: session.user.name,
+      actorEmail: session.user.email,
+      actorRole: session.user.role,
+      targetType: "User",
+      targetId: newUser.id,
+      targetTitle: `User Created: ${newUser.name} (${newUser.role})`,
+      details: {
+        role: newUser.role,
+        email: newUser.email,
+        college: newUser.college,
       },
     });
 

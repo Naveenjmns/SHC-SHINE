@@ -5,6 +5,8 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ShieldAlert, Download, Theater, Laptop, MapPin, Clock, Check, X } from "lucide-react";
+import { useToast } from "@/components/ToastProvider";
+import { safeJson } from "@/lib/safeFetch";
 
 interface RegistrationRow {
   id: string;
@@ -18,6 +20,20 @@ interface RegistrationRow {
     phone: string | null;
     college: string | null;
   };
+  delegation?: {
+    id: string;
+    collegeName: string;
+    teamName: string | null;
+    teamLeadName: string;
+    teamLeadPhone: string;
+    staffInchargeName: string | null;
+    staffInchargePhone: string | null;
+  } | null;
+  delegationMember?: {
+    id: string;
+    badgeCode: string;
+    foodTokenCode: string;
+  } | null;
 }
 
 interface EventMeta {
@@ -28,10 +44,19 @@ interface EventMeta {
   venue: string | null;
   dateTime: string;
   capacity: number | null;
+  rules?: string | null;
+  staffCoordinator?: {
+    name: string;
+    email: string;
+  } | null;
+  studentCoordinator?: {
+    name: string;
+    email: string;
+  } | null;
   coordinator?: {
     name: string;
     email: string;
-  };
+  } | null;
 }
 
 export default function CoordinatorEventDetailPage({
@@ -44,6 +69,7 @@ export default function CoordinatorEventDetailPage({
 
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { toast } = useToast();
 
   const [event, setEvent] = useState<EventMeta | null>(null);
   const [registrations, setRegistrations] = useState<RegistrationRow[]>([]);
@@ -68,7 +94,7 @@ export default function CoordinatorEventDetailPage({
       async function loadEventData() {
         try {
           const res = await fetch(`/api/coordinator/events/${eventId}/registrations`);
-          const data = await res.json();
+          const data = await safeJson(res, { success: false, message: "Network error loading data." });
           if (!res.ok || !data.success) {
             setErrorMsg(data.message || "Failed to load event registrations.");
             setLoading(false);
@@ -76,10 +102,10 @@ export default function CoordinatorEventDetailPage({
           }
 
           setEvent(data.event);
-          setRegistrations(data.registrations);
+          setRegistrations(data.registrations || []);
 
           const initialResults: { [regId: string]: string } = {};
-          data.registrations.forEach((r: RegistrationRow) => {
+          (data.registrations || []).forEach((r: RegistrationRow) => {
             initialResults[r.id] = r.result || "";
           });
           setResultInputs(initialResults);
@@ -103,17 +129,18 @@ export default function CoordinatorEventDetailPage({
         body: JSON.stringify({ status: newStatus }),
       });
 
-      const data = await res.json();
+      const data = await safeJson(res, { success: false, message: "Network error occurred." });
       if (data.success) {
         setRegistrations((prev) =>
           prev.map((r) => (r.id === regId ? { ...r, status: newStatus } : r))
         );
+        toast.success(`Registration marked as ${newStatus.toLowerCase()}.`);
       } else {
-        alert(data.message || "Failed to update status.");
+        toast.error(data.message || "Failed to update status.");
       }
     } catch (err) {
       console.error("Status update error:", err);
-      alert("Error updating status.");
+      toast.error("Error updating status.");
     } finally {
       setSavingId(null);
     }
@@ -129,17 +156,18 @@ export default function CoordinatorEventDetailPage({
         body: JSON.stringify({ result: newResult }),
       });
 
-      const data = await res.json();
+      const data = await safeJson(res, { success: false, message: "Network error occurred." });
       if (data.success) {
         setRegistrations((prev) =>
           prev.map((r) => (r.id === regId ? { ...r, result: newResult } : r))
         );
+        toast.success("Award / position updated successfully.");
       } else {
-        alert(data.message || "Failed to save award result.");
+        toast.error(data.message || "Failed to save award result.");
       }
     } catch (err) {
       console.error("Save result error:", err);
-      alert("Error saving result.");
+      toast.error("Error saving result.");
     } finally {
       setSavingId(null);
     }
@@ -196,10 +224,15 @@ export default function CoordinatorEventDetailPage({
 
   const filtered = registrations.filter((r) => {
     const matchesStatus = statusFilter === "ALL" || r.status === statusFilter;
+    const college = r.delegation?.collegeName || r.user.college || "";
+    const team = r.delegation?.teamName || "";
+    const badge = r.delegationMember?.badgeCode || "";
     const matchesSearch =
       r.user.name.toLowerCase().includes(search.toLowerCase()) ||
       r.user.email.toLowerCase().includes(search.toLowerCase()) ||
-      (r.user.college && r.user.college.toLowerCase().includes(search.toLowerCase())) ||
+      college.toLowerCase().includes(search.toLowerCase()) ||
+      team.toLowerCase().includes(search.toLowerCase()) ||
+      badge.toLowerCase().includes(search.toLowerCase()) ||
       (r.user.phone && r.user.phone.includes(search));
     return matchesStatus && matchesSearch;
   });
@@ -255,14 +288,20 @@ export default function CoordinatorEventDetailPage({
                     </>
                   )}
                 </span>
-                <span className="text-xs font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded tabular-nums">
-                  Fee: ₹{event?.fee}
-                </span>
+                {event?.capacity ? (
+                  <span className="text-xs font-semibold text-slate-700 bg-slate-100 px-2.5 py-0.5 rounded tabular-nums">
+                    Max: {event.capacity} Slots
+                  </span>
+                ) : (
+                  <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                    Unlimited Capacity
+                  </span>
+                )}
               </div>
               <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
                 {event?.name} — Participant Triage
               </h1>
-              <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500 mt-1">
+              <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500 mt-1.5">
                 {event?.venue && (
                   <span className="inline-flex items-center gap-1">
                     <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
@@ -276,6 +315,16 @@ export default function CoordinatorEventDetailPage({
                     {event?.dateTime ? new Date(event.dateTime).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" }) : "TBD"}
                   </strong>
                 </span>
+                {(event?.staffCoordinator || event?.coordinator) && (
+                  <span className="inline-flex items-center gap-1">
+                    Staff: <strong className="text-slate-700">{event.staffCoordinator?.name || event.coordinator?.name}</strong>
+                  </span>
+                )}
+                {event?.studentCoordinator && (
+                  <span className="inline-flex items-center gap-1">
+                    Student: <strong className="text-blue-700">{event.studentCoordinator.name}</strong>
+                  </span>
+                )}
               </div>
             </div>
 
@@ -349,17 +398,41 @@ export default function CoordinatorEventDetailPage({
 
                     return (
                       <tr key={reg.id} className={`hover:bg-slate-50/70 transition-colors ${borderClass}`}>
-                        {/* Student Name */}
+                        {/* Student Name & Badge */}
                         <td className="p-4">
-                          <div className="font-bold text-slate-900 text-sm">{reg.user.name}</div>
-                          <div className="text-[11px] text-slate-500">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-slate-900 text-sm">{reg.user.name}</span>
+                            {reg.delegationMember?.badgeCode && (
+                              <span className="font-mono text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">
+                                {reg.delegationMember.badgeCode}
+                              </span>
+                            )}
+                          </div>
+                          {reg.delegation?.teamName && (
+                            <div className="text-[11px] font-medium text-slate-600">
+                              Team: <strong className="text-slate-800">{reg.delegation.teamName}</strong>
+                            </div>
+                          )}
+                          <div className="text-[10px] text-slate-400">
                             Reg: {new Date(reg.createdAt).toLocaleDateString("en-IN")}
                           </div>
                         </td>
 
-                        {/* College */}
-                        <td className="p-4 text-slate-700 font-medium max-w-[180px] truncate">
-                          {reg.user.college || "N/A"}
+                        {/* College & Contingent Lead / Faculty */}
+                        <td className="p-4 max-w-[200px]">
+                          <div className="text-slate-900 font-semibold text-xs sm:text-sm truncate">
+                            {reg.delegation?.collegeName || reg.user.college || "N/A"}
+                          </div>
+                          {reg.delegation?.staffInchargeName ? (
+                            <div className="text-[11px] text-amber-800 font-medium truncate mt-0.5">
+                              Faculty: {reg.delegation.staffInchargeName}
+                              {reg.delegation.staffInchargePhone && ` (${reg.delegation.staffInchargePhone})`}
+                            </div>
+                          ) : reg.delegation?.teamLeadName ? (
+                            <div className="text-[11px] text-slate-500 truncate mt-0.5">
+                              Lead: {reg.delegation.teamLeadName}
+                            </div>
+                          ) : null}
                         </td>
 
                         {/* Contact */}

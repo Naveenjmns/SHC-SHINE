@@ -3,6 +3,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import prisma from "@/lib/prisma";
 import { Role } from "@prisma/client";
+import { logActivity } from "@/lib/activityLogger";
 
 export const authOptions: AuthOptions = {
   session: {
@@ -58,6 +59,19 @@ export const authOptions: AuthOptions = {
         token.college = user.college;
         token.phone = user.phone;
       }
+      if (token.id) {
+        const isAssigned = await prisma.event.findFirst({
+          where: {
+            OR: [
+              { staffCoordinatorId: token.id as string },
+              { studentCoordinatorId: token.id as string },
+              { coordinatorId: token.id as string },
+            ],
+          },
+          select: { id: true },
+        });
+        token.isEventCoordinator = !!isAssigned;
+      }
       return token;
     },
     async session({ session, token }) {
@@ -66,8 +80,28 @@ export const authOptions: AuthOptions = {
         session.user.role = token.role as Role;
         session.user.college = token.college as string | null;
         session.user.phone = token.phone as string | null;
+        (session.user as any).isEventCoordinator = !!token.isEventCoordinator;
       }
       return session;
+    },
+  },
+  events: {
+    async signIn({ user }) {
+      if (user) {
+        await logActivity({
+          action: "USER_LOGIN",
+          actorId: user.id,
+          actorName: user.name,
+          actorEmail: user.email,
+          actorRole: (user as any).role,
+          targetType: "Auth",
+          targetTitle: `User Login (${user.email})`,
+          details: {
+            role: (user as any).role,
+            college: (user as any).college,
+          },
+        });
+      }
     },
   },
   pages: {

@@ -6,17 +6,29 @@ import { authOptions } from "@/lib/auth";
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || (session.user.role !== "COORDINATOR" && session.user.role !== "ADMIN")) {
-      return NextResponse.json({ success: false, message: "Unauthorized. Coordinator access required." }, { status: 403 });
+    if (!session) {
+      return NextResponse.json({ success: false, message: "Unauthorized." }, { status: 401 });
     }
 
-    const isCoordinatorOnly = session.user.role === "COORDINATOR";
+    const isAdmin = session.user.role === "ADMIN";
 
     const events = await prisma.event.findMany({
-      where: isCoordinatorOnly
-        ? { coordinatorId: session.user.id }
-        : {},
+      where: isAdmin
+        ? {}
+        : {
+            OR: [
+              { staffCoordinatorId: session.user.id },
+              { studentCoordinatorId: session.user.id },
+              { coordinatorId: session.user.id },
+            ],
+          },
       include: {
+        staffCoordinator: {
+          select: { id: true, name: true, email: true, phone: true },
+        },
+        studentCoordinator: {
+          select: { id: true, name: true, email: true, phone: true },
+        },
         coordinator: {
           select: { id: true, name: true, email: true, phone: true },
         },

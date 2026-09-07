@@ -7,6 +7,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Link from "next/link";
 import { AlertCircle } from "lucide-react";
+import { safeJson } from "@/lib/safeFetch";
 
 function LoginForm() {
   const router = useRouter();
@@ -40,7 +41,7 @@ function LoginForm() {
         router.push(callbackUrl);
       } else {
         const sessionRes = await fetch("/api/auth/session");
-        const session = await sessionRes.json();
+        const session = await safeJson(sessionRes, null);
         const role = session?.user?.role;
 
         if (role === "ADMIN") {

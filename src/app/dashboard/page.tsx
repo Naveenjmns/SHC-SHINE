@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { safeJson } from "@/lib/safeFetch";
 import {
   Trophy,
   GraduationCap,
@@ -54,8 +55,8 @@ export default function StudentDashboard() {
       async function loadRegistrations() {
         try {
           const res = await fetch("/api/student/registrations");
-          const data = await res.json();
-          if (data.success) {
+          const data = await safeJson(res, { success: false, registrations: [] });
+          if (data.success && data.registrations) {
             setRegistrations(data.registrations);
           }
         } catch (err) {

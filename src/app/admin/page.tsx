@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useToast } from "@/components/ToastProvider";
+import { safeJson } from "@/lib/safeFetch";
 import {
   Settings,
   Users,
@@ -23,6 +25,15 @@ import {
   Eye,
   ArrowRight,
   Landmark,
+  Mail,
+  Send,
+  Server,
+  RefreshCw,
+  AlertCircle,
+  Building2,
+  Phone,
+  Globe,
+  History,
 } from "lucide-react";
 
 interface StatsData {
@@ -63,6 +74,18 @@ interface RegistrationRecord {
     category: string;
     fee: number;
   };
+  delegation?: {
+    id: string;
+    collegeName: string;
+    teamName: string | null;
+    teamLeadName: string;
+    staffInchargeName: string | null;
+  } | null;
+  delegationMember?: {
+    id: string;
+    badgeCode: string;
+    foodTokenCode: string;
+  } | null;
 }
 
 interface EventEditionItem {
@@ -94,6 +117,17 @@ interface EventEditionItem {
   deptLogoUrl?: string | null;
   stageHeaderBannerUrl?: string | null;
 
+  // Reusable Institution & Department Details
+  institutionShortName?: string | null;
+  institutionLocation?: string | null;
+  institutionAbout?: string | null;
+  departmentAbout?: string | null;
+  departmentProgram?: string | null;
+  contactEmail?: string | null;
+  contactPhone?: string | null;
+  websiteUrl?: string | null;
+  participantFee?: number;
+
   navItems: { id: string; label: string; url: string; order: number; isEnabled: boolean }[];
   scheduleItems?: { id: string; time: string; title: string; venue?: string | null; description?: string | null; tag?: string | null; order: number }[];
   _count?: { events: number };
@@ -115,8 +149,11 @@ function toLocalDatetimeInput(dateVal?: Date | string | null) {
 export default function AdminOverviewPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { toast, confirmAction } = useToast();
 
-  const [activeTab, setActiveTab] = useState<"overview" | "editions" | "branding" | "registrations">("overview");
+  const [activeTab, setActiveTab] = useState<
+    "overview" | "institution" | "editions" | "branding" | "smtp" | "registrations"
+  >("overview");
 
   const [stats, setStats] = useState<StatsData | null>(null);
   const [eventBreakdown, setEventBreakdown] = useState<EventBreakdown[]>([]);
@@ -164,7 +201,45 @@ export default function AdminOverviewPage() {
     acronymExpansion: "SACRED HEART INFORMATICS NETWORK FOR ENTERPRISES",
     deptLogoUrl: "",
     stageHeaderBannerUrl: "",
+
+    // Reusable Institution & Department Setup Fields
+    institutionShortName: "SHC",
+    institutionLocation: "Tirupattur — 635 601, Tamil Nadu",
+    institutionAbout: "Premier institution recognized with NAAC accreditation, providing world-class infrastructure, research excellence, and academic distinction.",
+    departmentAbout: "Nurturing top-tier engineers, developers, and technical leaders through state-of-the-art labs, hands-on curricula, and hackathons.",
+    departmentProgram: "MCA Program",
+    contactEmail: "shine@shctpt.edu",
+    contactPhone: "+91 4175 240464",
+    websiteUrl: "",
+    participantFee: 0,
   });
+
+  // SMTP Settings State
+  const [smtpForm, setSmtpForm] = useState({
+    host: "",
+    port: 587,
+    secure: false,
+    user: "",
+    password: "",
+    hasPassword: false,
+    fromEmail: "",
+    fromName: "Event Coordination Team",
+    replyTo: "",
+  });
+  const [savingSmtp, setSavingSmtp] = useState(false);
+  const [testEmailAddress, setTestEmailAddress] = useState("");
+  const [testingSmtp, setTestingSmtp] = useState(false);
+  const [smtpTestResult, setSmtpTestResult] = useState<{ success?: boolean; message?: string } | null>(null);
+
+  // Email Broadcast State
+  const [broadcastForm, setBroadcastForm] = useState({
+    targetAudience: "ALL",
+    targetEventId: "",
+    subject: "",
+    message: "",
+  });
+  const [sendingBroadcast, setSendingBroadcast] = useState(false);
+  const [broadcastHistory, setBroadcastHistory] = useState<any[]>([]);
 
   // Navigation Items State
   const [newNavLabel, setNewNavLabel] = useState("");
@@ -194,22 +269,22 @@ export default function AdminOverviewPage() {
     try {
       // 1. Load Stats
       const statsRes = await fetch("/api/admin/stats");
-      const statsData = await statsRes.json();
+      const statsData = await safeJson(statsRes, { success: false, stats: null, eventBreakdown: [] });
       if (statsData.success) {
         setStats(statsData.stats);
-        setEventBreakdown(statsData.eventBreakdown);
+        setEventBreakdown(statsData.eventBreakdown || []);
       }
 
       // 2. Load Registrations
       const regRes = await fetch("/api/admin/registrations");
-      const regData = await regRes.json();
+      const regData = await safeJson(regRes, { success: false, registrations: [] });
       if (regData.success) {
-        setRegistrations(regData.registrations);
+        setRegistrations(regData.registrations || []);
       }
 
       // 3. Load Event Editions
       const edRes = await fetch("/api/admin/edition");
-      const edData = await edRes.json();
+      const edData = await safeJson(edRes, { success: false, editions: [] });
       if (edData.success && edData.editions) {
         setEditions(edData.editions);
         const currentActive = edData.editions.find((e: EventEditionItem) => e.isActive) || edData.editions[0];
@@ -237,8 +312,50 @@ export default function AdminOverviewPage() {
             acronymExpansion: currentActive.acronymExpansion || "SACRED HEART INFORMATICS NETWORK FOR ENTERPRISES",
             deptLogoUrl: currentActive.deptLogoUrl || "",
             stageHeaderBannerUrl: currentActive.stageHeaderBannerUrl || "",
+
+            institutionShortName: currentActive.institutionShortName || "SHC",
+            institutionLocation: currentActive.institutionLocation || "Tirupattur — 635 601, Tamil Nadu",
+            institutionAbout: currentActive.institutionAbout || "Premier institution recognized with NAAC accreditation, providing world-class infrastructure, research excellence, and academic distinction.",
+            departmentAbout: currentActive.departmentAbout || "Nurturing top-tier engineers, developers, and technical leaders through state-of-the-art labs, hands-on curricula, and hackathons.",
+            departmentProgram: currentActive.departmentProgram || "MCA Program",
+            contactEmail: currentActive.contactEmail || "shine@shctpt.edu",
+            contactPhone: currentActive.contactPhone || "+91 4175 240464",
+            websiteUrl: currentActive.websiteUrl || "",
+            participantFee: currentActive.participantFee || 0,
           });
         }
+      }
+
+      // 4. Load SMTP settings
+      try {
+        const smtpRes = await fetch("/api/admin/smtp");
+        const smtpData = await safeJson(smtpRes, { success: false, smtp: null });
+        if (smtpData.success && smtpData.smtp) {
+          setSmtpForm((prev) => ({
+            ...prev,
+            host: smtpData.smtp.host || "",
+            port: smtpData.smtp.port || 587,
+            secure: !!smtpData.smtp.secure,
+            user: smtpData.smtp.user || "",
+            hasPassword: !!smtpData.smtp.hasPassword,
+            fromEmail: smtpData.smtp.fromEmail || "",
+            fromName: smtpData.smtp.fromName || "Event Coordination Team",
+            replyTo: smtpData.smtp.replyTo || "",
+          }));
+        }
+      } catch (err) {
+        console.error("Failed to load SMTP settings:", err);
+      }
+
+      // 5. Load Email Broadcast History
+      try {
+        const historyRes = await fetch("/api/admin/email/history");
+        const historyData = await safeJson(historyRes, { success: false, broadcasts: [] });
+        if (historyData.success && historyData.broadcasts) {
+          setBroadcastHistory(historyData.broadcasts);
+        }
+      } catch (err) {
+        console.error("Failed to load broadcast history:", err);
       }
     } catch (e) {
       console.error("Failed to load admin data:", e);
@@ -256,15 +373,16 @@ export default function AdminOverviewPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newEditionData),
       });
-      const data = await res.json();
+      const data = await safeJson(res, { success: false, error: "Server error occurred." });
       if (data.success) {
         setShowNewEditionModal(false);
+        toast.success("New event edition created successfully!");
         await loadAdminData();
       } else {
-        alert("Failed to create edition: " + data.error);
+        toast.error("Failed to create edition: " + data.error);
       }
     } catch (err: any) {
-      alert("Error: " + err.message);
+      toast.error("Error: " + err.message);
     } finally {
       setSaving(false);
     }
@@ -278,12 +396,13 @@ export default function AdminOverviewPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: editionId, makeActive: true }),
       });
-      const data = await res.json();
+      const data = await safeJson(res, { success: false });
       if (data.success) {
+        toast.success("Active edition updated successfully!");
         await loadAdminData();
       }
     } catch (err: any) {
-      alert("Error setting active edition: " + err.message);
+      toast.error("Error setting active edition: " + err.message);
     } finally {
       setSaving(false);
     }
@@ -299,17 +418,133 @@ export default function AdminOverviewPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: activeEdition.id, ...brandingForm }),
       });
-      const data = await res.json();
+      const data = await safeJson(res, { success: false, error: "Server error" });
       if (data.success) {
-        alert("Branding and Stage Header settings saved successfully!");
+        toast.success("Settings saved successfully!");
         await loadAdminData();
       } else {
-        alert("Failed to save branding: " + data.error);
+        toast.error("Failed to save settings: " + data.error);
       }
     } catch (err: any) {
-      alert("Error: " + err.message);
+      toast.error("Error: " + err.message);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSaveSmtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingSmtp(true);
+    setSmtpTestResult(null);
+    try {
+      const res = await fetch("/api/admin/smtp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(smtpForm),
+      });
+      const data = await safeJson(res, { success: false });
+      if (data.success) {
+        toast.success("SMTP configuration saved successfully!");
+        if (data.smtp) {
+          setSmtpForm((prev) => ({
+            ...prev,
+            host: data.smtp.host,
+            port: data.smtp.port,
+            secure: data.smtp.secure,
+            user: data.smtp.user,
+            hasPassword: data.smtp.hasPassword,
+            fromEmail: data.smtp.fromEmail,
+            fromName: data.smtp.fromName,
+            replyTo: data.smtp.replyTo,
+            password: "",
+          }));
+        }
+      } else {
+        toast.error("Failed to save SMTP settings: " + data.error);
+      }
+    } catch (err: any) {
+      toast.error("Error: " + err.message);
+    } finally {
+      setSavingSmtp(false);
+    }
+  };
+
+  const handleTestSmtp = async () => {
+    if (!testEmailAddress) {
+      toast.warning("Please enter an email address to send the test email to.");
+      return;
+    }
+    setTestingSmtp(true);
+    setSmtpTestResult(null);
+    try {
+      const res = await fetch("/api/admin/smtp/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ testEmail: testEmailAddress }),
+      });
+      const data = await safeJson(res, { success: false, message: "Server connection failed" });
+      setSmtpTestResult({
+        success: data.success,
+        message: data.message || data.error,
+      });
+      if (data.success) {
+        toast.success("SMTP test email sent successfully!");
+      } else {
+        toast.error(data.message || "Failed to connect to SMTP server");
+      }
+    } catch (err: any) {
+      setSmtpTestResult({
+        success: false,
+        message: err.message,
+      });
+      toast.error(err.message, "SMTP Error");
+    } finally {
+      setTestingSmtp(false);
+    }
+  };
+
+  const handleSendBroadcast = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!broadcastForm.subject.trim() || !broadcastForm.message.trim()) {
+      toast.warning("Please enter both Subject and Message body.");
+      return;
+    }
+
+    const confirmSend = await confirmAction({
+      title: "Dispatch Announcement Email?",
+      message: "Are you sure you want to dispatch this email announcement to registered students?",
+      confirmText: "Send Broadcast",
+    });
+    if (!confirmSend) return;
+
+    setSendingBroadcast(true);
+    try {
+      const res = await fetch("/api/admin/email/broadcast", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(broadcastForm),
+      });
+      const data = await safeJson(res, { success: false, error: "Network error" });
+      if (data.success) {
+        toast.success(data.message || "Announcement dispatched successfully!");
+        setBroadcastForm({
+          targetAudience: "ALL",
+          targetEventId: "",
+          subject: "",
+          message: "",
+        });
+        const hRes = await fetch("/api/admin/email/history");
+        const hData = await safeJson(hRes, { success: false, broadcasts: [] });
+        if (hData.success && hData.broadcasts) {
+          setBroadcastHistory(hData.broadcasts);
+        }
+      } else {
+        toast.error("Failed to send broadcast: " + data.error);
+      }
+    } catch (err: any) {
+      toast.error("Error: " + err.message);
+    } finally {
+      setSendingBroadcast(false);
     }
   };
 
@@ -326,14 +561,15 @@ export default function AdminOverviewPage() {
         method: "POST",
         body: formData,
       });
-      const data = await res.json();
+      const data = await safeJson(res, { success: false, error: "Upload failed" });
       if (data.success) {
         setBrandingForm((prev) => ({ ...prev, [targetField]: data.url }));
+        toast.success("File uploaded successfully!");
       } else {
-        alert("File upload failed: " + data.error);
+        toast.error("File upload failed: " + data.error);
       }
     } catch (err: any) {
-      alert("Upload error: " + err.message);
+      toast.error("Upload error: " + err.message);
     } finally {
       setSaving(false);
     }
@@ -342,7 +578,7 @@ export default function AdminOverviewPage() {
   const handleAddNavItem = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!activeEdition || !newNavLabel.trim() || !newNavUrl.trim()) {
-      alert("Please enter both Label and URL for the navigation item.");
+      toast.warning("Please enter both Label and URL for the navigation item.");
       return;
     }
 
@@ -358,18 +594,18 @@ export default function AdminOverviewPage() {
           order: (activeEdition.navItems?.length || 0) + 1,
         }),
       });
-      const data = await res.json();
+      const data = await safeJson(res, { success: false, error: "Network error" });
       if (data.success) {
         setNewNavLabel("");
         setNewNavUrl("");
-        alert("✅ Navigation item added successfully!");
+        toast.success("Navigation item added successfully!");
         await loadAdminData();
       } else {
-        alert("❌ Failed to add navigation item: " + (data.error || "Unknown error"));
+        toast.error("Failed to add navigation item: " + (data.error || "Unknown error"));
       }
     } catch (err: any) {
       console.error("Add nav item error:", err);
-      alert("❌ Error adding navigation item: " + err.message);
+      toast.error("Error adding navigation item: " + err.message);
     } finally {
       setSaving(false);
     }
@@ -389,22 +625,34 @@ export default function AdminOverviewPage() {
   };
 
   const handleDeleteNavItem = async (itemId: string) => {
+    const ok = await confirmAction({
+      title: "Delete Navigation Item",
+      message: "Are you sure you want to remove this navigation link?",
+      confirmText: "Delete Link",
+      isDestructive: true,
+    });
+    if (!ok) return;
+
     try {
       const res = await fetch(`/api/admin/navigation?id=${itemId}`, { method: "DELETE" });
-      if (res.ok) await loadAdminData();
+      if (res.ok) {
+        toast.success("Navigation item removed.");
+        await loadAdminData();
+      }
     } catch (err) {
       console.error("Delete nav item error:", err);
+      toast.error("Failed to delete navigation item.");
     }
   };
 
   const handleAddScheduleItem = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!activeEdition) {
-      alert("No active edition selected.");
+      toast.error("No active edition selected.");
       return;
     }
     if (!newScheduleTime.trim() || !newScheduleTitle.trim()) {
-      alert("Please provide both Time and Title for the schedule entry.");
+      toast.warning("Please provide both Time and Title for the schedule entry.");
       return;
     }
 
@@ -423,41 +671,48 @@ export default function AdminOverviewPage() {
           order: (activeEdition.scheduleItems?.length || 0) + 1,
         }),
       });
-      const data = await res.json();
+      const data = await safeJson(res, { success: false, error: "Network error" });
       if (data.success) {
         setNewScheduleTime("");
         setNewScheduleTitle("");
         setNewScheduleVenue("");
         setNewScheduleDescription("");
         setNewScheduleTag("");
-        alert("✅ Schedule entry added successfully!");
+        toast.success("Schedule entry added successfully!");
         await loadAdminData();
       } else {
-        alert("❌ Failed to add schedule item: " + (data.error || "Unknown error"));
+        toast.error("Failed to add schedule item: " + (data.error || "Unknown error"));
       }
     } catch (err: any) {
       console.error("Add schedule item error:", err);
-      alert("❌ Error adding schedule item: " + err.message);
+      toast.error("Error adding schedule item: " + err.message);
     } finally {
       setSaving(false);
     }
   };
 
   const handleDeleteScheduleItem = async (itemId: string) => {
-    if (!confirm("Are you sure you want to delete this schedule entry?")) return;
+    const ok = await confirmAction({
+      title: "Delete Schedule Item",
+      message: "Are you sure you want to delete this schedule entry?",
+      confirmText: "Delete Entry",
+      isDestructive: true,
+    });
+    if (!ok) return;
+
     setSaving(true);
     try {
       const res = await fetch(`/api/admin/schedule?id=${itemId}`, { method: "DELETE" });
-      const data = await res.json();
+      const data = await safeJson(res, { success: false, error: "Network error" });
       if (data.success) {
-        alert("✅ Schedule entry deleted.");
+        toast.success("Schedule entry deleted.");
         await loadAdminData();
       } else {
-        alert("❌ Failed to delete schedule item: " + (data.error || "Unknown error"));
+        toast.error("Failed to delete schedule item: " + (data.error || "Unknown error"));
       }
     } catch (err: any) {
       console.error("Delete schedule item error:", err);
-      alert("❌ Error deleting item: " + err.message);
+      toast.error("Error deleting item: " + err.message);
     } finally {
       setSaving(false);
     }
@@ -540,10 +795,10 @@ export default function AdminOverviewPage() {
         
         {/* Navigation Tabs */}
         <div className="flex flex-wrap items-center justify-between gap-4 mb-8 border-b border-[#CBD5E1] pb-3">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => setActiveTab("overview")}
-              className={`px-4 py-2 rounded-xl text-sm font-bold transition ${
+              className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition ${
                 activeTab === "overview"
                   ? "bg-[#0F172A] text-white shadow-md"
                   : "bg-white text-[#64748B] hover:text-[#0F172A] border border-stone-200"
@@ -553,8 +808,20 @@ export default function AdminOverviewPage() {
             </button>
 
             <button
+              onClick={() => setActiveTab("institution")}
+              className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-1.5 ${
+                activeTab === "institution"
+                  ? "bg-[#0F172A] text-white shadow-md"
+                  : "bg-white text-[#64748B] hover:text-[#0F172A] border border-stone-200"
+              }`}
+            >
+              <Landmark className="w-4 h-4 text-emerald-600" />
+              <span>Institution & Dept</span>
+            </button>
+
+            <button
               onClick={() => setActiveTab("editions")}
-              className={`px-4 py-2 rounded-xl text-sm font-bold transition flex items-center gap-2 ${
+              className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-1.5 ${
                 activeTab === "editions"
                   ? "bg-[#0F172A] text-white shadow-md"
                   : "bg-white text-[#64748B] hover:text-[#0F172A] border border-stone-200"
@@ -566,19 +833,31 @@ export default function AdminOverviewPage() {
 
             <button
               onClick={() => setActiveTab("branding")}
-              className={`px-4 py-2 rounded-xl text-sm font-bold transition flex items-center gap-2 ${
+              className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-1.5 ${
                 activeTab === "branding"
                   ? "bg-[#0F172A] text-white shadow-md"
                   : "bg-white text-[#64748B] hover:text-[#0F172A] border border-stone-200"
               }`}
             >
               <Palette className="w-4 h-4 text-[#FF6B1A]" />
-              <span>Branding & Hero Manager</span>
+              <span>Branding & Stage</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab("smtp")}
+              className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-1.5 ${
+                activeTab === "smtp"
+                  ? "bg-[#0F172A] text-white shadow-md"
+                  : "bg-white text-[#64748B] hover:text-[#0F172A] border border-stone-200"
+              }`}
+            >
+              <Mail className="w-4 h-4 text-sky-600" />
+              <span>SMTP & Email Updates</span>
             </button>
 
             <button
               onClick={() => setActiveTab("registrations")}
-              className={`px-4 py-2 rounded-xl text-sm font-bold transition ${
+              className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition ${
                 activeTab === "registrations"
                   ? "bg-[#0F172A] text-white shadow-md"
                   : "bg-white text-[#64748B] hover:text-[#0F172A] border border-stone-200"
@@ -589,6 +868,13 @@ export default function AdminOverviewPage() {
           </div>
 
           <div className="flex items-center gap-2">
+            <Link
+              href="/admin/logs"
+              className="px-3.5 py-2 bg-white border border-[#CBD5E1] text-[#0F172A] font-semibold text-xs rounded-xl hover:bg-stone-50 transition flex items-center gap-1.5"
+            >
+              <History className="w-3.5 h-3.5 text-orange-600" />
+              <span>Activity Logs →</span>
+            </Link>
             <Link
               href="/admin/events"
               className="px-3.5 py-2 bg-white border border-[#CBD5E1] text-[#0F172A] font-semibold text-xs rounded-xl hover:bg-stone-50 transition"
@@ -701,6 +987,364 @@ export default function AdminOverviewPage() {
           </div>
         )}
 
+        {/* TAB: INSTITUTION & DEPARTMENT SETUP */}
+        {activeTab === "institution" && activeEdition && (
+          <div className="space-y-8 animate-fade-in">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-stone-200 pb-4">
+              <div>
+                <h3 className="text-xl font-extrabold text-[#0F172A] flex items-center gap-2">
+                  <Landmark className="w-5 h-5 text-emerald-600" />
+                  <span>Institution & Department Setup</span>
+                </h3>
+                <p className="text-xs text-[#64748B]">
+                  Customize the hosting institution and department profile. These settings reflect dynamically across the Landing Page, Header Banner, Navbar, and Footer.
+                </p>
+              </div>
+
+              <button
+                onClick={handleSaveBranding}
+                disabled={saving}
+                className="btn-ember !py-2 !px-5 text-xs font-bold shrink-0 flex items-center gap-2 self-start sm:self-auto"
+              >
+                {saving ? "Saving Changes..." : "Save Institution & Dept Profile"}
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Left 2 Columns: Forms */}
+              <div className="lg:col-span-2 space-y-6">
+                {/* 1. Institution Identity Card */}
+                <div className="dash-card p-6 space-y-5 border-l-4 border-emerald-500">
+                  <div className="flex items-center justify-between border-b pb-3">
+                    <h4 className="text-sm font-bold uppercase tracking-wider text-[#0F172A] flex items-center gap-2">
+                      <Building2 className="w-4 h-4 text-emerald-600" />
+                      <span>1. Institution Identity & Accreditations</span>
+                    </h4>
+                    <span className="text-[10px] font-bold uppercase tracking-widest bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-md">
+                      College Profile
+                    </span>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-[#64748B] mb-1">
+                      Full Institution Name *
+                    </label>
+                    <input
+                      type="text"
+                      value={brandingForm.institutionName}
+                      onChange={(e) => setBrandingForm({ ...brandingForm, institutionName: e.target.value })}
+                      placeholder="e.g. Sacred Heart College (Autonomous), Tirupattur"
+                      className="w-full px-3 py-2 text-sm border border-[#CBD5E1] rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-[#64748B] mb-1">
+                        Short Name / Acronym
+                      </label>
+                      <input
+                        type="text"
+                        value={brandingForm.institutionShortName}
+                        onChange={(e) => setBrandingForm({ ...brandingForm, institutionShortName: e.target.value })}
+                        placeholder="e.g. SHC / AIT / NIT"
+                        className="w-full px-3 py-2 text-sm border border-[#CBD5E1] rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-[#64748B] mb-1">
+                        Campus Location / City
+                      </label>
+                      <input
+                        type="text"
+                        value={brandingForm.institutionLocation}
+                        onChange={(e) => setBrandingForm({ ...brandingForm, institutionLocation: e.target.value })}
+                        placeholder="e.g. Tirupattur — 635 601, Tamil Nadu"
+                        className="w-full px-3 py-2 text-sm border border-[#CBD5E1] rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-[#64748B] mb-1">
+                      NAAC Accreditation & University Affiliation Line
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={brandingForm.accreditationText}
+                      onChange={(e) => setBrandingForm({ ...brandingForm, accreditationText: e.target.value })}
+                      placeholder="e.g. Accredited by NAAC (5th Cycle) with 'A++' Grade, Affiliated to Thiruvalluvar University"
+                      className="w-full px-3 py-2 text-xs border border-[#CBD5E1] rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
+                    />
+                  </div>
+
+                  {/* Institution Crest / Logo URL */}
+                  <div>
+                    <label className="block text-xs font-bold text-[#64748B] mb-1">
+                      Institution Crest / Official Logo
+                    </label>
+                    <div className="flex items-center gap-3">
+                      <label className="cursor-pointer inline-flex items-center gap-2 px-3 py-2 border border-[#CBD5E1] rounded-xl text-xs font-semibold hover:bg-stone-50 transition bg-white shadow-2xs">
+                        <Upload className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Upload Crest</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => handleFileUpload("institutionCrestUrl", e)}
+                        />
+                      </label>
+                      <span className="text-xs text-[#94A3B8]">or enter image link below</span>
+                    </div>
+                    <input
+                      type="text"
+                      value={brandingForm.institutionCrestUrl}
+                      onChange={(e) => setBrandingForm({ ...brandingForm, institutionCrestUrl: e.target.value })}
+                      placeholder="/uploads/crest.png or https://..."
+                      className="w-full mt-2 px-3 py-2 text-xs border border-[#CBD5E1] rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none font-mono"
+                    />
+                    {brandingForm.institutionCrestUrl && (
+                      <div className="mt-2 flex items-center gap-3 p-2 bg-stone-50 rounded-xl border border-stone-200">
+                        <img src={brandingForm.institutionCrestUrl} alt="Crest Preview" className="h-10 w-auto object-contain" />
+                        <span className="text-xs text-stone-600 font-medium">Crest Preview</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-[#64748B] mb-1">
+                      About Institution (Landing Page "About The Institution" card)
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={brandingForm.institutionAbout}
+                      onChange={(e) => setBrandingForm({ ...brandingForm, institutionAbout: e.target.value })}
+                      placeholder="Describe your college legacy, campus, and academic distinction..."
+                      className="w-full px-3 py-2 text-xs border border-[#CBD5E1] rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
+                    />
+                  </div>
+                </div>
+
+                {/* 2. Department Identity Card */}
+                <div className="dash-card p-6 space-y-5 border-l-4 border-sky-500">
+                  <div className="flex items-center justify-between border-b pb-3">
+                    <h4 className="text-sm font-bold uppercase tracking-wider text-[#0F172A] flex items-center gap-2">
+                      <Laptop className="w-4 h-4 text-sky-600" />
+                      <span>2. Host Department & Program</span>
+                    </h4>
+                    <span className="text-[10px] font-bold uppercase tracking-widest bg-sky-100 text-sky-800 px-2 py-0.5 rounded-md">
+                      Department Profile
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-[#64748B] mb-1">
+                        Host Department Full Name *
+                      </label>
+                      <input
+                        type="text"
+                        value={brandingForm.hostDepartment}
+                        onChange={(e) => setBrandingForm({ ...brandingForm, hostDepartment: e.target.value })}
+                        placeholder="e.g. Department of Computer Applications (PG)"
+                        className="w-full px-3 py-2 text-sm border border-[#CBD5E1] rounded-xl focus:ring-2 focus:ring-sky-500 outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-[#64748B] mb-1">
+                        Degree / Program Name
+                      </label>
+                      <input
+                        type="text"
+                        value={brandingForm.departmentProgram}
+                        onChange={(e) => setBrandingForm({ ...brandingForm, departmentProgram: e.target.value })}
+                        placeholder="e.g. MCA Program / B.Tech CSE"
+                        className="w-full px-3 py-2 text-sm border border-[#CBD5E1] rounded-xl focus:ring-2 focus:ring-sky-500 outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Department Logo URL */}
+                  <div>
+                    <label className="block text-xs font-bold text-[#64748B] mb-1">
+                      Department Logo / Seal
+                    </label>
+                    <div className="flex items-center gap-3">
+                      <label className="cursor-pointer inline-flex items-center gap-2 px-3 py-2 border border-[#CBD5E1] rounded-xl text-xs font-semibold hover:bg-stone-50 transition bg-white shadow-2xs">
+                        <Upload className="w-3.5 h-3.5 text-sky-600" />
+                        <span>Upload Dept Logo</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => handleFileUpload("deptLogoUrl", e)}
+                        />
+                      </label>
+                      <span className="text-xs text-[#94A3B8]">or enter image link</span>
+                    </div>
+                    <input
+                      type="text"
+                      value={brandingForm.deptLogoUrl}
+                      onChange={(e) => setBrandingForm({ ...brandingForm, deptLogoUrl: e.target.value })}
+                      placeholder="/uploads/dept-logo.png or https://..."
+                      className="w-full mt-2 px-3 py-2 text-xs border border-[#CBD5E1] rounded-xl focus:ring-2 focus:ring-sky-500 outline-none font-mono"
+                    />
+                    {brandingForm.deptLogoUrl && (
+                      <div className="mt-2 flex items-center gap-3 p-2 bg-stone-50 rounded-xl border border-stone-200">
+                        <img src={brandingForm.deptLogoUrl} alt="Dept Logo Preview" className="h-10 w-auto object-contain" />
+                        <span className="text-xs text-stone-600 font-medium">Department Logo Preview</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-[#64748B] mb-1">
+                      About Department (Landing Page "About The Department" card)
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={brandingForm.departmentAbout}
+                      onChange={(e) => setBrandingForm({ ...brandingForm, departmentAbout: e.target.value })}
+                      placeholder="Describe your department, labs, achievements, and career readiness..."
+                      className="w-full px-3 py-2 text-xs border border-[#CBD5E1] rounded-xl focus:ring-2 focus:ring-sky-500 outline-none"
+                    />
+                  </div>
+                </div>
+
+                {/* 3. Contact & Venue Card */}
+                <div className="dash-card p-6 space-y-5 border-l-4 border-amber-500">
+                  <div className="flex items-center justify-between border-b pb-3">
+                    <h4 className="text-sm font-bold uppercase tracking-wider text-[#0F172A] flex items-center gap-2">
+                      <Phone className="w-4 h-4 text-amber-600" />
+                      <span>3. Contact & Campus Venue</span>
+                    </h4>
+                    <span className="text-[10px] font-bold uppercase tracking-widest bg-amber-100 text-amber-800 px-2 py-0.5 rounded-md">
+                      Reach & Venue
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-[#64748B] mb-1">Contact Email</label>
+                      <input
+                        type="email"
+                        value={brandingForm.contactEmail}
+                        onChange={(e) => setBrandingForm({ ...brandingForm, contactEmail: e.target.value })}
+                        placeholder="e.g. fest@college.edu"
+                        className="w-full px-3 py-2 text-sm border border-[#CBD5E1] rounded-xl focus:ring-2 focus:ring-amber-500 outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-[#64748B] mb-1">Contact Phone</label>
+                      <input
+                        type="text"
+                        value={brandingForm.contactPhone}
+                        onChange={(e) => setBrandingForm({ ...brandingForm, contactPhone: e.target.value })}
+                        placeholder="e.g. +91 9876543210"
+                        className="w-full px-3 py-2 text-sm border border-[#CBD5E1] rounded-xl focus:ring-2 focus:ring-amber-500 outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-[#64748B] mb-1">Main Campus Venue</label>
+                      <input
+                        type="text"
+                        value={brandingForm.venue}
+                        onChange={(e) => setBrandingForm({ ...brandingForm, venue: e.target.value })}
+                        placeholder="e.g. Main Auditorium, College Campus"
+                        className="w-full px-3 py-2 text-sm border border-[#CBD5E1] rounded-xl focus:ring-2 focus:ring-amber-500 outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-[#64748B] mb-1">Official Website URL</label>
+                      <input
+                        type="url"
+                        value={brandingForm.websiteUrl}
+                        onChange={(e) => setBrandingForm({ ...brandingForm, websiteUrl: e.target.value })}
+                        placeholder="e.g. https://www.college.edu"
+                        className="w-full px-3 py-2 text-sm border border-[#CBD5E1] rounded-xl focus:ring-2 focus:ring-amber-500 outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-2">
+                  <button
+                    onClick={handleSaveBranding}
+                    disabled={saving}
+                    className="btn-ember !py-3 !px-8 text-sm font-bold w-full sm:w-auto"
+                  >
+                    {saving ? "Saving Changes..." : "Save Institution & Department Profile"}
+                  </button>
+                </div>
+              </div>
+
+              {/* Right Column: Live Card Preview */}
+              <div className="space-y-6">
+                <div className="dash-card p-6 sticky top-24 space-y-4">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-[#64748B] flex items-center gap-1.5">
+                    <Eye className="w-3.5 h-3.5 text-[#FF6B1A]" />
+                    <span>Live Public Card Preview</span>
+                  </h4>
+
+                  {/* Institution Card Preview */}
+                  <div className="p-5 rounded-2xl bg-white border border-stone-200 shadow-sm space-y-3">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600">
+                      {brandingForm.institutionCrestUrl ? (
+                        <img src={brandingForm.institutionCrestUrl} alt="Crest" className="h-6 w-auto object-contain" />
+                      ) : (
+                        <Landmark className="w-5 h-5" />
+                      )}
+                    </div>
+                    <h5 className="font-extrabold text-[#0F172A] text-sm leading-snug">
+                      {brandingForm.institutionName || "Institution Name"}
+                    </h5>
+                    <p className="text-xs text-[#57534E] leading-relaxed line-clamp-3">
+                      {brandingForm.institutionAbout || "Institution description will appear here..."}
+                    </p>
+                    <div className="pt-3 border-t border-stone-100 flex items-center justify-between text-[11px] text-[#64748B]">
+                      <span>{brandingForm.institutionLocation || "Location"}</span>
+                      <span className="font-bold text-emerald-600">{brandingForm.institutionShortName || "Host"}</span>
+                    </div>
+                  </div>
+
+                  {/* Department Card Preview */}
+                  <div className="p-5 rounded-2xl bg-white border border-stone-200 shadow-sm space-y-3">
+                    <div className="w-10 h-10 rounded-xl bg-sky-50 border border-sky-200 flex items-center justify-center text-sky-600">
+                      {brandingForm.deptLogoUrl ? (
+                        <img src={brandingForm.deptLogoUrl} alt="Dept Logo" className="h-6 w-auto object-contain" />
+                      ) : (
+                        <Laptop className="w-5 h-5" />
+                      )}
+                    </div>
+                    <h5 className="font-extrabold text-[#0F172A] text-sm leading-snug">
+                      {brandingForm.hostDepartment || "Department Name"}
+                    </h5>
+                    <p className="text-xs text-[#57534E] leading-relaxed line-clamp-3">
+                      {brandingForm.departmentAbout || "Department description will appear here..."}
+                    </p>
+                    <div className="pt-3 border-t border-stone-100 flex items-center justify-between text-[11px] text-[#64748B]">
+                      <span>{brandingForm.departmentProgram || "Academic Program"}</span>
+                      <span className="font-bold text-[#FF6B1A]">Host</span>
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 space-y-1">
+                    <p className="font-bold flex items-center gap-1">
+                      <Sparkles className="w-3.5 h-3.5 text-amber-600" /> Reusable Platform Ready
+                    </p>
+                    <p className="text-[11px] leading-relaxed text-amber-800">
+                      Any college or department can install and operate this system without editing source code.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* TAB 2: MULTI-EDITION MANAGEMENT */}
         {activeTab === "editions" && (
           <div className="space-y-6 animate-fade-in">
@@ -787,6 +1431,25 @@ export default function AdminOverviewPage() {
                           themePrimaryAccent: ed.themePrimaryAccent || "#FF6B1A",
                           themeSecondaryAccent: ed.themeSecondaryAccent || "#D9A441",
                           themeBgColor: ed.themeBgColor || "#FAF8F5",
+
+                          institutionName: ed.institutionName || "SACRED HEART COLLEGE (AUTONOMOUS), TIRUPATTUR",
+                          institutionCrestUrl: ed.institutionCrestUrl || "",
+                          accreditationText: ed.accreditationText || "Accredited by NAAC (5th Cycle - Under RAF) with a CGPA of 3.53/4 at 'A++' Grade, Affiliated to Thiruvalluvar University Tirupattur - 635 601",
+                          jubileeBadgeUrl: ed.jubileeBadgeUrl || "",
+                          hostDepartment: ed.hostDepartment || "DEPARTMENT OF COMPUTER APPLICATIONS(PG)",
+                          acronymExpansion: ed.acronymExpansion || "SACRED HEART INFORMATICS NETWORK FOR ENTERPRISES",
+                          deptLogoUrl: ed.deptLogoUrl || "",
+                          stageHeaderBannerUrl: ed.stageHeaderBannerUrl || "",
+
+                          institutionShortName: ed.institutionShortName || "SHC",
+                          institutionLocation: ed.institutionLocation || "Tirupattur — 635 601, Tamil Nadu",
+                          institutionAbout: ed.institutionAbout || "Premier institution recognized with NAAC accreditation, providing world-class infrastructure, research excellence, and academic distinction.",
+                          departmentAbout: ed.departmentAbout || "Nurturing top-tier engineers, developers, and technical leaders through state-of-the-art labs, hands-on curricula, and hackathons.",
+                          departmentProgram: ed.departmentProgram || "MCA Program",
+                          contactEmail: ed.contactEmail || "shine@shctpt.edu",
+                          contactPhone: ed.contactPhone || "+91 4175 240464",
+                          websiteUrl: ed.websiteUrl || "",
+                          participantFee: ed.participantFee || 0,
                         });
                         setActiveTab("branding");
                       }}
@@ -907,6 +1570,28 @@ export default function AdminOverviewPage() {
                     </div>
                     <p className="text-[11px] text-[#64748B] mt-1.5">
                       The countdown timer in the #schedule section dynamically counts down to this exact date and time. Click <strong>Save Countdown Date</strong> to lock it into the database permanently.
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-[#64748B] mb-1">
+                      Delegate Registration Fee Per Participant (₹)
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={brandingForm.participantFee}
+                      onChange={(e) =>
+                        setBrandingForm({
+                          ...brandingForm,
+                          participantFee: parseFloat(e.target.value) || 0,
+                        })
+                      }
+                      placeholder="e.g. 150 (Set to 0 for Free Fest Registration)"
+                      className="w-full px-3 py-2 text-sm border border-[#CBD5E1] rounded-xl focus:ring-2 focus:ring-[#FF6B1A] outline-none"
+                    />
+                    <p className="text-[11px] text-[#64748B] mt-1">
+                      This entry fee is charged once per student participant delegate across the fest, replacing per-event ticket fees.
                     </p>
                   </div>
                 </div>
@@ -1370,6 +2055,311 @@ export default function AdminOverviewPage() {
           </div>
         )}
 
+        {/* TAB: SMTP & EMAIL BROADCASTS */}
+        {activeTab === "smtp" && (
+          <div className="space-y-8 animate-fade-in">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-stone-200 pb-4">
+              <div>
+                <h3 className="text-xl font-extrabold text-[#0F172A] flex items-center gap-2">
+                  <Mail className="w-5 h-5 text-sky-600" />
+                  <span>SMTP Configuration & Email Updates</span>
+                </h3>
+                <p className="text-xs text-[#64748B]">
+                  Configure your SMTP mail server and dispatch event announcements, schedule updates, or reminders to registered students.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Card 1: SMTP Server Configuration */}
+              <div className="dash-card p-6 space-y-5 border-l-4 border-sky-500">
+                <div className="flex items-center justify-between border-b pb-3">
+                  <h4 className="text-sm font-bold uppercase tracking-wider text-[#0F172A] flex items-center gap-2">
+                    <Server className="w-4 h-4 text-sky-600" />
+                    <span>SMTP Mail Server Settings</span>
+                  </h4>
+                  <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-md ${
+                    smtpForm.host ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"
+                  }`}>
+                    {smtpForm.host ? "Configured" : "Not Configured"}
+                  </span>
+                </div>
+
+                <form onSubmit={handleSaveSmtp} className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="sm:col-span-2">
+                      <label className="block text-xs font-bold text-[#64748B] mb-1">SMTP Host *</label>
+                      <input
+                        type="text"
+                        required
+                        value={smtpForm.host}
+                        onChange={(e) => setSmtpForm({ ...smtpForm, host: e.target.value })}
+                        placeholder="e.g. smtp.gmail.com"
+                        className="w-full px-3 py-2 text-sm border border-[#CBD5E1] rounded-xl focus:ring-2 focus:ring-sky-500 outline-none font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-[#64748B] mb-1">Port *</label>
+                      <input
+                        type="number"
+                        required
+                        value={smtpForm.port}
+                        onChange={(e) => setSmtpForm({ ...smtpForm, port: parseInt(e.target.value, 10) || 587 })}
+                        placeholder="587"
+                        className="w-full px-3 py-2 text-sm border border-[#CBD5E1] rounded-xl focus:ring-2 focus:ring-sky-500 outline-none font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-1">
+                    <input
+                      type="checkbox"
+                      id="smtpSecure"
+                      checked={smtpForm.secure}
+                      onChange={(e) => setSmtpForm({ ...smtpForm, secure: e.target.checked })}
+                      className="rounded border-gray-300 text-sky-600 focus:ring-sky-500 h-4 w-4"
+                    />
+                    <label htmlFor="smtpSecure" className="text-xs font-semibold text-[#475569]">
+                      Use SSL/TLS (Enable for port 465, disable for port 587 STARTTLS)
+                    </label>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold text-[#64748B] mb-1">Username / Email *</label>
+                      <input
+                        type="text"
+                        required
+                        value={smtpForm.user}
+                        onChange={(e) => setSmtpForm({ ...smtpForm, user: e.target.value })}
+                        placeholder="e.g. username@gmail.com"
+                        className="w-full px-3 py-2 text-sm border border-[#CBD5E1] rounded-xl focus:ring-2 focus:ring-sky-500 outline-none font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-[#64748B] mb-1">
+                        Password {smtpForm.hasPassword && <span className="text-emerald-600 font-normal">(Saved)</span>}
+                      </label>
+                      <input
+                        type="password"
+                        value={smtpForm.password}
+                        onChange={(e) => setSmtpForm({ ...smtpForm, password: e.target.value })}
+                        placeholder={smtpForm.hasPassword ? "•••••••• (Leave blank to keep)" : "Enter App Password"}
+                        className="w-full px-3 py-2 text-sm border border-[#CBD5E1] rounded-xl focus:ring-2 focus:ring-sky-500 outline-none font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold text-[#64748B] mb-1">From Sender Name</label>
+                      <input
+                        type="text"
+                        value={smtpForm.fromName}
+                        onChange={(e) => setSmtpForm({ ...smtpForm, fromName: e.target.value })}
+                        placeholder="e.g. Fest Coordination Team"
+                        className="w-full px-3 py-2 text-sm border border-[#CBD5E1] rounded-xl focus:ring-2 focus:ring-sky-500 outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-[#64748B] mb-1">From Email Address</label>
+                      <input
+                        type="email"
+                        value={smtpForm.fromEmail}
+                        onChange={(e) => setSmtpForm({ ...smtpForm, fromEmail: e.target.value })}
+                        placeholder="e.g. noreply@college.edu"
+                        className="w-full px-3 py-2 text-sm border border-[#CBD5E1] rounded-xl focus:ring-2 focus:ring-sky-500 outline-none font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={savingSmtp}
+                    className="w-full py-2.5 px-4 rounded-xl text-xs font-bold bg-[#0F172A] text-white hover:bg-slate-800 transition shadow-sm"
+                  >
+                    {savingSmtp ? "Saving SMTP Settings..." : "Save SMTP Settings"}
+                  </button>
+                </form>
+
+                {/* Test Connection Box */}
+                <div className="pt-4 border-t border-stone-200 space-y-3">
+                  <h5 className="text-xs font-bold text-[#0F172A] flex items-center gap-1.5">
+                    <RefreshCw className="w-3.5 h-3.5 text-sky-600" />
+                    <span>Test SMTP Connection & Send Test Email</span>
+                  </h5>
+                  <div className="flex gap-2">
+                    <input
+                      type="email"
+                      value={testEmailAddress}
+                      onChange={(e) => setTestEmailAddress(e.target.value)}
+                      placeholder="Enter recipient email (e.g. your email)"
+                      className="flex-1 px-3 py-1.5 text-xs border border-[#CBD5E1] rounded-xl outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleTestSmtp}
+                      disabled={testingSmtp || !smtpForm.host}
+                      className="px-3.5 py-1.5 bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold rounded-xl transition disabled:opacity-50"
+                    >
+                      {testingSmtp ? "Testing..." : "Send Test"}
+                    </button>
+                  </div>
+                  {smtpTestResult && (
+                    <div className={`p-3 rounded-xl text-xs font-medium ${
+                      smtpTestResult.success
+                        ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                        : "bg-rose-50 text-rose-800 border border-rose-200"
+                    }`}>
+                      {smtpTestResult.success ? "✓ " : "✕ "}
+                      {smtpTestResult.message}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Card 2: Send Broadcast Email to Students */}
+              <div className="dash-card p-6 space-y-5 border-l-4 border-orange-500">
+                <div className="flex items-center justify-between border-b pb-3">
+                  <h4 className="text-sm font-bold uppercase tracking-wider text-[#0F172A] flex items-center gap-2">
+                    <Send className="w-4 h-4 text-[#FF6B1A]" />
+                    <span>Dispatch Announcement / Event Update</span>
+                  </h4>
+                  <span className="text-[10px] font-bold uppercase tracking-widest bg-orange-100 text-orange-800 px-2 py-0.5 rounded-md">
+                    Student Broadcast
+                  </span>
+                </div>
+
+                <form onSubmit={handleSendBroadcast} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-[#64748B] mb-1">Target Audience *</label>
+                    <select
+                      value={broadcastForm.targetAudience}
+                      onChange={(e) => setBroadcastForm({ ...broadcastForm, targetAudience: e.target.value })}
+                      className="w-full px-3 py-2 text-xs border border-[#CBD5E1] rounded-xl outline-none font-semibold"
+                    >
+                      <option value="ALL">All Registered Students (Site-wide)</option>
+                      <option value="EVENT">Students Registered for a Specific Event</option>
+                    </select>
+                  </div>
+
+                  {broadcastForm.targetAudience === "EVENT" && (
+                    <div>
+                      <label className="block text-xs font-bold text-[#64748B] mb-1">Select Event *</label>
+                      <select
+                        required
+                        value={broadcastForm.targetEventId}
+                        onChange={(e) => setBroadcastForm({ ...broadcastForm, targetEventId: e.target.value })}
+                        className="w-full px-3 py-2 text-xs border border-[#CBD5E1] rounded-xl outline-none"
+                      >
+                        <option value="">-- Choose an Event --</option>
+                        {eventBreakdown.map((ev) => (
+                          <option key={ev.id} value={ev.id}>
+                            {ev.name} ({ev.registrationsCount} registered)
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-xs font-bold text-[#64748B] mb-1">Email Subject *</label>
+                    <input
+                      type="text"
+                      required
+                      value={broadcastForm.subject}
+                      onChange={(e) => setBroadcastForm({ ...broadcastForm, subject: e.target.value })}
+                      placeholder="e.g. Schedule Update: Coding Competition Venue Changed"
+                      className="w-full px-3 py-2 text-sm border border-[#CBD5E1] rounded-xl focus:ring-2 focus:ring-[#FF6B1A] outline-none font-medium"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-[#64748B] mb-1">
+                      Announcement Message (Supports paragraphs & line breaks) *
+                    </label>
+                    <textarea
+                      rows={5}
+                      required
+                      value={broadcastForm.message}
+                      onChange={(e) => setBroadcastForm({ ...broadcastForm, message: e.target.value })}
+                      placeholder="Write your announcement to registered students here..."
+                      className="w-full px-3 py-2 text-xs border border-[#CBD5E1] rounded-xl focus:ring-2 focus:ring-[#FF6B1A] outline-none"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={sendingBroadcast}
+                    className="w-full btn-ember !py-2.5 text-xs font-bold flex items-center justify-center gap-2"
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                    <span>{sendingBroadcast ? "Dispatching Emails..." : "Send Announcement to Registered Students"}</span>
+                  </button>
+                </form>
+
+                {/* Email Live Preview Accordion/Box */}
+                <div className="p-3 bg-stone-50 rounded-xl border border-stone-200 text-xs text-stone-600 space-y-1">
+                  <span className="font-bold text-[#0F172A]">📧 Branded Email Template:</span>
+                  <p className="text-[11px] leading-relaxed">
+                    Emails are automatically delivered in responsive HTML with <strong>{brandingForm.institutionName}</strong> header, custom logo, personalized delegate greeting, and organizing committee signoff.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Broadcast Logs History Table */}
+            <div className="dash-card p-6 space-y-4">
+              <h4 className="text-sm font-bold uppercase tracking-wider text-[#0F172A]">
+                Recent Announcement Broadcasts ({broadcastHistory.length})
+              </h4>
+
+              {broadcastHistory.length === 0 ? (
+                <p className="text-xs text-[#94A3B8] italic">No broadcast announcements have been sent yet.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm border-collapse">
+                    <thead>
+                      <tr className="border-b border-[#E2E8F0] text-xs font-bold text-[#64748B] uppercase">
+                        <th className="py-2.5 px-3">Subject</th>
+                        <th className="py-2.5 px-3">Target Audience</th>
+                        <th className="py-2.5 px-3">Recipients</th>
+                        <th className="py-2.5 px-3">Date & Time</th>
+                        <th className="py-2.5 px-3">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#E2E8F0] text-xs">
+                      {broadcastHistory.map((b) => (
+                        <tr key={b.id} className="hover:bg-stone-50">
+                          <td className="py-2.5 px-3 font-semibold text-[#0F172A]">{b.subject}</td>
+                          <td className="py-2.5 px-3 text-[#64748B]">
+                            {b.targetAudience === "ALL" ? "All Students" : "Event Participants"}
+                          </td>
+                          <td className="py-2.5 px-3 font-mono font-bold text-emerald-700">{b.recipientCount} sent</td>
+                          <td className="py-2.5 px-3 text-[#64748B]">
+                            {new Date(b.sentAt).toLocaleString()}
+                          </td>
+                          <td className="py-2.5 px-3">
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                              b.status === "SENT"
+                                ? "bg-emerald-100 text-emerald-800"
+                                : b.status === "PARTIAL"
+                                ? "bg-amber-100 text-amber-800"
+                                : "bg-rose-100 text-rose-800"
+                            }`}>
+                              {b.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* TAB 4: REGISTRATIONS MANAGEMENT */}
         {activeTab === "registrations" && (
           <div className="dash-card p-6 animate-fade-in space-y-4">
@@ -1413,10 +2403,31 @@ export default function AdminOverviewPage() {
                   {filteredRegistrations.map((reg) => (
                     <tr key={reg.id} className="hover:bg-stone-50 transition">
                       <td className="py-3 px-4 font-bold text-[#0F172A]">
-                        <div>{reg.user.name}</div>
+                        <div className="flex items-center gap-1.5">
+                          <span>{reg.user.name}</span>
+                          {reg.delegationMember?.badgeCode && (
+                            <span className="font-mono text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">
+                              {reg.delegationMember.badgeCode}
+                            </span>
+                          )}
+                        </div>
                         <div className="text-xs font-normal text-[#64748B]">{reg.user.email}</div>
+                        {reg.delegation?.teamName && (
+                          <div className="text-[11px] text-amber-800 font-medium mt-0.5">
+                            Team: {reg.delegation.teamName}
+                          </div>
+                        )}
                       </td>
-                      <td className="py-3 px-4 text-xs text-[#64748B]">{reg.user.college || "N/A"}</td>
+                      <td className="py-3 px-4 text-xs text-[#64748B]">
+                        <div className="font-semibold text-slate-800">
+                          {reg.delegation?.collegeName || reg.user.college || "N/A"}
+                        </div>
+                        {reg.delegation?.staffInchargeName && (
+                          <div className="text-[11px] text-slate-500 mt-0.5">
+                            Faculty: {reg.delegation.staffInchargeName}
+                          </div>
+                        )}
+                      </td>
                       <td className="py-3 px-4 font-semibold text-[#0F172A]">{reg.event.name}</td>
                       <td className="py-3 px-4">
                         <span
