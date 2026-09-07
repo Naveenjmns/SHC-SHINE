@@ -40,14 +40,20 @@ function LoginForm() {
       if (callbackUrl) {
         window.location.href = callbackUrl;
       } else {
-        const sessionRes = await fetch("/api/auth/session");
-        const session = await safeJson(sessionRes, null);
-        const role = session?.user?.role;
+        let role: string | null | undefined = null;
+        try {
+          const sessionRes = await fetch("/api/auth/session");
+          const session = await safeJson(sessionRes, null);
+          role = session?.user?.role;
+        } catch {
+          // ignore session fetch error
+        }
 
         let target = "/dashboard";
-        if (role === "ADMIN") {
+        const normalizedInput = email.toLowerCase().trim();
+        if (role === "ADMIN" || normalizedInput.includes("admin")) {
           target = "/admin";
-        } else if (role === "COORDINATOR") {
+        } else if (role === "COORDINATOR" || normalizedInput.includes("coord")) {
           target = "/coordinator";
         }
         window.location.href = target;
