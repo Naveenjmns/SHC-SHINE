@@ -74,12 +74,25 @@ async function main() {
   const coordPasswordHash = await bcrypt.hash("coord123", 10);
   const studentPasswordHash = await bcrypt.hash("student123", 10);
 
+  const railwayAdminPasswordHash = await bcrypt.hash("RailwayAdmin2026!", 10);
+
   const admin = await prisma.user.create({
     data: {
       name: "SHINE Admin",
       email: "admin@shctpt.edu",
       phone: "+91 9876543210",
       passwordHash: adminPasswordHash,
+      role: Role.ADMIN,
+      college: "Sacred Heart College (Autonomous), Tirupattur",
+    },
+  });
+
+  const railwayAdmin = await prisma.user.create({
+    data: {
+      name: "Railway Admin",
+      email: "railway.admin@shctpt.edu",
+      phone: "+91 9876543210",
+      passwordHash: railwayAdminPasswordHash,
       role: Role.ADMIN,
       college: "Sacred Heart College (Autonomous), Tirupattur",
     },

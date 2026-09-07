@@ -38,32 +38,25 @@ function LoginForm() {
       }
 
       if (callbackUrl) {
-        router.push(callbackUrl);
+        window.location.href = callbackUrl;
       } else {
         const sessionRes = await fetch("/api/auth/session");
         const session = await safeJson(sessionRes, null);
         const role = session?.user?.role;
 
+        let target = "/dashboard";
         if (role === "ADMIN") {
-          router.push("/admin");
+          target = "/admin";
         } else if (role === "COORDINATOR") {
-          router.push("/coordinator");
-        } else {
-          router.push("/dashboard");
+          target = "/coordinator";
         }
+        window.location.href = target;
       }
-      router.refresh();
     } catch (err) {
       console.error("Login error:", err);
       setErrorMsg("An unexpected connection error occurred.");
       setLoading(false);
     }
-  };
-
-  const fillTestAccount = (testEmail: string, testPass: string) => {
-    setEmail(testEmail);
-    setPassword(testPass);
-    setErrorMsg("");
   };
 
   return (
@@ -139,42 +132,7 @@ function LoginForm() {
           </button>
         </form>
 
-        {/* Demo Credentials Helper */}
-        <div className="mt-8 pt-6 border-t border-[#1C1917]/10">
-          <div className="text-[11px] font-bold text-[#D9A441] uppercase tracking-wider mb-3 text-center">
-            Quick-Fill Demo Credentials
-          </div>
-          <div className="grid grid-cols-3 gap-2">
-            <button
-              type="button"
-              onClick={() => fillTestAccount("admin@shctpt.edu", "admin123")}
-              className="tap-target flex-col p-2 rounded-xl bg-stone-50 border border-stone-200 hover:border-[#FF6B1A] text-center transition-colors cursor-pointer"
-            >
-              <span className="font-bold text-xs text-[#1C1917]">Admin</span>
-              <span className="text-[10px] text-[#57534E]">admin123</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => fillTestAccount("coord.alex@shctpt.edu", "coord123")}
-              className="tap-target flex-col p-2 rounded-xl bg-stone-50 border border-stone-200 hover:border-[#D9A441] text-center transition-colors cursor-pointer"
-            >
-              <span className="font-bold text-xs text-[#B45309]">Coordinator</span>
-              <span className="text-[10px] text-[#57534E]">coord123</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => fillTestAccount("student@example.com", "student123")}
-              className="tap-target flex-col p-2 rounded-xl bg-stone-50 border border-stone-200 hover:border-emerald-600 text-center transition-colors cursor-pointer"
-            >
-              <span className="font-bold text-xs text-emerald-700">Student</span>
-              <span className="text-[10px] text-[#57534E]">student123</span>
-            </button>
-          </div>
-        </div>
-
-        <div className="mt-6 text-center text-xs text-[#57534E]">
+        <div className="mt-6 pt-6 border-t border-[#1C1917]/10 text-center text-xs text-[#57534E]">
           New student participant?{" "}
           <Link href="/register" className="text-[#FF6B1A] font-bold hover:underline">
             Register for Events
