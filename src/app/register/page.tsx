@@ -37,6 +37,10 @@ interface EventItem {
   category: "ON_STAGE" | "OFF_STAGE";
   venue: string | null;
   rules: string | null;
+  capacity?: number | null;
+  hasPrelims?: boolean;
+  prelimsDateTime?: string | null;
+  prelimsVenue?: string | null;
 }
 
 interface MemberFormState {
@@ -44,6 +48,7 @@ interface MemberFormState {
   email: string;
   phone: string;
   eventIds: string[];
+  prelimsEventIds?: string[];
 }
 
 interface RegisteredDelegate {
@@ -218,11 +223,66 @@ function RegisterForm() {
     setMembers((prev) => {
       const copy = [...prev];
       const member = copy[memberIndex];
-      const exists = member.eventIds.includes(eventId);
-      const newEventIds = exists
-        ? member.eventIds.filter((id) => id !== eventId)
-        : [...member.eventIds, eventId];
+      const targetEvent = events.find((e) => e.id === eventId);
+      if (!targetEvent) return prev;
+
+      const isChecked = member.eventIds.includes(eventId);
+      let newEventIds: string[];
+
+      if (isChecked) {
+        // Unselect event
+        newEventIds = member.eventIds.filter((id) => id !== eventId);
+        const newPrelimsIds = (member.prelimsEventIds || []).filter((id) => id !== eventId);
+        copy[memberIndex] = { ...member, eventIds: newEventIds, prelimsEventIds: newPrelimsIds };
+        return copy;
+      } else {
+        // Check capacity limit for this event in current college delegation
+        if (targetEvent.capacity && targetEvent.capacity > 0) {
+          const currentCollegeCount = prev.filter((m) => m.eventIds.includes(eventId)).length;
+          if (currentCollegeCount >= targetEvent.capacity) {
+            // Already reached max allowed participants for this event in this college
+            return prev;
+          }
+        }
+
+        // Enforce max 1 per category: keep events of other categories and add current event
+        const otherCategoryEvents = member.eventIds.filter((id) => {
+          const ev = events.find((e) => e.id === id);
+          return ev && ev.category !== targetEvent.category;
+        });
+        newEventIds = [...otherCategoryEvents, eventId];
+      }
+
       copy[memberIndex] = { ...member, eventIds: newEventIds };
+      return copy;
+    });
+  };
+
+  const toggleMemberPrelims = (memberIndex: number, eventId: string) => {
+    setMembers((prev) => {
+      const copy = [...prev];
+      const member = copy[memberIndex];
+      const currentPrelims = member.prelimsEventIds || [];
+      const isChecked = currentPrelims.includes(eventId);
+
+      if (isChecked) {
+        copy[memberIndex] = {
+          ...member,
+          prelimsEventIds: currentPrelims.filter((id) => id !== eventId),
+        };
+      } else {
+        // Ensure student is registered for event
+        if (!member.eventIds.includes(eventId)) return prev;
+
+        // Ensure no other team member in this delegation has selected prelims for this event
+        const existingNominee = prev.find((m, i) => i !== memberIndex && (m.prelimsEventIds || []).includes(eventId));
+        if (existingNominee) return prev;
+
+        copy[memberIndex] = {
+          ...member,
+          prelimsEventIds: [...currentPrelims, eventId],
+        };
+      }
       return copy;
     });
   };
@@ -248,17 +308,23 @@ function RegisterForm() {
   const validateStep2 = () => {
     setErrorMessage("");
     if (members.length === 0) {
-      setErrorMessage("Please add at least one student delegate.");
+      setErrorMessage("Please add at least one student participant.");
       return false;
     }
     for (let i = 0; i < members.length; i++) {
       const m = members[i];
       if (!m.name.trim() || !m.email.trim() || !m.phone.trim()) {
-        setErrorMessage(`Please fill in full name, email, and mobile for Delegate #${i + 1}.`);
+        setErrorMessage(`Please fill in full name, email, and mobile for Participant #${i + 1}.`);
         return false;
       }
       if (m.eventIds.length === 0) {
-        setErrorMessage(`Please select at least one competition for Delegate #${i + 1} (${m.name || "Student"}).`);
+        setErrorMessage(`Please select at least one competition for Participant #${i + 1} (${m.name || "Student"}).`);
+        return false;
+      }
+      const onStageCount = m.eventIds.filter((id) => events.find((e) => e.id === id)?.category === "ON_STAGE").length;
+      const offStageCount = m.eventIds.filter((id) => events.find((e) => e.id === id)?.category === "OFF_STAGE").length;
+      if (onStageCount > 1 || offStageCount > 1) {
+        setErrorMessage(`Participant #${i + 1} (${m.name || "Student"}) can select at most 1 On-Stage and 1 Off-Stage competition.`);
         return false;
       }
     }
@@ -309,6 +375,7 @@ function RegisterForm() {
           email: m.email.trim(),
           phone: m.phone.trim(),
           eventIds: m.eventIds,
+          prelimsEventIds: m.prelimsEventIds || [],
         })),
       };
 
@@ -376,7 +443,7 @@ function RegisterForm() {
 
           <p className="text-xs sm:text-sm text-stone-600 max-w-xl mx-auto mb-6">
             Your college contingent registration has been submitted with{" "}
-            <strong>{successData.delegates.length} delegate(s)</strong>.
+            <strong>{successData.delegates.length} participant(s)</strong>.
             {!isPaid && " Please complete payment at the venue desk to activate event check-in & meal services."}
           </p>
 
@@ -399,7 +466,7 @@ function RegisterForm() {
                   <p className="text-[11px] text-stone-600 bg-white/70 p-2.5 rounded-xl border border-amber-200/60 leading-normal">
                     ✓ Once payment is recorded as <strong>APPROVED</strong>, your 2 official QR badges (Event Entry QR + Food Token QR) are instantly activated.
                     <br />
-                    ✓ All delegates will receive an email dispatch with their individual passes, and the Team Lead will receive the consolidated dossier for all {successData.delegates.length} members.
+                    ✓ All participants will receive an email dispatch with their individual passes, and the Team Lead will receive the consolidated dossier for all {successData.delegates.length} members.
                   </p>
                 </div>
               </div>
@@ -411,110 +478,32 @@ function RegisterForm() {
               <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
               <div className="text-xs text-emerald-950">
                 <strong className="block font-bold mb-0.5">Automated Notifications Triggered:</strong>
-                Each delegate has been dispatched an official email with their digital ID pass, schedule, and food token. The event coordinators have also received the contingent roster.
+                Each participant has been dispatched an official email with their digital ID pass, schedule, and food token. The event coordinators have also received the contingent roster.
               </div>
             </div>
           )}
 
-          {/* Delegation Delegates Cards Grid */}
-          <div className="text-left mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-black text-stone-900 uppercase tracking-wider flex items-center gap-2">
-                <Users className="w-4 h-4 text-[#FF6B1A]" />
-                <span>Issued Delegate Passes ({successData.delegates.length})</span>
-              </h3>
-              <span className="text-xs font-bold text-[#D9A441] tabular-nums">
-                Total Fee: ₹{successData.delegation.totalFee}
-              </span>
+          {/* Pending Approval Guidance Box */}
+          <div className="bg-amber-50 border border-amber-200/90 rounded-2xl p-5 text-left text-xs text-amber-950 space-y-3 max-w-xl mx-auto my-6 shadow-2xs">
+            <div className="flex items-center gap-2 font-bold text-amber-900 text-sm">
+              <Clock className="w-4.5 h-4.5 text-amber-600 shrink-0" />
+              <span>Next Step: Coordinator / Admin Approval</span>
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {successData.delegates.map((del) => (
-                <div
-                  key={del.id}
-                  className="bg-[#FAF8F5] border border-stone-200 rounded-2xl p-5 flex flex-col justify-between hover:border-amber-400 transition-all shadow-2xs"
-                >
-                  <div>
-                    <div className="flex items-start justify-between gap-3 mb-3">
-                      <div>
-                        <span className="font-mono text-[10px] font-bold text-amber-600 bg-amber-100/70 px-2 py-0.5 rounded">
-                          {del.badgeCode}
-                        </span>
-                        <h4 className="text-base font-extrabold text-stone-900 mt-1">
-                          {del.name}
-                        </h4>
-                        <div className="text-[11px] text-stone-500">{del.email} • {del.phone}</div>
-                      </div>
-
-                      <div className="flex items-center gap-2 shrink-0">
-                        {del.qrData && (
-                          <div className="text-center">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={del.qrData}
-                              alt={`Event QR for ${del.badgeCode}`}
-                              className="w-14 h-14 rounded-lg border border-stone-300 p-1 bg-white"
-                            />
-                            <span className="text-[8px] font-bold text-stone-500 block mt-0.5">Event QR</span>
-                          </div>
-                        )}
-                        {del.foodQrData && (
-                          <div className="text-center">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={del.foodQrData}
-                              alt={`Food QR for ${del.foodTokenCode}`}
-                              className="w-14 h-14 rounded-lg border border-amber-300 p-1 bg-white"
-                            />
-                            <span className="text-[8px] font-bold text-amber-800 block mt-0.5">Food QR</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Food Token Box */}
-                    <div className="bg-amber-100/60 border border-amber-300/80 rounded-xl p-2.5 mb-3 flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-2 text-amber-950 font-bold">
-                        <Utensils className="w-4 h-4 text-amber-700" />
-                        <span>Food & Lunch Token</span>
-                      </div>
-                      <span className="font-mono font-black text-stone-900 bg-white px-2 py-0.5 rounded border border-amber-300">
-                        {del.foodTokenCode}
-                      </span>
-                    </div>
-
-                    {/* Events Enrolled */}
-                    <div className="text-xs text-stone-600 mb-3">
-                      <div className="text-[10px] font-bold uppercase text-stone-400 mb-1">
-                        Events Participating ({del.events.length})
-                      </div>
-                      <div className="flex flex-wrap gap-1">
-                        {del.events.map((ev) => (
-                          <span
-                            key={ev.id}
-                            className="text-[10px] bg-white border border-stone-200 rounded px-2 py-0.5 text-stone-800 font-medium"
-                          >
-                            {ev.name}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="pt-3 border-t border-stone-200 flex items-center justify-between">
-                    <Link
-                      href={`/badge/${encodeURIComponent(del.badgeCode)}`}
-                      target="_blank"
-                      className="tap-target inline-flex items-center gap-1.5 text-xs font-bold text-[#FF6B1A] hover:underline"
-                    >
-                      <QrCode className="w-3.5 h-3.5" />
-                      <span>View & Print ID Card</span>
-                      <ExternalLink className="w-3 h-3" />
-                    </Link>
-                  </div>
-                </div>
-              ))}
+            <p className="leading-relaxed text-amber-900/90">
+              Your contingent registration for <strong>{successData.delegation.collegeName}</strong> with <strong>{successData.delegates.length} participant(s)</strong> has been submitted. Official <strong>Event Entry QR Passes</strong>, <strong>Food Token QR Badges</strong>, and <strong>Printable ID Cards</strong> will be activated inside your Student Portal as soon as your registration is approved by the Fest Admin or Event Coordinators.
+            </p>
+            <div className="pt-2.5 border-t border-amber-200/80 flex items-center justify-between text-[11px] font-medium text-amber-900">
+              <span>Contingent Lead: <strong>{successData.delegation.teamLeadName}</strong></span>
+              <span>Total Fee: <strong>₹{successData.delegation.totalFee}</strong></span>
             </div>
+          </div>
+
+          <div className="bg-stone-50 border border-stone-200 rounded-2xl p-4 max-w-xl mx-auto mb-6 text-center text-xs text-stone-700">
+            🔐 <strong>Student Portal Access:</strong> Each registered participant can log in anytime at{" "}
+            <Link href="/login" className="underline font-bold text-[#FF6B1A]">
+              /login
+            </Link>{" "}
+            using their registered <strong>Email or Mobile Number</strong> (Default Password: <strong>Mobile Number</strong>).
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4 border-t border-stone-200">
@@ -557,12 +546,12 @@ function RegisterForm() {
           </h1>
           <p className="text-xs sm:text-sm text-[#57534E] mt-2 max-w-lg mx-auto">
             {institutionName ? `${institutionName} • ` : ""}
-            Register your college team or individual delegates. Each registered student receives an official badge with gate QR code & lunch coupon.
+            Register your college team or individual participants. Each registered student receives an official badge with gate QR code & lunch coupon.
           </p>
 
           <div className="mt-4 inline-flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-900 px-3.5 py-1.5 rounded-full text-xs font-semibold">
             <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-            <span>Registration Fee: <strong>{participantFee > 0 ? `₹${participantFee} per delegate` : "Free"}</strong> (Includes all competitions + food token)</span>
+            <span>Registration Fee: <strong>{participantFee > 0 ? `₹${participantFee} per participant` : "Free"}</strong> (Includes all competitions + food token)</span>
           </div>
         </div>
 
@@ -659,7 +648,7 @@ function RegisterForm() {
                 : "bg-stone-200/70 text-[#57534E] hover:text-[#1C1917]"
             }`}
           >
-            2. Delegates & Events ({members.length})
+            2. Participants & Competitions ({members.length})
           </button>
           <span className="text-[#1C1917]/30">→</span>
           <button
@@ -861,7 +850,7 @@ function RegisterForm() {
                   }}
                   className="btn-ember w-full sm:w-auto text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5"
                 >
-                  <span>Continue to Delegate Roster & Events</span>
+                  <span>Continue to Participant Roster & Competitions</span>
                   <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
@@ -877,7 +866,7 @@ function RegisterForm() {
                     Student Contingent Roster
                   </h3>
                   <p className="text-xs text-stone-500">
-                    Add each participating student delegate with their contact info and selected competitions.
+                    Add each participating student with contact info and select max 1 On-Stage & 1 Off-Stage competition.
                   </p>
                 </div>
 
@@ -887,7 +876,7 @@ function RegisterForm() {
                   className="tap-target inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs font-bold text-amber-700 hover:bg-amber-500/20 transition-all cursor-pointer self-start sm:self-auto"
                 >
                   <UserPlus className="w-4 h-4" />
-                  <span>Add Another Delegate</span>
+                  <span>Add Another Participant</span>
                 </button>
               </div>
 
@@ -900,15 +889,15 @@ function RegisterForm() {
                   {members.map((member, mIdx) => (
                     <div
                       key={mIdx}
-                      className="bg-stone-50 border border-stone-200 rounded-2xl p-5 relative shadow-2xs"
+                      className="bg-stone-50 border border-stone-200 rounded-2xl p-5 relative shadow-2xs space-y-4"
                     >
-                      <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <span className="w-6 h-6 rounded-full bg-[#1C1917] text-white text-[11px] font-bold flex items-center justify-center">
                             {mIdx + 1}
                           </span>
                           <span className="text-xs font-black text-stone-900 uppercase tracking-wider">
-                            Delegate #{mIdx + 1} {mIdx === 0 && "(Team Lead)"}
+                            Participant #{mIdx + 1} {mIdx === 0 && "(Team Lead)"}
                           </span>
                         </div>
 
@@ -917,14 +906,14 @@ function RegisterForm() {
                             type="button"
                             onClick={() => removeMember(mIdx)}
                             className="tap-target text-stone-400 hover:text-rose-600 transition-colors p-1"
-                            title="Remove delegate"
+                            title="Remove participant"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
                         )}
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <div>
                           <label className="block text-[11px] font-bold text-[#1C1917] mb-1">
                             Full Name *
@@ -968,59 +957,239 @@ function RegisterForm() {
                         </div>
                       </div>
 
-                      {/* Event Enrollment for this delegate */}
-                      <div className="pt-3 border-t border-stone-200">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-[11px] font-bold text-stone-700 uppercase tracking-wider">
-                            Competitions Opted ({member.eventIds.length}) *
+                      {/* Event Enrollment for this participant (Categorized into On-Stage & Off-Stage) */}
+                      <div className="pt-4 border-t border-stone-200 space-y-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                          <span className="text-xs font-black text-stone-900 uppercase tracking-wider">
+                            Select Competitions ({member.eventIds.length} Selected) *
                           </span>
-                          <span className="text-[10px] text-stone-400">
-                            Check all events this delegate will compete in
+                          <span className="text-[10px] font-extrabold text-amber-800 bg-amber-100/80 border border-amber-300 px-2.5 py-0.5 rounded-full self-start sm:self-auto">
+                            Rule: Max 1 On-Stage + Max 1 Off-Stage Event
                           </span>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
-                          {events.map((ev) => {
-                            const isChecked = member.eventIds.includes(ev.id);
-                            return (
-                              <label
-                                key={ev.id}
-                                className={`flex items-start gap-2.5 p-2 rounded-xl border text-left cursor-pointer transition-all ${
-                                  isChecked
-                                    ? "bg-amber-50/80 border-amber-400"
-                                    : "bg-white border-stone-200 hover:border-stone-300"
-                                }`}
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={isChecked}
-                                  onChange={() => toggleMemberEvent(mIdx, ev.id)}
-                                  className="mt-0.5 accent-[#FF6B1A] rounded"
-                                />
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center justify-between gap-1">
-                                    <span className="text-xs font-bold text-stone-900 truncate">
-                                      {ev.name}
-                                    </span>
-                                    <span
-                                      className={`text-[9px] font-extrabold px-1 rounded ${
-                                        ev.category === "ON_STAGE"
-                                          ? "bg-purple-100 text-purple-700"
-                                          : "bg-blue-100 text-blue-700"
-                                      }`}
-                                    >
-                                      {ev.category === "ON_STAGE" ? "On-Stage" : "Off-Stage"}
-                                    </span>
-                                  </div>
-                                  {ev.venue && (
-                                    <div className="text-[10px] text-stone-500 truncate">
-                                      Venue: {ev.venue}
+                        {/* 1. On-Stage Competitions Section */}
+                        <div className="bg-purple-50/50 border border-purple-200/80 p-3.5 rounded-2xl space-y-2.5">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1.5 text-purple-900 font-bold text-xs">
+                              <Theater className="w-4 h-4 text-purple-600" />
+                              <span>On-Stage Competitions</span>
+                            </div>
+                            <span className="text-[10px] font-extrabold text-purple-700 bg-purple-100 px-2 py-0.5 rounded-md border border-purple-200">
+                              {member.eventIds.filter((id) => events.find((e) => e.id === id)?.category === "ON_STAGE").length}/1 Selected
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {events.filter((e) => e.category === "ON_STAGE").map((ev) => {
+                              const isChecked = member.eventIds.includes(ev.id);
+                              const collegeCount = members.filter((m) => m.eventIds.includes(ev.id)).length;
+                              const isCapacityFull = ev.capacity && ev.capacity > 0 ? collegeCount >= ev.capacity : false;
+                              const isDisabled = !isChecked && isCapacityFull;
+
+                              return (
+                                <div
+                                  key={ev.id}
+                                  className={`p-2.5 rounded-xl border text-left transition-all ${
+                                    isDisabled
+                                      ? "bg-stone-100/90 border-stone-200 opacity-60 cursor-not-allowed select-none"
+                                      : isChecked
+                                      ? "bg-purple-100/90 border-purple-500 shadow-2xs"
+                                      : "bg-white border-purple-100 hover:border-purple-300"
+                                  }`}
+                                >
+                                  <label className="flex items-start gap-2.5 cursor-pointer">
+                                    <input
+                                      type="checkbox"
+                                      checked={isChecked}
+                                      disabled={isDisabled}
+                                      onChange={() => toggleMemberEvent(mIdx, ev.id)}
+                                      className="mt-0.5 accent-purple-600 rounded disabled:opacity-50"
+                                    />
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center justify-between gap-1">
+                                        <span className="font-bold text-xs text-stone-900 truncate">
+                                          {ev.name}
+                                        </span>
+                                        {ev.capacity && ev.capacity > 0 && (
+                                          <span
+                                            className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded ${
+                                              isCapacityFull
+                                                ? "bg-rose-100 text-rose-800 border border-rose-200"
+                                                : "bg-purple-100/70 text-purple-800"
+                                            }`}
+                                          >
+                                            {collegeCount}/{ev.capacity} Slots
+                                          </span>
+                                        )}
+                                      </div>
+                                      {isDisabled ? (
+                                        <div className="text-[10px] font-bold text-rose-600 mt-0.5">
+                                          College Capacity Full ({ev.capacity}/{ev.capacity})
+                                        </div>
+                                      ) : ev.venue ? (
+                                        <div className="text-[10px] text-stone-500 truncate">
+                                          Venue: {ev.venue}
+                                        </div>
+                                      ) : null}
+                                    </div>
+                                  </label>
+
+                                  {/* PRELIMS NOMINATION OPTION */}
+                                  {ev.hasPrelims && isChecked && (
+                                    <div className="mt-2 pt-2 border-t border-purple-200/80">
+                                      {(() => {
+                                        const isPrelimsNominated = (member.prelimsEventIds || []).includes(ev.id);
+                                        const otherNominee = members.find(
+                                          (m, idx) => idx !== mIdx && (m.prelimsEventIds || []).includes(ev.id)
+                                        );
+                                        const isPrelimsDisabled = !isPrelimsNominated && !!otherNominee;
+
+                                        return (
+                                          <label
+                                            onClick={(e) => e.stopPropagation()}
+                                            className={`flex items-center gap-1.5 text-[10px] font-bold ${
+                                              isPrelimsDisabled
+                                                ? "text-stone-400 cursor-not-allowed"
+                                                : isPrelimsNominated
+                                                ? "text-amber-900 font-extrabold"
+                                                : "text-stone-700 cursor-pointer"
+                                            }`}
+                                          >
+                                            <input
+                                              type="checkbox"
+                                              checked={isPrelimsNominated}
+                                              disabled={isPrelimsDisabled}
+                                              onChange={() => toggleMemberPrelims(mIdx, ev.id)}
+                                              className="accent-amber-600 rounded cursor-pointer disabled:opacity-40"
+                                            />
+                                            <span>🎯 Nominate for Prelims</span>
+                                            {isPrelimsDisabled && (
+                                              <span className="text-[9px] text-rose-600 font-semibold block ml-1">
+                                                (1 student from college already nominated)
+                                              </span>
+                                            )}
+                                          </label>
+                                        );
+                                      })()}
                                     </div>
                                   )}
                                 </div>
-                              </label>
-                            );
-                          })}
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* 2. Off-Stage Competitions Section */}
+                        <div className="bg-blue-50/50 border border-blue-200/80 p-3.5 rounded-2xl space-y-2.5">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1.5 text-blue-900 font-bold text-xs">
+                              <Laptop className="w-4 h-4 text-blue-600" />
+                              <span>Off-Stage Competitions</span>
+                            </div>
+                            <span className="text-[10px] font-extrabold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-md border border-blue-200">
+                              {member.eventIds.filter((id) => events.find((e) => e.id === id)?.category === "OFF_STAGE").length}/1 Selected
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {events.filter((e) => e.category === "OFF_STAGE").map((ev) => {
+                              const isChecked = member.eventIds.includes(ev.id);
+                              const collegeCount = members.filter((m) => m.eventIds.includes(ev.id)).length;
+                              const isCapacityFull = ev.capacity && ev.capacity > 0 ? collegeCount >= ev.capacity : false;
+                              const isDisabled = !isChecked && isCapacityFull;
+
+                              return (
+                                <div
+                                  key={ev.id}
+                                  className={`p-2.5 rounded-xl border text-left transition-all ${
+                                    isDisabled
+                                      ? "bg-stone-100/90 border-stone-200 opacity-60 cursor-not-allowed select-none"
+                                      : isChecked
+                                      ? "bg-blue-100/90 border-blue-500 shadow-2xs"
+                                      : "bg-white border-blue-100 hover:border-blue-300"
+                                  }`}
+                                >
+                                  <label className="flex items-start gap-2.5 cursor-pointer">
+                                    <input
+                                      type="checkbox"
+                                      checked={isChecked}
+                                      disabled={isDisabled}
+                                      onChange={() => toggleMemberEvent(mIdx, ev.id)}
+                                      className="mt-0.5 accent-blue-600 rounded disabled:opacity-50"
+                                    />
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center justify-between gap-1">
+                                        <span className="font-bold text-xs text-stone-900 truncate">
+                                          {ev.name}
+                                        </span>
+                                        {ev.capacity && ev.capacity > 0 && (
+                                          <span
+                                            className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded ${
+                                              isCapacityFull
+                                                ? "bg-rose-100 text-rose-800 border border-rose-200"
+                                                : "bg-blue-100/70 text-blue-800"
+                                            }`}
+                                          >
+                                            {collegeCount}/{ev.capacity} Slots
+                                          </span>
+                                        )}
+                                      </div>
+                                      {isDisabled ? (
+                                        <div className="text-[10px] font-bold text-rose-600 mt-0.5">
+                                          College Capacity Full ({ev.capacity}/{ev.capacity})
+                                        </div>
+                                      ) : ev.venue ? (
+                                        <div className="text-[10px] text-stone-500 truncate">
+                                          Venue: {ev.venue}
+                                        </div>
+                                      ) : null}
+                                    </div>
+                                  </label>
+
+                                  {/* PRELIMS NOMINATION OPTION */}
+                                  {ev.hasPrelims && isChecked && (
+                                    <div className="mt-2 pt-2 border-t border-blue-200/80">
+                                      {(() => {
+                                        const isPrelimsNominated = (member.prelimsEventIds || []).includes(ev.id);
+                                        const otherNominee = members.find(
+                                          (m, idx) => idx !== mIdx && (m.prelimsEventIds || []).includes(ev.id)
+                                        );
+                                        const isPrelimsDisabled = !isPrelimsNominated && !!otherNominee;
+
+                                        return (
+                                          <label
+                                            onClick={(e) => e.stopPropagation()}
+                                            className={`flex items-center gap-1.5 text-[10px] font-bold ${
+                                              isPrelimsDisabled
+                                                ? "text-stone-400 cursor-not-allowed"
+                                                : isPrelimsNominated
+                                                ? "text-amber-900 font-extrabold"
+                                                : "text-stone-700 cursor-pointer"
+                                            }`}
+                                          >
+                                            <input
+                                              type="checkbox"
+                                              checked={isPrelimsNominated}
+                                              disabled={isPrelimsDisabled}
+                                              onChange={() => toggleMemberPrelims(mIdx, ev.id)}
+                                              className="accent-amber-600 rounded cursor-pointer disabled:opacity-40"
+                                            />
+                                            <span>🎯 Nominate for Prelims</span>
+                                            {isPrelimsDisabled && (
+                                              <span className="text-[9px] text-rose-600 font-semibold block ml-1">
+                                                (1 student from college already nominated)
+                                              </span>
+                                            )}
+                                          </label>
+                                        );
+                                      })()}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1098,7 +1267,7 @@ function RegisterForm() {
                   )}
 
                   <div className="flex justify-between pb-2 border-b border-stone-200">
-                    <span className="text-stone-500">Registered Delegates Count:</span>
+                    <span className="text-stone-500">Registered Participants Count:</span>
                     <strong className="text-stone-900">{members.length} Student(s)</strong>
                   </div>
 
@@ -1121,7 +1290,7 @@ function RegisterForm() {
               {/* Roster Quick Preview */}
               <div className="bg-white border border-stone-200 rounded-2xl p-5">
                 <h4 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-3">
-                  Delegate Roster & Competitions
+                  Participant Roster & Competitions
                 </h4>
                 <div className="space-y-2">
                   {members.map((m, idx) => (
@@ -1180,7 +1349,7 @@ function RegisterForm() {
                     </>
                   ) : (
                     <span>
-                      Complete Delegation Registration ({members.length} Delegates)
+                      Complete Delegation Registration ({members.length} Participants)
                     </span>
                   )}
                 </button>

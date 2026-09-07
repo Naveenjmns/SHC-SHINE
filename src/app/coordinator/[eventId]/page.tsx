@@ -18,6 +18,10 @@ interface RegistrationRow {
   attended?: boolean;
   checkedInAt?: string | null;
   checkedInBy?: string | null;
+  isPrelimsParticipant?: boolean;
+  prelimsStatus?: string | null;
+  prelimsScore?: number | null;
+  prelimsNotes?: string | null;
   user: {
     id: string;
     name: string;
@@ -54,6 +58,10 @@ interface EventMeta {
   dateTime: string;
   capacity: number | null;
   rules?: string | null;
+  hasPrelims?: boolean;
+  prelimsDateTime?: string | null;
+  prelimsVenue?: string | null;
+  prelimsRules?: string | null;
   staffCoordinator?: {
     name: string;
     email: string;
@@ -87,7 +95,7 @@ export default function CoordinatorEventDetailPage({
   const [savingId, setSavingId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [showCheckInModal, setShowCheckInModal] = useState(false);
-  const [activeTab, setActiveTab] = useState<"participants" | "scores">("participants");
+  const [activeTab, setActiveTab] = useState<"participants" | "prelims" | "scores">("participants");
 
   // Search & filter
   const [search, setSearch] = useState("");
@@ -96,6 +104,11 @@ export default function CoordinatorEventDetailPage({
   // Editing results & scores state
   const [resultInputs, setResultInputs] = useState<{ [regId: string]: string }>({});
   const [scoreInputs, setScoreInputs] = useState<{ [regId: string]: string }>({});
+
+  // Editing prelims state
+  const [prelimsStatusInputs, setPrelimsStatusInputs] = useState<{ [regId: string]: string }>({});
+  const [prelimsScoreInputs, setPrelimsScoreInputs] = useState<{ [regId: string]: string }>({});
+  const [prelimsNotesInputs, setPrelimsNotesInputs] = useState<{ [regId: string]: string }>({});
 
   const loadEventData = useCallback(async () => {
     try {
@@ -112,12 +125,22 @@ export default function CoordinatorEventDetailPage({
 
       const initialResults: { [regId: string]: string } = {};
       const initialScores: { [regId: string]: string } = {};
+      const initialPrelimsStatus: { [regId: string]: string } = {};
+      const initialPrelimsScores: { [regId: string]: string } = {};
+      const initialPrelimsNotes: { [regId: string]: string } = {};
+
       (data.registrations || []).forEach((r: RegistrationRow) => {
         initialResults[r.id] = r.result || "";
         initialScores[r.id] = r.score !== null && r.score !== undefined ? String(r.score) : "";
+        initialPrelimsStatus[r.id] = r.prelimsStatus || "PENDING";
+        initialPrelimsScores[r.id] = r.prelimsScore !== null && r.prelimsScore !== undefined ? String(r.prelimsScore) : "";
+        initialPrelimsNotes[r.id] = r.prelimsNotes || "";
       });
       setResultInputs(initialResults);
       setScoreInputs(initialScores);
+      setPrelimsStatusInputs(initialPrelimsStatus);
+      setPrelimsScoreInputs(initialPrelimsScores);
+      setPrelimsNotesInputs(initialPrelimsNotes);
     } catch (err) {
       console.error("Error loading event participants:", err);
       setErrorMsg("Could not connect to the database.");
@@ -137,27 +160,45 @@ export default function CoordinatorEventDetailPage({
     }
   }, [status, eventId, router, loadEventData]);
 
-  const handleUpdateStatus = async (regId: string, newStatus: "PENDING" | "CONFIRMED" | "REJECTED") => {
+  const handleSavePrelims = async (regId: string, customStatus?: string) => {
     setSavingId(regId);
+    const pStatus = customStatus || prelimsStatusInputs[regId] || "PENDING";
+    const pScore = prelimsScoreInputs[regId];
+    const pNotes = prelimsNotesInputs[regId];
+
     try {
       const res = await fetch(`/api/coordinator/registrations/${regId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify({
+          prelimsStatus: pStatus,
+          prelimsScore: pScore !== "" && pScore !== undefined ? parseFloat(pScore) : null,
+          prelimsNotes: pNotes || null,
+        }),
       });
 
       const data = await safeJson(res, { success: false, message: "Network error occurred." });
       if (data.success) {
         setRegistrations((prev) =>
-          prev.map((r) => (r.id === regId ? { ...r, status: newStatus } : r))
+          prev.map((r) =>
+            r.id === regId
+              ? {
+                  ...r,
+                  prelimsStatus: pStatus,
+                  prelimsScore: pScore !== "" && pScore !== undefined ? parseFloat(pScore) : null,
+                  prelimsNotes: pNotes || null,
+                }
+              : r
+          )
         );
-        toast.success(`Registration marked as ${newStatus.toLowerCase()}.`);
+        setPrelimsStatusInputs((prev) => ({ ...prev, [regId]: pStatus }));
+        toast.success(`Prelims status updated to ${pStatus}.`);
       } else {
-        toast.error(data.message || "Failed to update status.");
+        toast.error(data.message || "Failed to update prelims status.");
       }
     } catch (err) {
-      console.error("Status update error:", err);
-      toast.error("Error updating status.");
+      console.error("Save prelims error:", err);
+      toast.error("Error saving prelims status.");
     } finally {
       setSavingId(null);
     }
@@ -471,6 +512,19 @@ export default function CoordinatorEventDetailPage({
           >
             <span>Participant Triage & Check-In ({registrations.length})</span>
           </button>
+          {event?.hasPrelims && (
+            <button
+              type="button"
+              onClick={() => setActiveTab("prelims")}
+              className={`px-4 py-2.5 text-xs sm:text-sm font-bold border-b-2 transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
+                activeTab === "prelims"
+                  ? "border-amber-600 text-amber-600"
+                  : "border-transparent text-slate-500 hover:text-slate-800"
+              }`}
+            >
+              <span>🎯 Prelims Evaluation ({registrations.filter((r) => r.isPrelimsParticipant).length} Nominated)</span>
+            </button>
+          )}
           <button
             type="button"
             onClick={() => setActiveTab("scores")}
@@ -624,52 +678,19 @@ export default function CoordinatorEventDetailPage({
                           </div>
                         </td>
 
-                        {/* Status Toggles (44px min tap target) */}
+                        {/* Approval Status Badge (Read-Only for Coordinator, Admin holds approval authority) */}
                         <td className="p-4">
-                          <div className="flex items-center gap-1.5">
-                            <button
-                              disabled={isSaving}
-                              onClick={() => handleUpdateStatus(reg.id, "CONFIRMED")}
-                              className={`tap-target px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                                reg.status === "CONFIRMED"
-                                  ? "bg-emerald-600 text-white shadow-sm"
-                                  : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-                              }`}
-                            >
-                              <span className="inline-flex items-center gap-1">
-                                <Check className="w-3.5 h-3.5" />
-                                Confirm
-                              </span>
-                            </button>
-
-                            <button
-                              disabled={isSaving}
-                              onClick={() => handleUpdateStatus(reg.id, "REJECTED")}
-                              className={`tap-target px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                                reg.status === "REJECTED"
-                                  ? "bg-rose-600 text-white shadow-sm"
-                                  : "bg-rose-50 text-rose-700 hover:bg-rose-100"
-                              }`}
-                            >
-                              <span className="inline-flex items-center gap-1">
-                                <X className="w-3.5 h-3.5" />
-                                Reject
-                              </span>
-                            </button>
-
-                            <button
-                              disabled={isSaving}
-                              onClick={() => handleUpdateStatus(reg.id, "PENDING")}
-                              className={`tap-target px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center ${
-                                reg.status === "PENDING"
-                                  ? "bg-amber-500 text-white"
-                                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                              }`}
-                              title="Set Pending"
-                            >
-                              <Clock className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
+                          <span
+                            className={`status-badge ${
+                              reg.status === "CONFIRMED"
+                                ? "status-badge-confirmed"
+                                : reg.status === "PENDING"
+                                ? "status-badge-pending"
+                                : "status-badge-rejected"
+                            }`}
+                          >
+                            {reg.status}
+                          </span>
                         </td>
 
                         {/* Award Result Input */}
@@ -707,7 +728,195 @@ export default function CoordinatorEventDetailPage({
       </>
     )}
 
-    {activeTab === "scores" && (
+    {activeTab === "prelims" && (
+          <div className="space-y-6">
+            {/* Prelims Header Callout */}
+            <div className="bg-[#FAF8F5] border border-amber-300 rounded-2xl p-5 sm:p-6 shadow-2xs space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-amber-900 bg-amber-200/80 px-2.5 py-0.5 rounded-full border border-amber-400">
+                      🎯 Preliminary Evaluation Desk
+                    </span>
+                  </div>
+                  <h3 className="text-xl font-black text-stone-900">
+                    {event?.name} — Prelims Round
+                  </h3>
+                  <div className="flex flex-wrap items-center gap-4 text-xs text-stone-600 mt-1">
+                    {event?.prelimsVenue && (
+                      <span>Venue: <strong className="text-stone-900">{event.prelimsVenue}</strong></span>
+                    )}
+                    <span>
+                      Schedule:{" "}
+                      <strong className="text-stone-900 tabular-nums">
+                        {event?.prelimsDateTime ? new Date(event.prelimsDateTime).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" }) : "TBD"}
+                      </strong>
+                    </span>
+                    <span className="font-bold text-amber-900">
+                      Nominated Participants: {registrations.filter((r) => r.isPrelimsParticipant).length}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="bg-white border border-amber-300 rounded-xl p-3 text-right">
+                  <div className="text-[10px] font-bold text-stone-500 uppercase">Qualified for Finals</div>
+                  <div className="text-xl font-black text-emerald-700 tabular-nums">
+                    {registrations.filter((r) => r.isPrelimsParticipant && r.prelimsStatus === "QUALIFIED").length}
+                  </div>
+                </div>
+              </div>
+
+              {event?.prelimsRules && (
+                <div className="p-3 bg-white/80 border border-amber-200 rounded-xl text-xs text-amber-950 whitespace-pre-wrap font-mono leading-relaxed">
+                  <strong>Evaluation Guidelines:</strong> {event.prelimsRules}
+                </div>
+              )}
+            </div>
+
+            {/* Prelims Participant Table */}
+            <div className="dash-card overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs sm:text-sm">
+                  <thead className="bg-stone-50 text-stone-500 text-[11px] uppercase tracking-wider border-b border-stone-200">
+                    <tr>
+                      <th className="p-4">Nominated Delegate</th>
+                      <th className="p-4">College Delegation</th>
+                      <th className="p-4">Prelims Attendance</th>
+                      <th className="p-4">Qualification Status</th>
+                      <th className="p-4">Score (Marks)</th>
+                      <th className="p-4 text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-stone-100">
+                    {registrations.filter((r) => r.isPrelimsParticipant).length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="p-10 text-center text-xs text-stone-400">
+                          No student participants have been nominated for the Prelims round of this competition yet.
+                        </td>
+                      </tr>
+                    ) : (
+                      registrations
+                        .filter((r) => r.isPrelimsParticipant)
+                        .map((reg) => {
+                          const currentPStatus = prelimsStatusInputs[reg.id] || reg.prelimsStatus || "PENDING";
+                          const isSaving = savingId === reg.id;
+                          const isAttended = reg.attended || reg.delegationMember?.eventCheckedIn;
+
+                          return (
+                            <tr key={reg.id} className="hover:bg-stone-50/70 transition-colors">
+                              {/* Delegate Info */}
+                              <td className="p-4">
+                                <div className="font-bold text-stone-900 text-sm">{reg.user.name}</div>
+                                <div className="text-[11px] text-stone-500">{reg.user.email}</div>
+                                {reg.delegationMember?.badgeCode && (
+                                  <span className="inline-block mt-1 text-[10px] font-mono font-bold bg-amber-100/80 text-amber-900 px-1.5 py-0.5 rounded border border-amber-300">
+                                    Badge: {reg.delegationMember.badgeCode}
+                                  </span>
+                                )}
+                              </td>
+
+                              {/* College & Team */}
+                              <td className="p-4">
+                                <div className="font-bold text-stone-900 text-xs">
+                                  {reg.delegation?.collegeName || reg.user.college || "N/A"}
+                                </div>
+                                {reg.delegation?.teamName && (
+                                  <div className="text-[11px] text-amber-800 font-medium mt-0.5">
+                                    Team: {reg.delegation.teamName}
+                                  </div>
+                                )}
+                              </td>
+
+                              {/* Attendance Status */}
+                              <td className="p-4">
+                                {isAttended ? (
+                                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">
+                                    <Check className="w-3 h-3 text-emerald-600" />
+                                    Present
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 text-[11px] font-medium text-stone-400 bg-stone-100 px-2 py-0.5 rounded">
+                                    Gate Pending
+                                  </span>
+                                )}
+                              </td>
+
+                              {/* Qualification Toggle Buttons */}
+                              <td className="p-4">
+                                <div className="flex items-center gap-1.5">
+                                  <button
+                                    type="button"
+                                    disabled={isSaving}
+                                    onClick={() => handleSavePrelims(reg.id, "QUALIFIED")}
+                                    className={`tap-target px-3 py-1 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
+                                      currentPStatus === "QUALIFIED"
+                                        ? "bg-emerald-600 text-white shadow-xs"
+                                        : "bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200"
+                                    }`}
+                                  >
+                                    ✓ QUALIFIED
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    disabled={isSaving}
+                                    onClick={() => handleSavePrelims(reg.id, "ELIMINATED")}
+                                    className={`tap-target px-3 py-1 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
+                                      currentPStatus === "ELIMINATED"
+                                        ? "bg-rose-600 text-white shadow-xs"
+                                        : "bg-rose-50 text-rose-800 hover:bg-rose-100 border border-rose-200"
+                                    }`}
+                                  >
+                                    ✕ ELIMINATED
+                                  </button>
+
+                                  {currentPStatus === "PENDING" && (
+                                    <span className="text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded border border-amber-300">
+                                      PENDING
+                                    </span>
+                                  )}
+                                </div>
+                              </td>
+
+                              {/* Score Field */}
+                              <td className="p-4">
+                                <input
+                                  type="number"
+                                  placeholder="Marks / 100"
+                                  value={prelimsScoreInputs[reg.id] || ""}
+                                  onChange={(e) =>
+                                    setPrelimsScoreInputs((prev) => ({
+                                      ...prev,
+                                      [reg.id]: e.target.value,
+                                    }))
+                                  }
+                                  className="h-9 w-28 bg-white border border-stone-300 rounded-lg px-2 text-xs text-stone-900 focus:outline-none focus:border-amber-500"
+                                />
+                              </td>
+
+                              {/* Action */}
+                              <td className="p-4 text-right">
+                                <button
+                                  type="button"
+                                  disabled={isSaving}
+                                  onClick={() => handleSavePrelims(reg.id)}
+                                  className="tap-target px-3 py-1.5 bg-stone-900 hover:bg-stone-800 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                                >
+                                  {isSaving ? "Saving..." : "Save Prelims"}
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === "scores" && (
       <div className="space-y-4">
         {/* Score Table Header Bar */}
         <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
