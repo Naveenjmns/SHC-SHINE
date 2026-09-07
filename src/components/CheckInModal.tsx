@@ -26,9 +26,13 @@ interface RegistrationDetail {
   category: string;
   venue: string | null;
   dateTime: string;
+  status: string;
+  score: number | null;
+  result: string | null;
   attended: boolean;
   checkedInAt: string | null;
   checkedInBy: string | null;
+  canCheckIn?: boolean;
 }
 
 interface MemberLookupData {
@@ -41,6 +45,7 @@ interface MemberLookupData {
   eventCheckedIn: boolean;
   eventCheckedInAt: string | null;
   eventCheckedInBy: string | null;
+  allEventsAttended?: boolean;
   foodTokenClaimed: boolean;
   foodClaimedAt: string | null;
   foodClaimedBy: string | null;
@@ -51,6 +56,9 @@ interface MemberLookupData {
   teamLeadPhone: string;
   staffInchargeName: string | null;
   staffInchargePhone: string | null;
+  totalFee: number;
+  paymentStatus: string;
+  isPaid: boolean;
   registrations: RegistrationDetail[];
 }
 
@@ -195,8 +203,13 @@ export default function CheckInModal({
     }
   };
 
-  const handleCheckInEvent = async (shouldCheckIn: boolean) => {
+  const handleCheckInEvent = async (shouldCheckIn: boolean, targetEventId?: string) => {
     if (!delegate) return;
+    const evId = targetEventId || activeEventId;
+    if (!evId && shouldCheckIn) {
+      setMessage({ type: "warning", text: "Please select which event you are checking this student in for." });
+      return;
+    }
     setActionLoading(true);
     try {
       const res = await fetch("/api/checkin", {
@@ -205,7 +218,7 @@ export default function CheckInModal({
         body: JSON.stringify({
           code: delegate.badgeCode,
           action: shouldCheckIn ? "EVENT_CHECKIN" : "EVENT_UNCHECK",
-          eventId: activeEventId,
+          eventId: evId,
         }),
       });
       const data = await safeJson(res, { success: false });
@@ -213,15 +226,16 @@ export default function CheckInModal({
       if (data.success) {
         setMessage({
           type: "success",
-          text: shouldCheckIn
-            ? `✓ ${delegate.name} has been marked PRESENT for the event!`
-            : `Check-in reverted for ${delegate.name}.`,
+          text: data.message || (shouldCheckIn ? `✓ ${delegate.name} marked Present!` : `Check-in reverted.`),
         });
         // Refresh delegate data
         await handleLookup(delegate.badgeCode);
         if (onCheckInComplete) onCheckInComplete();
       } else {
-        setMessage({ type: "error", text: data.message || "Failed to update event check-in." });
+        setMessage({
+          type: data.alreadyCheckedIn || data.paymentPending ? "warning" : "error",
+          text: data.message || "Failed to update event check-in.",
+        });
       }
     } catch (err: any) {
       setMessage({ type: "error", text: "Error: " + err.message });
@@ -255,7 +269,7 @@ export default function CheckInModal({
         if (onCheckInComplete) onCheckInComplete();
       } else {
         setMessage({
-          type: data.alreadyClaimed ? "warning" : "error",
+          type: data.alreadyClaimed || data.paymentPending ? "warning" : "error",
           text: data.message || "Failed to process food token.",
         });
       }
@@ -418,6 +432,21 @@ export default function CheckInModal({
           {/* Delegate Verification Card */}
           {delegate && (
             <div className="bg-stone-50 border-2 border-stone-200 rounded-2xl p-5 space-y-5 animate-in fade-in duration-200">
+              {/* Desk Payment Warning Banner */}
+              {!delegate.isPaid && (
+                <div className="bg-rose-50 border border-rose-300 rounded-xl p-3.5 flex items-start gap-3 text-rose-900">
+                  <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="text-xs font-black uppercase tracking-wider text-rose-800">
+                      Payment & Approval Pending at Registration Desk
+                    </h4>
+                    <p className="text-xs text-rose-700 mt-0.5">
+                      Fee: <strong>₹{delegate.totalFee}</strong> (Status: {delegate.paymentStatus}). The delegate must pay the amount at the Registration Desk and be marked Approved before venue check-in or food distribution.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* Profile Bar */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-stone-200 pb-4">
                 <div>
@@ -426,6 +455,15 @@ export default function CheckInModal({
                     <span className="font-mono text-xs font-bold bg-white text-stone-800 px-2.5 py-0.5 rounded-md border border-stone-300 shadow-2xs">
                       {delegate.badgeCode}
                     </span>
+                    {delegate.isPaid ? (
+                      <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full border border-emerald-300">
+                        PAID & APPROVED ✓
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-bold bg-rose-100 text-rose-800 px-2 py-0.5 rounded-full border border-rose-300">
+                        PAYMENT PENDING
+                      </span>
+                    )}
                   </div>
 
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-stone-600 mt-1">
@@ -453,191 +491,172 @@ export default function CheckInModal({
                 </button>
               </div>
 
-              {/* Dual Action Cards: Event Check-In & Food Token Claim */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* 1. Event Attendance / Entry Check-In Card */}
-                <div
-                  className={`p-4 rounded-xl border-2 transition-all flex flex-col justify-between ${
-                    delegate.eventCheckedIn
-                      ? "bg-emerald-50/70 border-emerald-300"
-                      : "bg-white border-stone-200"
-                  }`}
-                >
-                  <div>
-                    <div className="flex items-center justify-between gap-2 mb-2">
-                      <span className="text-xs font-black uppercase tracking-wider text-stone-800 flex items-center gap-1.5">
-                        <UserCheck className="w-4 h-4 text-emerald-600" />
-                        <span>1. Event Gate Check-In</span>
-                      </span>
-                      {delegate.eventCheckedIn ? (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-600 text-white shadow-2xs">
-                          PRESENT ✓
-                        </span>
-                      ) : (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
-                          ABSENT
-                        </span>
-                      )}
-                    </div>
-
-                    <p className="text-xs text-stone-600 mb-3">
-                      {delegate.eventCheckedIn ? (
-                        <span className="text-emerald-900 font-medium">
-                          Checked in at{" "}
-                          {delegate.eventCheckedInAt
-                            ? new Date(delegate.eventCheckedInAt).toLocaleTimeString("en-IN", {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })
-                            : "today"}{" "}
-                          by {delegate.eventCheckedInBy || "Coordinator"}
-                        </span>
-                      ) : (
-                        "Verify identity pass to admit student to the venue and competitions."
-                      )}
-                    </p>
-                  </div>
-
-                  <div className="pt-2 border-t border-stone-200/60 flex items-center justify-between gap-2">
-                    {delegate.eventCheckedIn ? (
-                      <button
-                        type="button"
-                        onClick={() => handleCheckInEvent(false)}
-                        disabled={actionLoading}
-                        className="text-[11px] text-stone-500 hover:text-rose-600 underline font-medium"
-                      >
-                        Revert Check-In
-                      </button>
-                    ) : (
-                      <span className="text-[11px] text-stone-400 font-mono">
-                        Ready for Admission
-                      </span>
-                    )}
-
-                    {!delegate.eventCheckedIn && (
-                      <button
-                        type="button"
-                        onClick={() => handleCheckInEvent(true)}
-                        disabled={actionLoading}
-                        className="tap-target px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition flex items-center gap-1.5 shadow-xs cursor-pointer ml-auto"
-                      >
-                        <UserCheck className="w-3.5 h-3.5" />
-                        <span>Mark Present</span>
-                      </button>
-                    )}
-                  </div>
+              {/* 1. Scoped Multi-Event Attendance Hub */}
+              <div className="bg-white border border-stone-200 rounded-xl p-4 space-y-3">
+                <div className="flex items-center justify-between border-b border-stone-100 pb-2">
+                  <span className="text-xs font-black uppercase tracking-wider text-stone-800 flex items-center gap-1.5">
+                    <UserCheck className="w-4 h-4 text-emerald-600" />
+                    <span>Registered Competitions ({delegate.registrations.length})</span>
+                  </span>
+                  {delegate.allEventsAttended ? (
+                    <span className="text-[10px] font-bold bg-emerald-600 text-white px-2 py-0.5 rounded-full">
+                      ALL EVENTS ATTENDED ✓
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-semibold text-stone-500 bg-stone-100 px-2 py-0.5 rounded-full">
+                      QR Valid for remaining events
+                    </span>
+                  )}
                 </div>
 
-                {/* 2. Food Token Claim Card */}
-                <div
-                  className={`p-4 rounded-xl border-2 transition-all flex flex-col justify-between ${
-                    delegate.foodTokenClaimed
-                      ? "bg-stone-100/90 border-stone-300"
-                      : "bg-amber-50/70 border-amber-300"
-                  }`}
-                >
-                  <div>
-                    <div className="flex items-center justify-between gap-2 mb-2">
-                      <span className="text-xs font-black uppercase tracking-wider text-amber-950 flex items-center gap-1.5">
-                        <Utensils className="w-4 h-4 text-amber-700" />
-                        <span>2. Meal & Food Token</span>
-                      </span>
-                      {delegate.foodTokenClaimed ? (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-stone-700 text-white">
-                          CLAIMED ✓
-                        </span>
-                      ) : (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-400 text-amber-950 shadow-2xs">
-                          READY (1x)
-                        </span>
-                      )}
-                    </div>
-
-                    <p className="text-xs text-stone-600 mb-2">
-                      Token Code:{" "}
-                      <strong className="font-mono text-stone-900 bg-white px-1.5 py-0.5 rounded border border-amber-300">
-                        {delegate.foodTokenCode}
-                      </strong>
-                    </p>
-
-                    <p className="text-xs text-stone-600 mb-3">
-                      {delegate.foodTokenClaimed ? (
-                        <span className="text-stone-700 font-medium">
-                          Food already issued at{" "}
-                          {delegate.foodClaimedAt
-                            ? new Date(delegate.foodClaimedAt).toLocaleTimeString("en-IN", {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })
-                            : "earlier today"}{" "}
-                          by {delegate.foodClaimedBy || "Hospitality staff"}
-                        </span>
-                      ) : (
-                        "Issue lunch/refreshment packet to delegate at dining counter."
-                      )}
-                    </p>
-                  </div>
-
-                  <div className="pt-2 border-t border-stone-200/60 flex items-center justify-between gap-2">
-                    {delegate.foodTokenClaimed ? (
-                      <button
-                        type="button"
-                        onClick={() => handleClaimFood(false)}
-                        disabled={actionLoading}
-                        className="text-[11px] text-stone-500 hover:text-amber-700 underline font-medium"
+                <div className="space-y-2.5">
+                  {delegate.registrations.map((reg) => {
+                    const isCurrentActive = activeEventId && activeEventId === reg.eventId;
+                    return (
+                      <div
+                        key={reg.registrationId}
+                        className={`p-3 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                          reg.attended
+                            ? "bg-emerald-50/60 border-emerald-200"
+                            : isCurrentActive
+                            ? "bg-amber-50/50 border-amber-300 ring-1 ring-amber-300"
+                            : "bg-stone-50/60 border-stone-200"
+                        }`}
                       >
-                        Reset Token
-                      </button>
-                    ) : (
-                      <span className="text-[11px] text-stone-400 font-mono">
-                        Valid for 1 Meal
-                      </span>
-                    )}
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-stone-900 text-xs sm:text-sm">{reg.eventName}</span>
+                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-white text-stone-600 border border-stone-200">
+                              {reg.category === "ON_STAGE" ? "On-Stage" : "Off-Stage"}
+                            </span>
+                            {isCurrentActive && (
+                              <span className="text-[10px] font-bold text-amber-800 bg-amber-100 px-1.5 py-0.2 rounded">
+                                Current Desk
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-[11px] text-stone-500">
+                            {reg.venue && <span>Venue: <b>{reg.venue}</b> • </span>}
+                            <span>Scheduled: {reg.dateTime ? new Date(reg.dateTime).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) : "TBD"}</span>
+                          </div>
+                        </div>
 
-                    {!delegate.foodTokenClaimed && (
-                      <button
-                        type="button"
-                        onClick={() => handleClaimFood(true)}
-                        disabled={actionLoading}
-                        className="tap-target px-4 py-2 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-stone-950 transition flex items-center gap-1.5 shadow-xs cursor-pointer ml-auto"
-                      >
-                        <Utensils className="w-3.5 h-3.5 text-amber-950" />
-                        <span>Issue Food (1x)</span>
-                      </button>
-                    )}
-                  </div>
+                        {/* Event Check-In Actions per Event */}
+                        <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+                          {reg.attended ? (
+                            <div className="flex items-center gap-2">
+                              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-100 px-2.5 py-1 rounded-lg border border-emerald-300">
+                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                                Present
+                                {reg.checkedInAt && (
+                                  <span className="font-normal text-[9px] text-emerald-700 ml-1">
+                                    {new Date(reg.checkedInAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                                  </span>
+                                )}
+                              </span>
+
+                              {reg.canCheckIn && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleCheckInEvent(false, reg.eventId)}
+                                  disabled={actionLoading}
+                                  className="text-[10px] text-stone-400 hover:text-rose-600 underline font-medium cursor-pointer"
+                                >
+                                  Revert
+                                </button>
+                              )}
+                            </div>
+                          ) : !delegate.isPaid ? (
+                            <span className="text-[10px] font-bold text-rose-700 bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200">
+                              Payment Required
+                            </span>
+                          ) : reg.canCheckIn ? (
+                            <button
+                              type="button"
+                              onClick={() => handleCheckInEvent(true, reg.eventId)}
+                              disabled={actionLoading}
+                              className="tap-target px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition flex items-center gap-1.5 shadow-xs cursor-pointer"
+                            >
+                              <UserCheck className="w-3.5 h-3.5" />
+                              <span>Mark Present</span>
+                            </button>
+                          ) : (
+                            <span
+                              className="text-[10px] font-medium text-stone-400 bg-stone-100 px-2.5 py-1 rounded-lg cursor-not-allowed"
+                              title="Only assigned coordinator for this specific competition can mark attendance."
+                            >
+                              Other Coordinator Event
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
-              {/* Registered Events Schedule */}
-              <div>
-                <span className="text-[11px] font-black uppercase text-stone-400 tracking-wider block mb-2">
-                  Competitions Entered ({delegate.registrations.length})
-                </span>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {delegate.registrations.map((reg) => (
-                    <div
-                      key={reg.registrationId}
-                      className="p-2.5 rounded-xl bg-white border border-stone-200 flex items-center justify-between text-xs"
+              {/* 2. Food Token Voucher Claim Card */}
+              <div
+                className={`p-4 rounded-xl border-2 transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${
+                  delegate.foodTokenClaimed
+                    ? "bg-stone-100/90 border-stone-300"
+                    : "bg-amber-50/70 border-amber-300"
+                }`}
+              >
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-black uppercase tracking-wider text-amber-950 flex items-center gap-1.5">
+                      <Utensils className="w-4 h-4 text-amber-700" />
+                      <span>Meal & Food Voucher</span>
+                    </span>
+                    {delegate.foodTokenClaimed ? (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-stone-700 text-white">
+                        CLAIMED ✓
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-400 text-amber-950 shadow-2xs">
+                        READY (1x MEAL)
+                      </span>
+                    )}
+                  </div>
+
+                  <p className="text-xs text-stone-600">
+                    Token: <strong className="font-mono text-stone-900 bg-white px-1.5 py-0.5 rounded border border-amber-300">{delegate.foodTokenCode}</strong>
+                    {delegate.foodTokenClaimed ? (
+                      <span className="ml-2 text-stone-700 font-medium">
+                        (Issued at {delegate.foodClaimedAt ? new Date(delegate.foodClaimedAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) : "earlier"} by {delegate.foodClaimedBy || "staff"})
+                      </span>
+                    ) : (
+                      <span className="ml-2 text-stone-500">Valid for 1 lunch/refreshment packet</span>
+                    )}
+                  </p>
+                </div>
+
+                <div className="self-end sm:self-auto shrink-0 flex items-center gap-2">
+                  {delegate.foodTokenClaimed ? (
+                    <button
+                      type="button"
+                      onClick={() => handleClaimFood(false)}
+                      disabled={actionLoading}
+                      className="text-[11px] text-stone-500 hover:text-amber-700 underline font-medium cursor-pointer"
                     >
-                      <div>
-                        <span className="font-bold text-stone-900 block">{reg.eventName}</span>
-                        <span className="text-[10px] text-stone-500">
-                          {reg.category === "ON_STAGE" ? "On-Stage" : "Off-Stage"}
-                          {reg.venue ? ` • ${reg.venue}` : ""}
-                        </span>
-                      </div>
-                      {reg.attended ? (
-                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                          Present ✓
-                        </span>
-                      ) : (
-                        <span className="text-[10px] text-stone-400 font-semibold">
-                          Enrolled
-                        </span>
-                      )}
-                    </div>
-                  ))}
+                      Reset Token
+                    </button>
+                  ) : !delegate.isPaid ? (
+                    <span className="text-[11px] font-bold text-rose-700 bg-rose-50 px-3 py-1.5 rounded-xl border border-rose-200">
+                      Payment Required
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleClaimFood(true)}
+                      disabled={actionLoading}
+                      className="tap-target px-4 py-2 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-stone-950 transition flex items-center gap-1.5 shadow-xs cursor-pointer"
+                    >
+                      <Utensils className="w-3.5 h-3.5 text-stone-950" />
+                      <span>Issue Food (1x)</span>
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

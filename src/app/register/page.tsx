@@ -26,6 +26,8 @@ import {
   Sparkles,
   ShieldCheck,
   Lock,
+  Clock,
+  ReceiptIndianRupee,
 } from "lucide-react";
 import { safeJson } from "@/lib/safeFetch";
 
@@ -334,15 +336,35 @@ function RegisterForm() {
 
   // SUCCESS VIEW: Digital ID Passes, QR codes & Food Tokens
   if (successData) {
+    const isPaid = successData.delegation.paymentStatus === "PAID";
+
     return (
       <div className="container-shine py-12 max-w-4xl mx-auto">
-        <div className="bg-white border-2 border-emerald-500/30 rounded-3xl p-6 sm:p-10 shadow-xl text-center">
-          <div className="w-16 h-16 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <CheckCircle2 className="w-8 h-8 text-emerald-600" />
+        <div className={`bg-white border-2 ${isPaid ? "border-emerald-500/30" : "border-amber-500/40"} rounded-3xl p-6 sm:p-10 shadow-xl text-center`}>
+          <div className={`w-16 h-16 ${isPaid ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-600" : "bg-amber-500/10 border-amber-500/30 text-amber-600"} border rounded-2xl flex items-center justify-center mx-auto mb-4`}>
+            {isPaid ? (
+              <CheckCircle2 className="w-8 h-8" />
+            ) : (
+              <Clock className="w-8 h-8" />
+            )}
           </div>
 
-          <span className="status-badge status-badge-confirmed mb-2">
-            Delegation Registered Successfully
+          <span
+            className={`status-badge ${
+              isPaid ? "status-badge-confirmed" : "status-badge-pending"
+            } mb-2 inline-flex items-center gap-1.5`}
+          >
+            {isPaid ? (
+              <>
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>Registration Confirmed & Passes Active</span>
+              </>
+            ) : (
+              <>
+                <Clock className="w-3.5 h-3.5" />
+                <span>Status: Pending Payment at Venue Desk</span>
+              </>
+            )}
           </span>
 
           <h2
@@ -353,18 +375,46 @@ function RegisterForm() {
           </h2>
 
           <p className="text-xs sm:text-sm text-stone-600 max-w-xl mx-auto mb-6">
-            Your college contingent has been registered with{" "}
-            <strong>{successData.delegates.length} delegate(s)</strong>. Official digital ID badges, gate verification QR codes, and meal coupons have been issued.
+            Your college contingent registration has been submitted with{" "}
+            <strong>{successData.delegates.length} delegate(s)</strong>.
+            {!isPaid && " Please complete payment at the venue desk to activate event check-in & meal services."}
           </p>
 
-          {/* Email alert confirmation callout */}
-          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 max-w-2xl mx-auto mb-8 text-left flex items-start gap-3">
-            <ShieldCheck className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-            <div className="text-xs text-amber-950">
-              <strong className="block font-bold mb-0.5">Automated Notifications Triggered:</strong>
-              Each delegate has been dispatched an official email with their digital ID pass, schedule, and food token. The event staff and student coordinators have also received the contingent roster.
+          {/* Payment Counter Callout for PENDING status */}
+          {!isPaid && (
+            <div className="bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-amber-500/10 border-2 border-amber-500/30 rounded-2xl p-5 max-w-2xl mx-auto mb-8 text-left">
+              <div className="flex items-start gap-3.5">
+                <ReceiptIndianRupee className="w-6 h-6 text-amber-700 shrink-0 mt-0.5" />
+                <div className="text-xs text-amber-950 space-y-1.5">
+                  <div className="font-extrabold text-sm text-amber-900 flex items-center gap-2">
+                    <span>Mandatory Next Step: Spot Registration Desk & Fee Clearance</span>
+                    <span className="text-xs bg-amber-200/80 text-amber-900 px-2 py-0.5 rounded font-black">
+                      Pay ₹{successData.delegation.totalFee}
+                    </span>
+                  </div>
+                  <p className="leading-relaxed text-stone-700">
+                    On arrival at Sacred Heart College, please report to the <strong>Registration & Finance Desk</strong> with your Contingent Lead (<strong>{successData.delegation.teamLeadName}</strong>).
+                    Pay the contingent fee of <strong>₹{successData.delegation.totalFee}</strong> to the desk coordinator.
+                  </p>
+                  <p className="text-[11px] text-stone-600 bg-white/70 p-2.5 rounded-xl border border-amber-200/60 leading-normal">
+                    ✓ Once payment is recorded as <strong>APPROVED</strong>, your 2 official QR badges (Event Entry QR + Food Token QR) are instantly activated.
+                    <br />
+                    ✓ All delegates will receive an email dispatch with their individual passes, and the Team Lead will receive the consolidated dossier for all {successData.delegates.length} members.
+                  </p>
+                </div>
+              </div>
             </div>
-          </div>
+          )}
+
+          {isPaid && (
+            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 max-w-2xl mx-auto mb-8 text-left flex items-start gap-3">
+              <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+              <div className="text-xs text-emerald-950">
+                <strong className="block font-bold mb-0.5">Automated Notifications Triggered:</strong>
+                Each delegate has been dispatched an official email with their digital ID pass, schedule, and food token. The event coordinators have also received the contingent roster.
+              </div>
+            </div>
+          )}
 
           {/* Delegation Delegates Cards Grid */}
           <div className="text-left mb-8">

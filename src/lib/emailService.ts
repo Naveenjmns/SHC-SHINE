@@ -475,3 +475,259 @@ export async function sendCoordinatorRegistrationAlert(payload: CoordinatorAlert
   }
 }
 
+/**
+ * Sends official approved ID Card and Food Voucher pass email to an individual delegate.
+ * Triggered when Registration Desk collects payment and approves delegation.
+ */
+export async function sendApprovedDelegatePassEmail(payload: DelegateRegistrationEmailPayload): Promise<boolean> {
+  try {
+    const config = await getSmtpSettings();
+    if (!config) {
+      console.log(`[SMTP Not Configured] Approved pass email skipped for ${payload.toEmail}`);
+      return false;
+    }
+
+    const transporter = nodemailer.createTransport({
+      host: config.host,
+      port: config.port,
+      secure: config.secure,
+      auth: {
+        user: config.user,
+        pass: config.password || "",
+      },
+    });
+
+    const activeEdition = await prisma.eventEdition.findFirst({ where: { isActive: true } });
+    const eventName = activeEdition?.name || "SHINE";
+    const editionYear = activeEdition?.edition || "2027";
+    const institutionName = activeEdition?.institutionName || "Sacred Heart College (Autonomous)";
+
+    const eventsListHtml = payload.events.length > 0
+      ? payload.events.map((ev) => `
+          <div style="background-color: #FAF8F5; border: 1px solid #E7E5E4; border-radius: 12px; padding: 12px 14px; margin-bottom: 8px;">
+            <div style="font-weight: 700; color: #1C1917; font-size: 13.5px;">${ev.name}</div>
+            <div style="font-size: 11px; color: #78716C; margin-top: 2px;">
+              <span>${ev.category === "ON_STAGE" ? "On-Stage Arena" : "Off-Stage Challenge"}</span>
+              ${ev.venue ? ` • Venue: <b>${ev.venue}</b>` : ""}
+              ${ev.time ? ` • Time: <b>${ev.time}</b>` : ""}
+            </div>
+          </div>
+        `).join("")
+      : `<p style="color: #78716C; font-size: 13px;">General Fest Attendee</p>`;
+
+    const html = `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background-color: #FAF8F5; padding: 32px 20px;">
+        <div style="background-color: #ffffff; border-radius: 20px; border: 1px solid #E7E5E4; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.06);">
+          <!-- Header -->
+          <div style="background: linear-gradient(135deg, #065F46 0%, #047857 100%); padding: 26px 32px; border-bottom: 3px solid #10B981;">
+            <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.15em; color: #A7F3D0; text-transform: uppercase; margin-bottom: 4px;">
+              ${institutionName}
+            </div>
+            <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 800;">
+              ✓ Registration Approved & Passes Ready
+            </h1>
+            <div style="color: #D1FAE5; font-size: 13px; margin-top: 4px;">${eventName} ${editionYear} • Official Digital ID & Food Token</div>
+          </div>
+
+          <!-- Body -->
+          <div style="padding: 30px; color: #292524;">
+            <p style="font-size: 16px; font-weight: 700; color: #1C1917; margin-top: 0;">
+              Congratulations, ${payload.delegateName}!
+            </p>
+            <p style="font-size: 14px; color: #57534E; line-height: 1.6;">
+              Your spot registration fee has been collected and verified by the Registration Desk. Your <b>Official Digital ID Pass (with Event Check-In QR and Food Token QR)</b> is now officially activated.
+            </p>
+
+            <!-- Dual Pass Summary -->
+            <div style="background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); border: 1.5px solid #FCD34D; border-radius: 16px; padding: 18px; margin: 20px 0;">
+              <div style="margin-bottom: 12px;">
+                <div style="font-size: 10px; font-weight: 800; color: #92400E; text-transform: uppercase; letter-spacing: 0.1em;">1. Event Gate Pass Code</div>
+                <div style="font-size: 18px; font-weight: 900; color: #78350F; font-family: monospace; letter-spacing: 0.05em; margin-top: 2px;">
+                  ${payload.badgeCode}
+                </div>
+                <div style="font-size: 11px; color: #92400E; margin-top: 2px;">Valid for venue entry across all your registered competitions.</div>
+              </div>
+
+              <div style="padding-top: 12px; border-top: 1px dashed #F59E0B;">
+                <div style="font-size: 10px; font-weight: 800; color: #065F46; text-transform: uppercase; letter-spacing: 0.1em;">2. Meal & Refreshment Token Code</div>
+                <div style="font-size: 16px; font-weight: 800; color: #047857; font-family: monospace; margin-top: 2px;">
+                  ${payload.foodTokenCode}
+                </div>
+                <div style="font-size: 11px; color: #065F46; margin-top: 2px;">Present at dining hall for 1x meal allocation.</div>
+              </div>
+            </div>
+
+            <!-- CTA Button -->
+            <div style="text-align: center; margin: 26px 0;">
+              <a href="${payload.badgeUrl}" style="background-color: #047857; color: #ffffff; padding: 14px 28px; font-size: 14px; font-weight: 700; text-decoration: none; border-radius: 12px; display: inline-block; box-shadow: 0 4px 12px rgba(4,120,87,0.3);">
+                View Approved Digital Pass & QRs →
+              </a>
+            </div>
+
+            <!-- Registered Competitions -->
+            <div style="margin-top: 26px;">
+              <div style="font-size: 12px; font-weight: 800; text-transform: uppercase; color: #047857; letter-spacing: 0.08em; margin-bottom: 10px;">
+                Your Registered Competitions
+              </div>
+              ${eventsListHtml}
+            </div>
+
+            <div style="margin-top: 30px; padding-top: 18px; border-top: 1px solid #F5F5F4; font-size: 12px; color: #78716C;">
+              <p style="margin: 0 0 4px 0; font-weight: 700; color: #1C1917;">Symposium Executive Committee</p>
+              <p style="margin: 0;">${institutionName}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    await transporter.sendMail({
+      from: `"${config.fromName}" <${config.fromEmail}>`,
+      to: payload.toEmail,
+      replyTo: config.replyTo || undefined,
+      subject: `Approved ID Pass: ${payload.delegateName} — ${eventName} ${editionYear}`,
+      html,
+    });
+
+    return true;
+  } catch (err) {
+    console.error(`Failed to send approved delegate email to ${payload.toEmail}:`, err);
+    return false;
+  }
+}
+
+export interface TeamMemberRosterItem {
+  name: string;
+  email: string;
+  phone: string;
+  isTeamLead: boolean;
+  badgeCode: string;
+  foodTokenCode: string;
+  badgeUrl: string;
+  events: Array<{ name: string; category: string; venue?: string | null; time?: string | null }>;
+}
+
+export interface TeamLeadConsolidatedEmailPayload {
+  teamLeadEmail: string;
+  teamLeadName: string;
+  collegeName: string;
+  teamName?: string | null;
+  totalFee: number;
+  members: TeamMemberRosterItem[];
+}
+
+/**
+ * Sends a consolidated team pass dossier to the Team Lead upon Desk payment & approval.
+ * Contains the team lead's own pass plus every team member's badge, food token, and pass link.
+ */
+export async function sendTeamLeadConsolidatedPassEmail(payload: TeamLeadConsolidatedEmailPayload): Promise<boolean> {
+  try {
+    const config = await getSmtpSettings();
+    if (!config) {
+      console.log(`[SMTP Not Configured] Team lead consolidated email skipped for ${payload.teamLeadEmail}`);
+      return false;
+    }
+
+    const transporter = nodemailer.createTransport({
+      host: config.host,
+      port: config.port,
+      secure: config.secure,
+      auth: {
+        user: config.user,
+        pass: config.password || "",
+      },
+    });
+
+    const activeEdition = await prisma.eventEdition.findFirst({ where: { isActive: true } });
+    const eventName = activeEdition?.name || "SHINE";
+    const editionYear = activeEdition?.edition || "2027";
+    const institutionName = activeEdition?.institutionName || "Sacred Heart College (Autonomous)";
+
+    const memberCardsHtml = payload.members.map((m, idx) => `
+      <div style="background-color: #FAF8F5; border: 1.5px solid #E7E5E4; border-radius: 14px; padding: 16px; margin-bottom: 14px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #E7E5E4; padding-bottom: 10px; margin-bottom: 10px;">
+          <div>
+            <span style="font-weight: 800; font-size: 14px; color: #1C1917;">${idx + 1}. ${m.name}</span>
+            ${m.isTeamLead ? `<span style="background-color: #FEF3C7; color: #92400E; font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 6px; margin-left: 6px;">TEAM LEAD</span>` : ""}
+            <div style="font-size: 12px; color: #78716C; margin-top: 2px;">${m.email} • ${m.phone}</div>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 12px; margin-bottom: 10px;">
+          <div style="background-color: #FFFBEB; border: 1px solid #FCD34D; border-radius: 8px; padding: 8px 10px;">
+            <div style="font-size: 9px; font-weight: 800; color: #92400E; text-transform: uppercase;">Event Pass Code</div>
+            <div style="font-family: monospace; font-weight: 800; color: #78350F; font-size: 13px;">${m.badgeCode}</div>
+          </div>
+          <div style="background-color: #ECFDF5; border: 1px solid #A7F3D0; border-radius: 8px; padding: 8px 10px;">
+            <div style="font-size: 9px; font-weight: 800; color: #065F46; text-transform: uppercase;">Food Token Code</div>
+            <div style="font-family: monospace; font-weight: 800; color: #047857; font-size: 13px;">${m.foodTokenCode}</div>
+          </div>
+        </div>
+
+        <div style="font-size: 11px; color: #57534E; margin-bottom: 10px;">
+          <b>Competitions:</b> ${m.events.map((e) => e.name).join(", ") || "General Participant"}
+        </div>
+
+        <div style="text-align: right;">
+          <a href="${m.badgeUrl}" style="background-color: #FF6B1A; color: #ffffff; padding: 8px 16px; font-size: 11px; font-weight: 700; text-decoration: none; border-radius: 8px; display: inline-block;">
+            Open ${m.name.split(" ")[0]}'s Pass (2 QRs) →
+          </a>
+        </div>
+      </div>
+    `).join("");
+
+    const html = `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 650px; margin: 0 auto; background-color: #FAF8F5; padding: 32px 20px;">
+        <div style="background-color: #ffffff; border-radius: 20px; border: 1px solid #E7E5E4; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.06);">
+          <!-- Header -->
+          <div style="background: linear-gradient(135deg, #1C1917 0%, #292524 100%); padding: 28px 32px; border-bottom: 3px solid #FF6B1A;">
+            <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.15em; color: #D9A441; text-transform: uppercase; margin-bottom: 4px;">
+              ${institutionName}
+            </div>
+            <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 800;">
+              Team Dossier: All Member ID Passes & Food Tokens
+            </h1>
+            <div style="color: #A8A29E; font-size: 13px; margin-top: 4px;">${eventName} ${editionYear} • Team Lead Consolidated Roster</div>
+          </div>
+
+          <!-- Body -->
+          <div style="padding: 30px; color: #292524;">
+            <p style="font-size: 16px; font-weight: 700; color: #1C1917; margin-top: 0;">
+              Hello ${payload.teamLeadName} (Contingent Team Lead),
+            </p>
+            <p style="font-size: 14px; color: #57534E; line-height: 1.6;">
+              Payment has been verified at the Registration Desk for your college contingent <b>${payload.collegeName}</b>${payload.teamName ? ` (${payload.teamName})` : ""}.
+            </p>
+            <p style="font-size: 13.5px; color: #57534E; line-height: 1.6;">
+              Below is the complete dossier of <b>all ${payload.members.length} team members</b>, including their unique <b>Badge Codes</b>, <b>Food Tokens</b>, and direct links to each member's digital pass containing both their <b>Event Registration QR</b> and <b>Food Token QR</b>.
+            </p>
+
+            <!-- Members List -->
+            <div style="margin: 24px 0;">
+              ${memberCardsHtml}
+            </div>
+
+            <div style="margin-top: 30px; padding-top: 18px; border-top: 1px solid #F5F5F4; font-size: 12px; color: #78716C;">
+              <p style="margin: 0 0 4px 0; font-weight: 700; color: #1C1917;">Registration & Helpdesk Team</p>
+              <p style="margin: 0;">${institutionName}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    await transporter.sendMail({
+      from: `"${config.fromName}" <${config.fromEmail}>`,
+      to: payload.teamLeadEmail,
+      replyTo: config.replyTo || undefined,
+      subject: `[Team Dossier] All Member ID Passes & Food Tokens — ${payload.collegeName}`,
+      html,
+    });
+
+    return true;
+  } catch (err) {
+    console.error(`Failed to send team lead consolidated email to ${payload.teamLeadEmail}:`, err);
+    return false;
+  }
+}
+

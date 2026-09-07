@@ -108,9 +108,31 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    // Get assigned event IDs for the logged in coordinator/staff
+    const isAdmin = session.user.role === "ADMIN";
+    const userAssignedEvents = await prisma.event.findMany({
+      where: isAdmin
+        ? {}
+        : {
+            OR: [
+              { staffCoordinatorId: session.user.id },
+              { studentCoordinatorId: session.user.id },
+              { coordinatorId: session.user.id },
+              { staffCoordinatorEmail: { equals: session.user.email || "", mode: "insensitive" } },
+              { studentCoordinatorEmail: { equals: session.user.email || "", mode: "insensitive" } },
+            ],
+          },
+      select: { id: true, name: true },
+    });
+    const assignedEventIds = new Set(userAssignedEvents.map((e) => e.id));
+
+    const allEventsAttended = member.registrations.length > 0 && member.registrations.every((r) => r.attended);
+
     return NextResponse.json({
       success: true,
       typeHint,
+      isAdmin,
+      assignedEvents: userAssignedEvents,
       member: {
         id: member.id,
         name: member.name,
@@ -121,6 +143,7 @@ export async function GET(req: NextRequest) {
         eventCheckedIn: member.eventCheckedIn,
         eventCheckedInAt: member.eventCheckedInAt,
         eventCheckedInBy: member.eventCheckedInBy,
+        allEventsAttended,
         foodTokenClaimed: member.foodTokenClaimed,
         foodClaimedAt: member.foodClaimedAt,
         foodClaimedBy: member.foodClaimedBy,
@@ -131,6 +154,9 @@ export async function GET(req: NextRequest) {
         teamLeadPhone: member.delegation.teamLeadPhone,
         staffInchargeName: member.delegation.staffInchargeName,
         staffInchargePhone: member.delegation.staffInchargePhone,
+        totalFee: member.delegation.totalFee,
+        paymentStatus: member.delegation.paymentStatus,
+        isPaid: member.delegation.paymentStatus === "PAID",
         registrations: member.registrations.map((r) => ({
           registrationId: r.id,
           eventId: r.event.id,
@@ -138,9 +164,13 @@ export async function GET(req: NextRequest) {
           category: r.event.category,
           venue: r.event.venue,
           dateTime: r.event.dateTime,
+          status: r.status,
+          score: r.score,
+          result: r.result,
           attended: r.attended,
           checkedInAt: r.checkedInAt,
           checkedInBy: r.checkedInBy,
+          canCheckIn: isAdmin || assignedEventIds.has(r.event.id),
         })),
       },
     });
@@ -205,43 +235,131 @@ export async function POST(req: NextRequest) {
     }
 
     const actorName = session.user.name || session.user.email || "Coordinator";
+    const isAdmin = session.user.role === "ADMIN";
 
+    // 1. EVENT CHECK-IN ACTION
     if (action === "EVENT_CHECKIN") {
-      // Mark member as checked in
-      const updated = await prisma.delegationMember.update({
+      // Payment Guard: Must be PAID at registration desk
+      if (member.delegation.paymentStatus !== "PAID") {
+        return NextResponse.json(
+          {
+            success: false,
+            paymentPending: true,
+            message: `Registration Desk Payment Required: ${member.name}'s contingent fee is currently UNPAID (${member.delegation.paymentStatus}). Please direct student to Registration Desk to pay ₹${member.delegation.totalFee} and collect approval before venue entry.`,
+          },
+          { status: 403 }
+        );
+      }
+
+      if (!eventId) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Event ID is required. Please specify which competition you are checking this student in for.",
+          },
+          { status: 400 }
+        );
+      }
+
+      // Verify the target event exists
+      const targetEvent = await prisma.event.findUnique({
+        where: { id: eventId },
+      });
+
+      if (!targetEvent) {
+        return NextResponse.json(
+          { success: false, message: "Target competition event not found." },
+          { status: 404 }
+        );
+      }
+
+      // Scoped Coordinator Rule: Coordinator of Event A cannot check in for Event B
+      const isAssigned =
+        isAdmin ||
+        targetEvent.staffCoordinatorId === session.user.id ||
+        targetEvent.studentCoordinatorId === session.user.id ||
+        targetEvent.coordinatorId === session.user.id ||
+        (targetEvent.staffCoordinatorEmail &&
+          targetEvent.staffCoordinatorEmail.toLowerCase() === session.user.email?.toLowerCase()) ||
+        (targetEvent.studentCoordinatorEmail &&
+          targetEvent.studentCoordinatorEmail.toLowerCase() === session.user.email?.toLowerCase());
+
+      if (!isAssigned) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: `Unauthorized Check-In: You are not assigned to coordinate "${targetEvent.name}". Coordinators can only check in participants for their own assigned events.`,
+          },
+          { status: 403 }
+        );
+      }
+
+      // Check if student is registered for this event
+      const reg = member.registrations.find((r) => r.eventId === targetEvent.id);
+      if (!reg) {
+        const registeredList = member.registrations.map((r) => r.event.name).join(", ");
+        return NextResponse.json(
+          {
+            success: false,
+            message: `Registration Mismatch: ${member.name} is NOT registered for "${targetEvent.name}". They are registered for: ${registeredList || "None"}.`,
+          },
+          { status: 400 }
+        );
+      }
+
+      // Check if student's registration for this event is approved
+      if (reg.status !== "CONFIRMED") {
+        return NextResponse.json(
+          {
+            success: false,
+            paymentPending: true,
+            message: `Event Registration Not Confirmed: ${member.name}'s registration for "${targetEvent.name}" is "${reg.status}". Please direct the student to Registration Desk.`,
+          },
+          { status: 403 }
+        );
+      }
+
+      // Prevent duplicate event check-in
+      if (reg.attended) {
+        return NextResponse.json(
+          {
+            success: false,
+            alreadyCheckedIn: true,
+            message: `${member.name} is already checked in for "${targetEvent.name}" on ${
+              reg.checkedInAt
+                ? new Date(reg.checkedInAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })
+                : "earlier today"
+            } by ${reg.checkedInBy || "Coordinator"}.`,
+          },
+          { status: 409 }
+        );
+      }
+
+      // Mark this specific event registration as attended
+      await prisma.registration.update({
+        where: { id: reg.id },
+        data: {
+          attended: true,
+          checkedInAt: new Date(),
+          checkedInBy: actorName,
+        },
+      });
+
+      // Check overall student attendance across all registered events
+      const allRegs = await prisma.registration.findMany({
+        where: { delegationMemberId: member.id },
+      });
+      const allEventsCompleted = allRegs.every((r) => r.attended);
+
+      // Update delegationMember
+      const updatedMember = await prisma.delegationMember.update({
         where: { id: member.id },
         data: {
-          eventCheckedIn: true,
+          eventCheckedIn: allEventsCompleted,
           eventCheckedInAt: new Date(),
           eventCheckedInBy: actorName,
         },
       });
-
-      // If specific eventId provided or mark all registered events
-      if (eventId) {
-        await prisma.registration.updateMany({
-          where: {
-            delegationMemberId: member.id,
-            eventId: eventId,
-          },
-          data: {
-            attended: true,
-            checkedInAt: new Date(),
-            checkedInBy: actorName,
-          },
-        });
-      } else {
-        await prisma.registration.updateMany({
-          where: {
-            delegationMemberId: member.id,
-          },
-          data: {
-            attended: true,
-            checkedInAt: new Date(),
-            checkedInBy: actorName,
-          },
-        });
-      }
 
       await logActivity({
         action: "DELEGATE_CHECKIN",
@@ -250,44 +368,63 @@ export async function POST(req: NextRequest) {
         actorEmail: session.user.email,
         actorRole: session.user.role,
         targetType: "Registration",
-        targetId: member.id,
-        targetTitle: `Checked In: ${member.name} (${member.badgeCode})`,
+        targetId: reg.id,
+        targetTitle: `Checked In: ${member.name} for "${targetEvent.name}"`,
         details: {
           badgeCode: member.badgeCode,
           studentName: member.name,
-          college: member.delegation.collegeName,
-          eventId: eventId || "ALL",
+          eventName: targetEvent.name,
+          eventId: targetEvent.id,
+          allEventsCompleted,
         },
       });
 
+      const remainingEventsCount = allRegs.filter((r) => !r.attended).length;
+
       return NextResponse.json({
         success: true,
-        message: `Successfully checked in ${member.name}!`,
+        message: `Successfully marked ${member.name} Present for "${targetEvent.name}"!${
+          remainingEventsCount > 0
+            ? ` (Pass remains valid for ${remainingEventsCount} other registered event${remainingEventsCount > 1 ? "s" : ""})`
+            : " (All registered events checked in - Pass completed!)"
+        }`,
         member: {
           ...member,
-          eventCheckedIn: true,
-          eventCheckedInAt: updated.eventCheckedInAt,
-          eventCheckedInBy: updated.eventCheckedInBy,
+          eventCheckedIn: allEventsCompleted,
+          eventCheckedInAt: updatedMember.eventCheckedInAt,
+          eventCheckedInBy: updatedMember.eventCheckedInBy,
         },
       });
     }
 
+    // 2. EVENT UNCHECK ACTION
     if (action === "EVENT_UNCHECK") {
-      const updated = await prisma.delegationMember.update({
+      if (eventId) {
+        await prisma.registration.updateMany({
+          where: { delegationMemberId: member.id, eventId },
+          data: {
+            attended: false,
+            checkedInAt: null,
+            checkedInBy: null,
+          },
+        });
+      } else {
+        await prisma.registration.updateMany({
+          where: { delegationMemberId: member.id },
+          data: {
+            attended: false,
+            checkedInAt: null,
+            checkedInBy: null,
+          },
+        });
+      }
+
+      await prisma.delegationMember.update({
         where: { id: member.id },
         data: {
           eventCheckedIn: false,
           eventCheckedInAt: null,
           eventCheckedInBy: null,
-        },
-      });
-
-      await prisma.registration.updateMany({
-        where: { delegationMemberId: member.id },
-        data: {
-          attended: false,
-          checkedInAt: null,
-          checkedInBy: null,
         },
       });
 
@@ -304,6 +441,17 @@ export async function POST(req: NextRequest) {
     }
 
     if (action === "FOOD_CLAIM") {
+      if (member.delegation.paymentStatus !== "PAID") {
+        return NextResponse.json(
+          {
+            success: false,
+            paymentPending: true,
+            message: `Payment Desk Approval Required: ${member.name}'s contingent fee is UNPAID (${member.delegation.paymentStatus}). Food tokens cannot be issued until payment is verified at the Registration Desk.`,
+          },
+          { status: 403 }
+        );
+      }
+
       if (member.foodTokenClaimed) {
         return NextResponse.json(
           {

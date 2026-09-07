@@ -245,6 +245,7 @@ model Registration {
   delegationMemberId String?
   status             RegistrationStatus @default(PENDING)
   result             String?
+  score              Float?
   attended           Boolean            @default(false)
   checkedInAt        DateTime?
   checkedInBy        String?

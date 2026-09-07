@@ -39,7 +39,9 @@ export async function GET(
       session.user.role === "ADMIN" ||
       event.staffCoordinatorId === session.user.id ||
       event.studentCoordinatorId === session.user.id ||
-      event.coordinatorId === session.user.id;
+      event.coordinatorId === session.user.id ||
+      (event.staffCoordinatorEmail && event.staffCoordinatorEmail.toLowerCase() === session.user.email?.toLowerCase()) ||
+      (event.studentCoordinatorEmail && event.studentCoordinatorEmail.toLowerCase() === session.user.email?.toLowerCase());
 
     if (!isManager) {
       return NextResponse.json(

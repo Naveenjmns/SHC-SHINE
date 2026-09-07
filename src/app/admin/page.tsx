@@ -38,6 +38,7 @@ import {
   Unlock,
   QrCode,
   Utensils,
+  ReceiptIndianRupee,
 } from "lucide-react";
 import CheckInModal from "@/components/CheckInModal";
 
@@ -88,6 +89,8 @@ interface RegistrationRecord {
     teamName: string | null;
     teamLeadName: string;
     staffInchargeName: string | null;
+    paymentStatus?: string;
+    totalFee?: number;
   } | null;
   delegationMember?: {
     id: string;
@@ -794,6 +797,29 @@ export default function AdminOverviewPage() {
       if (res.ok) await loadAdminData();
     } catch (err) {
       console.error("Failed to update status:", err);
+    }
+  };
+
+  const collectPaymentAndApproveDelegation = async (delegationId: string, teamLeadName: string, totalFee?: number) => {
+    if (!confirm(`Collect spot registration fee of ₹${totalFee || 0} for ${teamLeadName}'s team and activate official passes?\n\nThis will mark payment as PAID, confirm all team member registrations, and send official passes (2 QR badges) to each student and a full dossier to the team lead.`)) {
+      return;
+    }
+    try {
+      const res = await fetch("/api/admin/registrations", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ delegationId, action: "COLLECT_PAYMENT_APPROVE_DELEGATION" }),
+      });
+      const data = await safeJson(res, { success: false, message: "Payment approval failed" });
+      if (data.success) {
+        toast.success(`Fee collected & official passes dispatched for ${teamLeadName}'s team!`);
+        await loadAdminData();
+      } else {
+        toast.error(data.message || "Failed to approve delegation payment.");
+      }
+    } catch (err) {
+      console.error("Failed to collect payment:", err);
+      toast.error("Network error while approving delegation payment.");
     }
   };
 
@@ -2683,6 +2709,7 @@ export default function AdminOverviewPage() {
                     <th className="py-3 px-4">Student</th>
                     <th className="py-3 px-4">College</th>
                     <th className="py-3 px-4">Registered Event</th>
+                    <th className="py-3 px-4">Payment Desk</th>
                     <th className="py-3 px-4">Gate & Meal Status</th>
                     <th className="py-3 px-4">Status</th>
                     <th className="py-3 px-4">Actions</th>
@@ -2718,6 +2745,43 @@ export default function AdminOverviewPage() {
                         )}
                       </td>
                       <td className="py-3 px-4 font-semibold text-[#0F172A]">{reg.event.name}</td>
+
+                      {/* Payment Desk Status & Instant Collection */}
+                      <td className="py-3 px-4">
+                        {reg.delegation ? (
+                          <div className="flex flex-col gap-1.5">
+                            {reg.delegation.paymentStatus === "PAID" ? (
+                              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded w-fit">
+                                <Check className="w-3 h-3" />
+                                ₹{reg.delegation.totalFee ?? 0} • PAID
+                              </span>
+                            ) : (
+                              <div className="flex flex-col gap-1">
+                                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded w-fit">
+                                  ₹{reg.delegation.totalFee ?? 0} • PENDING
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    collectPaymentAndApproveDelegation(
+                                      reg.delegation!.id,
+                                      reg.delegation!.teamLeadName,
+                                      reg.delegation!.totalFee
+                                    )
+                                  }
+                                  className="tap-target px-2.5 py-1 text-[11px] font-bold text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 rounded-lg shadow-sm flex items-center gap-1 cursor-pointer w-fit"
+                                  title="Collect registration fee at desk and dispatch official passes"
+                                >
+                                  <ReceiptIndianRupee className="w-3 h-3" />
+                                  <span>Collect & Approve</span>
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-slate-400">Direct</span>
+                        )}
+                      </td>
 
                       {/* Gate & Meal Status Badges */}
                       <td className="py-3 px-4">
