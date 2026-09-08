@@ -1,4 +1,5 @@
 import prisma from "@/lib/prisma";
+import { unstable_cache } from "next/cache";
 
 export interface ActiveEditionConfig {
   id: string;
@@ -122,7 +123,7 @@ export const DEFAULT_EDITION_CONFIG: ActiveEditionConfig = {
   scheduleItems: [],
 };
 
-export async function getActiveEdition(): Promise<ActiveEditionConfig> {
+async function fetchActiveEditionFromDb(): Promise<ActiveEditionConfig> {
   try {
     const active = await prisma.eventEdition.findFirst({
       where: { isActive: true },
@@ -194,4 +195,8 @@ export async function getActiveEdition(): Promise<ActiveEditionConfig> {
     console.error("Error fetching active event edition:", error);
     return DEFAULT_EDITION_CONFIG;
   }
+}
+
+export async function getActiveEdition(): Promise<ActiveEditionConfig> {
+  return fetchActiveEditionFromDb();
 }

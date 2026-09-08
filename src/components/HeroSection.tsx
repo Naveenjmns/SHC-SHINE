@@ -1,5 +1,3 @@
-"use client";
-
 import Link from "next/link";
 import Image from "next/image";
 import ParticleField from "@/components/ParticleField";
@@ -40,11 +38,15 @@ export default function HeroSection({ edition }: HeroSectionProps) {
         {/* Stage 2: Extra-Large Logo with Natural Sunburst Blend */}
         <div className="mb-6 md:mb-8 animate-stage-logo w-full flex justify-center">
           {logoUrl ? (
-            <div className="relative inline-flex items-center justify-center">
+            <div className="relative inline-flex items-center justify-center min-h-[180px] sm:min-h-[240px] md:min-h-[320px] lg:min-h-[400px]">
               <div className="absolute inset-0 rounded-full bg-radial from-[#FF6B1A]/35 via-[#D9A441]/20 to-transparent blur-2xl transform scale-125 pointer-events-none" />
               <img
                 src={logoUrl}
                 alt={`${eventName} ${editionYear} Logo`}
+                loading="eager"
+                // @ts-ignore
+                fetchPriority="high"
+                decoding="async"
                 className="relative max-h-56 sm:max-h-72 md:max-h-96 lg:max-h-[440px] w-auto object-contain mx-auto drop-shadow-[0_12px_35px_rgba(255,107,26,0.25)] transition-transform duration-500 hover:scale-105"
               />
             </div>

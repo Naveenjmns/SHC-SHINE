@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { EventCategory } from "@prisma/client";
 import { logActivity } from "@/lib/activityLogger";
+import { revalidatePath } from "next/cache";
 
 export async function GET(
   req: Request,
@@ -149,6 +150,9 @@ export async function PUT(
       },
     });
 
+    revalidatePath("/");
+    revalidatePath("/events");
+
     return NextResponse.json({ success: true, event: updated });
   } catch (error) {
     console.error("Error updating event:", error);
@@ -189,6 +193,9 @@ export async function DELETE(
         details: { eventName: existing.name },
       });
     }
+
+    revalidatePath("/");
+    revalidatePath("/events");
 
     return NextResponse.json({ success: true, message: "Event deleted successfully." });
   } catch (error) {

@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/auth";
 import { EventCategory } from "@prisma/client";
 import { logActivity } from "@/lib/activityLogger";
 import { getActiveEdition } from "@/lib/eventService";
+import { revalidatePath } from "next/cache";
 
 // GET /api/events - Public list of events
 export async function GET(req: Request) {
@@ -173,6 +174,9 @@ export async function POST(req: Request) {
         studentCoordinator: event.studentCoordinator?.name || null,
       },
     });
+
+    revalidatePath("/");
+    revalidatePath("/events");
 
     return NextResponse.json({ success: true, event }, { status: 201 });
   } catch (error) {

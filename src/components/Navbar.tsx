@@ -18,7 +18,7 @@ export default function Navbar({ edition }: NavbarProps) {
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 40);
-    window.addEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
@@ -79,6 +79,10 @@ export default function Navbar({ edition }: NavbarProps) {
             <img
               src={logoUrl}
               alt={eventName}
+              loading="eager"
+              // @ts-ignore
+              fetchPriority="high"
+              decoding="async"
               className="h-9 w-auto object-contain group-hover:scale-105 transition-transform"
             />
           ) : (

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { revalidatePath } from "next/cache";
 
 export const dynamic = "force-dynamic";
 
@@ -75,6 +76,8 @@ export async function POST(req: NextRequest) {
 
     const updatedItem = await prisma.scheduleItem.findUnique({ where: { id: newItem.id } });
 
+    revalidatePath("/");
+
     return NextResponse.json({ success: true, item: updatedItem || newItem });
   } catch (error: any) {
     console.error("POST /api/admin/schedule error:", error);
@@ -110,6 +113,8 @@ export async function PATCH(req: NextRequest) {
 
     await autoSortScheduleItems(updated.editionId);
 
+    revalidatePath("/");
+
     return NextResponse.json({ success: true, item: updated });
   } catch (error: any) {
     console.error("PATCH /api/admin/schedule error:", error);
@@ -136,6 +141,8 @@ export async function DELETE(req: NextRequest) {
       await prisma.scheduleItem.delete({ where: { id } });
       await autoSortScheduleItems(item.editionId);
     }
+
+    revalidatePath("/");
 
     return NextResponse.json({ success: true });
   } catch (error: any) {

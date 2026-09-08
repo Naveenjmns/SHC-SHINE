@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
+import { getImageByFilename } from "@/lib/imageStorage";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -41,18 +42,17 @@ export async function GET(
       return new NextResponse("Access Denied", { status: 403 });
     }
 
-    if (!fs.existsSync(fullPath) || !fs.statSync(fullPath).isFile()) {
+    const filename = path.basename(safeSubPath);
+    const result = await getImageByFilename(filename);
+
+    if (!result) {
       return new NextResponse("File Not Found", { status: 404 });
     }
 
-    const fileBuffer = await fs.promises.readFile(fullPath);
-    const ext = path.extname(fullPath).toLowerCase();
-    const contentType = MIME_TYPES[ext] || "application/octet-stream";
-
-    return new NextResponse(fileBuffer, {
+    return new NextResponse(new Uint8Array(result.data), {
       status: 200,
       headers: {
-        "Content-Type": contentType,
+        "Content-Type": result.mimeType,
         "Cache-Control": "public, max-age=31536000, immutable",
       },
     });

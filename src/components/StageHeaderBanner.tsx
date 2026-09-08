@@ -1,5 +1,3 @@
-"use client";
-
 import { ActiveEditionConfig } from "@/lib/eventService";
 
 interface StageHeaderBannerProps {
@@ -71,10 +69,14 @@ export default function StageHeaderBanner({ edition }: StageHeaderBannerProps) {
       <div className="absolute inset-0 bg-gradient-to-r from-[#FF4500]/12 via-[#FF6B1A]/18 to-[#FF4500]/12 blur-xl pointer-events-none" />
 
       {isBannerUploaded ? (
-        <div className="max-w-7xl mx-auto flex justify-center items-center relative z-10">
+        <div className="max-w-7xl mx-auto flex justify-center items-center relative z-10 min-h-[100px] sm:min-h-[140px] md:min-h-[180px]">
           <img
             src={fullBannerUrl}
             alt="Stage Header Banner"
+            loading="eager"
+            // @ts-ignore
+            fetchPriority="high"
+            decoding="async"
             className="w-full max-h-44 sm:max-h-56 md:max-h-64 object-contain rounded-xl shadow-lg"
           />
         </div>
@@ -82,11 +84,15 @@ export default function StageHeaderBanner({ edition }: StageHeaderBannerProps) {
         <div className="max-w-7xl mx-auto flex flex-wrap sm:flex-nowrap items-center justify-center sm:justify-between gap-2 sm:gap-4 relative z-10">
           
           {/* LEFT ASIDE: Sacred Heart College Crest */}
-          <div className="shrink-0 flex items-center gap-2 sm:gap-3">
+          <div className="shrink-0 flex items-center justify-center gap-2 sm:gap-3 min-w-[40px] sm:min-w-[80px] min-h-[40px] sm:min-h-[80px]">
             {crestUrl && (
               <img
                 src={crestUrl}
                 alt="Sacred Heart College Crest"
+                loading="eager"
+                // @ts-ignore
+                fetchPriority="high"
+                decoding="async"
                 className="h-10 sm:h-20 md:h-28 w-auto object-contain drop-shadow-[0_4px_16px_rgba(255,107,26,0.35)] transition-transform hover:scale-105"
               />
             )}
@@ -112,11 +118,15 @@ export default function StageHeaderBanner({ edition }: StageHeaderBannerProps) {
           </div>
 
           {/* RIGHT ASIDE: 75th Jubilee Logo & MCA Department Seal side-by-side */}
-          <div className="shrink-0 flex items-center gap-2 sm:gap-4">
+          <div className="shrink-0 flex items-center justify-center gap-2 sm:gap-4 min-h-[32px] sm:min-h-[56px]">
             {jubileeBadgeUrl && (
               <img
                 src={jubileeBadgeUrl}
                 alt="75 Years SHC Jubilee Badge"
+                loading="eager"
+                // @ts-ignore
+                fetchPriority="high"
+                decoding="async"
                 className="h-8 sm:h-14 md:h-20 w-auto object-contain drop-shadow-md hover:scale-105 transition-transform"
               />
             )}
@@ -125,6 +135,10 @@ export default function StageHeaderBanner({ edition }: StageHeaderBannerProps) {
               <img
                 src={deptLogoUrl}
                 alt="MCA Department Logo"
+                loading="eager"
+                // @ts-ignore
+                fetchPriority="high"
+                decoding="async"
                 className="h-10 sm:h-20 md:h-28 w-auto object-contain drop-shadow-[0_4px_16px_rgba(255,107,26,0.35)] transition-transform hover:scale-105"
               />
             )}

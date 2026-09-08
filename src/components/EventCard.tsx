@@ -139,11 +139,13 @@ export default function EventCard({
         <div>
           {/* Top Banner if Image exists */}
           {displayImage && (
-            <div className="relative w-full h-36 mb-4 rounded-2xl overflow-hidden border border-[#1C1917]/10 bg-stone-100">
+            <div className="relative w-full h-36 mb-4 rounded-2xl overflow-hidden border border-[#1C1917]/10 bg-stone-100 shrink-0">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={displayImage}
                 alt={name}
+                loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
@@ -217,6 +219,8 @@ export default function EventCard({
                   <img
                     src={effectiveStaffPhoto}
                     alt={effectiveStaffName}
+                    loading="lazy"
+                    decoding="async"
                     className="w-4 h-4 rounded-full object-cover shrink-0"
                   />
                 ) : (
@@ -237,6 +241,8 @@ export default function EventCard({
                   <img
                     src={effectiveStudentPhoto}
                     alt={effectiveStudentName}
+                    loading="lazy"
+                    decoding="async"
                     className="w-4 h-4 rounded-full object-cover shrink-0"
                   />
                 ) : (
@@ -323,6 +329,8 @@ export default function EventCard({
                 <img
                   src={displayImage}
                   alt={name}
+                  loading="lazy"
+                  decoding="async"
                   className="w-full h-full object-cover"
                 />
               </div>
@@ -380,6 +388,8 @@ export default function EventCard({
                     <img
                       src={effectiveStaffPhoto}
                       alt={effectiveStaffName || "Staff Coordinator"}
+                      loading="lazy"
+                      decoding="async"
                       className="w-12 h-12 rounded-full object-cover border-2 border-orange-300 shrink-0 shadow-2xs"
                     />
                   ) : (
@@ -425,6 +435,8 @@ export default function EventCard({
                     <img
                       src={effectiveStudentPhoto}
                       alt={effectiveStudentName || "Student Coordinator"}
+                      loading="lazy"
+                      decoding="async"
                       className="w-12 h-12 rounded-full object-cover border-2 border-blue-300 shrink-0 shadow-2xs"
                     />
                   ) : (

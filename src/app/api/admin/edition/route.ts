@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { logActivity } from "@/lib/activityLogger";
+import { revalidatePath } from "next/cache";
 
 export const dynamic = "force-dynamic";
 
@@ -86,6 +87,8 @@ export async function POST(req: NextRequest) {
         data: { ...nav, editionId: newEdition.id },
       });
     }
+
+    revalidatePath("/");
 
     return NextResponse.json({ success: true, edition: newEdition });
   } catch (error: any) {
@@ -200,6 +203,8 @@ export async function PATCH(req: NextRequest) {
         registrationClosedNotice: updated.registrationClosedNotice,
       },
     });
+
+    revalidatePath("/");
 
     return NextResponse.json({ success: true, edition: updated });
   } catch (error: any) {

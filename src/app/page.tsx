@@ -4,10 +4,14 @@ import StageHeaderBanner from "@/components/StageHeaderBanner";
 import EventCard from "@/components/EventCard";
 import CountdownTimer from "@/components/CountdownTimer";
 import Footer from "@/components/Footer";
-import PresentationController from "@/components/PresentationController";
+import dynamicImport from "next/dynamic";
 import { getActiveEdition } from "@/lib/eventService";
 import prisma from "@/lib/prisma";
 import Link from "next/link";
+
+const PresentationController = dynamicImport(
+  () => import("@/components/PresentationController")
+);
 import {
   Landmark,
   Laptop,
@@ -22,7 +26,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 interface EventWithCoord {
   id: string;
@@ -148,6 +152,8 @@ export default async function Home() {
                     <img
                       src={activeEdition.institutionCrestUrl}
                       alt={activeEdition.institutionName || "Institution"}
+                      loading="lazy"
+                      decoding="async"
                       className="w-8 h-8 object-contain"
                     />
                   ) : (
@@ -179,6 +185,8 @@ export default async function Home() {
                     <img
                       src={activeEdition.deptLogoUrl}
                       alt={activeEdition.hostDepartment || "Department"}
+                      loading="lazy"
+                      decoding="async"
                       className="w-8 h-8 object-contain"
                     />
                   ) : (

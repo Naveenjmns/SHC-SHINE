@@ -24,7 +24,7 @@ export default function Footer({ edition }: FooterProps) {
           <div>
             <Link href="/" className="inline-flex items-center gap-2.5 mb-4 group">
               {logoUrl ? (
-                <img src={logoUrl} alt={eventName} className="h-8 w-auto object-contain" />
+                <img src={logoUrl} alt={eventName} loading="lazy" decoding="async" className="h-8 w-auto object-contain" />
               ) : (
                 <div
                   className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#FF6B1A] to-[#D9A441] flex items-center justify-center text-white font-black text-base shadow-sm"

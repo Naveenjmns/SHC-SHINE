@@ -319,3 +319,15 @@ model ActivityLog {
   @@map("activity_logs")
 }
 
+model ImageStore {
+  id        String   @id @default(cuid())
+  filename  String   @unique
+  mimeType  String   @default("image/png")
+  data      Bytes    @db.ByteA
+  size      Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([filename])
+  @@map("image_stores")
+}
+
