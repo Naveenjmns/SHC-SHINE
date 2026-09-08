@@ -1,11 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
-import sharp from "sharp";
 import { getImageByFilename } from "@/lib/imageStorage";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+
+let sharpInstance: any = null;
+async function getSharp() {
+  if (sharpInstance !== null) return sharpInstance;
+  try {
+    const mod = await import("sharp");
+    sharpInstance = mod.default || mod;
+    return sharpInstance;
+  } catch (err) {
+    console.warn("Sharp is not available in uploads route:", err);
+    sharpInstance = false;
+    return false;
+  }
+}
 
 const MIME_TYPES: Record<string, string> = {
   ".png": "image/png",
@@ -46,6 +59,11 @@ async function optimizeOnTheFly(
   }
 
   try {
+    const sharp = await getSharp();
+    if (!sharp) {
+      return { buffer: data, mimeType };
+    }
+
     let pipeline = sharp(data);
 
     // Resize if dimensions are requested

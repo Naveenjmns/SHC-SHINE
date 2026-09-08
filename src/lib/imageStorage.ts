@@ -1,7 +1,6 @@
 import fs from "fs";
 import path from "path";
 import crypto from "crypto";
-import sharp from "sharp";
 import prisma from "@/lib/prisma";
 
 const MIME_TO_EXT: Record<string, string> = {
@@ -41,11 +40,20 @@ const MAX_HEIGHT = 1920;
 // WebP quality (0-100). 80 is a good balance of quality and file size.
 const WEBP_QUALITY = 80;
 
-/**
- * Optimize an image buffer: convert to WebP and resize if oversized.
- * SVGs and GIFs are returned as-is since they don't benefit from WebP conversion.
- * Returns { buffer, mimeType, ext } with the optimized image.
- */
+let sharpInstance: any = null;
+async function getSharp() {
+  if (sharpInstance !== null) return sharpInstance;
+  try {
+    const mod = await import("sharp");
+    sharpInstance = mod.default || mod;
+    return sharpInstance;
+  } catch (err) {
+    console.warn("Sharp is not available in this environment, falling back to raw storage:", err);
+    sharpInstance = false;
+    return false;
+  }
+}
+
 async function optimizeImage(
   inputBuffer: Buffer,
   mimeType: string
@@ -59,6 +67,12 @@ async function optimizeImage(
   }
 
   try {
+    const sharp = await getSharp();
+    if (!sharp) {
+      const ext = MIME_TO_EXT[normalizedMime] || ".png";
+      return { buffer: inputBuffer, mimeType: normalizedMime, ext };
+    }
+
     const image = sharp(inputBuffer);
     const metadata = await image.metadata();
 
