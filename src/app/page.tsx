@@ -22,7 +22,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 
-export const revalidate = 5;
+export const dynamic = "force-dynamic";
 
 interface EventWithCoord {
   id: string;
