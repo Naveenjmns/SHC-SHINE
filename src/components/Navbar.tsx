@@ -56,16 +56,13 @@ export default function Navbar({ edition }: NavbarProps) {
   const eventName = activeEdition?.name || "SHINE";
   const editionYear = activeEdition?.edition || "2026";
   const logoUrl = activeEdition?.logoUrl;
-  const rawNavItems = activeEdition?.navItems || [
+  const navItems = activeEdition?.navItems || [
     { id: "1", label: "About", url: "#about", order: 1, isEnabled: true },
     { id: "2", label: "Schedule", url: "#schedule", order: 2, isEnabled: true },
     { id: "3", label: "Events", url: "#events", order: 3, isEnabled: true },
     { id: "4", label: "Rules", url: "#rules", order: 4, isEnabled: true },
     { id: "5", label: "Stage View", url: "/leaderboard", order: 5, isEnabled: true },
   ];
-
-  const enabledNavItems = rawNavItems.filter((item) => item.isEnabled !== false);
-  const hasNavItems = enabledNavItems.length > 0;
 
   return (
     <nav
@@ -112,9 +109,9 @@ export default function Navbar({ edition }: NavbarProps) {
           </div>
         </Link>
 
-        {/* Tablet & Desktop Navigation Links */}
-        <div className="hidden sm:flex items-center gap-4 md:gap-6 lg:gap-7">
-          {enabledNavItems.map((item) => (
+        {/* Desktop Navigation */}
+        <div className="hidden md:flex items-center gap-6 lg:gap-7">
+          {navItems.map((item) => (
             <Link
               key={item.id}
               href={item.url}
@@ -125,11 +122,11 @@ export default function Navbar({ edition }: NavbarProps) {
           ))}
         </div>
 
-        {/* Tablet & Desktop User Actions */}
-        <div className="hidden sm:flex items-center gap-2.5 md:gap-3">
+        {/* Desktop User Actions */}
+        <div className="hidden md:flex items-center gap-3">
           <Link
             href="/leaderboard"
-            className="hidden lg:flex items-center gap-1.5 text-xs font-semibold text-[#57534E] hover:text-[#FF6B1A] bg-white border border-[#1C1917]/10 px-3 py-2 rounded-xl transition shadow-2xs"
+            className="flex items-center gap-1.5 text-xs font-semibold text-[#57534E] hover:text-[#FF6B1A] bg-white border border-[#1C1917]/10 px-3 py-2 rounded-xl transition shadow-2xs"
             title="Stage Presentation Mode"
           >
             <Monitor className="w-3.5 h-3.5 text-[#D9A441]" />
@@ -140,7 +137,7 @@ export default function Navbar({ edition }: NavbarProps) {
             <div className="flex items-center gap-2">
               <Link
                 href={getDashboardUrl()}
-                className="btn-ember !py-2 !px-3 sm:!px-4 text-xs font-bold"
+                className="btn-ember !py-2 !px-4 text-xs font-bold"
               >
                 <LayoutDashboard className="w-3.5 h-3.5" />
                 <span>{getDashboardLabel()}</span>
@@ -157,33 +154,31 @@ export default function Navbar({ edition }: NavbarProps) {
             <div className="flex items-center gap-2">
               <Link
                 href="/login"
-                className="text-xs font-bold text-[#1C1917] hover:text-[#FF6B1A] px-2.5 sm:px-3.5 py-2 rounded-xl transition tap-target"
+                className="text-xs font-bold text-[#1C1917] hover:text-[#FF6B1A] px-3.5 py-2 rounded-xl transition tap-target"
               >
                 Login
               </Link>
-              <Link href="/register" className="btn-ember !py-2 !px-3 sm:!px-4 text-xs font-bold">
-                Register
+              <Link href="/register" className="btn-ember !py-2 !px-4 text-xs font-bold">
+                Register Now
               </Link>
             </div>
           )}
         </div>
 
-        {/* Mobile 3-Dash Menu Button - Strictly hidden on desktop/tablet (hidden max-md:block) */}
-        {hasNavItems && (
-          <button
-            onClick={() => setMobileOpen(!mobileOpen)}
-            className="hidden max-md:block p-2.5 text-[#1C1917] hover:bg-stone-100 rounded-xl tap-target"
-            aria-label="Toggle Menu"
-          >
-            {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
-        )}
+        {/* Mobile Menu Button (44px min tap target) */}
+        <button
+          onClick={() => setMobileOpen(!mobileOpen)}
+          className="md:hidden p-2.5 text-[#1C1917] hover:bg-stone-100 rounded-xl tap-target"
+          aria-label="Toggle Menu"
+        >
+          {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+        </button>
       </div>
 
-      {/* Mobile Drawer - Rendered only when mobileOpen is true AND grouped nav items exist */}
-      {mobileOpen && hasNavItems && (
-        <div className="sm:hidden bg-[#FAF8F5] border-b border-[#1C1917]/10 px-5 py-5 space-y-3 shadow-xl animate-fade-in max-h-[85vh] overflow-y-auto">
-          {enabledNavItems.map((item) => (
+      {/* Mobile Drawer with Comprehensive Options & PWA Install */}
+      {mobileOpen && (
+        <div className="md:hidden bg-[#FAF8F5] border-b border-[#1C1917]/10 px-5 py-5 space-y-3 shadow-xl animate-fade-in max-h-[85vh] overflow-y-auto">
+          {navItems.map((item) => (
             <Link
               key={item.id}
               href={item.url}
