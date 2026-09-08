@@ -436,15 +436,25 @@ export default function AdminOverviewPage() {
     }
   };
 
-  const handleSaveBranding = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSaveBranding = async (e?: React.SyntheticEvent) => {
+    if (e && typeof e.preventDefault === "function") {
+      e.preventDefault();
+    }
     if (!activeEdition) return;
     setSaving(true);
     try {
+      const startDateIso = brandingForm.startDate
+        ? new Date(brandingForm.startDate).toISOString()
+        : null;
+
       const res = await fetch("/api/admin/edition", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: activeEdition.id, ...brandingForm }),
+        body: JSON.stringify({
+          id: activeEdition.id,
+          ...brandingForm,
+          startDate: startDateIso,
+        }),
       });
       const data = await safeJson(res, { success: false, error: "Server error" });
       if (data.success) {
@@ -1358,6 +1368,7 @@ export default function AdminOverviewPage() {
               </div>
 
               <button
+                type="button"
                 onClick={handleSaveBranding}
                 disabled={saving}
                 className="btn-ember !py-2 !px-5 text-xs font-bold shrink-0 flex items-center gap-2 self-start sm:self-auto"
@@ -1628,6 +1639,7 @@ export default function AdminOverviewPage() {
 
                 <div className="pt-2">
                   <button
+                    type="button"
                     onClick={handleSaveBranding}
                     disabled={saving}
                     className="btn-ember !py-3 !px-8 text-sm font-bold w-full sm:w-auto"
