@@ -68,6 +68,19 @@ interface EventItem {
   };
 }
 
+function toLocalDatetimeInput(dateVal?: Date | string | null, fallback = "2026-10-15T10:00"): string {
+  if (!dateVal) return fallback;
+  const d = new Date(dateVal);
+  if (isNaN(d.getTime())) return fallback;
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const year = d.getFullYear();
+  const month = pad(d.getMonth() + 1);
+  const day = pad(d.getDate());
+  const hours = pad(d.getHours());
+  const minutes = pad(d.getMinutes());
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
+
 export default function AdminEventsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -253,11 +266,11 @@ export default function AdminEventsPage() {
     setIsUnlimitedCapacity(!ev.capacity);
     setCapacity(ev.capacity ? ev.capacity.toString() : "");
     setVenue(ev.venue || "");
-    setDateTime(new Date(ev.dateTime).toISOString().slice(0, 16));
+    setDateTime(toLocalDatetimeInput(ev.dateTime, "2026-10-15T10:00"));
     setImageUrl(ev.imageUrl || "");
     setLogoUrl(ev.logoUrl || "");
     setHasPrelims(!!ev.hasPrelims);
-    setPrelimsDateTime(ev.prelimsDateTime ? new Date(ev.prelimsDateTime).toISOString().slice(0, 16) : "2026-10-15T09:00");
+    setPrelimsDateTime(toLocalDatetimeInput(ev.prelimsDateTime, "2026-10-15T09:00"));
     setPrelimsVenue(ev.prelimsVenue || "");
     setPrelimsRules(ev.prelimsRules || "");
     setStaffCoordinatorId(ev.staffCoordinator?.id || ev.coordinator?.id || "");
