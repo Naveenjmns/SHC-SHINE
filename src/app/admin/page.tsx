@@ -165,6 +165,29 @@ function toLocalDatetimeInput(dateVal?: Date | string | null) {
   return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
+function formatTime12h(time24: string): string {
+  if (!time24) return "";
+  const [hStr, mStr] = time24.split(":");
+  let hours = parseInt(hStr, 10);
+  const minutes = mStr || "00";
+  if (isNaN(hours)) return time24;
+
+  const period = hours >= 12 ? "PM" : "AM";
+  hours = hours % 12;
+  if (hours === 0) hours = 12;
+
+  const formattedHours = String(hours).padStart(2, "0");
+  return `${formattedHours}:${minutes} ${period}`;
+}
+
+function buildTimeRangeString(startTime24: string, endTime24?: string): string {
+  if (!startTime24) return "";
+  const startFormatted = formatTime12h(startTime24);
+  if (!endTime24) return startFormatted;
+  const endFormatted = formatTime12h(endTime24);
+  return `${startFormatted} - ${endFormatted}`;
+}
+
 export default function AdminOverviewPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -270,7 +293,10 @@ export default function AdminOverviewPage() {
   const [newNavUrl, setNewNavUrl] = useState("");
 
   // Schedule Items State
-  const [newScheduleTime, setNewScheduleTime] = useState("");
+  const [newScheduleStartTime, setNewScheduleStartTime] = useState("09:30");
+  const [newScheduleEndTime, setNewScheduleEndTime] = useState("10:30");
+  const [useCustomScheduleTime, setUseCustomScheduleTime] = useState(false);
+  const [customScheduleTimeText, setCustomScheduleTimeText] = useState("");
   const [newScheduleTitle, setNewScheduleTitle] = useState("");
   const [newScheduleVenue, setNewScheduleVenue] = useState("");
   const [newScheduleDescription, setNewScheduleDescription] = useState("");
@@ -734,8 +760,13 @@ export default function AdminOverviewPage() {
       toast.error("No active edition selected.");
       return;
     }
-    if (!newScheduleTime.trim() || !newScheduleTitle.trim()) {
-      toast.warning("Please provide both Time and Title for the schedule entry.");
+
+    const timeString = useCustomScheduleTime
+      ? customScheduleTimeText.trim()
+      : buildTimeRangeString(newScheduleStartTime, newScheduleEndTime);
+
+    if (!timeString || !newScheduleTitle) {
+      toast.error("Please specify start time and title.");
       return;
     }
 
@@ -746,22 +777,21 @@ export default function AdminOverviewPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           editionId: activeEdition.id,
-          time: newScheduleTime,
+          time: timeString,
           title: newScheduleTitle,
           venue: newScheduleVenue || null,
           description: newScheduleDescription || null,
           tag: newScheduleTag || null,
-          order: (activeEdition.scheduleItems?.length || 0) + 1,
         }),
       });
       const data = await safeJson(res, { success: false, error: "Network error" });
       if (data.success) {
-        setNewScheduleTime("");
         setNewScheduleTitle("");
         setNewScheduleVenue("");
         setNewScheduleDescription("");
         setNewScheduleTag("");
-        toast.success("Schedule entry added successfully!");
+        setCustomScheduleTimeText("");
+        toast.success("Schedule entry added and aligned on timeline!");
         await loadAdminData();
       } else {
         toast.error("Failed to add schedule item: " + (data.error || "Unknown error"));
@@ -2452,16 +2482,62 @@ export default function AdminOverviewPage() {
                     ))}
                   </div>
 
-                  <form onSubmit={handleAddScheduleItem} className="space-y-2 pt-2 border-t border-stone-200">
+                  <form onSubmit={handleAddScheduleItem} className="space-y-3 pt-3 border-t border-stone-200">
+                    <div className="space-y-1.5 bg-stone-50 p-2.5 rounded-xl border border-stone-200">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[11px] font-bold text-stone-700">Timeline Schedule Time</label>
+                        <button
+                          type="button"
+                          onClick={() => setUseCustomScheduleTime(!useCustomScheduleTime)}
+                          className="text-[10px] text-amber-700 hover:underline font-semibold"
+                        >
+                          {useCustomScheduleTime ? "Switch to Time Picker" : "Enter Custom Text"}
+                        </button>
+                      </div>
+
+                      {!useCustomScheduleTime ? (
+                        <div className="space-y-1.5">
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <span className="block text-[10px] text-stone-500 font-medium mb-0.5">Start Time</span>
+                              <input
+                                type="time"
+                                value={newScheduleStartTime}
+                                onChange={(e) => setNewScheduleStartTime(e.target.value)}
+                                className="w-full px-2 py-1 text-xs border border-stone-300 rounded-lg outline-none font-mono bg-white"
+                                required
+                              />
+                            </div>
+                            <div>
+                              <span className="block text-[10px] text-stone-500 font-medium mb-0.5">End Time (Optional)</span>
+                              <input
+                                type="time"
+                                value={newScheduleEndTime}
+                                onChange={(e) => setNewScheduleEndTime(e.target.value)}
+                                className="w-full px-2 py-1 text-xs border border-stone-300 rounded-lg outline-none font-mono bg-white"
+                              />
+                            </div>
+                          </div>
+                          <div className="text-[10px] font-mono text-[#FF6B1A] font-bold flex items-center gap-1.5 bg-amber-50/80 px-2 py-1 rounded border border-amber-200/60">
+                            <span>🕒 Timeline Badge:</span>
+                            <span>{buildTimeRangeString(newScheduleStartTime, newScheduleEndTime) || "Select Start Time"}</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div>
+                          <input
+                            type="text"
+                            placeholder="Custom Time (e.g. Full Day, TBD)"
+                            value={customScheduleTimeText}
+                            onChange={(e) => setCustomScheduleTimeText(e.target.value)}
+                            className="w-full px-2.5 py-1.5 text-xs border rounded-lg outline-none font-mono bg-white"
+                            required
+                          />
+                        </div>
+                      )}
+                    </div>
+
                     <div className="grid grid-cols-2 gap-2">
-                      <input
-                        type="text"
-                        placeholder="Time (e.g. 09:30 AM - 10:30 AM)"
-                        value={newScheduleTime}
-                        onChange={(e) => setNewScheduleTime(e.target.value)}
-                        className="px-2.5 py-1.5 text-xs border rounded-lg outline-none font-mono"
-                        required
-                      />
                       <input
                         type="text"
                         placeholder="Title (e.g. Inauguration)"
@@ -2470,21 +2546,21 @@ export default function AdminOverviewPage() {
                         className="px-2.5 py-1.5 text-xs border rounded-lg outline-none font-bold"
                         required
                       />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2">
-                      <input
-                        type="text"
-                        placeholder="Venue (e.g. SGB Main Auditorium)"
-                        value={newScheduleVenue}
-                        onChange={(e) => setNewScheduleVenue(e.target.value)}
-                        className="px-2.5 py-1.5 text-xs border rounded-lg outline-none"
-                      />
                       <input
                         type="text"
                         placeholder="Tag (e.g. Inauguration, Check-in)"
                         value={newScheduleTag}
                         onChange={(e) => setNewScheduleTag(e.target.value)}
+                        className="px-2.5 py-1.5 text-xs border rounded-lg outline-none"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-2">
+                      <input
+                        type="text"
+                        placeholder="Venue (e.g. SGB Main Auditorium)"
+                        value={newScheduleVenue}
+                        onChange={(e) => setNewScheduleVenue(e.target.value)}
                         className="px-2.5 py-1.5 text-xs border rounded-lg outline-none"
                       />
                     </div>
@@ -2496,8 +2572,8 @@ export default function AdminOverviewPage() {
                       className="w-full px-2.5 py-1.5 text-xs border rounded-lg outline-none resize-none h-16"
                     />
 
-                    <button type="submit" className="w-full bg-[#FF6B1A] hover:bg-[#E8551F] text-white px-3 py-2 rounded-xl text-xs font-bold transition">
-                      + Add Schedule Entry
+                    <button type="submit" className="w-full bg-[#FF6B1A] hover:bg-[#E8551F] text-white px-3 py-2 rounded-xl text-xs font-bold transition shadow-xs">
+                      + Add Schedule Entry (Auto-Aligns on Timeline)
                     </button>
                   </form>
                 </div>
