@@ -406,7 +406,7 @@ export default function AdminLogsPage() {
 
         {/* Activity Logs Table */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-          <div className="overflow-x-auto">
+          <div className="table-responsive">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
                 <tr className="border-b border-slate-200 bg-slate-50/75 text-slate-500 font-bold text-[11px] uppercase tracking-wider">

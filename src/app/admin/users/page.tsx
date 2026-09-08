@@ -161,7 +161,7 @@ export default function AdminUsersPage() {
     <main className="dash-layout flex flex-col min-h-screen">
       {/* Light Header */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-20">
-        <div className="container-wide py-3.5 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
             <Link href="/admin" className="hover:text-slate-900">
               Admin Master Control
@@ -232,7 +232,7 @@ export default function AdminUsersPage() {
             />
           </div>
 
-          <div className="flex bg-white border border-slate-200 rounded-xl p-1 shrink-0 self-start sm:self-auto">
+          <div className="flex flex-wrap bg-white border border-slate-200 rounded-xl p-1 shrink-0 self-start sm:self-auto max-w-full">
             {["ALL", "COORDINATOR", "ADMIN", "STUDENT"].map((r) => (
               <button
                 key={r}
@@ -251,7 +251,7 @@ export default function AdminUsersPage() {
 
         {/* Users Table */}
         <div className="dash-card overflow-hidden">
-          <div className="overflow-x-auto">
+          <div className="table-responsive">
             <table className="w-full text-left text-xs sm:text-sm">
               <thead className="bg-slate-50 text-slate-500 text-[11px] uppercase tracking-wider border-b border-slate-200">
                 <tr>

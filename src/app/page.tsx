@@ -75,11 +75,11 @@ export default async function Home() {
     const activeEditionCondition =
       activeEdition.id && activeEdition.id !== "default-shine"
         ? {
-            OR: [
-              { editionId: activeEdition.id },
-              { editionId: null },
-            ],
-          }
+          OR: [
+            { editionId: activeEdition.id },
+            { editionId: null },
+          ],
+        }
         : {};
 
     events = await prisma.event.findMany({
@@ -432,7 +432,7 @@ export default async function Home() {
               </div>
               <h3 className="text-lg font-bold text-[#1C1917] mb-2">Reporting & Timings</h3>
               <p className="text-sm text-[#57534E] leading-relaxed">
-                Participants must report at the registration desk by 8:30 AM sharp on Oct 15, 2026. Spot registrations close at 9:30 AM.
+                Participants must report at the registration desk by 09:00 AM sharp on Sep 17, 2026. Spot registrations close at 10:30 AM.
               </p>
             </div>
 

@@ -79,23 +79,23 @@ export default function StageHeaderBanner({ edition }: StageHeaderBannerProps) {
           />
         </div>
       ) : (
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4 relative z-10">
+        <div className="max-w-7xl mx-auto flex flex-wrap sm:flex-nowrap items-center justify-center sm:justify-between gap-2 sm:gap-4 relative z-10">
           
           {/* LEFT ASIDE: Sacred Heart College Crest */}
-          <div className="shrink-0 flex items-center gap-3">
+          <div className="shrink-0 flex items-center gap-2 sm:gap-3">
             {crestUrl && (
               <img
                 src={crestUrl}
                 alt="Sacred Heart College Crest"
-                className="h-20 sm:h-24 md:h-28 w-auto object-contain drop-shadow-[0_4px_16px_rgba(255,107,26,0.35)] transition-transform hover:scale-105"
+                className="h-10 sm:h-20 md:h-28 w-auto object-contain drop-shadow-[0_4px_16px_rgba(255,107,26,0.35)] transition-transform hover:scale-105"
               />
             )}
           </div>
 
           {/* CENTER: Clean 2-Line Accreditation Text Column */}
-          <div className="flex-1 text-center px-2 sm:px-4">
+          <div className="flex-1 min-w-[200px] text-center px-1 sm:px-4">
             <h2
-              className="text-base sm:text-xl md:text-2xl lg:text-3xl font-black uppercase tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-[#FF7B2F] via-[#FF6B1A] to-[#D9A441]"
+              className="text-xs sm:text-xl md:text-2xl lg:text-3xl font-black uppercase tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-[#FF7B2F] via-[#FF6B1A] to-[#D9A441]"
               style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
             >
               {institutionName}
@@ -104,7 +104,7 @@ export default function StageHeaderBanner({ edition }: StageHeaderBannerProps) {
             {renderAccreditationText()}
 
             <h3
-              className="text-sm sm:text-lg md:text-xl lg:text-2xl font-extrabold uppercase tracking-wider text-[#FF6B1A] drop-shadow-xs"
+              className="text-xs sm:text-lg md:text-xl lg:text-2xl font-extrabold uppercase tracking-wider text-[#FF6B1A] drop-shadow-xs"
               style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
             >
               {hostDept}
@@ -112,12 +112,12 @@ export default function StageHeaderBanner({ edition }: StageHeaderBannerProps) {
           </div>
 
           {/* RIGHT ASIDE: 75th Jubilee Logo & MCA Department Seal side-by-side */}
-          <div className="shrink-0 flex items-center gap-3 sm:gap-4">
+          <div className="shrink-0 flex items-center gap-2 sm:gap-4">
             {jubileeBadgeUrl && (
               <img
                 src={jubileeBadgeUrl}
                 alt="75 Years SHC Jubilee Badge"
-                className="h-12 sm:h-16 md:h-20 w-auto object-contain drop-shadow-md hover:scale-105 transition-transform"
+                className="h-8 sm:h-14 md:h-20 w-auto object-contain drop-shadow-md hover:scale-105 transition-transform"
               />
             )}
 
@@ -125,7 +125,7 @@ export default function StageHeaderBanner({ edition }: StageHeaderBannerProps) {
               <img
                 src={deptLogoUrl}
                 alt="MCA Department Logo"
-                className="h-20 sm:h-24 md:h-28 w-auto object-contain drop-shadow-[0_4px_16px_rgba(255,107,26,0.35)] transition-transform hover:scale-105"
+                className="h-10 sm:h-20 md:h-28 w-auto object-contain drop-shadow-[0_4px_16px_rgba(255,107,26,0.35)] transition-transform hover:scale-105"
               />
             )}
           </div>

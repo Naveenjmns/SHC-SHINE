@@ -110,12 +110,12 @@ export default function CountdownTimer({
   return (
     <div className="w-full max-w-3xl mx-auto my-8 animate-fade-in">
       {/* Sub-header title with TO GO */}
-      <div className="flex items-center justify-center gap-2 mb-6 text-center">
+      <div className="flex flex-wrap items-center justify-center gap-2 mb-6 text-center px-2">
         <span className="relative flex h-2.5 w-2.5">
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#FF6B1A] opacity-75" />
           <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#FF6B1A]" />
         </span>
-        <span className="text-xs sm:text-sm font-extrabold uppercase tracking-[0.2em] text-[#FF6B1A] flex items-center gap-1.5">
+        <span className="text-xs sm:text-sm font-extrabold uppercase tracking-[0.1em] sm:tracking-[0.2em] text-[#FF6B1A] flex flex-wrap items-center justify-center gap-1.5">
           <span>{displayDateText}</span>
           <span className="text-[#1C1917] font-black bg-[#D9A441]/20 px-2 py-0.5 rounded-md border border-[#D9A441]/30">
             TO GO
@@ -124,55 +124,55 @@ export default function CountdownTimer({
       </div>
 
       {/* 4 Soft Cream Theme Countdown Cards */}
-      <div className="grid grid-cols-4 gap-3 sm:gap-4 md:gap-6 px-2">
+      <div className="grid grid-cols-4 gap-2 sm:gap-4 md:gap-6 px-1 sm:px-2">
         {/* DAYS */}
-        <div className="fest-card !p-4 sm:!p-6 text-center border-2 border-[#1C1917]/10 bg-white shadow-sm hover:border-[#FF6B1A]/40 transition-all duration-300 transform hover:-translate-y-1">
+        <div className="fest-card !p-2.5 sm:!p-4 md:!p-6 text-center border-2 border-[#1C1917]/10 bg-white shadow-sm hover:border-[#FF6B1A]/40 transition-all duration-300 transform hover:-translate-y-1">
           <div
-            className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-[#1C1917] tabular-nums tracking-tight"
+            className="text-xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-[#1C1917] tabular-nums tracking-tight"
             style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
           >
             {formatTwoDigits(timeLeft.days)}
           </div>
-          <div className="text-[10px] sm:text-xs md:text-sm font-extrabold uppercase tracking-[0.2em] text-[#57534E] mt-1.5">
+          <div className="text-[9px] sm:text-xs md:text-sm font-extrabold uppercase tracking-[0.1em] sm:tracking-[0.2em] text-[#57534E] mt-1">
             DAYS
           </div>
         </div>
 
         {/* HOURS */}
-        <div className="fest-card !p-4 sm:!p-6 text-center border-2 border-[#1C1917]/10 bg-white shadow-sm hover:border-[#FF6B1A]/40 transition-all duration-300 transform hover:-translate-y-1">
+        <div className="fest-card !p-2.5 sm:!p-4 md:!p-6 text-center border-2 border-[#1C1917]/10 bg-white shadow-sm hover:border-[#FF6B1A]/40 transition-all duration-300 transform hover:-translate-y-1">
           <div
-            className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-[#1C1917] tabular-nums tracking-tight"
+            className="text-xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-[#1C1917] tabular-nums tracking-tight"
             style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
           >
             {formatTwoDigits(timeLeft.hours)}
           </div>
-          <div className="text-[10px] sm:text-xs md:text-sm font-extrabold uppercase tracking-[0.2em] text-[#57534E] mt-1.5">
+          <div className="text-[9px] sm:text-xs md:text-sm font-extrabold uppercase tracking-[0.1em] sm:tracking-[0.2em] text-[#57534E] mt-1">
             HOURS
           </div>
         </div>
 
         {/* MINS */}
-        <div className="fest-card !p-4 sm:!p-6 text-center border-2 border-[#1C1917]/10 bg-white shadow-sm hover:border-[#FF6B1A]/40 transition-all duration-300 transform hover:-translate-y-1">
+        <div className="fest-card !p-2.5 sm:!p-4 md:!p-6 text-center border-2 border-[#1C1917]/10 bg-white shadow-sm hover:border-[#FF6B1A]/40 transition-all duration-300 transform hover:-translate-y-1">
           <div
-            className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-[#1C1917] tabular-nums tracking-tight"
+            className="text-xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-[#1C1917] tabular-nums tracking-tight"
             style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
           >
             {formatTwoDigits(timeLeft.minutes)}
           </div>
-          <div className="text-[10px] sm:text-xs md:text-sm font-extrabold uppercase tracking-[0.2em] text-[#57534E] mt-1.5">
+          <div className="text-[9px] sm:text-xs md:text-sm font-extrabold uppercase tracking-[0.1em] sm:tracking-[0.2em] text-[#57534E] mt-1">
             MINS
           </div>
         </div>
 
         {/* SECS */}
-        <div className="fest-card !p-4 sm:!p-6 text-center border-2 border-[#FF6B1A]/30 bg-[#FF6B1A]/5 shadow-sm hover:border-[#FF6B1A]/60 transition-all duration-300 transform hover:-translate-y-1">
+        <div className="fest-card !p-2.5 sm:!p-4 md:!p-6 text-center border-2 border-[#FF6B1A]/30 bg-[#FF6B1A]/5 shadow-sm hover:border-[#FF6B1A]/60 transition-all duration-300 transform hover:-translate-y-1">
           <div
-            className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-[#FF6B1A] tabular-nums tracking-tight animate-pulse"
+            className="text-xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-[#FF6B1A] tabular-nums tracking-tight animate-pulse"
             style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
           >
             {formatTwoDigits(timeLeft.seconds)}
           </div>
-          <div className="text-[10px] sm:text-xs md:text-sm font-extrabold uppercase tracking-[0.2em] text-[#FF6B1A] mt-1.5">
+          <div className="text-[9px] sm:text-xs md:text-sm font-extrabold uppercase tracking-[0.1em] sm:tracking-[0.2em] text-[#FF6B1A] mt-1">
             SECS
           </div>
         </div>

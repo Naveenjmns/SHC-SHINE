@@ -447,7 +447,7 @@ export default function AdminEventsPage() {
 
         {/* Events Table */}
         <div className="dash-card overflow-hidden">
-          <div className="overflow-x-auto">
+          <div className="table-responsive">
             <table className="w-full text-left text-xs sm:text-sm">
               <thead className="bg-slate-50 text-slate-500 text-[11px] uppercase tracking-wider border-b border-slate-200">
                 <tr>

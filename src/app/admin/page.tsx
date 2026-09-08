@@ -1101,7 +1101,7 @@ export default function AdminOverviewPage() {
         
         {/* Navigation Tabs */}
         <div className="flex flex-wrap items-center justify-between gap-4 mb-8 border-b border-[#CBD5E1] pb-3">
-          <div className="flex items-center gap-2 overflow-x-auto whitespace-nowrap pb-1 scrollbar-none">
+          <div className="flex items-center gap-2 overflow-x-auto whitespace-nowrap pb-1 no-scrollbar scrollbar-none">
             <button
               onClick={() => setActiveTab("overview")}
               className={`tap-target px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition shrink-0 ${
@@ -3076,7 +3076,7 @@ export default function AdminOverviewPage() {
                         {/* Collapsible Roster Table */}
                         {isExpanded && (
                           <div className="pt-3 border-t border-stone-200/80 animate-in fade-in duration-150">
-                            <div className="overflow-x-auto">
+                            <div className="table-responsive">
                               <table className="w-full text-left text-xs border-collapse">
                                 <thead>
                                   <tr className="border-b border-stone-200 text-[11px] font-bold text-stone-500 uppercase">
@@ -3181,7 +3181,7 @@ export default function AdminOverviewPage() {
 
             {/* VIEW MODE 2: FLAT LIST OF ALL REGISTRATIONS */}
             {regViewMode === "FLAT" && (
-              <div className="overflow-x-auto">
+              <div className="table-responsive">
                 <table className="w-full text-left text-sm border-collapse">
                   <thead>
                     <tr className="border-b border-[#E2E8F0] text-xs font-bold text-[#64748B] uppercase">

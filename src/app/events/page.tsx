@@ -117,7 +117,7 @@ export default function EventsPage() {
               <Search className="w-5 h-5 absolute left-3.5 top-3.5 text-[#78716C]" />
             </div>
 
-            <div className="flex bg-stone-200/60 border border-[#1C1917]/10 rounded-xl p-1 shrink-0 self-center sm:self-auto">
+            <div className="flex flex-wrap justify-center bg-stone-200/60 border border-[#1C1917]/10 rounded-xl p-1 shrink-0 self-center sm:self-auto max-w-full">
               {(["ALL", "ON_STAGE", "OFF_STAGE"] as const).map((tab) => (
                 <button
                   key={tab}

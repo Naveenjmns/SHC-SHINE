@@ -624,7 +624,7 @@ function RegisterForm() {
         ) : (
           <>
             {/* Stepper Tabs */}
-            <div className="flex items-center justify-center gap-2 sm:gap-4 mb-8 overflow-x-auto pb-1">
+            <div className="flex items-center justify-start sm:justify-center gap-2 sm:gap-4 mb-8 overflow-x-auto pb-1 no-scrollbar">
           <button
             type="button"
             onClick={() => setCurrentStep(1)}
