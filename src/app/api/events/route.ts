@@ -58,7 +58,14 @@ export async function GET(req: Request) {
       },
     });
 
-    return NextResponse.json({ success: true, events });
+    return NextResponse.json(
+      { success: true, events },
+      {
+        headers: {
+          "Cache-Control": "public, max-age=5, s-maxage=15, stale-while-revalidate=59",
+        },
+      }
+    );
   } catch (error) {
     console.error("Error fetching events:", error);
     return NextResponse.json(

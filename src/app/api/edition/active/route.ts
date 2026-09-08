@@ -6,7 +6,14 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   try {
     const config = await getActiveEdition();
-    return NextResponse.json({ success: true, edition: config });
+    return NextResponse.json(
+      { success: true, edition: config },
+      {
+        headers: {
+          "Cache-Control": "public, max-age=5, s-maxage=15, stale-while-revalidate=59",
+        },
+      }
+    );
   } catch (error: any) {
     console.error("GET /api/edition/active error:", error);
     return NextResponse.json(
