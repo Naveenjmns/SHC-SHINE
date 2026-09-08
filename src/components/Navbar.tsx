@@ -79,6 +79,8 @@ export default function Navbar({ edition }: NavbarProps) {
             <img
               src={logoUrl}
               alt={eventName}
+              width={36}
+              height={36}
               loading="eager"
               // @ts-ignore
               fetchPriority="high"

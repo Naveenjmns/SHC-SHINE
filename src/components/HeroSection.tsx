@@ -43,6 +43,8 @@ export default function HeroSection({ edition }: HeroSectionProps) {
               <img
                 src={logoUrl}
                 alt={`${eventName} ${editionYear} Logo`}
+                width={768}
+                height={512}
                 loading="eager"
                 // @ts-ignore
                 fetchPriority="high"

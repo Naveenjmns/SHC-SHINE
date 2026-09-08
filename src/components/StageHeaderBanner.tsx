@@ -73,6 +73,8 @@ export default function StageHeaderBanner({ edition }: StageHeaderBannerProps) {
           <img
             src={fullBannerUrl}
             alt="Stage Header Banner"
+            width={1152}
+            height={256}
             loading="eager"
             // @ts-ignore
             fetchPriority="high"
@@ -89,6 +91,8 @@ export default function StageHeaderBanner({ edition }: StageHeaderBannerProps) {
               <img
                 src={crestUrl}
                 alt="Sacred Heart College Crest"
+                width={112}
+                height={112}
                 loading="eager"
                 // @ts-ignore
                 fetchPriority="high"
@@ -123,6 +127,8 @@ export default function StageHeaderBanner({ edition }: StageHeaderBannerProps) {
               <img
                 src={jubileeBadgeUrl}
                 alt="75 Years SHC Jubilee Badge"
+                width={80}
+                height={80}
                 loading="eager"
                 // @ts-ignore
                 fetchPriority="high"
@@ -135,6 +141,8 @@ export default function StageHeaderBanner({ edition }: StageHeaderBannerProps) {
               <img
                 src={deptLogoUrl}
                 alt="MCA Department Logo"
+                width={112}
+                height={112}
                 loading="eager"
                 // @ts-ignore
                 fetchPriority="high"

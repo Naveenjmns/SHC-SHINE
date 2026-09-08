@@ -185,6 +185,8 @@ export default async function Home() {
                     <img
                       src={activeEdition.deptLogoUrl}
                       alt={activeEdition.hostDepartment || "Department"}
+                      width={32}
+                      height={32}
                       loading="lazy"
                       decoding="async"
                       className="w-8 h-8 object-contain"

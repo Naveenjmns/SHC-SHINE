@@ -12,28 +12,17 @@ export default function CountdownTimer({
   targetDate = "2026-09-17T09:30:00+05:30",
   eventDateText,
 }: CountdownTimerProps) {
-  const getInitialTimeLeft = () => {
-    try {
-      const target = targetDate ? new Date(targetDate).getTime() : new Date("2026-09-17T09:30:00+05:30").getTime();
-      const now = Date.now();
-      const diff = target - now;
-
-      if (isNaN(target) || diff <= 0) {
-        return { days: 0, hours: 0, minutes: 0, seconds: 0, isLive: diff <= 0 };
-      }
-
-      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
-      const minutes = Math.floor((diff / (1000 * 60)) % 60);
-      const seconds = Math.floor((diff / 1000) % 60);
-
-      return { days, hours, minutes, seconds, isLive: false };
-    } catch {
-      return { days: 8, hours: 11, minutes: 4, seconds: 33, isLive: false };
-    }
-  };
-
-  const [timeLeft, setTimeLeft] = useState(getInitialTimeLeft);
+  // Initialize with static values to avoid hydration mismatch.
+  // Date.now() differs between server (ISR build time) and client (page load time),
+  // so we must NOT call it during useState initialization.
+  const [timeLeft, setTimeLeft] = useState({
+    days: 0,
+    hours: 0,
+    minutes: 0,
+    seconds: 0,
+    isLive: false,
+  });
+  const [mounted, setMounted] = useState(false);
 
   const getFormattedDateText = () => {
     if (eventDateText) return eventDateText;
@@ -77,6 +66,7 @@ export default function CountdownTimer({
     };
 
     calculateTimeLeft();
+    setMounted(true);
     const timer = setInterval(calculateTimeLeft, 1000);
 
     return () => clearInterval(timer);
