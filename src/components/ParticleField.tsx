@@ -85,25 +85,23 @@ export default function ParticleField({ particleCount = 70 }: ParticleFieldProps
       time += 0.016;
       ctx.clearRect(0, 0, width, height);
 
-      // Draw ultra-faint golden circuit geometry grid
+      // Draw ultra-faint golden circuit geometry grid once per frame efficiently
       ctx.strokeStyle = "rgba(217, 164, 65, 0.035)";
       ctx.lineWidth = 1;
-      const gridSize = 90;
+      const gridSize = 100;
 
+      ctx.beginPath();
       for (let x = 0; x < width; x += gridSize) {
-        ctx.beginPath();
         ctx.moveTo(x, 0);
         ctx.lineTo(x, height);
-        ctx.stroke();
       }
       for (let y = 0; y < height; y += gridSize) {
-        ctx.beginPath();
         ctx.moveTo(0, y);
         ctx.lineTo(width, y);
-        ctx.stroke();
       }
+      ctx.stroke();
 
-      // Render realistic rising flame embers
+      // Render rising flame embers with lightweight drawing
       for (let i = 0; i < embers.length; i++) {
         const e = embers[i];
         e.life++;
@@ -132,17 +130,13 @@ export default function ParticleField({ particleCount = 70 }: ParticleFieldProps
           continue;
         }
 
-        // Draw glowing ember spark
-        ctx.save();
-        ctx.shadowBlur = currentSize * 5;
-        ctx.shadowColor = e.glowColor;
+        // Draw glowing ember spark with fast fill
         ctx.fillStyle = e.color;
         ctx.globalAlpha = Math.max(0, Math.min(1, e.opacity));
 
         ctx.beginPath();
         ctx.arc(e.x, e.y, currentSize, 0, Math.PI * 2);
         ctx.fill();
-        ctx.restore();
       }
 
       animationFrameId = requestAnimationFrame(render);
