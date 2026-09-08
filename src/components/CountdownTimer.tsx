@@ -12,14 +12,28 @@ export default function CountdownTimer({
   targetDate = "2026-09-17T09:30:00+05:30",
   eventDateText,
 }: CountdownTimerProps) {
-  const [mounted, setMounted] = useState(false);
-  const [timeLeft, setTimeLeft] = useState({
-    days: 0,
-    hours: 0,
-    minutes: 0,
-    seconds: 0,
-    isLive: false,
-  });
+  const getInitialTimeLeft = () => {
+    try {
+      const target = targetDate ? new Date(targetDate).getTime() : new Date("2026-09-17T09:30:00+05:30").getTime();
+      const now = Date.now();
+      const diff = target - now;
+
+      if (isNaN(target) || diff <= 0) {
+        return { days: 0, hours: 0, minutes: 0, seconds: 0, isLive: diff <= 0 };
+      }
+
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+      const minutes = Math.floor((diff / (1000 * 60)) % 60);
+      const seconds = Math.floor((diff / 1000) % 60);
+
+      return { days, hours, minutes, seconds, isLive: false };
+    } catch {
+      return { days: 8, hours: 11, minutes: 4, seconds: 33, isLive: false };
+    }
+  };
+
+  const [timeLeft, setTimeLeft] = useState(getInitialTimeLeft);
 
   const getFormattedDateText = () => {
     if (eventDateText) return eventDateText;
@@ -44,11 +58,9 @@ export default function CountdownTimer({
   const displayDateText = getFormattedDateText();
 
   useEffect(() => {
-    setMounted(true);
-
     const calculateTimeLeft = () => {
       const target = targetDate ? new Date(targetDate).getTime() : new Date("2026-09-17T09:30:00+05:30").getTime();
-      const now = new Date().getTime();
+      const now = Date.now();
       const diff = target - now;
 
       if (diff <= 0) {
@@ -69,14 +81,6 @@ export default function CountdownTimer({
 
     return () => clearInterval(timer);
   }, [targetDate]);
-
-  if (!mounted) {
-    return (
-      <div className="w-full max-w-2xl mx-auto my-6 p-4 text-center">
-        <div className="h-28 bg-[#FAF8F5] animate-pulse rounded-3xl border border-[#1C1917]/10" />
-      </div>
-    );
-  }
 
   const formatTwoDigits = (num: number) => String(num).padStart(2, "0");
 
