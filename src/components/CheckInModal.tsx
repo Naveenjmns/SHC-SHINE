@@ -20,6 +20,7 @@ import {
   RotateCcw,
   Sparkles,
   Check,
+  Upload,
 } from "lucide-react";
 import { safeJson } from "@/lib/safeFetch";
 import {
@@ -104,6 +105,8 @@ export default function CheckInModal({
 
   const scannerRef = useRef<any>(null);
   const scannerDivId = "reader-camera-stream";
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [fileScanning, setFileScanning] = useState(false);
 
   // Stop camera when closing modal or unmounting
   useEffect(() => {
@@ -121,6 +124,40 @@ export default function CheckInModal({
       setCameraError(null);
     }
   }, [isOpen]);
+
+  const handleFileScan = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setFileScanning(true);
+    setMessage(null);
+    try {
+      const { Html5Qrcode } = await import("html5-qrcode");
+      const tempId = "file-qr-decoder-checkin";
+      let tempEl = document.getElementById(tempId);
+      if (!tempEl) {
+        tempEl = document.createElement("div");
+        tempEl.id = tempId;
+        tempEl.style.display = "none";
+        document.body.appendChild(tempEl);
+      }
+      const qrScanner = new Html5Qrcode(tempId, false);
+      const decodedText = await qrScanner.scanFile(file, false);
+      qrScanner.clear();
+      if (decodedText) {
+        console.log("QR decoded from photo:", decodedText);
+        handleLookup(decodedText);
+      }
+    } catch (err: any) {
+      console.warn("QR file scan error:", err);
+      setMessage({
+        type: "error",
+        text: "Could not detect a valid QR code in that photo. Please ensure good lighting or enter the code manually.",
+      });
+    } finally {
+      setFileScanning(false);
+      if (e.target) e.target.value = "";
+    }
+  };
 
   const stopCameraScanner = async () => {
     if (scannerRef.current) {
@@ -182,7 +219,8 @@ export default function CheckInModal({
         await stopCameraScanner();
       }
 
-      const html5QrCode = new Html5Qrcode(scannerDivId);
+      // Initialize with verbose=false so html5-qrcode logger does not trigger Turbopack console error overlay
+      const html5QrCode = new Html5Qrcode(scannerDivId, false);
       scannerRef.current = html5QrCode;
 
       // Enumerate devices for camera switching & fallback
@@ -220,13 +258,16 @@ export default function CheckInModal({
         await html5QrCode.start(targetConfig, config, onScanSuccess, () => {});
       } catch (primaryErr: any) {
         console.warn("Primary camera start failed, attempting user camera fallback:", primaryErr);
-        const isPermDenied =
-          primaryErr?.name === "NotAllowedError" ||
-          primaryErr?.name === "PermissionDeniedError" ||
-          /permission denied/i.test(primaryErr?.message || "");
+        const errText = typeof primaryErr === "string" ? primaryErr : String(primaryErr?.message || primaryErr || "");
+        const isPermDenied = /notallowederror|permission denied|not allowed/i.test(errText);
 
         if (!isPermDenied) {
-          await html5QrCode.start({ facingMode: "user" }, config, onScanSuccess, () => {});
+          try {
+            await html5QrCode.start({ facingMode: "user" }, config, onScanSuccess, () => {});
+          } catch (fallbackErr: any) {
+            console.warn("User camera fallback also failed:", fallbackErr);
+            throw fallbackErr;
+          }
         } else {
           throw primaryErr;
         }
@@ -470,6 +511,15 @@ export default function CheckInModal({
                     </div>
                   )}
 
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handleFileScan}
+                    className="hidden"
+                  />
+
                   <div className="flex flex-col sm:flex-row items-center justify-center gap-2 pt-2">
                     <button
                       type="button"
@@ -481,6 +531,15 @@ export default function CheckInModal({
                     </button>
                     <button
                       type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={fileScanning}
+                      className="w-full sm:w-auto px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl transition flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/20 cursor-pointer"
+                    >
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>{fileScanning ? "Reading Photo..." : "Upload QR / Snap Photo"}</span>
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => {
                         setScanMode("manual");
                         setCameraError(null);
@@ -488,7 +547,7 @@ export default function CheckInModal({
                       className="w-full sm:w-auto px-4 py-2.5 bg-stone-800 hover:bg-stone-700 text-stone-300 font-semibold text-xs rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer"
                     >
                       <Search className="w-3.5 h-3.5" />
-                      <span>Use Manual Lookup Instead</span>
+                      <span>Manual Lookup</span>
                     </button>
                   </div>
                 </div>
@@ -578,6 +637,20 @@ export default function CheckInModal({
                 )}
               </button>
             </form>
+          )}
+
+          {scanMode === "manual" && (
+            <div className="text-center pt-1">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={fileScanning}
+                className="text-xs text-stone-500 hover:text-stone-800 inline-flex items-center gap-1.5 font-semibold transition cursor-pointer"
+              >
+                <Upload className="w-3.5 h-3.5 text-[#FF6B1A]" />
+                <span>{fileScanning ? "Reading Photo..." : "Or scan from QR image / photo"}</span>
+              </button>
+            </div>
           )}
 
           {/* Status / Alert Message */}

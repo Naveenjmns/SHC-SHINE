@@ -28,6 +28,7 @@ import {
   Check,
   History,
   X,
+  Upload,
 } from "lucide-react";
 import { safeJson } from "@/lib/safeFetch";
 import {
@@ -109,6 +110,8 @@ export default function FoodCoordinatorPage() {
   const lastScannedTimeRef = useRef<number>(0);
   const scannerRef = useRef<any>(null);
   const popupTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [fileScanning, setFileScanning] = useState(false);
 
   const scannerDivId = "food-qr-reader";
 
@@ -248,7 +251,8 @@ export default function FoodCoordinatorPage() {
         await stopScanner();
       }
 
-      const qr = new Html5Qrcode(scannerDivId);
+      // Initialize with verbose=false so html5-qrcode logger does not trigger Turbopack console error overlay
+      const qr = new Html5Qrcode(scannerDivId, false);
       scannerRef.current = qr;
 
       // Enumerate devices for camera switching & fallback
@@ -281,13 +285,16 @@ export default function FoodCoordinatorPage() {
         await qr.start(targetConfig, config, onScanSuccess, () => {});
       } catch (primaryErr: any) {
         console.warn("Primary camera start failed in food portal, attempting user camera fallback:", primaryErr);
-        const isPermDenied =
-          primaryErr?.name === "NotAllowedError" ||
-          primaryErr?.name === "PermissionDeniedError" ||
-          /permission denied/i.test(primaryErr?.message || "");
+        const errText = typeof primaryErr === "string" ? primaryErr : String(primaryErr?.message || primaryErr || "");
+        const isPermDenied = /notallowederror|permission denied|not allowed/i.test(errText);
 
         if (!isPermDenied) {
-          await qr.start({ facingMode: "user" }, config, onScanSuccess, () => {});
+          try {
+            await qr.start({ facingMode: "user" }, config, onScanSuccess, () => {});
+          } catch (fallbackErr: any) {
+            console.warn("User camera fallback also failed in food portal:", fallbackErr);
+            throw fallbackErr;
+          }
         } else {
           throw primaryErr;
         }
@@ -312,6 +319,39 @@ export default function FoodCoordinatorPage() {
     const nextCam = availableCameras[nextIndex];
     setSelectedCameraId(nextCam.id);
     await startScanner(nextCam.id);
+  };
+
+  const handleFileScan = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setFileScanning(true);
+    try {
+      const { Html5Qrcode } = await import("html5-qrcode");
+      const tempId = "file-qr-decoder-food";
+      let tempEl = document.getElementById(tempId);
+      if (!tempEl) {
+        tempEl = document.createElement("div");
+        tempEl.id = tempId;
+        tempEl.style.display = "none";
+        document.body.appendChild(tempEl);
+      }
+      const qrScanner = new Html5Qrcode(tempId, false);
+      const decodedText = await qrScanner.scanFile(file, false);
+      qrScanner.clear();
+      if (decodedText) {
+        handleDetectedCode(decodedText);
+      }
+    } catch (err: any) {
+      console.warn("Food photo QR scan error:", err);
+      setPopup({
+        status: "error",
+        title: "QR Code Not Found",
+        message: "Could not read a valid QR code in that photo. Please ensure it is clear or enter the code manually.",
+      });
+    } finally {
+      setFileScanning(false);
+      if (e.target) e.target.value = "";
+    }
   };
 
   // Process code (from camera or manual input)
@@ -781,6 +821,15 @@ export default function FoodCoordinatorPage() {
                       </div>
                     )}
 
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      onChange={handleFileScan}
+                      className="hidden"
+                    />
+
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-2 pt-1">
                       <button
                         type="button"
@@ -789,6 +838,15 @@ export default function FoodCoordinatorPage() {
                       >
                         <RefreshCw className="w-3.5 h-3.5" />
                         <span>Retry Camera Access</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={fileScanning}
+                        className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/20 transition cursor-pointer"
+                      >
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>{fileScanning ? "Reading Photo..." : "Upload QR / Snap Photo"}</span>
                       </button>
                       <button
                         type="button"
@@ -810,16 +868,27 @@ export default function FoodCoordinatorPage() {
                     <div>
                       <h3 className="font-bold text-base text-white">Camera Scanner Inactive</h3>
                       <p className="text-xs text-slate-400 max-w-xs mt-1">
-                        Turn on your device camera for hands-free instant QR verification and auto-claiming.
+                        Turn on your device camera or upload a QR image for hands-free instant verification.
                       </p>
                     </div>
-                    <button
-                      onClick={() => startScanner()}
-                      className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-bold text-sm shadow-lg shadow-amber-500/20 hover:brightness-110 active:scale-95 transition cursor-pointer"
-                    >
-                      <Camera className="w-4 h-4" />
-                      Start Camera Scanner
-                    </button>
+                    <div className="flex flex-wrap items-center justify-center gap-3">
+                      <button
+                        onClick={() => startScanner()}
+                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-bold text-sm shadow-lg shadow-amber-500/20 hover:brightness-110 active:scale-95 transition cursor-pointer"
+                      >
+                        <Camera className="w-4 h-4" />
+                        Start Camera Scanner
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={fileScanning}
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-sm border border-slate-700 transition cursor-pointer"
+                      >
+                        <Upload className="w-4 h-4 text-emerald-400" />
+                        <span>{fileScanning ? "Reading..." : "Upload QR / Snap Photo"}</span>
+                      </button>
+                    </div>
                   </div>
                 )}
 
@@ -883,6 +952,19 @@ export default function FoodCoordinatorPage() {
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </form>
+
+              <div className="flex items-center justify-between text-xs text-slate-500 pt-2 px-1">
+                <span>Enter badge / token code and press Enter</span>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={fileScanning}
+                  className="text-amber-400 hover:text-amber-300 inline-flex items-center gap-1.5 font-semibold transition cursor-pointer"
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>{fileScanning ? "Reading Photo..." : "Upload QR Photo"}</span>
+                </button>
+              </div>
             </div>
           </div>
 

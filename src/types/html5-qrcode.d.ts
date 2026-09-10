@@ -1,6 +1,12 @@
 declare module "html5-qrcode" {
+  export interface CameraDevice {
+    id: string;
+    label: string;
+  }
+
   export class Html5Qrcode {
     constructor(elementId: string, config?: any);
+    static getCameras(): Promise<Array<CameraDevice>>;
     start(
       cameraConfig: any,
       configuration: any,
@@ -9,7 +15,10 @@ declare module "html5-qrcode" {
     ): Promise<null>;
     stop(): Promise<void>;
     clear(): void;
+    scanFile(imageFile: File, showImage?: boolean): Promise<string>;
+    scanFileV2(imageFile: File, showImage?: boolean): Promise<any>;
   }
+
   export class Html5QrcodeScanner {
     constructor(elementId: string, config: any, verbose: boolean);
     render(
