@@ -26,6 +26,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(result);
   } catch (error: any) {
     console.error("POST /api/admin/smtp/test error:", error);
-    return NextResponse.json({ success: false, message: error.message || "Failed to test SMTP connection" }, { status: 500 });
+    return NextResponse.json({ success: false, message: "Failed to test SMTP connection." }, { status: 500 });
   }
 }

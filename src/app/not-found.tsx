@@ -1,87 +1,84 @@
 import Link from "next/link";
-import ParticleField from "@/components/ParticleField";
-import { Sparkles, Trophy, ArrowRight, Home, Compass, AlertTriangle } from "lucide-react";
+import ErrorPerspectiveStage from "@/components/ErrorPerspectiveStage";
+import { ArrowLeft, Compass, Trophy, Sparkles } from "lucide-react";
 
 export default function NotFound() {
   return (
-    <div className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden bg-[#0C0A09] text-stone-100 px-4 py-16">
-      {/* Background Animated Rising Embers */}
-      <ParticleField particleCount={45} />
-
-      {/* Radiant Sunburst Glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] sm:w-[900px] h-[500px] pointer-events-none z-0">
-        <div className="w-full h-full rounded-full bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#FF6B1A]/20 via-[#D9A441]/10 to-transparent blur-3xl opacity-80" />
+    <ErrorPerspectiveStage>
+      {/* Fest Status Pill */}
+      <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-stone-900/90 border border-stone-800 text-stone-300 mb-6 shadow-sm">
+        <span className="w-2 h-2 rounded-full bg-[#FF6B1A] animate-pulse" />
+        <span className="tracking-wider uppercase text-[10px] sm:text-[11px]">
+          SHINE 26 • Sacred Heart College
+        </span>
       </div>
 
-      <div className="relative z-10 max-w-xl w-full text-center space-y-6">
-        {/* Badge */}
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-xs font-bold uppercase tracking-widest text-[#D9A441]">
-          <AlertTriangle className="w-3.5 h-3.5" />
-          <span>Sector Not Found</span>
-        </div>
-
-        {/* Big 404 Heading */}
-        <div className="relative">
-          <h1
-            className="text-8xl sm:text-9xl md:text-[140px] font-black tracking-tighter leading-none select-none bg-gradient-to-b from-white via-stone-200 to-stone-500 bg-clip-text text-transparent drop-shadow-[0_15px_35px_rgba(255,107,26,0.25)]"
-            style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
-          >
-            4<span className="hero-wordmark-gradient">0</span>4
-          </h1>
-          <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 text-xs uppercase font-extrabold tracking-[0.35em] text-[#FF6B1A] whitespace-nowrap">
-            Arena Coordinate Missing
-          </div>
-        </div>
-
-        {/* Message */}
-        <div className="space-y-2 pt-4">
-          <h2
-            className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight"
-            style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
-          >
-            Lost in the Fest Orbit?
-          </h2>
-          <p className="text-sm sm:text-base text-stone-400 max-w-md mx-auto leading-relaxed">
-            The competition track, delegate portal, or resource you are looking for does not exist, has been concluded, or was relocated.
-          </p>
-        </div>
-
-        {/* Navigation Action Buttons */}
-        <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
-          <Link
-            href="/"
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl text-xs sm:text-sm font-bold bg-gradient-to-r from-[#FF6B1A] to-[#E8551F] text-white hover:brightness-110 transition shadow-lg shadow-orange-500/25"
-          >
-            <Home className="w-4 h-4" />
-            <span>Return to Main Stage</span>
-          </Link>
-
-          <Link
-            href="/events"
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl text-xs sm:text-sm font-bold bg-stone-900/90 border border-stone-800 text-stone-200 hover:bg-stone-800 hover:text-white transition"
-          >
-            <Compass className="w-4 h-4 text-[#D9A441]" />
-            <span>Browse All Events</span>
-          </Link>
-        </div>
-
-        {/* Quick Links Footer Strip */}
-        <div className="pt-8 border-t border-stone-800/80 flex flex-wrap items-center justify-center gap-6 text-xs text-stone-500">
-          <Link href="/leaderboard" className="hover:text-[#D9A441] transition flex items-center gap-1.5">
-            <Trophy className="w-3.5 h-3.5 text-[#D9A441]" />
-            <span>Live Stage Results</span>
-          </Link>
-          <span>•</span>
-          <Link href="/register" className="hover:text-[#FF6B1A] transition flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-[#FF6B1A]" />
-            <span>Delegate Registration</span>
-          </Link>
-          <span>•</span>
-          <Link href="/login" className="hover:text-stone-300 transition">
-            Portal Login →
-          </Link>
-        </div>
+      {/* Eyebrow */}
+      <div className="mb-2">
+        <span className="text-[11px] sm:text-xs uppercase tracking-[0.3em] font-bold text-[#FF6B1A]">
+          Error 404
+        </span>
       </div>
-    </div>
+
+      {/* Big Editorial Serif Heading (Locomotive Reference Style - Pure Dark) */}
+      <h1
+        className="text-4xl sm:text-6xl md:text-7xl font-normal tracking-tight leading-[1.08] text-white font-serif drop-shadow-[0_8px_30px_rgba(255,107,26,0.18)] mb-4 max-w-xl"
+        style={{ fontFamily: "'Newsreader', 'Playfair Display', Georgia, serif" }}
+      >
+        Page Not Found
+      </h1>
+
+      {/* Subtitle */}
+      <p className="text-sm sm:text-base md:text-lg font-light text-stone-400 max-w-md mx-auto leading-relaxed mb-6">
+        The page or stage coordinate you are looking for could not be found.
+      </p>
+
+      {/* Primary Action Link (Matching Locomotive reference) */}
+      <div className="mb-6">
+        <Link
+          href="/"
+          className="group inline-flex items-center gap-2 text-sm sm:text-base font-medium tracking-tight text-white hover:text-[#FF6B1A] transition-all underline underline-offset-8 decoration-stone-600 hover:decoration-[#FF6B1A]"
+        >
+          <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+          <span>Back to homepage</span>
+        </Link>
+      </div>
+
+      {/* Responsive Buttons (Stacked on mobile, row on sm+) */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 w-full sm:w-auto max-w-xs sm:max-w-none mx-auto mb-8">
+        <Link
+          href="/events"
+          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full text-xs sm:text-sm font-semibold bg-stone-900 border border-stone-800 text-stone-200 hover:bg-stone-800 hover:text-white transition min-h-[44px]"
+        >
+          <Compass className="w-4 h-4 text-[#D9A441]" />
+          <span>Browse Fest Events</span>
+        </Link>
+
+        <Link
+          href="/leaderboard"
+          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full text-xs sm:text-sm font-semibold bg-stone-900 border border-stone-800 text-stone-200 hover:bg-stone-800 hover:text-white transition min-h-[44px]"
+        >
+          <Trophy className="w-4 h-4 text-[#D9A441]" />
+          <span>Live Results</span>
+        </Link>
+      </div>
+
+      {/* Quick Access Footer Strip */}
+      <div className="w-full pt-6 border-t border-stone-800/80 flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-xs text-stone-500">
+        <Link href="/register" className="hover:text-[#FF6B1A] transition flex items-center gap-1.5">
+          <Sparkles className="w-3.5 h-3.5 text-[#FF6B1A]" />
+          <span>Delegate Register</span>
+        </Link>
+        <span>•</span>
+        <Link href="/login" className="hover:text-stone-300 transition">
+          Portal Login →
+        </Link>
+      </div>
+
+      {/* Interactive Hint */}
+      <div className="mt-4 text-[10px] text-stone-600 uppercase tracking-widest font-medium pointer-events-none">
+        Click anywhere to guide delegates
+      </div>
+    </ErrorPerspectiveStage>
   );
 }

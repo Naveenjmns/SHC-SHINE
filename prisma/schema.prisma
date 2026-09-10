@@ -132,6 +132,10 @@ model Delegation {
   members            DelegationMember[]
   registrations      Registration[]
 
+  // PERFORMANCE: Indexes for frequently queried columns
+  @@index([editionId])
+  @@index([teamLeadEmail])
+  @@index([collegeName])
   @@map("delegations")
 }
 
@@ -158,6 +162,9 @@ model DelegationMember {
   delegation       Delegation     @relation(fields: [delegationId], references: [id], onDelete: Cascade)
   registrations    Registration[]
 
+  // PERFORMANCE: Indexes for frequently queried columns
+  @@index([delegationId])
+  @@index([email])
   @@map("delegation_members")
 }
 
@@ -238,6 +245,8 @@ model Event {
   studentCoordinator User?          @relation("StudentCoordinatorEvents", fields: [studentCoordinatorId], references: [id])
   registrations      Registration[]
 
+  // PERFORMANCE: Index for edition-scoped queries
+  @@index([editionId])
   @@map("events")
 }
 
@@ -268,6 +277,12 @@ model Registration {
 
   // A user can only register once per event
   @@unique([userId, eventId])
+  // PERFORMANCE: Indexes for frequently filtered/joined columns
+  @@index([eventId])
+  @@index([userId])
+  @@index([delegationId])
+  @@index([delegationMemberId])
+  @@index([status])
   @@map("registrations")
 }
 

@@ -1,5 +1,6 @@
 import nodemailer from "nodemailer";
 import prisma from "@/lib/prisma";
+import { decryptSecret } from "@/lib/security";
 
 export interface SmtpConfig {
   host: string;
@@ -24,7 +25,7 @@ export async function getSmtpSettings(): Promise<SmtpConfig | null> {
         port: setting.port || 587,
         secure: setting.secure,
         user: setting.user,
-        password: setting.password || undefined,
+        password: setting.password ? decryptSecret(setting.password) : undefined,
         fromEmail: setting.fromEmail || setting.user,
         fromName: setting.fromName || "Event Coordination Team",
         replyTo: setting.replyTo,

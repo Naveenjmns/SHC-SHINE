@@ -197,6 +197,21 @@ async function fetchActiveEditionFromDb(): Promise<ActiveEditionConfig> {
   }
 }
 
+// PERFORMANCE: Cache the active edition for 60 seconds to avoid redundant DB queries.
+// unstable_cache was already imported but never used — now it powers this cache layer.
+const getCachedActiveEdition = unstable_cache(
+  async () => {
+    return fetchActiveEditionFromDb();
+  },
+  ["active-edition"],
+  { revalidate: 60 } // Revalidate every 60 seconds
+);
+
 export async function getActiveEdition(): Promise<ActiveEditionConfig> {
-  return fetchActiveEditionFromDb();
+  try {
+    return await getCachedActiveEdition();
+  } catch {
+    // Fallback to direct fetch if cache layer fails
+    return fetchActiveEditionFromDb();
+  }
 }

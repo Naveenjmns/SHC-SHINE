@@ -8,7 +8,7 @@ import { logActivity } from "@/lib/activityLogger";
 export const authOptions: AuthOptions = {
   session: {
     strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60, // 30 days
+    maxAge: 7 * 24 * 60 * 60, // 7 days (reduced from 30 for better security)
   },
   providers: [
     CredentialsProvider({
@@ -60,26 +60,26 @@ export const authOptions: AuthOptions = {
         }
 
         const typedPassword = credentials.password.trim();
+
+        // SECURITY: Only use bcrypt.compare for password verification.
+        // The phone number is the default password for students — it must match
+        // exactly as hashed during registration. No plaintext digit comparison.
         let isValid = await bcrypt.compare(typedPassword, user.passwordHash);
 
-        // Flexible fallback matching for phone numbers (e.g. +91 9840123456 vs 9840123456)
+        // Fallback: If the student's default password was hashed from the raw
+        // phone string (e.g. "+91 9840123456"), try comparing against the
+        // raw phone and just the digits.
         if (!isValid && user.phone) {
-          const passDigits = typedPassword.replace(/\D/g, "");
-          const phoneDigits = user.phone.replace(/\D/g, "");
+          const rawPhone = user.phone.trim();
+          const phoneDigits = rawPhone.replace(/\D/g, "");
 
-          // 1. Try bcrypt compare with raw user phone or phone digits
-          if (!isValid && user.phone) {
-            isValid = await bcrypt.compare(user.phone.trim(), user.passwordHash).catch(() => false);
+          // Try bcrypt compare with raw phone string
+          if (!isValid) {
+            isValid = await bcrypt.compare(rawPhone, user.passwordHash).catch(() => false);
           }
-          if (!isValid && phoneDigits) {
+          // Try bcrypt compare with just the digits
+          if (!isValid && phoneDigits !== rawPhone) {
             isValid = await bcrypt.compare(phoneDigits, user.passwordHash).catch(() => false);
-          }
-
-          // 2. Direct digit comparison for student default password (registered phone)
-          if (!isValid && passDigits.length >= 7 && phoneDigits.length >= 7) {
-            if (passDigits === phoneDigits || phoneDigits.endsWith(passDigits) || passDigits.endsWith(phoneDigits)) {
-              isValid = true;
-            }
           }
         }
 
@@ -154,5 +154,21 @@ export const authOptions: AuthOptions = {
   pages: {
     signIn: "/login",
   },
-  secret: process.env.NEXTAUTH_SECRET || "shine26-fallback-secret-key-development",
+  // SECURITY: Require NEXTAUTH_SECRET from environment.
+  // In development, fall back to a dev-only key with a warning.
+  secret: (() => {
+    const secret = process.env.NEXTAUTH_SECRET;
+    if (!secret) {
+      if (process.env.NODE_ENV === "production") {
+        throw new Error(
+          "CRITICAL: NEXTAUTH_SECRET environment variable is required in production!"
+        );
+      }
+      console.warn(
+        "WARNING: NEXTAUTH_SECRET is not set. Using dev-only fallback. NEVER deploy like this!"
+      );
+      return "dev-only-insecure-secret-do-not-use-in-production";
+    }
+    return secret;
+  })(),
 };

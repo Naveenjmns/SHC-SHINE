@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getActiveEdition } from "@/lib/eventService";
+import { buildSecureErrorResponse } from "@/lib/security";
 
 export const dynamic = "force-dynamic";
 
@@ -498,9 +499,9 @@ export async function GET(req: Request) {
       },
     });
   } catch (error: any) {
-    console.error("GET /api/admin/reports error:", error);
+    const secureError = buildSecureErrorResponse(error, "GET /api/admin/reports", "Failed to generate report.");
     return NextResponse.json(
-      { success: false, message: error.message || "Failed to generate report" },
+      { success: false, message: secureError.message },
       { status: 500 }
     );
   }
