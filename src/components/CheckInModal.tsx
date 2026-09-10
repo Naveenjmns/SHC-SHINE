@@ -26,6 +26,7 @@ import { safeJson } from "@/lib/safeFetch";
 import {
   parseCameraError,
   getAvailableCameras,
+  getCameraPermissionStatus,
   CameraErrorInfo,
   CameraDeviceInfo,
 } from "@/lib/cameraScanner";
@@ -188,6 +189,16 @@ export default function CheckInModal({
         window.location.hostname !== "127.0.0.1"
       ) {
         const parsed = parseCameraError(new Error("Insecure context"));
+        setCameraError(parsed);
+        setCameraActive(false);
+        setCameraStarting(false);
+        return;
+      }
+
+      // Pre-flight camera permission check via Permissions API to avoid triggering browser errors
+      const permStatus = await getCameraPermissionStatus();
+      if (permStatus === "denied") {
+        const parsed = parseCameraError(new Error("NotAllowedError: Permission denied"));
         setCameraError(parsed);
         setCameraActive(false);
         setCameraStarting(false);

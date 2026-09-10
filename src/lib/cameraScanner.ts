@@ -30,6 +30,21 @@ export function isSecureCameraContext(): boolean {
 }
 
 /**
+ * Checks permission status via the modern Permissions API without triggering any browser errors.
+ */
+export async function getCameraPermissionStatus(): Promise<"granted" | "denied" | "prompt" | "unsupported"> {
+  if (typeof navigator === "undefined" || !navigator.permissions || !navigator.permissions.query) {
+    return "unsupported";
+  }
+  try {
+    const status = await navigator.permissions.query({ name: "camera" as any });
+    return status.state;
+  } catch {
+    return "unsupported";
+  }
+}
+
+/**
  * Parses any media / camera initialization error into user-friendly diagnostics
  * with actionable recovery instructions.
  */
