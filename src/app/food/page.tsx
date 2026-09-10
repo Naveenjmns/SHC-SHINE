@@ -236,7 +236,6 @@ export default function FoodCoordinatorPage() {
           });
           testStream.getTracks().forEach((track) => track.stop());
         } catch (permErr: any) {
-          console.warn("Food portal camera permission check returned:", permErr);
           const parsed = parseCameraError(permErr);
           setCameraError(parsed);
           setCameraActive(false);
@@ -284,7 +283,6 @@ export default function FoodCoordinatorPage() {
       try {
         await qr.start(targetConfig, config, onScanSuccess, () => {});
       } catch (primaryErr: any) {
-        console.warn("Primary camera start failed in food portal, attempting user camera fallback:", primaryErr);
         const errText = typeof primaryErr === "string" ? primaryErr : String(primaryErr?.message || primaryErr || "");
         const isPermDenied = /notallowederror|permission denied|not allowed/i.test(errText);
 
@@ -292,7 +290,6 @@ export default function FoodCoordinatorPage() {
           try {
             await qr.start({ facingMode: "user" }, config, onScanSuccess, () => {});
           } catch (fallbackErr: any) {
-            console.warn("User camera fallback also failed in food portal:", fallbackErr);
             throw fallbackErr;
           }
         } else {
@@ -303,7 +300,6 @@ export default function FoodCoordinatorPage() {
       setCameraActive(true);
       setCameraError(null);
     } catch (err: any) {
-      console.warn("Camera start notice:", err);
       const parsed = parseCameraError(err);
       setCameraError(parsed);
       setCameraActive(false);

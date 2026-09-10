@@ -204,7 +204,6 @@ export default function CheckInModal({
           // Permission granted: immediately release the test stream
           testStream.getTracks().forEach((track) => track.stop());
         } catch (permErr: any) {
-          console.warn("Camera permission check returned:", permErr);
           const parsed = parseCameraError(permErr);
           setCameraError(parsed);
           setCameraActive(false);
@@ -257,7 +256,6 @@ export default function CheckInModal({
       try {
         await html5QrCode.start(targetConfig, config, onScanSuccess, () => {});
       } catch (primaryErr: any) {
-        console.warn("Primary camera start failed, attempting user camera fallback:", primaryErr);
         const errText = typeof primaryErr === "string" ? primaryErr : String(primaryErr?.message || primaryErr || "");
         const isPermDenied = /notallowederror|permission denied|not allowed/i.test(errText);
 
@@ -265,7 +263,6 @@ export default function CheckInModal({
           try {
             await html5QrCode.start({ facingMode: "user" }, config, onScanSuccess, () => {});
           } catch (fallbackErr: any) {
-            console.warn("User camera fallback also failed:", fallbackErr);
             throw fallbackErr;
           }
         } else {
@@ -276,7 +273,6 @@ export default function CheckInModal({
       setCameraActive(true);
       setCameraError(null);
     } catch (innerErr: any) {
-      console.warn("Camera start notice:", innerErr);
       const parsed = parseCameraError(innerErr);
       setCameraError(parsed);
       setCameraActive(false);
