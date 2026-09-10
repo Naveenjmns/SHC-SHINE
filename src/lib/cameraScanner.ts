@@ -74,13 +74,14 @@ export function parseCameraError(err: any): CameraErrorInfo {
   ) {
     return {
       type: "PERMISSION_DENIED",
-      title: "Camera Permission Denied",
-      message: "Camera access was blocked by your browser or device permissions.",
+      title: "Camera Access Blocked (Windows / System / Browser)",
+      message: "Even if allowed in browser settings, Windows or another app is preventing camera stream access.",
       steps: [
-        "Look at the left side of your browser address bar at the top: click the Lock (🔒) or Camera (📷) icon.",
-        "Change the Camera setting from 'Block' to 'Allow'.",
-        "If using Windows, check Settings > Privacy & security > Camera to ensure desktop app access is turned On.",
-        "Click the 'Retry Camera Access' button below.",
+        "Windows 10/11 Settings: Press Win + I → Privacy & security → Camera. Make sure 'Camera access' AND 'Let desktop apps access your camera' are turned ON.",
+        "Hardware Shutter: Check if your laptop webcam has a physical sliding lens cover or Fn hotkey (e.g., Fn+F10, Fn+F6) that cuts camera power.",
+        "Close background apps: Ensure Zoom, Microsoft Teams, Skype, or OBS are closed so they release exclusive camera locks.",
+        "Browser permissions: Confirm the padlock (🔒) or camera icon in the address bar is set to 'Allow'.",
+        "Instant fallback: Click 'Upload QR / Snap Photo' below to scan without needing live webcam stream permissions.",
       ],
       rawError: err,
     };
@@ -146,8 +147,7 @@ export async function getAvailableCameras(Html5QrcodeClass: any): Promise<Camera
       label: d.label || `Camera ${d.id.slice(0, 6)}...`,
       isBackCamera: /back|rear|environment/i.test(d.label || ""),
     }));
-  } catch (err) {
-    console.warn("Camera enumeration warning:", err);
+  } catch {
     return [];
   }
 }

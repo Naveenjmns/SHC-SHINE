@@ -205,24 +205,6 @@ export default function CheckInModal({
         return;
       }
 
-      // Explicitly request userMedia permission directly within the user-click context
-      // to ensure the browser's native permission prompt opens if not yet granted
-      if (typeof navigator !== "undefined" && navigator.mediaDevices?.getUserMedia) {
-        try {
-          const testStream = await navigator.mediaDevices.getUserMedia({
-            video: specificCameraId ? { deviceId: { exact: specificCameraId } } : true,
-          });
-          // Permission granted: immediately release the test stream
-          testStream.getTracks().forEach((track) => track.stop());
-        } catch (permErr: any) {
-          const parsed = parseCameraError(permErr);
-          setCameraError(parsed);
-          setCameraActive(false);
-          setCameraStarting(false);
-          return;
-        }
-      }
-
       const { Html5Qrcode } = await import("html5-qrcode");
 
       if (scannerRef.current) {

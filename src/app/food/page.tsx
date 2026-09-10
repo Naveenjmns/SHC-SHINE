@@ -239,21 +239,7 @@ export default function FoodCoordinatorPage() {
         return;
       }
 
-      // Explicitly request userMedia permission directly within the user-click context
-      if (typeof navigator !== "undefined" && navigator.mediaDevices?.getUserMedia) {
-        try {
-          const testStream = await navigator.mediaDevices.getUserMedia({
-            video: specificCameraId ? { deviceId: { exact: specificCameraId } } : true,
-          });
-          testStream.getTracks().forEach((track) => track.stop());
-        } catch (permErr: any) {
-          const parsed = parseCameraError(permErr);
-          setCameraError(parsed);
-          setCameraActive(false);
-          setCameraStarting(false);
-          return;
-        }
-      }
+
 
       const { Html5Qrcode } = await import("html5-qrcode");
 
