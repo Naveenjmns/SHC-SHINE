@@ -143,83 +143,103 @@ export default function CheckInModal({
       setScanMode("camera");
       setCameraStarting(true);
 
-      const { Html5Qrcode } = await import("html5-qrcode");
+      // Pre-flight secure context check
+      if (
+        typeof window !== "undefined" &&
+        !window.isSecureContext &&
+        window.location.hostname !== "localhost" &&
+        window.location.hostname !== "127.0.0.1"
+      ) {
+        const parsed = parseCameraError(new Error("Insecure context"));
+        setCameraError(parsed);
+        setCameraActive(false);
+        setCameraStarting(false);
+        return;
+      }
 
-      // Slight timeout to allow DOM element to render
-      setTimeout(async () => {
+      // Explicitly request userMedia permission directly within the user-click context
+      // to ensure the browser's native permission prompt opens if not yet granted
+      if (typeof navigator !== "undefined" && navigator.mediaDevices?.getUserMedia) {
         try {
-          if (scannerRef.current) {
-            await stopCameraScanner();
-          }
-
-          const html5QrCode = new Html5Qrcode(scannerDivId);
-          scannerRef.current = html5QrCode;
-
-          // Enumerate devices for camera switching & fallback
-          const cameras = await getAvailableCameras(Html5Qrcode);
-          setAvailableCameras(cameras);
-
-          // Determine preferred camera target
-          let targetConfig: any = { facingMode: "environment" };
-
-          const camIdToUse = specificCameraId || selectedCameraId;
-          if (camIdToUse && cameras.some((c) => c.id === camIdToUse)) {
-            targetConfig = camIdToUse;
-          } else if (cameras.length > 0) {
-            // Prefer rear/back camera on mobile, fallback to primary camera on laptop/desktop
-            const backCam = cameras.find((c) => c.isBackCamera);
-            const chosen = backCam || cameras[0];
-            targetConfig = chosen.id;
-            setSelectedCameraId(chosen.id);
-          }
-
-          const config = {
-            fps: 10,
-            qrbox: { width: 250, height: 250 },
-            aspectRatio: 1.0,
-          };
-
-          const onScanSuccess = (decodedText: string) => {
-            console.log("QR Decoded successfully:", decodedText);
-            handleLookup(decodedText);
-            stopCameraScanner();
-          };
-
-          // Try starting with target camera
-          try {
-            await html5QrCode.start(targetConfig, config, onScanSuccess, () => {});
-          } catch (primaryErr: any) {
-            console.warn("Primary camera start failed, attempting user camera fallback:", primaryErr);
-            // If primary was specific cameraId or environment, attempt fallback to facingMode: "user"
-            // (e.g. laptop integrated front webcam)
-            const isPermDenied =
-              primaryErr?.name === "NotAllowedError" ||
-              primaryErr?.name === "PermissionDeniedError" ||
-              /permission denied/i.test(primaryErr?.message || "");
-
-            if (!isPermDenied) {
-              await html5QrCode.start({ facingMode: "user" }, config, onScanSuccess, () => {});
-            } else {
-              throw primaryErr;
-            }
-          }
-
-          setCameraActive(true);
-          setCameraError(null);
-        } catch (innerErr: any) {
-          console.error("Camera start inner error:", innerErr);
-          const parsed = parseCameraError(innerErr);
+          const testStream = await navigator.mediaDevices.getUserMedia({
+            video: specificCameraId ? { deviceId: { exact: specificCameraId } } : true,
+          });
+          // Permission granted: immediately release the test stream
+          testStream.getTracks().forEach((track) => track.stop());
+        } catch (permErr: any) {
+          console.warn("Camera permission check returned:", permErr);
+          const parsed = parseCameraError(permErr);
           setCameraError(parsed);
           setCameraActive(false);
-        } finally {
           setCameraStarting(false);
+          return;
         }
-      }, 150);
-    } catch (err: any) {
-      console.error("Camera load error:", err);
-      const parsed = parseCameraError(err);
+      }
+
+      const { Html5Qrcode } = await import("html5-qrcode");
+
+      if (scannerRef.current) {
+        await stopCameraScanner();
+      }
+
+      const html5QrCode = new Html5Qrcode(scannerDivId);
+      scannerRef.current = html5QrCode;
+
+      // Enumerate devices for camera switching & fallback
+      const cameras = await getAvailableCameras(Html5Qrcode);
+      setAvailableCameras(cameras);
+
+      // Determine preferred camera target
+      let targetConfig: any = { facingMode: "environment" };
+
+      const camIdToUse = specificCameraId || selectedCameraId;
+      if (camIdToUse && cameras.some((c) => c.id === camIdToUse)) {
+        targetConfig = camIdToUse;
+      } else if (cameras.length > 0) {
+        // Prefer rear/back camera on mobile, fallback to primary camera on laptop/desktop
+        const backCam = cameras.find((c) => c.isBackCamera);
+        const chosen = backCam || cameras[0];
+        targetConfig = chosen.id;
+        setSelectedCameraId(chosen.id);
+      }
+
+      const config = {
+        fps: 10,
+        qrbox: { width: 250, height: 250 },
+        aspectRatio: 1.0,
+      };
+
+      const onScanSuccess = (decodedText: string) => {
+        console.log("QR Decoded successfully:", decodedText);
+        handleLookup(decodedText);
+        stopCameraScanner();
+      };
+
+      // Try starting with target camera
+      try {
+        await html5QrCode.start(targetConfig, config, onScanSuccess, () => {});
+      } catch (primaryErr: any) {
+        console.warn("Primary camera start failed, attempting user camera fallback:", primaryErr);
+        const isPermDenied =
+          primaryErr?.name === "NotAllowedError" ||
+          primaryErr?.name === "PermissionDeniedError" ||
+          /permission denied/i.test(primaryErr?.message || "");
+
+        if (!isPermDenied) {
+          await html5QrCode.start({ facingMode: "user" }, config, onScanSuccess, () => {});
+        } else {
+          throw primaryErr;
+        }
+      }
+
+      setCameraActive(true);
+      setCameraError(null);
+    } catch (innerErr: any) {
+      console.warn("Camera start notice:", innerErr);
+      const parsed = parseCameraError(innerErr);
       setCameraError(parsed);
       setCameraActive(false);
+    } finally {
       setCameraStarting(false);
     }
   };

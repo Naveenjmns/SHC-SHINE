@@ -210,75 +210,97 @@ export default function FoodCoordinatorPage() {
     try {
       setCameraError(null);
       setCameraStarting(true);
-      const { Html5Qrcode } = await import("html5-qrcode");
 
-      setTimeout(async () => {
+      // Pre-flight secure context check
+      if (
+        typeof window !== "undefined" &&
+        !window.isSecureContext &&
+        window.location.hostname !== "localhost" &&
+        window.location.hostname !== "127.0.0.1"
+      ) {
+        const parsed = parseCameraError(new Error("Insecure context"));
+        setCameraError(parsed);
+        setCameraActive(false);
+        setCameraStarting(false);
+        return;
+      }
+
+      // Explicitly request userMedia permission directly within the user-click context
+      if (typeof navigator !== "undefined" && navigator.mediaDevices?.getUserMedia) {
         try {
-          if (scannerRef.current) {
-            await stopScanner();
-          }
-
-          const qr = new Html5Qrcode(scannerDivId);
-          scannerRef.current = qr;
-
-          // Enumerate devices for camera switching & fallback
-          const cameras = await getAvailableCameras(Html5Qrcode);
-          setAvailableCameras(cameras);
-
-          let targetConfig: any = { facingMode: "environment" };
-
-          const camIdToUse = specificCameraId || selectedCameraId;
-          if (camIdToUse && cameras.some((c) => c.id === camIdToUse)) {
-            targetConfig = camIdToUse;
-          } else if (cameras.length > 0) {
-            const backCam = cameras.find((c) => c.isBackCamera);
-            const chosen = backCam || cameras[0];
-            targetConfig = chosen.id;
-            setSelectedCameraId(chosen.id);
-          }
-
-          const config = {
-            fps: 12,
-            qrbox: { width: 260, height: 260 },
-            aspectRatio: 1.0,
-          };
-
-          const onScanSuccess = (decodedText: string) => {
-            handleDetectedCode(decodedText);
-          };
-
-          try {
-            await qr.start(targetConfig, config, onScanSuccess, () => {});
-          } catch (primaryErr: any) {
-            console.warn("Primary camera start failed in food portal, attempting user camera fallback:", primaryErr);
-            const isPermDenied =
-              primaryErr?.name === "NotAllowedError" ||
-              primaryErr?.name === "PermissionDeniedError" ||
-              /permission denied/i.test(primaryErr?.message || "");
-
-            if (!isPermDenied) {
-              await qr.start({ facingMode: "user" }, config, onScanSuccess, () => {});
-            } else {
-              throw primaryErr;
-            }
-          }
-
-          setCameraActive(true);
-          setCameraError(null);
-        } catch (err: any) {
-          console.error("Camera start failed:", err);
-          const parsed = parseCameraError(err);
+          const testStream = await navigator.mediaDevices.getUserMedia({
+            video: specificCameraId ? { deviceId: { exact: specificCameraId } } : true,
+          });
+          testStream.getTracks().forEach((track) => track.stop());
+        } catch (permErr: any) {
+          console.warn("Food portal camera permission check returned:", permErr);
+          const parsed = parseCameraError(permErr);
           setCameraError(parsed);
           setCameraActive(false);
-        } finally {
           setCameraStarting(false);
+          return;
         }
-      }, 150);
+      }
+
+      const { Html5Qrcode } = await import("html5-qrcode");
+
+      if (scannerRef.current) {
+        await stopScanner();
+      }
+
+      const qr = new Html5Qrcode(scannerDivId);
+      scannerRef.current = qr;
+
+      // Enumerate devices for camera switching & fallback
+      const cameras = await getAvailableCameras(Html5Qrcode);
+      setAvailableCameras(cameras);
+
+      let targetConfig: any = { facingMode: "environment" };
+
+      const camIdToUse = specificCameraId || selectedCameraId;
+      if (camIdToUse && cameras.some((c) => c.id === camIdToUse)) {
+        targetConfig = camIdToUse;
+      } else if (cameras.length > 0) {
+        const backCam = cameras.find((c) => c.isBackCamera);
+        const chosen = backCam || cameras[0];
+        targetConfig = chosen.id;
+        setSelectedCameraId(chosen.id);
+      }
+
+      const config = {
+        fps: 12,
+        qrbox: { width: 260, height: 260 },
+        aspectRatio: 1.0,
+      };
+
+      const onScanSuccess = (decodedText: string) => {
+        handleDetectedCode(decodedText);
+      };
+
+      try {
+        await qr.start(targetConfig, config, onScanSuccess, () => {});
+      } catch (primaryErr: any) {
+        console.warn("Primary camera start failed in food portal, attempting user camera fallback:", primaryErr);
+        const isPermDenied =
+          primaryErr?.name === "NotAllowedError" ||
+          primaryErr?.name === "PermissionDeniedError" ||
+          /permission denied/i.test(primaryErr?.message || "");
+
+        if (!isPermDenied) {
+          await qr.start({ facingMode: "user" }, config, onScanSuccess, () => {});
+        } else {
+          throw primaryErr;
+        }
+      }
+
+      setCameraActive(true);
+      setCameraError(null);
     } catch (err: any) {
-      console.error("Html5Qrcode import failed:", err);
+      console.warn("Camera start notice:", err);
       const parsed = parseCameraError(err);
       setCameraError(parsed);
       setCameraActive(false);
+    } finally {
       setCameraStarting(false);
     }
   };
