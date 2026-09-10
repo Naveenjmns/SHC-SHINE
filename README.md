@@ -1,30 +1,48 @@
-# SHINE 26 — Event Management Platform
+# SHINE — Multi-Edition Event Management & Academic Dossier Platform
 
-> Flagship intercollegiate fest hosted by the **Department of Computer Applications (PG), Sacred Heart College (Autonomous), Tirupattur**.
+[![Next.js](https://img.shields.io/badge/Next.js-16.3.4-black?logo=next.js)](https://nextjs.org/)
+[![Turbopack](https://img.shields.io/badge/Turbopack-Enabled-blueviolet)](https://turbo.build/)
+[![Prisma](https://img.shields.io/badge/Prisma-6.19.3-2D3748?logo=prisma)](https://www.prisma.io/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Ready-336791?logo=postgresql)](https://www.postgresql.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript)](https://www.typescriptlang.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC?logo=tailwind-css)](https://tailwindcss.com/)
+
+> **Flagship Intercollegiate Event Platform & Academic Reporting System**  
+> Developed for the **Department of Computer Applications (PG), Sacred Heart College (Autonomous), Tirupattur**.
 
 ---
 
-## 🚀 Tech Stack
+## 🌟 Highlights & Key Features
 
-- **Framework**: [Next.js 16](https://nextjs.org) (App Router, TypeScript)
-- **Database**: PostgreSQL
-- **ORM**: [Prisma v6](https://www.prisma.io)
-- **Auth**: [NextAuth.js](https://next-auth.js.org) with credentials provider & role-based sessions
-- **Styling**: Tailwind CSS with custom glassmorphism design tokens
-- **Fonts**: Outfit (display) & Inter (body)
+- 🎨 **Dynamic Institution Branding & Theme Engine**: Native color picker and 8 curated one-click presets allowing any institution to white-label primary, secondary, and background colors with zero layout flash.
+- 📑 **Consolidated Academic Dossier & NAAC / IQAC Suite (`/admin/reports`)**: Complete 8-section institutional report with KPI metrics, event catalogs, college tallies, master student rosters, prelims progression, podium winners, championship leaderboard, and 4 formal academic signature blocks.
+- 🖨️ **Magazine-Grade PDF & Print Engine**: Paged-media print styling (`@page`), zero horizontal overflow, `table-layout: fixed`, `break-inside: avoid` preventing row slicing across pages, repeating table headers, and a **Portrait / Landscape print toggle**.
+- 🚶 **Locomotive-Inspired 3D Perspective Error Suite**: Canvas-driven 3D perspective floor grid with interactive walking delegates, directional contact shadows, click-to-walk interaction, and pure midnight dark aesthetic across 404, 500, 403, 401, 503, and `/error-preview`.
+- 🔐 **Enhanced Login & Authentication**: Premium glassmorphic interface, interactive password show/hide toggle, role-based protection, and 1-click demo fill buttons.
+- ⚡ **High-Performance Architecture**: Parallelized Prisma database queries with `Promise.all`, deterministic date formatters eliminating hydration mismatches, and optimized payload delivery.
+- 🏆 **Automated Championship Calculation**: Points tallying (10 pts for 1st, 7 pts for 2nd, 5 pts for 3rd) and tiebreaker logic for the Overall Fest Trophy.
+
+---
+
+## 📚 Documentation & Manual
+
+For an in-depth, step-by-step operations manual for all user roles, consult:
+👉 **[USER_MANUAL.md](./USER_MANUAL.md)** — *Complete operations guide, administrator walkthrough, academic dossier manual, and coordinator handbook.*
 
 ---
 
 ## 👥 Roles & Access Control
 
-1. **Public Visitor**: Browse fest details, search competitions, and register for events.
-2. **Student**: Logged-in participant viewing their registered events, approval status, and published results.
-3. **Event Coordinator**: Scoped portal to manage registrations, verify attendees, and submit competition results for assigned events.
-4. **Admin**: Master console with fest statistics, revenue breakdown, full event CRUD, and coordinator/admin account management.
+| Role | Access Scope | Target Dashboard | Key Capabilities |
+|---|---|---|---|
+| **Public Visitor** | Public routes | `/`, `/events`, `/register` | Discover competitions, browse rules, contingent registration. |
+| **Student / Delegate** | Authenticated participant | `/dashboard` | View gate pass badge, check-in status, food tokens, registered events, published scores. |
+| **Event Coordinator** | Scoped event staff | `/coordinator`, `/coordinator/[eventId]` | Check-in attendees, grade prelims, advance finalists, publish podium standings, export event CSV. |
+| **Administrator** | Master control root | `/admin`, `/admin/*` | Complete event CRUD, user management, theme customizer, SMTP broadcasts, academic reports. |
 
 ---
 
-## 🔑 Demo & Test Credentials
+## 🔑 Demo & Testing Credentials
 
 | Role | Email | Password | Target Portal |
 |---|---|---|---|
@@ -37,21 +55,31 @@
 
 ---
 
-## 🌐 Routes Overview
+## 🌐 Routes Directory
 
-### Public Routes
-- `/` — Landing page with Hero, About, Categories, Venue, Schedule, and Contacts.
-- `/events` — Searchable and filterable directory of all on-stage and off-stage events.
-- `/register` — Registration form for students (supports outside-college participants, multi-event selection, and fee calculations).
-- `/login` — NextAuth credentials sign-in for students, coordinators, and administrators.
+### Public Pages
+- `/` — Landing page with countdown hero, fest categories, schedule, campus venue, and contacts.
+- `/events` — Searchable and filterable directory of on-stage and off-stage competitions.
+- `/register` — Multi-event and contingent team registration form with live fee calculator.
+- `/login` — NextAuth credentials sign-in with interactive password visibility toggle.
+- `/leaderboard` — Live public championship trophy standings.
+- `/badge/[badgeCode]` — High-resolution digital gate pass and scannable QR badge.
 
-### Protected Dashboards (Middleware Enforced)
-- `/dashboard` — **Student Portal**: Live registration status (`PENDING`, `CONFIRMED`, `REJECTED`) and published competition rankings.
-- `/coordinator` — **Coordinator Console**: Overview of assigned events with participant counts.
-- `/coordinator/[eventId]` — **Event Participant Manager**: Scoped attendee table with status toggles (`Confirm`/`Reject`), result input, and CSV export.
-- `/admin` — **Admin Master Control**: Real-time stats (registrations, confirmed revenue, per-event breakdown) and instant status overrides.
-- `/admin/events` — **Event CRUD**: Create, edit, delete competitions and assign faculty coordinators.
-- `/admin/users` — **User Management**: Create and manage coordinator and administrator accounts.
+### Protected Dashboards
+- `/dashboard` — **Student Portal**: Real-time registration approval status, gate pass, food token, and competition results.
+- `/coordinator` — **Coordinator Console**: Scoped list of assigned competitions with participant metrics.
+- `/coordinator/[eventId]` — **Event Control Room**: On-site attendee check-in, prelims scoring, mains progression, and podium publishing.
+- `/admin` — **Admin Master Console**: Financial analytics, institution settings, edition manager, theme customizer, SMTP broadcasts, and registrations audit.
+- `/admin/reports` — **Consolidated Academic Dossier**: Printable NAAC/IQAC report with Portrait/Landscape toggles and individual CSV downloads.
+- `/admin/events` — **Events CRUD**: Create and manage competitions, venues, and assign faculty/student coordinators.
+- `/admin/users` — **User Management**: Provision administrator and coordinator accounts.
+- `/admin/logs` — **Activity Audit**: Tamper-evident administrative action log.
+
+### Interactive Diagnostics
+- `/error-preview` — Interactive showcase dock displaying all 3D perspective error scenes.
+- `/forbidden` — 403 Access Clearance boundary.
+- `/unauthorized` — 401 Session expired redirect.
+- `/maintenance` — 503 Stage maintenance blackout screen.
 
 ---
 
@@ -60,7 +88,7 @@
 ### 1. Environment Variables (`.env`)
 ```env
 DATABASE_URL="postgresql://user:password@localhost:5432/shine26?schema=public"
-NEXTAUTH_SECRET="your-secret-key-change-in-production"
+NEXTAUTH_SECRET="your-super-secret-key-change-in-production"
 NEXTAUTH_URL="http://localhost:3000"
 ```
 
@@ -74,7 +102,7 @@ npm install
 # Push Prisma schema to PostgreSQL
 npx prisma db push
 
-# Seed Admin, Coordinators, Sample Student, 10 Events, and Sample Registrations
+# Seed Admin, Coordinators, Sample Students, Competitions, and Sample Registrations
 npm run seed
 ```
 
@@ -84,7 +112,7 @@ npm run dev
 ```
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-### 5. Production Build
+### 5. Production Build & Validation
 ```bash
 npm run build
 npm run start
@@ -94,16 +122,41 @@ npm run start
 
 ## 📡 API Reference
 
-- `GET /api/events` — Fetch list of all public events
-- `POST /api/events` — Create new event (*Admin only*)
-- `GET/PUT/DELETE /api/events/[id]` — Event CRUD (*Admin only*)
-- `POST /api/register` — Public registration endpoint (creates student user + pending registrations)
-- `GET /api/student/registrations` — Current user's registrations (*Authenticated*)
-- `GET /api/coordinator/events` — Assigned events for coordinator (*Coordinator/Admin*)
-- `GET /api/coordinator/events/[id]/registrations` — Scoped participant list (*Coordinator/Admin*)
-- `PATCH /api/coordinator/registrations/[id]` — Update status and award result (*Coordinator/Admin*)
-- `GET /api/admin/stats` — Summary metrics and event breakdown (*Admin only*)
-- `GET /api/admin/registrations` — All fest registrations (*Admin only*)
-- `PATCH /api/admin/registrations` — Override any registration status (*Admin only*)
-- `GET/POST /api/admin/users` — List and create coordinators/admins (*Admin only*)
-- `DELETE /api/admin/users/[id]` — Delete user account (*Admin only*)
+### Public & Registration
+- `GET /api/edition/active` — Active edition metadata & branding theme colors
+- `GET /api/events` — Public competitions directory
+- `POST /api/register` — Contingent team and delegate registration
+- `GET /api/leaderboard` — Live championship trophy rankings
+
+### Student & Check-in
+- `GET /api/student/registrations` — Authenticated student registration records
+- `GET /api/badge/[badgeCode]` — QR validation endpoint for gate security
+- `POST /api/checkin` — Mark delegate attendance
+
+### Coordinator Endpoints
+- `GET /api/coordinator/events` — Assigned competitions for authenticated coordinator
+- `GET /api/coordinator/events/[id]/registrations` — Scoped participant roster
+- `PATCH /api/coordinator/registrations/[id]` — Update attendance, prelims status, and final score
+
+### Administrator Endpoints
+- `GET /api/admin/stats` — Financial summary, delegate metrics, and event breakdown
+- `GET /api/admin/reports` — Consolidated academic dossier data compiler
+- `GET /api/admin/registrations` — All fest registrations with status override
+- `GET /api/admin/edition` & `PUT /api/admin/edition` — Edition settings & institution theme configuration
+- `POST /api/admin/smtp/test` — Verify mail server connection
+- `POST /api/admin/email/broadcast` — Dispatch announcements to delegates
+- `GET /api/admin/logs` — Security and activity audit log
+- `GET /api/admin/users` & `POST /api/admin/users` — User account management
+
+---
+
+## 📜 Academic Certification Standard
+
+The platform complies with standard institutional documentation guidelines for:
+- **NAAC Criterion V**: Student Support and Progression (Competitions, Cultural & Academic Activities).
+- **IQAC Annual Fest Audits**: Official validated participant and winner records with staff signatures.
+- **Department Annual Reviews**: Formal student participation tallies and revenue reconciliation.
+
+---
+
+*Engineered with precision for Sacred Heart College (Autonomous), Tirupattur.*

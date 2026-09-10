@@ -6,6 +6,7 @@ import { logActivity } from "@/lib/activityLogger";
 import { generateBadgeCode, generateFoodTokenCode, generateEventPassQr, generateFoodTokenQr } from "@/lib/badgeService";
 import { sendDelegateRegistrationEmail, sendCoordinatorRegistrationAlert } from "@/lib/emailService";
 import { getActiveEdition } from "@/lib/eventService";
+import { checkRateLimit, sanitizeString, isValidEmail, isValidPhone, getClientIp, buildSecureErrorResponse } from "@/lib/security";
 
 interface MemberInput {
   name: string;
@@ -17,6 +18,24 @@ interface MemberInput {
 
 export async function POST(req: Request) {
   try {
+    // SECURITY: Rate limit registration submissions (5 per IP per minute)
+    const clientIp = getClientIp(req);
+    const rateCheck = checkRateLimit(`register:${clientIp}`, 5, 5 / 60);
+    if (!rateCheck.allowed) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Too many registration attempts. Please wait a moment and try again.",
+        },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": String(Math.ceil(rateCheck.retryAfterMs / 1000)),
+          },
+        }
+      );
+    }
+
     // 1. Check if registrations are currently open
     const activeEdition = await getActiveEdition();
     if (activeEdition && activeEdition.isRegistrationOpen === false) {
@@ -35,12 +54,21 @@ export async function POST(req: Request) {
     const body = await req.json();
 
     // Support both Delegation format and Single student format
-    let collegeName = body.collegeName || body.college;
-    let department = body.department || "";
-    let teamName = body.teamName || "";
+    // SECURITY: Sanitize all user inputs
+    let collegeName = sanitizeString(body.collegeName || body.college, 200);
+    let department = sanitizeString(body.department, 200);
+    let teamName = sanitizeString(body.teamName, 200);
     let teamLead = body.teamLead;
     let staffIncharge = body.staffIncharge || null;
     let members: MemberInput[] = body.members;
+
+    // SECURITY: Limit delegation size to prevent abuse
+    if (members && Array.isArray(members) && members.length > 50) {
+      return NextResponse.json(
+        { success: false, message: "Maximum 50 delegates per registration." },
+        { status: 400 }
+      );
+    }
 
     // Backward compatibility if single student format submitted
     if (!members && body.name && body.email) {
@@ -87,15 +115,39 @@ export async function POST(req: Request) {
 
     for (let i = 0; i < members.length; i++) {
       const m = members[i];
+      // SECURITY: Sanitize member inputs
+      m.name = sanitizeString(m.name, 100);
+      m.email = sanitizeString(m.email, 254);
+      m.phone = sanitizeString(m.phone, 20);
+
       if (!m.name || !m.email || !m.phone) {
         return NextResponse.json(
           { success: false, message: `Delegate #${i + 1} is missing required name, email, or mobile number.` },
           { status: 400 }
         );
       }
+      if (!isValidEmail(m.email)) {
+        return NextResponse.json(
+          { success: false, message: `Invalid email address for delegate "${m.name}".` },
+          { status: 400 }
+        );
+      }
+      if (!isValidPhone(m.phone)) {
+        return NextResponse.json(
+          { success: false, message: `Invalid phone number for delegate "${m.name}".` },
+          { status: 400 }
+        );
+      }
       if (!m.eventIds || !Array.isArray(m.eventIds) || m.eventIds.length === 0) {
         return NextResponse.json(
           { success: false, message: `Please select at least one event for delegate "${m.name}".` },
+          { status: 400 }
+        );
+      }
+      // SECURITY: Limit events per delegate to prevent abuse
+      if (m.eventIds.length > 20) {
+        return NextResponse.json(
+          { success: false, message: `Maximum 20 events per delegate.` },
           { status: 400 }
         );
       }
@@ -404,9 +456,14 @@ export async function POST(req: Request) {
       delegates: registeredDelegates,
     });
   } catch (error: any) {
-    console.error("Delegation registration error:", error);
+    // SECURITY: Never expose internal error details to the client
+    const secureError = buildSecureErrorResponse(
+      error,
+      "POST /api/register",
+      "An unexpected error occurred during registration. Please try again."
+    );
     return NextResponse.json(
-      { success: false, message: error.message || "An unexpected error occurred during delegation registration." },
+      { success: false, message: secureError.message },
       { status: 500 }
     );
   }

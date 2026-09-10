@@ -79,54 +79,61 @@ export async function GET(
 
     const edition = await getActiveEdition();
 
-    return NextResponse.json({
-      success: true,
-      badge: {
-        badgeCode: member.badgeCode,
-        name: member.name,
-        email: member.email,
-        phone: member.phone,
-        foodTokenCode: member.foodTokenCode,
-        eventCheckedIn: member.eventCheckedIn,
-        eventCheckedInAt: member.eventCheckedInAt,
-        foodTokenClaimed: member.foodTokenClaimed,
-        foodClaimedAt: member.foodClaimedAt,
-        qrData: member.qrData,
-        foodQrData: member.foodQrData,
-        createdAt: member.createdAt,
-        delegation: {
-          id: member.delegation.id,
-          collegeName: member.delegation.collegeName,
-          department: member.delegation.department,
-          teamName: member.delegation.teamName,
-          teamLeadName: member.delegation.teamLeadName,
-          teamLeadPhone: member.delegation.teamLeadPhone,
-          staffInchargeName: member.delegation.staffInchargeName,
-          staffInchargePhone: member.delegation.staffInchargePhone,
-          paymentStatus: member.delegation.paymentStatus,
-        },
-        events: member.registrations.map((r) => ({
-          registrationId: r.id,
-          status: r.status,
-          eventName: r.event.name,
-          category: r.event.category,
-          venue: r.event.venue,
-          rules: r.event.rules,
-          staffIncharge: r.event.staffCoordinator?.name || null,
-          studentIncharge: r.event.studentCoordinator?.name || null,
-        })),
-        fest: {
-          name: edition.name,
-          edition: edition.edition,
-          tagline: edition.tagline,
-          institutionName: edition.institutionName,
-          departmentName: edition.hostDepartment,
-          venue: edition.venue,
-          startDate: edition.startDate,
-          endDate: edition.endDate,
+    return NextResponse.json(
+      {
+        success: true,
+        badge: {
+          badgeCode: member.badgeCode,
+          name: member.name,
+          email: member.email,
+          phone: member.phone,
+          foodTokenCode: member.foodTokenCode,
+          eventCheckedIn: member.eventCheckedIn,
+          eventCheckedInAt: member.eventCheckedInAt,
+          foodTokenClaimed: member.foodTokenClaimed,
+          foodClaimedAt: member.foodClaimedAt,
+          qrData: member.qrData,
+          foodQrData: member.foodQrData,
+          createdAt: member.createdAt,
+          delegation: {
+            id: member.delegation.id,
+            collegeName: member.delegation.collegeName,
+            department: member.delegation.department,
+            teamName: member.delegation.teamName,
+            teamLeadName: member.delegation.teamLeadName,
+            teamLeadPhone: member.delegation.teamLeadPhone,
+            staffInchargeName: member.delegation.staffInchargeName,
+            staffInchargePhone: member.delegation.staffInchargePhone,
+            paymentStatus: member.delegation.paymentStatus,
+          },
+          events: member.registrations.map((r) => ({
+            registrationId: r.id,
+            status: r.status,
+            eventName: r.event.name,
+            category: r.event.category,
+            venue: r.event.venue,
+            rules: r.event.rules,
+            staffIncharge: r.event.staffCoordinator?.name || null,
+            studentIncharge: r.event.studentCoordinator?.name || null,
+          })),
+          fest: {
+            name: edition.name,
+            edition: edition.edition,
+            tagline: edition.tagline,
+            institutionName: edition.institutionName,
+            departmentName: edition.hostDepartment,
+            venue: edition.venue,
+            startDate: edition.startDate,
+            endDate: edition.endDate,
+          },
         },
       },
-    });
+      {
+        headers: {
+          "Cache-Control": "public, max-age=10, s-maxage=30, stale-while-revalidate=60",
+        },
+      }
+    );
   } catch (error: any) {
     console.error("Badge lookup error:", error);
     return NextResponse.json(

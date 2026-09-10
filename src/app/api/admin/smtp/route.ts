@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { logActivity } from "@/lib/activityLogger";
+import { encryptSecret, decryptSecret, buildSecureErrorResponse } from "@/lib/security";
 
 export const dynamic = "force-dynamic";
 
@@ -48,8 +49,8 @@ export async function GET() {
       },
     });
   } catch (error: any) {
-    console.error("GET /api/admin/smtp error:", error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    const secureError = buildSecureErrorResponse(error, "GET /api/admin/smtp", "Failed to load SMTP settings.");
+    return NextResponse.json({ success: false, error: secureError.message }, { status: 500 });
   }
 }
 
@@ -80,7 +81,8 @@ export async function POST(req: NextRequest) {
 
     // If password provided and not masked placeholder
     if (password && password !== "••••••••" && password !== "******") {
-      dataToSave.password = password;
+      // SECURITY: Encrypt the password before storing in the database
+      dataToSave.password = encryptSecret(password);
     } else if (!existing) {
       dataToSave.password = "";
     }
@@ -128,7 +130,7 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (error: any) {
-    console.error("POST /api/admin/smtp error:", error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    const secureError = buildSecureErrorResponse(error, "POST /api/admin/smtp", "Failed to save SMTP settings.");
+    return NextResponse.json({ success: false, error: secureError.message }, { status: 500 });
   }
 }

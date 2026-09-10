@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { logActivity } from "@/lib/activityLogger";
+import { buildSecureErrorResponse } from "@/lib/security";
 
 export const dynamic = "force-dynamic";
 
@@ -175,9 +176,9 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (error: any) {
-    console.error("GET /api/checkin error:", error);
+    const secureError = buildSecureErrorResponse(error, "GET /api/checkin", "Failed to lookup participant.");
     return NextResponse.json(
-      { success: false, message: error.message || "Failed to lookup participant." },
+      { success: false, message: secureError.message },
       { status: 500 }
     );
   }
@@ -536,9 +537,9 @@ export async function POST(req: NextRequest) {
       { status: 400 }
     );
   } catch (error: any) {
-    console.error("POST /api/checkin error:", error);
+    const secureError = buildSecureErrorResponse(error, "POST /api/checkin", "Failed to process check-in action.");
     return NextResponse.json(
-      { success: false, message: error.message || "Failed to process check-in action." },
+      { success: false, message: secureError.message },
       { status: 500 }
     );
   }

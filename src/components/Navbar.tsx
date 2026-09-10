@@ -66,6 +66,7 @@ export default function Navbar({ edition }: NavbarProps) {
 
   return (
     <nav
+      suppressHydrationWarning
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         scrolled
           ? "py-3 bg-[#FAF8F5]/90 backdrop-blur-md border-b border-[#1C1917]/10 shadow-md"
@@ -88,14 +89,18 @@ export default function Navbar({ edition }: NavbarProps) {
               className="h-9 w-auto object-contain group-hover:scale-105 transition-transform"
             />
           ) : (
-            <div className="relative">
+            <div className="relative" suppressHydrationWarning>
               <div
-                className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FF6B1A] to-[#D9A441] flex items-center justify-center text-white font-black text-xl shadow-md shadow-orange-500/20 group-hover:scale-105 transition-transform"
+                suppressHydrationWarning
+                className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--fest-ember)] to-[var(--fest-gold)] flex items-center justify-center text-white font-black text-xl shadow-md shadow-orange-500/20 group-hover:scale-105 transition-transform"
                 style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
               >
                 {eventName.charAt(0)}
               </div>
-              <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-[#FF6B1A] ring-2 ring-[#FAF8F5] animate-pulse" />
+              <div
+                suppressHydrationWarning
+                className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-[var(--fest-ember)] ring-2 ring-[#FAF8F5] animate-pulse"
+              />
             </div>
           )}
 
@@ -171,11 +176,12 @@ export default function Navbar({ edition }: NavbarProps) {
           )}
         </div>
 
-        {/* Mobile Menu Button (44px min tap target) */}
+        {/* Mobile Menu Button (only visible on mobile, hidden on md+) */}
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
-          className="md:hidden p-2.5 text-[#1C1917] hover:bg-stone-100 rounded-xl tap-target"
+          className="flex md:hidden items-center justify-center p-2.5 text-[#1C1917] hover:bg-stone-100 rounded-xl min-w-[44px] min-h-[44px]"
           aria-label="Toggle Menu"
+          suppressHydrationWarning
         >
           {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>

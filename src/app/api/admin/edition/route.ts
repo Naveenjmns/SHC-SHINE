@@ -204,6 +204,7 @@ export async function PATCH(req: NextRequest) {
       },
     });
 
+    revalidatePath("/", "layout");
     revalidatePath("/");
 
     return NextResponse.json({ success: true, edition: updated });

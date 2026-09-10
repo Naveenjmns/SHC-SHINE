@@ -28,6 +28,8 @@ import {
   Lock,
   Clock,
   ReceiptIndianRupee,
+  Check,
+  Target,
 } from "lucide-react";
 import { safeJson } from "@/lib/safeFetch";
 
@@ -463,11 +465,16 @@ function RegisterForm() {
                     On arrival at Sacred Heart College, please report to the <strong>Registration & Finance Desk</strong> with your Contingent Lead (<strong>{successData.delegation.teamLeadName}</strong>).
                     Pay the contingent fee of <strong>₹{successData.delegation.totalFee}</strong> to the desk coordinator.
                   </p>
-                  <p className="text-[11px] text-stone-600 bg-white/70 p-2.5 rounded-xl border border-amber-200/60 leading-normal">
-                    ✓ Once payment is recorded as <strong>APPROVED</strong>, your 2 official QR badges (Event Entry QR + Food Token QR) are instantly activated.
-                    <br />
-                    ✓ All participants will receive an email dispatch with their individual passes, and the Team Lead will receive the consolidated dossier for all {successData.delegates.length} members.
-                  </p>
+                  <div className="text-[11px] text-stone-600 bg-white/70 p-2.5 rounded-xl border border-amber-200/60 leading-normal space-y-1.5">
+                    <p className="flex items-start gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                      <span>Once payment is recorded as <strong>APPROVED</strong>, your 2 official QR badges (Event Entry QR + Food Token QR) are instantly activated.</span>
+                    </p>
+                    <p className="flex items-start gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                      <span>All participants will receive an email dispatch with their individual passes, and the Team Lead will receive the consolidated dossier for all {successData.delegates.length} members.</span>
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -498,12 +505,15 @@ function RegisterForm() {
             </div>
           </div>
 
-          <div className="bg-stone-50 border border-stone-200 rounded-2xl p-4 max-w-xl mx-auto mb-6 text-center text-xs text-stone-700">
-            🔐 <strong>Student Portal Access:</strong> Each registered participant can log in anytime at{" "}
-            <Link href="/login" className="underline font-bold text-[#FF6B1A]">
-              /login
-            </Link>{" "}
-            using their registered <strong>Email or Mobile Number</strong> (Default Password: <strong>Mobile Number</strong>).
+          <div className="bg-stone-50 border border-stone-200 rounded-2xl p-4 max-w-xl mx-auto mb-6 text-center text-xs text-stone-700 flex items-center justify-center gap-2">
+            <Lock className="w-4 h-4 text-stone-500 shrink-0" />
+            <span>
+              <strong>Student Portal Access:</strong> Each registered participant can log in anytime at{" "}
+              <Link href="/login" className="underline font-bold text-[#FF6B1A]">
+                /login
+              </Link>{" "}
+              using their registered <strong>Email or Mobile Number</strong> (Default Password: <strong>Mobile Number</strong>).
+            </span>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4 border-t border-stone-200">
@@ -531,15 +541,15 @@ function RegisterForm() {
   }
 
   return (
-    <div className="container-shine py-12 max-w-3xl mx-auto">
-      <div className="fest-card p-6 sm:p-10">
+    <div className="container-shine py-6 sm:py-12 max-w-3xl mx-auto px-3 sm:px-4">
+      <div className="fest-card p-4 sm:p-8 lg:p-10">
         {/* Header */}
-        <div className="text-center mb-8">
-          <span className="inline-block px-3 py-1 rounded-full bg-[#FF6B1A]/10 text-[#FF6B1A] border border-[#FF6B1A]/20 text-xs font-bold uppercase tracking-wider mb-2">
+        <div className="text-center mb-6 sm:mb-8">
+          <span className="inline-block px-3 py-1 rounded-full bg-[#FF6B1A]/10 text-[#FF6B1A] border border-[#FF6B1A]/20 text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-2">
             Intercollegiate Delegation Registration
           </span>
           <h1
-            className="text-fluid-h1 font-black text-[#1C1917] tracking-tight"
+            className="text-fluid-h1 font-black text-[#1C1917] tracking-tight leading-tight"
             style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
           >
             Register for <span className="hero-wordmark-gradient">{festName} {festEdition}</span>
@@ -549,8 +559,8 @@ function RegisterForm() {
             Register your college team or individual participants. Each registered student receives an official badge with gate QR code & lunch coupon.
           </p>
 
-          <div className="mt-4 inline-flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-900 px-3.5 py-1.5 rounded-full text-xs font-semibold">
-            <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+          <div className="mt-3 sm:mt-4 inline-flex items-center justify-center gap-1.5 sm:gap-2 bg-amber-50 border border-amber-200 text-amber-900 px-3.5 py-1.5 rounded-full text-[11px] sm:text-xs font-semibold max-w-full flex-wrap text-center">
+            <Sparkles className="w-3.5 h-3.5 text-amber-600 shrink-0" />
             <span>Registration Fee: <strong>{participantFee > 0 ? `₹${participantFee} per participant` : "Free"}</strong> (Includes all competitions + food token)</span>
           </div>
         </div>
@@ -623,48 +633,103 @@ function RegisterForm() {
           </div>
         ) : (
           <>
-            {/* Stepper Tabs */}
-            <div className="flex items-center justify-start sm:justify-center gap-2 sm:gap-4 mb-8 overflow-x-auto pb-1 no-scrollbar">
-          <button
-            type="button"
-            onClick={() => setCurrentStep(1)}
-            className={`tap-target px-3 sm:px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-              currentStep === 1
-                ? "bg-[#FF6B1A] text-white shadow-sm"
-                : "bg-stone-200/70 text-[#57534E] hover:text-[#1C1917]"
-            }`}
-          >
-            1. College & Lead
-          </button>
-          <span className="text-[#1C1917]/30">→</span>
-          <button
-            type="button"
-            onClick={() => {
-              if (validateStep1()) setCurrentStep(2);
-            }}
-            className={`tap-target px-3 sm:px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-              currentStep === 2
-                ? "bg-[#FF6B1A] text-white shadow-sm"
-                : "bg-stone-200/70 text-[#57534E] hover:text-[#1C1917]"
-            }`}
-          >
-            2. Participants & Competitions ({members.length})
-          </button>
-          <span className="text-[#1C1917]/30">→</span>
-          <button
-            type="button"
-            onClick={() => {
-              if (validateStep1() && validateStep2()) setCurrentStep(3);
-            }}
-            className={`tap-target px-3 sm:px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-              currentStep === 3
-                ? "bg-[#FF6B1A] text-white shadow-sm"
-                : "bg-stone-200/70 text-[#57534E] hover:text-[#1C1917]"
-            }`}
-          >
-            3. Summary & Submit
-          </button>
-        </div>
+            {/* Responsive Connected Stepper */}
+            <div className="mb-6 sm:mb-8 max-w-lg mx-auto w-full px-1">
+              <div className="relative flex items-center justify-between">
+                {/* Background Track Line */}
+                <div className="absolute left-6 right-6 top-4 sm:top-5 h-0.5 bg-stone-200 z-0" />
+                {/* Active Progress Track Line */}
+                <div
+                  className="absolute left-6 top-4 sm:top-5 h-0.5 bg-gradient-to-r from-[#FF6B1A] to-[#D9A441] transition-all duration-300 z-0"
+                  style={{
+                    width: currentStep === 1 ? "0%" : currentStep === 2 ? "50%" : "calc(100% - 3rem)",
+                  }}
+                />
+
+                {/* Step 1 Button */}
+                <button
+                  type="button"
+                  onClick={() => setCurrentStep(1)}
+                  className="relative z-10 flex flex-col items-center group cursor-pointer focus:outline-none"
+                >
+                  <div
+                    className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm transition-all shadow-xs ${
+                      currentStep === 1
+                        ? "bg-[#FF6B1A] text-white ring-4 ring-orange-100 scale-105"
+                        : currentStep > 1
+                        ? "bg-stone-900 text-white"
+                        : "bg-white text-stone-400 border border-stone-300"
+                    }`}
+                  >
+                    {currentStep > 1 ? <Check className="w-4 h-4 text-white" /> : "1"}
+                  </div>
+                  <span
+                    className={`mt-1.5 text-[10px] sm:text-xs font-bold transition-colors text-center ${
+                      currentStep === 1 ? "text-[#FF6B1A]" : currentStep > 1 ? "text-stone-900" : "text-stone-400"
+                    }`}
+                  >
+                    <span className="sm:hidden">College</span>
+                    <span className="hidden sm:inline">1. College & Lead</span>
+                  </span>
+                </button>
+
+                {/* Step 2 Button */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (validateStep1()) setCurrentStep(2);
+                  }}
+                  className="relative z-10 flex flex-col items-center group cursor-pointer focus:outline-none"
+                >
+                  <div
+                    className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm transition-all shadow-xs ${
+                      currentStep === 2
+                        ? "bg-[#FF6B1A] text-white ring-4 ring-orange-100 scale-105"
+                        : currentStep > 2
+                        ? "bg-stone-900 text-white"
+                        : "bg-white text-stone-400 border border-stone-300"
+                    }`}
+                  >
+                    {currentStep > 2 ? <Check className="w-4 h-4 text-white" /> : "2"}
+                  </div>
+                  <span
+                    className={`mt-1.5 text-[10px] sm:text-xs font-bold transition-colors text-center ${
+                      currentStep === 2 ? "text-[#FF6B1A]" : currentStep > 2 ? "text-stone-900" : "text-stone-400"
+                    }`}
+                  >
+                    <span className="sm:hidden">Delegates ({members.length})</span>
+                    <span className="hidden sm:inline">2. Participants ({members.length})</span>
+                  </span>
+                </button>
+
+                {/* Step 3 Button */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (validateStep1() && validateStep2()) setCurrentStep(3);
+                  }}
+                  className="relative z-10 flex flex-col items-center group cursor-pointer focus:outline-none"
+                >
+                  <div
+                    className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm transition-all shadow-xs ${
+                      currentStep === 3
+                        ? "bg-[#FF6B1A] text-white ring-4 ring-orange-100 scale-105"
+                        : "bg-white text-stone-400 border border-stone-300"
+                    }`}
+                  >
+                    3
+                  </div>
+                  <span
+                    className={`mt-1.5 text-[10px] sm:text-xs font-bold transition-colors text-center ${
+                      currentStep === 3 ? "text-[#FF6B1A]" : "text-stone-400"
+                    }`}
+                  >
+                    <span className="sm:hidden">Submit</span>
+                    <span className="hidden sm:inline">3. Summary & Submit</span>
+                  </span>
+                </button>
+              </div>
+            </div>
 
         {errorMessage && (
           <div className="bg-rose-500/10 border border-rose-500/30 text-rose-700 text-xs sm:text-sm p-3.5 rounded-xl mb-6 flex items-center gap-2">
@@ -727,11 +792,11 @@ function RegisterForm() {
               </div>
 
               {/* College Team Lead Section */}
-              <div className="bg-stone-50 border border-stone-200 rounded-2xl p-5">
-                <div className="flex items-center justify-between mb-3">
+              <div className="bg-stone-50 border border-stone-200 rounded-2xl p-4 sm:p-5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-3">
                   <h3 className="text-xs font-black text-stone-900 uppercase tracking-wider flex items-center gap-2">
-                    <Users className="w-4 h-4 text-[#FF6B1A]" />
-                    <span>Contingent Team Lead (Student Representative)</span>
+                    <Users className="w-4 h-4 text-[#FF6B1A] shrink-0" />
+                    <span>Contingent Team Lead (Student Rep)</span>
                   </h3>
                   <span className="text-[10px] text-stone-500 font-semibold">Primary Point of Contact</span>
                 </div>
@@ -782,20 +847,20 @@ function RegisterForm() {
               </div>
 
               {/* Outer College Accompanying Faculty Section */}
-              <div className="bg-stone-50 border border-stone-200 rounded-2xl p-5">
-                <div className="flex items-center justify-between">
-                  <label className="flex items-center gap-2.5 cursor-pointer select-none">
+              <div className="bg-stone-50 border border-stone-200 rounded-2xl p-4 sm:p-5">
+                <div className="flex items-start sm:items-center justify-between gap-2">
+                  <label className="flex items-start gap-2.5 cursor-pointer select-none">
                     <input
                       type="checkbox"
                       checked={hasFacultyIncharge}
                       onChange={(e) => setHasFacultyIncharge(e.target.checked)}
-                      className="w-4 h-4 accent-[#FF6B1A] rounded"
+                      className="w-4 h-4 accent-[#FF6B1A] rounded mt-0.5 shrink-0"
                     />
                     <span className="text-xs font-bold text-stone-900">
                       Our college contingent is accompanied by an Outer Faculty Incharge
                     </span>
                   </label>
-                  <span className="text-[10px] text-stone-500 font-semibold">Optional</span>
+                  <span className="text-[10px] text-stone-500 font-semibold shrink-0">Optional</span>
                 </div>
 
                 {hasFacultyIncharge && (
@@ -848,10 +913,11 @@ function RegisterForm() {
                   onClick={() => {
                     if (validateStep1()) setCurrentStep(2);
                   }}
-                  className="btn-ember w-full sm:w-auto text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5"
+                  className="btn-ember w-full sm:w-auto text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 py-3"
                 >
-                  <span>Continue to Participant Roster & Competitions</span>
-                  <ChevronRight className="w-4 h-4" />
+                  <span className="sm:hidden">Continue to Participants</span>
+                  <span className="hidden sm:inline">Continue to Participant Roster & Competitions</span>
+                  <ChevronRight className="w-4 h-4 shrink-0" />
                 </button>
               </div>
             </div>
@@ -860,7 +926,7 @@ function RegisterForm() {
           {/* STEP 2: Student Contingent Roster & Event Selection */}
           {currentStep === 2 && (
             <div className="space-y-6 animate-in fade-in duration-200">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <h3 className="text-sm font-black text-stone-900 uppercase tracking-wider">
                     Student Contingent Roster
@@ -873,9 +939,9 @@ function RegisterForm() {
                 <button
                   type="button"
                   onClick={addMember}
-                  className="tap-target inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs font-bold text-amber-700 hover:bg-amber-500/20 transition-all cursor-pointer self-start sm:self-auto"
+                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs font-bold text-amber-700 hover:bg-amber-500/20 transition-all cursor-pointer w-full sm:w-auto"
                 >
-                  <UserPlus className="w-4 h-4" />
+                  <UserPlus className="w-4 h-4 shrink-0" />
                   <span>Add Another Participant</span>
                 </button>
               </div>
@@ -1007,13 +1073,13 @@ function RegisterForm() {
                                       className="mt-0.5 accent-purple-600 rounded disabled:opacity-50"
                                     />
                                     <div className="flex-1 min-w-0">
-                                      <div className="flex items-center justify-between gap-1">
-                                        <span className="font-bold text-xs text-stone-900 truncate">
+                                      <div className="flex items-start justify-between gap-1.5">
+                                        <span className="font-bold text-xs text-stone-900 leading-snug">
                                           {ev.name}
                                         </span>
                                         {ev.capacity && ev.capacity > 0 && (
                                           <span
-                                            className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded ${
+                                            className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded shrink-0 ${
                                               isCapacityFull
                                                 ? "bg-rose-100 text-rose-800 border border-rose-200"
                                                 : "bg-purple-100/70 text-purple-800"
@@ -1063,7 +1129,10 @@ function RegisterForm() {
                                               onChange={() => toggleMemberPrelims(mIdx, ev.id)}
                                               className="accent-amber-600 rounded cursor-pointer disabled:opacity-40"
                                             />
-                                            <span>🎯 Nominate for Prelims</span>
+                                            <span className="inline-flex items-center gap-1">
+                                              <Target className="w-3 h-3 text-amber-800 shrink-0" />
+                                              <span>Nominate for Prelims</span>
+                                            </span>
                                             {isPrelimsDisabled && (
                                               <span className="text-[9px] text-rose-600 font-semibold block ml-1">
                                                 (1 student from college already nominated)
@@ -1119,13 +1188,13 @@ function RegisterForm() {
                                       className="mt-0.5 accent-blue-600 rounded disabled:opacity-50"
                                     />
                                     <div className="flex-1 min-w-0">
-                                      <div className="flex items-center justify-between gap-1">
-                                        <span className="font-bold text-xs text-stone-900 truncate">
+                                      <div className="flex items-start justify-between gap-1.5">
+                                        <span className="font-bold text-xs text-stone-900 leading-snug">
                                           {ev.name}
                                         </span>
                                         {ev.capacity && ev.capacity > 0 && (
                                           <span
-                                            className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded ${
+                                            className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded shrink-0 ${
                                               isCapacityFull
                                                 ? "bg-rose-100 text-rose-800 border border-rose-200"
                                                 : "bg-blue-100/70 text-blue-800"
@@ -1175,7 +1244,10 @@ function RegisterForm() {
                                               onChange={() => toggleMemberPrelims(mIdx, ev.id)}
                                               className="accent-amber-600 rounded cursor-pointer disabled:opacity-40"
                                             />
-                                            <span>🎯 Nominate for Prelims</span>
+                                            <span className="inline-flex items-center gap-1">
+                                              <Target className="w-3 h-3 text-amber-800 shrink-0" />
+                                              <span>Nominate for Prelims</span>
+                                            </span>
                                             {isPrelimsDisabled && (
                                               <span className="text-[9px] text-rose-600 font-semibold block ml-1">
                                                 (1 student from college already nominated)
@@ -1197,11 +1269,11 @@ function RegisterForm() {
                 </div>
               )}
 
-              <div className="pt-6 border-t border-[#1C1917]/10 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="pt-6 border-t border-[#1C1917]/10 flex flex-col-reverse sm:flex-row items-center justify-between gap-3 sm:gap-4">
                 <button
                   type="button"
                   onClick={() => setCurrentStep(1)}
-                  className="tap-target text-xs font-semibold text-[#57534E] hover:text-[#1C1917] flex items-center gap-1"
+                  className="w-full sm:w-auto py-2.5 text-xs font-semibold text-[#57534E] hover:text-[#1C1917] flex items-center justify-center gap-1"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />
                   <span>Back to College Info</span>
@@ -1212,10 +1284,10 @@ function RegisterForm() {
                   onClick={() => {
                     if (validateStep2()) setCurrentStep(3);
                   }}
-                  className="btn-ember w-full sm:w-auto text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5"
+                  className="btn-ember w-full sm:w-auto text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 py-3"
                 >
                   <span>Review Summary & Fee Breakdown</span>
-                  <ChevronRight className="w-4 h-4" />
+                  <ChevronRight className="w-4 h-4 shrink-0" />
                 </button>
               </div>
             </div>
@@ -1231,36 +1303,36 @@ function RegisterForm() {
                 </h3>
 
                 <div className="space-y-3 text-xs text-stone-700">
-                  <div className="flex justify-between pb-2 border-b border-stone-200">
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center pb-2 border-b border-stone-200 gap-0.5 sm:gap-2">
                     <span className="text-stone-500">College / Institution:</span>
-                    <strong className="text-stone-900 text-right">{collegeName}</strong>
+                    <strong className="text-stone-900 sm:text-right">{collegeName}</strong>
                   </div>
 
                   {department && (
-                    <div className="flex justify-between pb-2 border-b border-stone-200">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center pb-2 border-b border-stone-200 gap-0.5 sm:gap-2">
                       <span className="text-stone-500">Department:</span>
-                      <span className="font-semibold text-stone-800">{department}</span>
+                      <span className="font-semibold text-stone-800 sm:text-right">{department}</span>
                     </div>
                   )}
 
                   {teamName && (
-                    <div className="flex justify-between pb-2 border-b border-stone-200">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center pb-2 border-b border-stone-200 gap-0.5 sm:gap-2">
                       <span className="text-stone-500">Contingent Team Name:</span>
-                      <span className="font-semibold text-stone-800">{teamName}</span>
+                      <span className="font-semibold text-stone-800 sm:text-right">{teamName}</span>
                     </div>
                   )}
 
-                  <div className="flex justify-between pb-2 border-b border-stone-200">
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center pb-2 border-b border-stone-200 gap-0.5 sm:gap-2">
                     <span className="text-stone-500">Contingent Lead:</span>
-                    <span className="font-semibold text-stone-900">
+                    <span className="font-semibold text-stone-900 sm:text-right">
                       {teamLeadName} ({teamLeadPhone})
                     </span>
                   </div>
 
                   {hasFacultyIncharge && facultyName && (
-                    <div className="flex justify-between pb-2 border-b border-stone-200">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center pb-2 border-b border-stone-200 gap-0.5 sm:gap-2">
                       <span className="text-stone-500">Visiting Faculty Incharge:</span>
-                      <span className="font-semibold text-stone-900">
+                      <span className="font-semibold text-stone-900 sm:text-right">
                         {facultyName} {facultyPhone && `(${facultyPhone})`}
                       </span>
                     </div>
@@ -1288,7 +1360,7 @@ function RegisterForm() {
               </div>
 
               {/* Roster Quick Preview */}
-              <div className="bg-white border border-stone-200 rounded-2xl p-5">
+              <div className="bg-white border border-stone-200 rounded-2xl p-4 sm:p-5">
                 <h4 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-3">
                   Participant Roster & Competitions
                 </h4>
@@ -1302,7 +1374,7 @@ function RegisterForm() {
                         <strong className="text-stone-900">{m.name}</strong>
                         <span className="text-stone-400 text-[11px] ml-2">({m.phone})</span>
                       </div>
-                      <span className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded">
+                      <span className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded shrink-0">
                         {m.eventIds.length} Event(s)
                       </span>
                     </div>
@@ -1311,7 +1383,7 @@ function RegisterForm() {
               </div>
 
               {/* Optional Portal Password */}
-              <div className="bg-stone-50 border border-stone-200 rounded-2xl p-5">
+              <div className="bg-stone-50 border border-stone-200 rounded-2xl p-4 sm:p-5">
                 <label className="block text-xs font-bold text-[#1C1917] mb-1.5">
                   Portal Login Password (Optional — default is Team Lead phone number)
                 </label>
@@ -1327,11 +1399,11 @@ function RegisterForm() {
                 </p>
               </div>
 
-              <div className="pt-6 border-t border-[#1C1917]/10 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="pt-6 border-t border-[#1C1917]/10 flex flex-col-reverse sm:flex-row items-center justify-between gap-3 sm:gap-4">
                 <button
                   type="button"
                   onClick={() => setCurrentStep(2)}
-                  className="tap-target text-xs font-semibold text-[#57534E] hover:text-[#1C1917] flex items-center gap-1"
+                  className="w-full sm:w-auto py-2.5 text-xs font-semibold text-[#57534E] hover:text-[#1C1917] flex items-center justify-center gap-1"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />
                   <span>Back to Roster</span>
@@ -1340,7 +1412,7 @@ function RegisterForm() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="btn-ember w-full sm:w-auto text-sm px-8 py-3.5 font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="btn-ember w-full sm:w-auto text-xs sm:text-sm px-6 sm:px-8 py-3.5 font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {submitting ? (
                     <>
@@ -1349,7 +1421,7 @@ function RegisterForm() {
                     </>
                   ) : (
                     <span>
-                      Complete Delegation Registration ({members.length} Participants)
+                      Complete Delegation Registration ({members.length} {members.length === 1 ? "Participant" : "Participants"})
                     </span>
                   )}
                 </button>

@@ -1,5 +1,6 @@
 import nodemailer from "nodemailer";
 import prisma from "@/lib/prisma";
+import { decryptSecret } from "@/lib/security";
 
 export interface SmtpConfig {
   host: string;
@@ -24,7 +25,7 @@ export async function getSmtpSettings(): Promise<SmtpConfig | null> {
         port: setting.port || 587,
         secure: setting.secure,
         user: setting.user,
-        password: setting.password || undefined,
+        password: setting.password ? decryptSecret(setting.password) : undefined,
         fromEmail: setting.fromEmail || setting.user,
         fromName: setting.fromName || "Event Coordination Team",
         replyTo: setting.replyTo,
@@ -524,7 +525,7 @@ export async function sendApprovedDelegatePassEmail(payload: DelegateRegistratio
               ${institutionName}
             </div>
             <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 800;">
-              ✓ Registration Approved & Passes Ready
+              Registration Approved & Passes Ready
             </h1>
             <div style="color: #D1FAE5; font-size: 13px; margin-top: 4px;">${eventName} ${editionYear} • Official Digital ID & Food Token</div>
           </div>
