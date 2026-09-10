@@ -204,7 +204,7 @@ const getCachedActiveEdition = unstable_cache(
     return fetchActiveEditionFromDb();
   },
   ["active-edition"],
-  { revalidate: 60 } // Revalidate every 60 seconds
+  { revalidate: 15, tags: ["active-edition"] }
 );
 
 export async function getActiveEdition(): Promise<ActiveEditionConfig> {

@@ -54,11 +54,11 @@ export default function HeroSection({ edition }: HeroSectionProps) {
             </div>
           ) : (
             <div className="relative inline-flex flex-col items-center justify-center p-8 md:p-12">
-              <div className="w-24 h-24 md:w-32 md:h-32 rounded-3xl bg-gradient-to-br from-[#FF6B1A] to-[#D9A441] flex items-center justify-center text-white font-black text-4xl md:text-5xl shadow-2xl shadow-orange-500/40">
+              <div className="w-24 h-24 md:w-32 md:h-32 rounded-3xl bg-gradient-to-br from-[var(--fest-ember)] to-[var(--fest-gold)] flex items-center justify-center text-white font-black text-4xl md:text-5xl shadow-2xl shadow-orange-500/40">
                 {eventName.charAt(0)}
               </div>
-              <div className="flex items-center gap-2 text-xs md:text-sm font-extrabold uppercase tracking-widest text-[#FF6B1A] mt-4">
-                <Sparkles className="w-4 h-4 text-[#D9A441]" />
+              <div className="flex items-center gap-2 text-xs md:text-sm font-extrabold uppercase tracking-widest text-[var(--fest-ember)] mt-4">
+                <Sparkles className="w-4 h-4 text-[var(--fest-gold)]" />
                 <span>{edition?.institutionShortName || edition?.institutionName || "College"} • Symposium</span>
               </div>
             </div>

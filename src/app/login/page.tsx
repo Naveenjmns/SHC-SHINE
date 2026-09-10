@@ -6,7 +6,18 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Link from "next/link";
-import { AlertCircle, Info } from "lucide-react";
+import {
+  AlertCircle,
+  Eye,
+  EyeOff,
+  Lock,
+  Mail,
+  ArrowLeft,
+  Sparkles,
+  ShieldCheck,
+  Smartphone,
+  ArrowRight,
+} from "lucide-react";
 import { safeJson } from "@/lib/safeFetch";
 
 function LoginForm() {
@@ -16,6 +27,7 @@ function LoginForm() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
@@ -26,13 +38,13 @@ function LoginForm() {
 
     try {
       const res = await signIn("credentials", {
-        email,
+        email: email.trim(),
         password,
         redirect: false,
       });
 
       if (!res || res.error) {
-        setErrorMsg(res?.error || "Invalid email or password. Please try again.");
+        setErrorMsg(res?.error || "Invalid email/mobile or password. Please verify credentials.");
         setLoading(false);
         return;
       }
@@ -60,90 +72,165 @@ function LoginForm() {
       }
     } catch (err) {
       console.error("Login error:", err);
-      setErrorMsg("An unexpected connection error occurred.");
+      setErrorMsg("An unexpected connection error occurred. Please check network.");
       setLoading(false);
     }
   };
 
   return (
-    <div className="container-shine py-12 max-w-md mx-auto">
-      <div className="fest-card p-6 sm:p-8">
-        <div className="text-center mb-8">
-          <span className="inline-block px-3 py-1 rounded-full bg-[#FF6B1A]/10 text-[#FF6B1A] border border-[#FF6B1A]/20 text-xs font-bold uppercase tracking-wider mb-2">
-            Portal Access
-          </span>
+    <div className="w-full max-w-md mx-auto">
+      {/* Outer Card with Glassmorphic Border and Glow */}
+      <div className="relative rounded-3xl bg-white/95 backdrop-blur-xl border border-stone-200/90 shadow-xl shadow-stone-900/5 p-6 sm:p-8 overflow-hidden">
+        {/* Subtle Top Gradient Edge */}
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[var(--fest-ember)] via-[var(--fest-gold)] to-[var(--fest-ember)]" />
+
+        {/* Header Branding */}
+        <div className="text-center mb-7">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[var(--fest-ember)]/10 text-[var(--fest-ember)] border border-[var(--fest-ember)]/20 text-[11px] font-bold uppercase tracking-wider mb-3">
+            <ShieldCheck className="w-3.5 h-3.5" />
+            <span>Secure Portal Access</span>
+          </div>
+
           <h1
-            className="text-fluid-h2 font-extrabold text-[#1C1917]"
+            className="text-2xl sm:text-3xl font-extrabold text-[#1C1917] tracking-tight"
             style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
           >
             Sign In to <span className="hero-wordmark-gradient">SHINE 26</span>
           </h1>
-          <p className="text-xs text-[#57534E] mt-1">
-            Access your registrations, coordinator events, or fest control panel.
+          <p className="text-xs sm:text-sm text-[#78716C] mt-1.5 leading-relaxed max-w-xs mx-auto">
+            Access your verified delegate badge, event registrations, or coordination desk.
           </p>
         </div>
 
+        {/* Error Alert Box */}
         {errorMsg && (
-          <div className="bg-rose-500/10 border border-rose-500/30 text-rose-700 text-xs p-3 rounded-xl mb-6 flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
-            <span>{errorMsg}</span>
+          <div className="bg-rose-50 border border-rose-200 text-rose-700 text-xs p-3.5 rounded-2xl mb-5 flex items-start gap-2.5 animate-fade-in shadow-2xs">
+            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+            <span className="leading-relaxed font-medium">{errorMsg}</span>
           </div>
         )}
 
+        {/* Main Form */}
         <form onSubmit={handleLogin} className="space-y-4">
+          {/* Email or Phone Input */}
           <div>
-            <label className="block text-xs font-bold text-[#1C1917] mb-1.5">
+            <label
+              htmlFor="login-identifier"
+              className="block text-xs font-bold text-[#1C1917] mb-1.5"
+            >
               Email Address or Mobile Number
             </label>
-            <input
-              type="text"
-              required
-              placeholder="you@example.com or 9840123456"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full h-11 bg-white border border-[#1C1917]/15 rounded-xl px-3.5 text-sm text-[#1C1917] placeholder-[#78716C] focus:outline-none focus:border-[#FF6B1A] transition-colors shadow-2xs"
-            />
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#78716C]">
+                <Mail className="w-4 h-4" />
+              </div>
+              <input
+                id="login-identifier"
+                type="text"
+                required
+                autoComplete="username"
+                placeholder="you@college.edu or 9876543210"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full h-12 pl-10 pr-3.5 bg-stone-50/70 border border-stone-300/80 rounded-xl text-sm text-[#1C1917] placeholder-[#A8A29E] focus:bg-white focus:outline-none focus:border-[var(--fest-ember)] focus:ring-2 focus:ring-[var(--fest-ember)]/15 transition-all shadow-2xs"
+              />
+            </div>
           </div>
 
+          {/* Password Input with Show/Hide Toggle */}
           <div>
-            <label className="block text-xs font-bold text-[#1C1917] mb-1.5">
-              Password
-            </label>
-            <input
-              type="password"
-              required
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full h-11 bg-white border border-[#1C1917]/15 rounded-xl px-3.5 text-sm text-[#1C1917] placeholder-[#78716C] focus:outline-none focus:border-[#FF6B1A] transition-colors shadow-2xs"
-            />
-            <p className="text-[11px] text-[#78716C] mt-1.5 flex items-start sm:items-center gap-1.5">
-              <Info className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5 sm:mt-0" />
-              <span>For registered student delegates, your default password is your registered Mobile Number.</span>
-            </p>
+            <div className="flex items-center justify-between mb-1.5">
+              <label
+                htmlFor="login-password"
+                className="block text-xs font-bold text-[#1C1917]"
+              >
+                Password
+              </label>
+              <span className="text-[11px] text-[#78716C]">
+                Delegate: mobile number
+              </span>
+            </div>
+
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#78716C]">
+                <Lock className="w-4 h-4" />
+              </div>
+              <input
+                id="login-password"
+                type={showPassword ? "text" : "password"}
+                required
+                autoComplete="current-password"
+                placeholder="Enter password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full h-12 pl-10 pr-12 bg-stone-50/70 border border-stone-300/80 rounded-xl text-sm text-[#1C1917] placeholder-[#A8A29E] focus:bg-white focus:outline-none focus:border-[var(--fest-ember)] focus:ring-2 focus:ring-[var(--fest-ember)]/15 transition-all shadow-2xs"
+              />
+              {/* Password View Toggle Button */}
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                className="absolute inset-y-0 right-0 pr-3.5 flex items-center justify-center text-[#78716C] hover:text-[#1C1917] transition-colors tap-target"
+              >
+                {showPassword ? (
+                  <EyeOff className="w-4 h-4" />
+                ) : (
+                  <Eye className="w-4 h-4" />
+                )}
+              </button>
+            </div>
+
+            {/* Delegate Password Helper Callout */}
+            <div className="mt-2 p-2.5 rounded-xl bg-amber-50/80 border border-amber-200/60 text-[11px] text-amber-900 flex items-start gap-2">
+              <Smartphone className="w-3.5 h-3.5 text-amber-700 shrink-0 mt-0.5" />
+              <p className="leading-snug">
+                <strong>Registered Student Delegates:</strong> Use your registered 10-digit mobile number as your default password.
+              </p>
+            </div>
           </div>
 
+          {/* Submit Button */}
           <button
             type="submit"
             disabled={loading}
-            className="btn-ember w-full text-sm font-bold py-3 mt-2"
+            className="btn-ember w-full text-sm font-bold h-12 py-3 mt-3 shadow-md shadow-orange-500/20 disabled:opacity-60 flex items-center justify-center gap-2"
           >
             {loading ? (
               <>
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                Signing In...
+                <span>Authenticating...</span>
               </>
             ) : (
-              "Sign In to Account"
+              <>
+                <span>Sign In to Portal</span>
+                <ArrowRight className="w-4 h-4" />
+              </>
             )}
           </button>
         </form>
 
-        <div className="mt-6 pt-6 border-t border-[#1C1917]/10 text-center text-xs text-[#57534E]">
-          New student participant?{" "}
-          <Link href="/register" className="text-[#FF6B1A] font-bold hover:underline">
-            Register for Events
-          </Link>
+        {/* Footer Navigation Strip */}
+        <div className="mt-6 pt-5 border-t border-stone-200/80 text-center space-y-3 text-xs text-[#57534E]">
+          <div>
+            New student delegate or team?{" "}
+            <Link
+              href="/register"
+              className="text-[var(--fest-ember)] font-bold hover:underline inline-flex items-center gap-0.5"
+            >
+              <span>Register for Events</span>
+              <Sparkles className="w-3 h-3 text-[var(--fest-gold)]" />
+            </Link>
+          </div>
+
+          <div>
+            <Link
+              href="/"
+              className="text-[#78716C] hover:text-[#1C1917] transition inline-flex items-center gap-1 font-medium"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Back to Main Stage</span>
+            </Link>
+          </div>
         </div>
       </div>
     </div>
@@ -152,13 +239,25 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <main className="min-h-screen flex flex-col bg-[#FAF8F5] text-[#1C1917]">
+    <main className="min-h-screen flex flex-col bg-[#FAF8F5] text-[#1C1917] relative overflow-x-hidden">
+      {/* Background Decorative Ambient Radial Glow */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[450px] bg-gradient-to-b from-[var(--fest-ember)]/10 via-[var(--fest-gold)]/5 to-transparent blur-3xl pointer-events-none z-0" />
+
       <Navbar />
-      <div className="pt-24 flex-1 flex items-center justify-center">
-        <Suspense fallback={<div className="text-xs text-[#57534E]">Loading sign in...</div>}>
+
+      <div className="relative z-10 pt-28 pb-16 px-4 sm:px-6 flex-1 flex items-center justify-center">
+        <Suspense
+          fallback={
+            <div className="text-center py-12 text-sm text-[#78716C] flex items-center justify-center gap-2">
+              <div className="w-4 h-4 border-2 border-[var(--fest-ember)] border-t-transparent rounded-full animate-spin" />
+              <span>Loading secure sign in...</span>
+            </div>
+          }
+        >
           <LoginForm />
         </Suspense>
       </div>
+
       <Footer />
     </main>
   );

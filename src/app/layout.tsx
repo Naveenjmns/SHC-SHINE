@@ -72,17 +72,33 @@ import AuthProvider from "@/components/AuthProvider";
 import { ToastProvider } from "@/components/ToastProvider";
 import PwaRegister from "@/components/PwaRegister";
 import InstallPwaPrompt from "@/components/InstallPwaPrompt";
+import ThemeInjector from "@/components/ThemeInjector";
+import { getActiveEdition } from "@/lib/eventService";
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  let activeEdition = null;
+  try {
+    activeEdition = await getActiveEdition();
+  } catch {
+    // Fallback gracefully
+  }
+
   return (
     <html
       lang="en"
       className={`${outfit.variable} ${inter.variable} h-full antialiased`}
     >
+      <head>
+        <ThemeInjector
+          initialPrimary={activeEdition?.themePrimaryAccent}
+          initialSecondary={activeEdition?.themeSecondaryAccent}
+          initialBg={activeEdition?.themeBgColor}
+        />
+      </head>
       <body className="min-h-full flex flex-col" style={{ fontFamily: 'var(--font-inter), Inter, sans-serif' }}>
         <AuthProvider>
           <ToastProvider>

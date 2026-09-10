@@ -54,6 +54,7 @@ import {
   Target,
 } from "lucide-react";
 import CheckInModal from "@/components/CheckInModal";
+import { INSTITUTION_THEME_PRESETS, hexToRgba, type ThemePreset } from "@/lib/colorUtils";
 
 interface StatsData {
   totalUsers: number;
@@ -497,6 +498,16 @@ export default function AdminOverviewPage() {
     }
   };
 
+  const triggerLiveThemeUpdate = (primary: string, secondary: string, bg: string) => {
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent("shine:theme-update", {
+          detail: { primary, secondary, bg },
+        })
+      );
+    }
+  };
+
   const handleSaveBranding = async (e?: React.SyntheticEvent) => {
     if (e && typeof e.preventDefault === "function") {
       e.preventDefault();
@@ -519,7 +530,12 @@ export default function AdminOverviewPage() {
       });
       const data = await safeJson(res, { success: false, error: "Server error" });
       if (data.success) {
-        toast.success("Settings saved successfully!");
+        toast.success("Branding & Color Theme saved successfully!");
+        triggerLiveThemeUpdate(
+          brandingForm.themePrimaryAccent || "#FF6B1A",
+          brandingForm.themeSecondaryAccent || "#D9A441",
+          brandingForm.themeBgColor || "#FAF8F5"
+        );
         await loadAdminData();
       } else {
         toast.error("Failed to save settings: " + data.error);
@@ -2465,6 +2481,295 @@ export default function AdminOverviewPage() {
                   </div>
                 </div>
 
+                {/* 5. Overall App Color Identity & Institution Theme System */}
+                <div className="dash-card p-6 space-y-6 border-2 border-indigo-100 bg-white">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b pb-3">
+                    <div>
+                      <h4 className="text-sm font-bold uppercase tracking-wider text-[#0F172A] flex items-center gap-2">
+                        <Palette className="w-4 h-4 text-[#FF6B1A]" />
+                        <span>5. Overall App Color Identity & Institution Theme</span>
+                      </h4>
+                      <p className="text-xs text-[#64748B] mt-0.5">
+                        Customize the primary brand color to match your institution or college logo. Changes apply across all buttons, gradients, glows, and badges.
+                      </p>
+                    </div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 self-start sm:self-auto">
+                      Dynamic Theme Engine
+                    </span>
+                  </div>
+
+                  {/* Institution Brand Presets */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold uppercase tracking-wider text-[#0F172A]">
+                        One-Click Institution Brand Presets
+                      </label>
+                      <span className="text-[11px] text-[#64748B]">Click any palette to preview instantly</span>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                      {INSTITUTION_THEME_PRESETS.map((preset) => {
+                        const isSelected =
+                          brandingForm.themePrimaryAccent?.toUpperCase() === preset.primary.toUpperCase();
+                        return (
+                          <button
+                            key={preset.id}
+                            type="button"
+                            onClick={() => {
+                              setBrandingForm((prev) => ({
+                                ...prev,
+                                themePrimaryAccent: preset.primary,
+                                themeSecondaryAccent: preset.secondary,
+                                themeBgColor: preset.bg,
+                              }));
+                              triggerLiveThemeUpdate(preset.primary, preset.secondary, preset.bg);
+                              toast.success(`Applied ${preset.name} theme!`);
+                            }}
+                            className={`p-3 rounded-2xl border text-left transition relative flex flex-col justify-between ${
+                              isSelected
+                                ? "border-indigo-600 bg-indigo-50/50 shadow-sm ring-2 ring-indigo-500/20"
+                                : "border-slate-200 bg-slate-50/60 hover:bg-white hover:border-slate-300"
+                            }`}
+                          >
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center -space-x-1.5">
+                                <span
+                                  className="w-5 h-5 rounded-full border-2 border-white shadow-xs"
+                                  style={{ backgroundColor: preset.primary }}
+                                />
+                                <span
+                                  className="w-5 h-5 rounded-full border-2 border-white shadow-xs"
+                                  style={{ backgroundColor: preset.secondary }}
+                                />
+                              </div>
+                              {isSelected && (
+                                <CheckCircle2 className="w-4 h-4 text-indigo-600" />
+                              )}
+                            </div>
+                            <div>
+                              <div className="text-xs font-bold text-slate-800 leading-tight">
+                                {preset.name}
+                              </div>
+                              <div className="text-[10px] text-slate-500 truncate mt-0.5">
+                                {preset.institutionType}
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Custom Color Pickers */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-2 border-t border-slate-100">
+                    {/* Primary Color Picker */}
+                    <div className="space-y-2">
+                      <label className="block text-xs font-bold text-[#0F172A]">
+                        Primary Brand Color (Hero Accent & Buttons)
+                      </label>
+                      <p className="text-[11px] text-[#64748B]">
+                        Matches the main color of your institution or fest logo.
+                      </p>
+                      <div className="flex items-center gap-3">
+                        <div className="relative">
+                          <input
+                            type="color"
+                            value={brandingForm.themePrimaryAccent || "#FF6B1A"}
+                            onChange={(e) => {
+                              const newColor = e.target.value;
+                              setBrandingForm((prev) => ({
+                                ...prev,
+                                themePrimaryAccent: newColor,
+                              }));
+                              triggerLiveThemeUpdate(
+                                newColor,
+                                brandingForm.themeSecondaryAccent || "#D9A441",
+                                brandingForm.themeBgColor || "#FAF8F5"
+                              );
+                            }}
+                            className="w-11 h-11 rounded-2xl cursor-pointer border border-slate-300 p-1 bg-white shadow-xs"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <input
+                            type="text"
+                            value={brandingForm.themePrimaryAccent || "#FF6B1A"}
+                            onChange={(e) => {
+                              const newColor = e.target.value;
+                              setBrandingForm((prev) => ({
+                                ...prev,
+                                themePrimaryAccent: newColor,
+                              }));
+                              if (/^#[0-9A-Fa-f]{6}$/.test(newColor)) {
+                                triggerLiveThemeUpdate(
+                                  newColor,
+                                  brandingForm.themeSecondaryAccent || "#D9A441",
+                                  brandingForm.themeBgColor || "#FAF8F5"
+                                );
+                              }
+                            }}
+                            placeholder="#FF6B1A"
+                            className="w-full px-3 py-2 text-xs font-mono font-bold uppercase border border-[#CBD5E1] rounded-xl outline-none focus:ring-2 focus:ring-indigo-500"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Secondary Color Picker */}
+                    <div className="space-y-2">
+                      <label className="block text-xs font-bold text-[#0F172A]">
+                        Secondary Accent Color (Gold / Highlight)
+                      </label>
+                      <p className="text-[11px] text-[#64748B]">
+                        Used for prizes, awards, subtitles, and gradient endpoints.
+                      </p>
+                      <div className="flex items-center gap-3">
+                        <div className="relative">
+                          <input
+                            type="color"
+                            value={brandingForm.themeSecondaryAccent || "#D9A441"}
+                            onChange={(e) => {
+                              const newColor = e.target.value;
+                              setBrandingForm((prev) => ({
+                                ...prev,
+                                themeSecondaryAccent: newColor,
+                              }));
+                              triggerLiveThemeUpdate(
+                                brandingForm.themePrimaryAccent || "#FF6B1A",
+                                newColor,
+                                brandingForm.themeBgColor || "#FAF8F5"
+                              );
+                            }}
+                            className="w-11 h-11 rounded-2xl cursor-pointer border border-slate-300 p-1 bg-white shadow-xs"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <input
+                            type="text"
+                            value={brandingForm.themeSecondaryAccent || "#D9A441"}
+                            onChange={(e) => {
+                              const newColor = e.target.value;
+                              setBrandingForm((prev) => ({
+                                ...prev,
+                                themeSecondaryAccent: newColor,
+                              }));
+                              if (/^#[0-9A-Fa-f]{6}$/.test(newColor)) {
+                                triggerLiveThemeUpdate(
+                                  brandingForm.themePrimaryAccent || "#FF6B1A",
+                                  newColor,
+                                  brandingForm.themeBgColor || "#FAF8F5"
+                                );
+                              }
+                            }}
+                            placeholder="#D9A441"
+                            className="w-full px-3 py-2 text-xs font-mono font-bold uppercase border border-[#CBD5E1] rounded-xl outline-none focus:ring-2 focus:ring-indigo-500"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* App Background Tone */}
+                  <div className="space-y-2 pt-2 border-t border-slate-100">
+                    <label className="block text-xs font-bold text-[#0F172A]">
+                      Application Canvas Background Tone
+                    </label>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {[
+                        { label: "Futuristic Warm Cream", val: "#FAF8F5" },
+                        { label: "Studio Pure White", val: "#FFFFFF" },
+                        { label: "Clean Cool Slate", val: "#F8FAFC" },
+                        { label: "Cosmic Dark Tone", val: "#0A0908" },
+                      ].map((bgOption) => (
+                        <button
+                          key={bgOption.val}
+                          type="button"
+                          onClick={() => {
+                            setBrandingForm((prev) => ({ ...prev, themeBgColor: bgOption.val }));
+                            triggerLiveThemeUpdate(
+                              brandingForm.themePrimaryAccent || "#FF6B1A",
+                              brandingForm.themeSecondaryAccent || "#D9A441",
+                              bgOption.val
+                            );
+                          }}
+                          className={`p-2.5 rounded-xl border text-xs font-semibold flex items-center gap-2 transition ${
+                            brandingForm.themeBgColor === bgOption.val
+                              ? "border-indigo-600 bg-indigo-50 text-indigo-900 ring-1 ring-indigo-500"
+                              : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                          }`}
+                        >
+                          <span
+                            className="w-4 h-4 rounded-full border border-slate-300 shrink-0"
+                            style={{ backgroundColor: bgOption.val }}
+                          />
+                          <span className="truncate">{bgOption.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Real-time Theme Simulator Box */}
+                  <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50/80 space-y-3">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-bold text-slate-700 flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                        <span>Live Color Simulation Preview</span>
+                      </span>
+                      <span className="text-[10px] text-slate-500 font-mono">
+                        {brandingForm.themePrimaryAccent || "#FF6B1A"} + {brandingForm.themeSecondaryAccent || "#D9A441"}
+                      </span>
+                    </div>
+
+                    <div
+                      className="p-5 rounded-xl border transition-all flex flex-col sm:flex-row items-center justify-between gap-4"
+                      style={{
+                        backgroundColor: brandingForm.themeBgColor || "#FAF8F5",
+                        borderColor: hexToRgba(brandingForm.themePrimaryAccent || "#FF6B1A", 0.25),
+                      }}
+                    >
+                      <div>
+                        <div
+                          className="text-2xl font-black tracking-tight"
+                          style={{
+                            background: `linear-gradient(135deg, #1C1917 0%, ${brandingForm.themePrimaryAccent || "#FF6B1A"} 50%, ${brandingForm.themeSecondaryAccent || "#D9A441"} 100%)`,
+                            WebkitBackgroundClip: "text",
+                            WebkitTextFillColor: "transparent",
+                          }}
+                        >
+                          {brandingForm.name || "SHINE"} {brandingForm.edition || "2026"}
+                        </div>
+                        <p className="text-xs text-slate-600 mt-0.5">
+                          {brandingForm.tagline || "Where Ideas Begin to Shine"}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-2.5">
+                        <span
+                          className="px-3 py-1 rounded-full text-xs font-bold border"
+                          style={{
+                            color: brandingForm.themePrimaryAccent || "#FF6B1A",
+                            borderColor: hexToRgba(brandingForm.themePrimaryAccent || "#FF6B1A", 0.35),
+                            backgroundColor: hexToRgba(brandingForm.themePrimaryAccent || "#FF6B1A", 0.1),
+                          }}
+                        >
+                          Live Category
+                        </span>
+
+                        <button
+                          type="button"
+                          className="px-5 py-2 rounded-xl text-xs font-bold text-white shadow-md transition hover:brightness-110"
+                          style={{
+                            background: `linear-gradient(135deg, ${brandingForm.themePrimaryAccent || "#FF6B1A"} 0%, ${brandingForm.themeSecondaryAccent || "#D9A441"} 100%)`,
+                            boxShadow: `0 4px 14px ${hexToRgba(brandingForm.themePrimaryAccent || "#FF6B1A", 0.35)}`,
+                          }}
+                        >
+                          {brandingForm.primaryCtaText || "EXPLORE NOW →"}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="flex items-center justify-end gap-3">
                   <button
                     type="button"
@@ -2493,7 +2798,12 @@ export default function AdminOverviewPage() {
                         className="max-h-16 mx-auto object-contain"
                       />
                     ) : (
-                      <div className="w-12 h-12 mx-auto rounded-xl bg-gradient-to-br from-[#FF6B1A] to-[#D9A441] flex items-center justify-center text-white font-extrabold text-2xl">
+                      <div
+                        className="w-12 h-12 mx-auto rounded-xl flex items-center justify-center text-white font-extrabold text-2xl shadow-sm"
+                        style={{
+                          background: `linear-gradient(135deg, ${brandingForm.themePrimaryAccent || "#FF6B1A"} 0%, ${brandingForm.themeSecondaryAccent || "#D9A441"} 100%)`,
+                        }}
+                      >
                         {brandingForm.name.charAt(0) || "S"}
                       </div>
                     )}
@@ -2503,7 +2813,13 @@ export default function AdminOverviewPage() {
                         className="text-2xl font-extrabold text-[#1C1917]"
                         style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
                       >
-                        <span className="hero-wordmark-gradient">
+                        <span
+                          style={{
+                            background: `linear-gradient(135deg, #1C1917 0%, ${brandingForm.themePrimaryAccent || "#FF6B1A"} 50%, ${brandingForm.themeSecondaryAccent || "#D9A441"} 100%)`,
+                            WebkitBackgroundClip: "text",
+                            WebkitTextFillColor: "transparent",
+                          }}
+                        >
                           {brandingForm.name || "SHINE"}
                         </span>{" "}
                         <span className="text-[#1C1917] font-light">
@@ -2520,7 +2836,12 @@ export default function AdminOverviewPage() {
                     </p>
 
                     <div className="pt-2">
-                      <span className="btn-ember !py-1.5 !px-4 text-xs">
+                      <span
+                        className="btn-ember !py-1.5 !px-4 text-xs"
+                        style={{
+                          background: `linear-gradient(135deg, ${brandingForm.themePrimaryAccent || "#FF6B1A"} 0%, ${brandingForm.themePrimaryAccent || "#FF6B1A"} 100%)`,
+                        }}
+                      >
                         {brandingForm.primaryCtaText || "EXPLORE →"}
                       </span>
                     </div>

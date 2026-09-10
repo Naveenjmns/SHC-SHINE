@@ -90,12 +90,12 @@ export default function Navbar({ edition }: NavbarProps) {
           ) : (
             <div className="relative">
               <div
-                className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FF6B1A] to-[#D9A441] flex items-center justify-center text-white font-black text-xl shadow-md shadow-orange-500/20 group-hover:scale-105 transition-transform"
+                className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--fest-ember)] to-[var(--fest-gold)] flex items-center justify-center text-white font-black text-xl shadow-md shadow-orange-500/20 group-hover:scale-105 transition-transform"
                 style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
               >
                 {eventName.charAt(0)}
               </div>
-              <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-[#FF6B1A] ring-2 ring-[#FAF8F5] animate-pulse" />
+              <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-[var(--fest-ember)] ring-2 ring-[#FAF8F5] animate-pulse" />
             </div>
           )}
 
