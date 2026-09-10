@@ -4,7 +4,7 @@ import { useEffect, useState, use, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ShieldAlert, Download, Theater, Laptop, MapPin, Clock, Check, X, QrCode, Utensils, Trophy, Save } from "lucide-react";
+import { ShieldAlert, Download, Theater, Laptop, MapPin, Clock, Check, X, QrCode, Utensils, Trophy, Save, Target } from "lucide-react";
 import { useToast } from "@/components/ToastProvider";
 import { safeJson } from "@/lib/safeFetch";
 import CheckInModal from "@/components/CheckInModal";
@@ -522,7 +522,10 @@ export default function CoordinatorEventDetailPage({
                   : "border-transparent text-slate-500 hover:text-slate-800"
               }`}
             >
-              <span>🎯 Prelims Evaluation ({registrations.filter((r) => r.isPrelimsParticipant).length} Nominated)</span>
+              <span className="inline-flex items-center gap-1.5">
+                <Target className="w-3.5 h-3.5" />
+                <span>Prelims Evaluation ({registrations.filter((r) => r.isPrelimsParticipant).length} Nominated)</span>
+              </span>
             </button>
           )}
           <button
@@ -735,8 +738,9 @@ export default function CoordinatorEventDetailPage({
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-amber-900 bg-amber-200/80 px-2.5 py-0.5 rounded-full border border-amber-400">
-                      🎯 Preliminary Evaluation Desk
+                    <span className="text-[10px] font-black uppercase tracking-wider text-amber-900 bg-amber-200/80 px-2.5 py-0.5 rounded-full border border-amber-400 inline-flex items-center gap-1.5">
+                      <Target className="w-3 h-3 text-amber-900" />
+                      <span>Preliminary Evaluation Desk</span>
                     </span>
                   </div>
                   <h3 className="text-xl font-black text-stone-900">
@@ -848,26 +852,28 @@ export default function CoordinatorEventDetailPage({
                                     type="button"
                                     disabled={isSaving}
                                     onClick={() => handleSavePrelims(reg.id, "QUALIFIED")}
-                                    className={`tap-target px-3 py-1 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
+                                    className={`tap-target px-3 py-1 rounded-lg text-xs font-extrabold transition-all cursor-pointer inline-flex items-center gap-1 ${
                                       currentPStatus === "QUALIFIED"
                                         ? "bg-emerald-600 text-white shadow-xs"
                                         : "bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200"
                                     }`}
                                   >
-                                    ✓ QUALIFIED
+                                    <Check className="w-3.5 h-3.5" />
+                                    <span>QUALIFIED</span>
                                   </button>
 
                                   <button
                                     type="button"
                                     disabled={isSaving}
                                     onClick={() => handleSavePrelims(reg.id, "ELIMINATED")}
-                                    className={`tap-target px-3 py-1 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
+                                    className={`tap-target px-3 py-1 rounded-lg text-xs font-extrabold transition-all cursor-pointer inline-flex items-center gap-1 ${
                                       currentPStatus === "ELIMINATED"
                                         ? "bg-rose-600 text-white shadow-xs"
                                         : "bg-rose-50 text-rose-800 hover:bg-rose-100 border border-rose-200"
                                     }`}
                                   >
-                                    ✕ ELIMINATED
+                                    <X className="w-3.5 h-3.5" />
+                                    <span>ELIMINATED</span>
                                   </button>
 
                                   {currentPStatus === "PENDING" && (

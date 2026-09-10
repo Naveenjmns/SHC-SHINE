@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Link from "next/link";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Info } from "lucide-react";
 import { safeJson } from "@/lib/safeFetch";
 
 function LoginForm() {
@@ -117,8 +117,9 @@ function LoginForm() {
               onChange={(e) => setPassword(e.target.value)}
               className="w-full h-11 bg-white border border-[#1C1917]/15 rounded-xl px-3.5 text-sm text-[#1C1917] placeholder-[#78716C] focus:outline-none focus:border-[#FF6B1A] transition-colors shadow-2xs"
             />
-            <p className="text-[10px] text-[#78716C] mt-1">
-              💡 For registered student delegates, your default password is your registered Mobile Number.
+            <p className="text-[11px] text-[#78716C] mt-1.5 flex items-start sm:items-center gap-1.5">
+              <Info className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5 sm:mt-0" />
+              <span>For registered student delegates, your default password is your registered Mobile Number.</span>
             </p>
           </div>
 

@@ -16,6 +16,7 @@ import {
   UserCheck,
   RotateCcw,
   Sparkles,
+  Check,
 } from "lucide-react";
 import { safeJson } from "@/lib/safeFetch";
 
@@ -226,7 +227,7 @@ export default function CheckInModal({
       if (data.success) {
         setMessage({
           type: "success",
-          text: data.message || (shouldCheckIn ? `✓ ${delegate.name} marked Present!` : `Check-in reverted.`),
+          text: data.message || (shouldCheckIn ? `${delegate.name} marked Present!` : `Check-in reverted.`),
         });
         // Refresh delegate data
         await handleLookup(delegate.badgeCode);
@@ -262,7 +263,7 @@ export default function CheckInModal({
         setMessage({
           type: "success",
           text: shouldClaim
-            ? `🍱 Food Token verified! 1x Meal issued to ${delegate.name}.`
+            ? `Food Token verified! 1x Meal issued to ${delegate.name}.`
             : `Food token status reset to Unclaimed.`,
         });
         await handleLookup(delegate.badgeCode);
@@ -456,8 +457,9 @@ export default function CheckInModal({
                       {delegate.badgeCode}
                     </span>
                     {delegate.isPaid ? (
-                      <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full border border-emerald-300">
-                        PAID & APPROVED ✓
+                      <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full border border-emerald-300 inline-flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                        <span>PAID & APPROVED</span>
                       </span>
                     ) : (
                       <span className="text-[10px] font-bold bg-rose-100 text-rose-800 px-2 py-0.5 rounded-full border border-rose-300">
@@ -499,8 +501,9 @@ export default function CheckInModal({
                     <span>Registered Competitions ({delegate.registrations.length})</span>
                   </span>
                   {delegate.allEventsAttended ? (
-                    <span className="text-[10px] font-bold bg-emerald-600 text-white px-2 py-0.5 rounded-full">
-                      ALL EVENTS ATTENDED ✓
+                    <span className="text-[10px] font-bold bg-emerald-600 text-white px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+                      <Check className="w-3 h-3 text-white" />
+                      <span>ALL EVENTS ATTENDED</span>
                     </span>
                   ) : (
                     <span className="text-[10px] font-semibold text-stone-500 bg-stone-100 px-2 py-0.5 rounded-full">
@@ -610,8 +613,9 @@ export default function CheckInModal({
                       <span>Meal & Food Voucher</span>
                     </span>
                     {delegate.foodTokenClaimed ? (
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-stone-700 text-white">
-                        CLAIMED ✓
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-stone-700 text-white inline-flex items-center gap-1">
+                        <Check className="w-3 h-3 text-emerald-400" />
+                        <span>CLAIMED</span>
                       </span>
                     ) : (
                       <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-400 text-amber-950 shadow-2xs">

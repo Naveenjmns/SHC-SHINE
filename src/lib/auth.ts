@@ -25,11 +25,21 @@ export const authOptions: AuthOptions = {
         const input = credentials.email.toLowerCase().trim();
         const inputDigits = input.replace(/\D/g, "");
 
+        const emailVariants = Array.from(
+          new Set(
+            [
+              input,
+              input.endsWith("@gmail") ? `${input}.com` : null,
+              input.endsWith("@gmail.com") ? input.replace(/@gmail\.com$/, "@gmail") : null,
+            ].filter(Boolean) as string[]
+          )
+        );
+
         // Support lookup by email, exact phone, or matching phone digits
         let user = await prisma.user.findFirst({
           where: {
             OR: [
-              { email: input },
+              ...emailVariants.map((e) => ({ email: e })),
               { phone: input },
               ...(inputDigits.length >= 7
                 ? [

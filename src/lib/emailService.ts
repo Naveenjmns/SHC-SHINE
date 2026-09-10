@@ -524,7 +524,7 @@ export async function sendApprovedDelegatePassEmail(payload: DelegateRegistratio
               ${institutionName}
             </div>
             <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 800;">
-              ✓ Registration Approved & Passes Ready
+              Registration Approved & Passes Ready
             </h1>
             <div style="color: #D1FAE5; font-size: 13px; margin-top: 4px;">${eventName} ${editionYear} • Official Digital ID & Food Token</div>
           </div>

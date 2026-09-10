@@ -171,11 +171,12 @@ export default function Navbar({ edition }: NavbarProps) {
           )}
         </div>
 
-        {/* Mobile Menu Button (44px min tap target) */}
+        {/* Mobile Menu Button (only visible on mobile, hidden on md+) */}
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
-          className="md:hidden p-2.5 text-[#1C1917] hover:bg-stone-100 rounded-xl tap-target"
+          className="flex md:hidden items-center justify-center p-2.5 text-[#1C1917] hover:bg-stone-100 rounded-xl min-w-[44px] min-h-[44px]"
           aria-label="Toggle Menu"
+          suppressHydrationWarning
         >
           {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>

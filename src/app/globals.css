@@ -122,12 +122,14 @@ body {
   font-family: var(--font-numeric);
 }
 
-.tap-target {
-  min-height: 44px;
-  min-width: 44px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+@layer utilities {
+  .tap-target {
+    min-height: 44px;
+    min-width: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
 }
 
 /* Hero Wordmark Gradient: Warm Liquid Ember to Deep Gold */

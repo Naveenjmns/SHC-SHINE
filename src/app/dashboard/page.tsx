@@ -221,7 +221,7 @@ export default function StudentDashboard() {
           </div>
         </div>
 
-        {/* 🎫 Official Digital Pass & Contingent Dossier Section */}
+        {/* Official Digital Pass & Contingent Dossier Section */}
         {pass && (
           <div className="bg-white border border-amber-200/90 rounded-3xl p-6 sm:p-8 mb-8 shadow-sm relative overflow-hidden">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-stone-200">
@@ -254,15 +254,23 @@ export default function StudentDashboard() {
                   </div>
                   <div className="flex items-center gap-2 mt-0.5">
                     <span
-                      className={`text-xs font-black px-2.5 py-0.5 rounded-md ${
+                      className={`text-xs font-black px-2.5 py-0.5 rounded-md inline-flex items-center gap-1.5 ${
                         isApproved
                           ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
                           : "bg-amber-100 text-amber-900 border border-amber-300"
                       }`}
                     >
-                      {isApproved
-                        ? "✓ Registration Approved & Badges Active"
-                        : "⏳ Pending Coordinator / Admin Approval"}
+                      {isApproved ? (
+                        <>
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                          <span>Registration Approved & Badges Active</span>
+                        </>
+                      ) : (
+                        <>
+                          <Clock className="w-3.5 h-3.5 text-amber-600 shrink-0 animate-pulse" />
+                          <span>Pending Coordinator / Admin Approval</span>
+                        </>
+                      )}
                     </span>
                   </div>
                 </div>
@@ -315,8 +323,9 @@ export default function StudentDashboard() {
                     <Ticket className="w-4 h-4 text-[#FF6B1A]" />
                     <span>Official Activated Pass ({pass.badgeCode})</span>
                   </h3>
-                  <span className="text-[11px] font-mono font-bold text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded border border-emerald-300">
-                    ✓ APPROVED & VERIFIED
+                  <span className="text-[11px] font-mono font-bold text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded border border-emerald-300 inline-flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>APPROVED & VERIFIED</span>
                   </span>
                 </div>
 

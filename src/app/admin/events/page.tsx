@@ -22,6 +22,7 @@ import {
   Camera,
   Phone,
   Mail,
+  Target,
 } from "lucide-react";
 import { useToast } from "@/components/ToastProvider";
 import { safeJson } from "@/lib/safeFetch";
@@ -516,7 +517,8 @@ export default function AdminEventsPage() {
                           </span>
                           {ev.hasPrelims && (
                             <span className="text-[10px] font-extrabold text-amber-900 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
-                              <span>🎯 Prelims Round</span>
+                              <Target className="w-3 h-3 text-amber-800" />
+                              <span>Prelims Round</span>
                             </span>
                           )}
                         </div>
@@ -817,8 +819,9 @@ export default function AdminEventsPage() {
                           className="w-4 h-4 rounded text-amber-600 focus:ring-amber-500 border-stone-300 cursor-pointer"
                         />
                         <div>
-                          <span className="block text-xs font-black text-amber-950">
-                            🎯 Enable Preliminary Round (Prelims)
+                          <span className="block text-xs font-black text-amber-950 flex items-center gap-1.5">
+                            <Target className="w-3.5 h-3.5 text-amber-800 shrink-0" />
+                            <span>Enable Preliminary Round (Prelims)</span>
                           </span>
                           <span className="text-[11px] text-amber-800">
                             Requires 1 participant per college delegation to participate in prelims first.

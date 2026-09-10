@@ -41,6 +41,17 @@ import {
   ReceiptIndianRupee,
   ChevronDown,
   ChevronUp,
+  FileText,
+  Printer,
+  Download,
+  Award,
+  Medal,
+  Menu,
+  MapPin,
+  Ticket,
+  ListFilter,
+  XCircle,
+  Target,
 } from "lucide-react";
 import CheckInModal from "@/components/CheckInModal";
 
@@ -194,7 +205,7 @@ export default function AdminOverviewPage() {
   const { toast, confirmAction } = useToast();
 
   const [activeTab, setActiveTab] = useState<
-    "overview" | "institution" | "editions" | "branding" | "smtp" | "registrations"
+    "overview" | "institution" | "editions" | "branding" | "smtp" | "registrations" | "reports"
   >("overview");
 
   const [stats, setStats] = useState<StatsData | null>(null);
@@ -202,6 +213,8 @@ export default function AdminOverviewPage() {
   const [registrations, setRegistrations] = useState<RegistrationRecord[]>([]);
   const [editions, setEditions] = useState<EventEditionItem[]>([]);
   const [activeEdition, setActiveEdition] = useState<EventEditionItem | null>(null);
+  const [reportsData, setReportsData] = useState<any | null>(null);
+  const [loadingReports, setLoadingReports] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -209,6 +222,7 @@ export default function AdminOverviewPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [regViewMode, setRegViewMode] = useState<"COLLEGE" | "FLAT">("COLLEGE");
   const [expandedColleges, setExpandedColleges] = useState<Record<string, boolean>>({});
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // New Edition Modal Form State
   const [showNewEditionModal, setShowNewEditionModal] = useState(false);
@@ -313,6 +327,27 @@ export default function AdminOverviewPage() {
       loadAdminData();
     }
   }, [session]);
+
+  const loadReports = async () => {
+    setLoadingReports(true);
+    try {
+      const res = await fetch("/api/admin/reports");
+      const json = await safeJson(res);
+      if (json?.success && json.report) {
+        setReportsData(json.report);
+      }
+    } catch (err) {
+      console.error("Error loading reports:", err);
+    } finally {
+      setLoadingReports(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "reports" && !reportsData) {
+      loadReports();
+    }
+  }, [activeTab, reportsData]);
 
   const loadAdminData = async () => {
     setLoading(true);
@@ -1018,180 +1053,275 @@ export default function AdminOverviewPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A]">
+    <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] overflow-x-hidden w-full">
       {/* Admin Header */}
       <header className="bg-white border-b border-[#E2E8F0] sticky top-0 z-40 shadow-2xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FF6B1A] to-[#D9A441] flex items-center justify-center text-white font-extrabold text-xl shadow-md">
-              S
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2.5 sm:py-4">
+          <div className="flex items-center justify-between gap-2">
+            {/* Left: Branding */}
+            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-[#FF6B1A] to-[#D9A441] flex items-center justify-center text-white font-black text-lg sm:text-xl shadow-md shrink-0">
+                S
+              </div>
+              <div>
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <h1 className="text-sm sm:text-lg lg:text-xl font-black text-[#0F172A] tracking-tight whitespace-nowrap">
+                    SHINE Admin
+                  </h1>
+                  <span className="text-[10px] sm:text-xs bg-orange-100 text-orange-800 font-bold px-2 py-0.5 rounded-full border border-orange-200 shrink-0">
+                    {activeEdition?.edition || "2027"}
+                  </span>
+                </div>
+                <p className="text-[10px] text-[#64748B] hidden sm:block">
+                  Multi-Edition Event Platform
+                </p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-xl font-extrabold text-[#0F172A] flex items-center gap-2">
-                <span>SHINE Event Platform</span>
-                <span className="text-xs bg-[#FF6B1A]/10 text-[#FF6B1A] border border-[#FF6B1A]/30 px-2 py-0.5 rounded-full font-mono">
-                  {activeEdition ? `${activeEdition.name} ${activeEdition.edition}` : "ACTIVE"}
-                </span>
-              </h1>
-              <p className="text-xs text-[#64748B]">Multi-Edition Reusable CMS Architecture</p>
-            </div>
-          </div>
 
-          <div className="flex items-center gap-2.5 sm:gap-3">
-            {/* Quick Registration Status Toggle Button */}
-            {activeEdition && (
+            {/* Right: Registration status & clean actions */}
+            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+              {activeEdition && (
+                <button
+                  type="button"
+                  onClick={() => handleToggleRegistration()}
+                  disabled={saving}
+                  title={
+                    activeEdition.isRegistrationOpen ?? true
+                      ? "Click to Freeze & Close Public Registrations"
+                      : "Click to Re-Open Public Registrations"
+                  }
+                  className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition border cursor-pointer ${
+                    activeEdition.isRegistrationOpen ?? true
+                      ? "bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-rose-50 hover:text-rose-800"
+                      : "bg-rose-50 text-rose-800 border-rose-300 hover:bg-emerald-50 hover:text-emerald-800"
+                  }`}
+                >
+                  <span
+                    className={`w-2 h-2 rounded-full shrink-0 ${
+                      activeEdition.isRegistrationOpen ?? true
+                        ? "bg-emerald-500 animate-pulse"
+                        : "bg-rose-500"
+                    }`}
+                  />
+                  <span className="font-bold text-[11px] sm:text-xs">
+                    {activeEdition.isRegistrationOpen ?? true ? "OPEN" : "CLOSED"}
+                  </span>
+                  {activeEdition.isRegistrationOpen ?? true ? (
+                    <Lock className="w-3 h-3 opacity-60 hidden sm:inline" />
+                  ) : (
+                    <Unlock className="w-3 h-3 opacity-60 hidden sm:inline" />
+                  )}
+                </button>
+              )}
+
+              {/* Desktop quick actions */}
+              <div className="hidden md:flex items-center gap-1.5">
+                <Link
+                  href="/"
+                  target="_blank"
+                  className="flex items-center gap-1.5 text-xs font-semibold text-[#0F172A] bg-stone-100 hover:bg-stone-200 px-3 py-1.5 rounded-xl transition"
+                >
+                  <Eye className="w-3.5 h-3.5 text-slate-600" />
+                  <span>Preview</span>
+                </Link>
+                <button
+                  onClick={() => signOut({ callbackUrl: "/" })}
+                  className="text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-xl transition cursor-pointer"
+                >
+                  Sign Out
+                </button>
+              </div>
+
+              {/* Mobile Menu Button */}
               <button
                 type="button"
-                onClick={() => handleToggleRegistration()}
-                disabled={saving}
-                title={
-                  activeEdition.isRegistrationOpen ?? true
-                    ? "Click to Freeze & Close Public Registrations"
-                    : "Click to Re-Open Public Registrations"
-                }
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition border cursor-pointer ${
-                  activeEdition.isRegistrationOpen ?? true
-                    ? "bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-rose-50 hover:text-rose-800 hover:border-rose-300"
-                    : "bg-rose-50 text-rose-800 border-rose-300 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300"
-                }`}
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="md:hidden p-2 rounded-xl text-slate-700 bg-slate-100 hover:bg-slate-200 transition cursor-pointer flex items-center justify-center"
+                aria-label="Toggle Admin Menu"
               >
-                <span
-                  className={`w-2 h-2 rounded-full ${
-                    activeEdition.isRegistrationOpen ?? true
-                      ? "bg-emerald-500 animate-pulse"
-                      : "bg-rose-500"
-                  }`}
-                />
-                <span className="hidden sm:inline">
-                  {activeEdition.isRegistrationOpen ?? true
-                    ? "Registration: OPEN"
-                    : "Registration: CLOSED"}
-                </span>
-                <span className="sm:hidden">
-                  {activeEdition.isRegistrationOpen ?? true ? "OPEN" : "CLOSED"}
-                </span>
-                {activeEdition.isRegistrationOpen ?? true ? (
-                  <Lock className="w-3.5 h-3.5 opacity-70" />
-                ) : (
-                  <Unlock className="w-3.5 h-3.5 opacity-70" />
-                )}
+                {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
               </button>
-            )}
-
-            <Link
-              href="/"
-              target="_blank"
-              className="flex items-center gap-1.5 text-xs font-semibold text-[#0F172A] bg-stone-100 hover:bg-stone-200 px-3 py-2 rounded-xl transition"
-            >
-              <Eye className="w-3.5 h-3.5" />
-              <span>Preview Public Frontend</span>
-            </Link>
-            <button
-              onClick={() => signOut({ callbackUrl: "/" })}
-              className="text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 px-3 py-2 rounded-xl transition"
-            >
-              Sign Out
-            </button>
+            </div>
           </div>
+
+          {/* Mobile Collapsible Actions Drawer */}
+          {mobileMenuOpen && (
+            <div className="md:hidden pt-3 mt-2.5 border-t border-slate-200 space-y-2 animate-fade-in">
+              <div className="grid grid-cols-2 gap-2 text-xs font-bold">
+                <Link
+                  href="/admin/events"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 flex items-center gap-2 hover:bg-orange-50 hover:text-orange-700 transition"
+                >
+                  <Theater className="w-4 h-4 text-purple-600 shrink-0" />
+                  <span>Events Catalog</span>
+                </Link>
+                <Link
+                  href="/admin/users"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 flex items-center gap-2 hover:bg-orange-50 hover:text-orange-700 transition"
+                >
+                  <Users className="w-4 h-4 text-blue-600 shrink-0" />
+                  <span>Manage Users</span>
+                </Link>
+                <Link
+                  href="/admin/reports"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="p-2.5 rounded-xl bg-orange-50 border border-orange-200 text-orange-800 flex items-center gap-2 hover:bg-orange-100 transition"
+                >
+                  <FileText className="w-4 h-4 text-orange-600 shrink-0" />
+                  <span>Print Reports</span>
+                </Link>
+                <Link
+                  href="/admin/logs"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 flex items-center gap-2 hover:bg-orange-50 hover:text-orange-700 transition"
+                >
+                  <History className="w-4 h-4 text-slate-600 shrink-0" />
+                  <span>Activity Logs</span>
+                </Link>
+              </div>
+
+              <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
+                <Link
+                  href="/"
+                  target="_blank"
+                  className="flex-1 py-2 text-center text-xs font-bold text-slate-700 bg-slate-100 rounded-xl hover:bg-slate-200 transition flex items-center justify-center gap-1.5"
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                  <span>Preview Website</span>
+                </Link>
+                <button
+                  onClick={() => signOut({ callbackUrl: "/" })}
+                  className="py-2 px-4 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-xl transition cursor-pointer"
+                >
+                  Sign Out
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </header>
 
       {/* Main Content Area */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 min-w-0">
         
-        {/* Navigation Tabs */}
-        <div className="flex flex-wrap items-center justify-between gap-4 mb-8 border-b border-[#CBD5E1] pb-3">
-          <div className="flex items-center gap-2 overflow-x-auto whitespace-nowrap pb-1 no-scrollbar scrollbar-none">
-            <button
-              onClick={() => setActiveTab("overview")}
-              className={`tap-target px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition shrink-0 ${
-                activeTab === "overview"
-                  ? "bg-[#0F172A] text-white shadow-md"
-                  : "bg-white text-[#64748B] hover:text-[#0F172A] border border-stone-200"
-              }`}
-            >
-              Analytics Overview
-            </button>
+        {/* Navigation Tabs Bar */}
+        <div className="mb-6 border-b border-[#CBD5E1] pb-3">
+          {/* Scrollable Main Navigation Tabs */}
+          <div className="w-full overflow-x-auto pb-1.5 no-scrollbar scrollbar-none">
+            <div className="flex items-center gap-2 min-w-max">
+              <button
+                onClick={() => setActiveTab("overview")}
+                className={`tap-target px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition shrink-0 cursor-pointer ${
+                  activeTab === "overview"
+                    ? "bg-[#0F172A] text-white shadow-md"
+                    : "bg-white text-[#64748B] hover:text-[#0F172A] border border-stone-200"
+                }`}
+              >
+                Analytics Overview
+              </button>
 
-            <button
-              onClick={() => setActiveTab("institution")}
-              className={`tap-target px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-1.5 shrink-0 ${
-                activeTab === "institution"
-                  ? "bg-[#0F172A] text-white shadow-md"
-                  : "bg-white text-[#64748B] hover:text-[#0F172A] border border-stone-200"
-              }`}
-            >
-              <Landmark className="w-4 h-4 text-emerald-600" />
-              <span>Institution & Dept</span>
-            </button>
+              <button
+                onClick={() => setActiveTab("institution")}
+                className={`tap-target px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-1.5 shrink-0 cursor-pointer ${
+                  activeTab === "institution"
+                    ? "bg-[#0F172A] text-white shadow-md"
+                    : "bg-white text-[#64748B] hover:text-[#0F172A] border border-stone-200"
+                }`}
+              >
+                <Landmark className="w-4 h-4 text-emerald-600" />
+                <span>Institution & Dept</span>
+              </button>
 
-            <button
-              onClick={() => setActiveTab("editions")}
-              className={`tap-target px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-1.5 shrink-0 ${
-                activeTab === "editions"
-                  ? "bg-[#0F172A] text-white shadow-md"
-                  : "bg-white text-[#64748B] hover:text-[#0F172A] border border-stone-200"
-              }`}
-            >
-              <Layers className="w-4 h-4 text-[#D9A441]" />
-              <span>Event Editions ({editions.length})</span>
-            </button>
+              <button
+                onClick={() => setActiveTab("editions")}
+                className={`tap-target px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-1.5 shrink-0 cursor-pointer ${
+                  activeTab === "editions"
+                    ? "bg-[#0F172A] text-white shadow-md"
+                    : "bg-white text-[#64748B] hover:text-[#0F172A] border border-stone-200"
+                }`}
+              >
+                <Layers className="w-4 h-4 text-[#D9A441]" />
+                <span>Event Editions ({editions.length})</span>
+              </button>
 
-            <button
-              onClick={() => setActiveTab("branding")}
-              className={`tap-target px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-1.5 shrink-0 ${
-                activeTab === "branding"
-                  ? "bg-[#0F172A] text-white shadow-md"
-                  : "bg-white text-[#64748B] hover:text-[#0F172A] border border-stone-200"
-              }`}
-            >
-              <Palette className="w-4 h-4 text-[#FF6B1A]" />
-              <span>Branding & Stage</span>
-            </button>
+              <button
+                onClick={() => setActiveTab("branding")}
+                className={`tap-target px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-1.5 shrink-0 cursor-pointer ${
+                  activeTab === "branding"
+                    ? "bg-[#0F172A] text-white shadow-md"
+                    : "bg-white text-[#64748B] hover:text-[#0F172A] border border-stone-200"
+                }`}
+              >
+                <Palette className="w-4 h-4 text-[#FF6B1A]" />
+                <span>Branding & Stage</span>
+              </button>
 
-            <button
-              onClick={() => setActiveTab("smtp")}
-              className={`tap-target px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-1.5 shrink-0 ${
-                activeTab === "smtp"
-                  ? "bg-[#0F172A] text-white shadow-md"
-                  : "bg-white text-[#64748B] hover:text-[#0F172A] border border-stone-200"
-              }`}
-            >
-              <Mail className="w-4 h-4 text-sky-600" />
-              <span>SMTP & Email Updates</span>
-            </button>
+              <button
+                onClick={() => setActiveTab("smtp")}
+                className={`tap-target px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-1.5 shrink-0 cursor-pointer ${
+                  activeTab === "smtp"
+                    ? "bg-[#0F172A] text-white shadow-md"
+                    : "bg-white text-[#64748B] hover:text-[#0F172A] border border-stone-200"
+                }`}
+              >
+                <Mail className="w-4 h-4 text-sky-600" />
+                <span>SMTP & Email Updates</span>
+              </button>
 
-            <button
-              onClick={() => setActiveTab("registrations")}
-              className={`tap-target px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition shrink-0 ${
-                activeTab === "registrations"
-                  ? "bg-[#0F172A] text-white shadow-md"
-                  : "bg-white text-[#64748B] hover:text-[#0F172A] border border-stone-200"
-              }`}
-            >
-              Registrations ({registrations.length})
-            </button>
+              <button
+                onClick={() => setActiveTab("registrations")}
+                className={`tap-target px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition shrink-0 cursor-pointer ${
+                  activeTab === "registrations"
+                    ? "bg-[#0F172A] text-white shadow-md"
+                    : "bg-white text-[#64748B] hover:text-[#0F172A] border border-stone-200"
+                }`}
+              >
+                Registrations ({registrations.length})
+              </button>
+
+              <button
+                onClick={() => setActiveTab("reports")}
+                className={`tap-target px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-1.5 shrink-0 cursor-pointer ${
+                  activeTab === "reports"
+                    ? "bg-[#0F172A] text-white shadow-md"
+                    : "bg-white text-[#64748B] hover:text-[#0F172A] border border-stone-200"
+                }`}
+              >
+                <FileText className="w-4 h-4 text-indigo-600" />
+                <span>Reports</span>
+              </button>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          {/* Quick External Actions Links (Desktop Only) */}
+          <div className="hidden md:flex flex-wrap items-center gap-2 pt-2">
             <Link
-              href="/admin/logs"
-              className="px-3.5 py-2 bg-white border border-[#CBD5E1] text-[#0F172A] font-semibold text-xs rounded-xl hover:bg-stone-50 transition flex items-center gap-1.5"
+              href="/admin/reports"
+              className="px-3 py-1.5 bg-orange-50 hover:bg-orange-100 border border-orange-200 text-orange-700 font-bold text-xs rounded-xl transition flex items-center gap-1.5 shadow-2xs shrink-0"
             >
-              <History className="w-3.5 h-3.5 text-orange-600" />
-              <span>Activity Logs →</span>
+              <FileText className="w-3.5 h-3.5 text-orange-600" />
+              <span>Print Official Report →</span>
             </Link>
             <Link
               href="/admin/events"
-              className="px-3.5 py-2 bg-white border border-[#CBD5E1] text-[#0F172A] font-semibold text-xs rounded-xl hover:bg-stone-50 transition"
+              className="px-3 py-1.5 bg-white border border-[#CBD5E1] text-[#0F172A] font-semibold text-xs rounded-xl hover:bg-stone-50 transition shrink-0"
             >
               Manage Events Catalog →
             </Link>
             <Link
               href="/admin/users"
-              className="px-3.5 py-2 bg-white border border-[#CBD5E1] text-[#0F172A] font-semibold text-xs rounded-xl hover:bg-stone-50 transition"
+              className="px-3 py-1.5 bg-white border border-[#CBD5E1] text-[#0F172A] font-semibold text-xs rounded-xl hover:bg-stone-50 transition shrink-0"
             >
               Manage Users →
+            </Link>
+            <Link
+              href="/admin/logs"
+              className="px-3 py-1.5 bg-white border border-[#CBD5E1] text-[#0F172A] font-semibold text-xs rounded-xl hover:bg-stone-50 transition flex items-center gap-1.5 shrink-0"
+            >
+              <History className="w-3.5 h-3.5 text-orange-600" />
+              <span>Activity Logs →</span>
             </Link>
           </div>
         </div>
@@ -1793,8 +1923,14 @@ export default function AdminOverviewPage() {
                   <p className="text-xs text-[#57534E] italic mb-4 font-medium">"{ed.tagline}"</p>
 
                   <div className="space-y-1 text-xs text-[#64748B] mb-5">
-                    <p>📍 Venue: {ed.venue || "Default Auditorium"}</p>
-                    <p>🎯 Category Stats: {ed._count?.events || 0} events attached</p>
+                    <p className="flex items-center gap-1.5">
+                      <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <span>Venue: {ed.venue || "Default Auditorium"}</span>
+                    </p>
+                    <p className="flex items-center gap-1.5">
+                      <Layers className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <span>Category Stats: {ed._count?.events || 0} events attached</span>
+                    </p>
                   </div>
 
                   <div className="pt-4 border-t border-[#E2E8F0] flex items-center justify-between">
@@ -2472,7 +2608,12 @@ export default function AdminOverviewPage() {
                         </div>
 
                         <div className="flex flex-wrap items-center gap-3 text-[11px] text-[#64748B]">
-                          {sched.venue && <span>📍 {sched.venue}</span>}
+                          {sched.venue && (
+                            <span className="inline-flex items-center gap-1">
+                              <MapPin className="w-3 h-3 text-slate-400" />
+                              <span>{sched.venue}</span>
+                            </span>
+                          )}
                           {sched.tag && <span className="bg-amber-100 text-amber-900 font-bold px-1.5 py-0.5 rounded">{sched.tag}</span>}
                         </div>
                         {sched.description && (
@@ -2519,7 +2660,8 @@ export default function AdminOverviewPage() {
                             </div>
                           </div>
                           <div className="text-[10px] font-mono text-[#FF6B1A] font-bold flex items-center gap-1.5 bg-amber-50/80 px-2 py-1 rounded border border-amber-200/60">
-                            <span>🕒 Timeline Badge:</span>
+                            <Clock className="w-3 h-3 shrink-0" />
+                            <span>Timeline Badge:</span>
                             <span>{buildTimeRangeString(newScheduleStartTime, newScheduleEndTime) || "Select Start Time"}</span>
                           </div>
                         </div>
@@ -2733,13 +2875,17 @@ export default function AdminOverviewPage() {
                     </button>
                   </div>
                   {smtpTestResult && (
-                    <div className={`p-3 rounded-xl text-xs font-medium ${
+                    <div className={`p-3 rounded-xl text-xs font-medium flex items-center gap-2 ${
                       smtpTestResult.success
                         ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
                         : "bg-rose-50 text-rose-800 border border-rose-200"
                     }`}>
-                      {smtpTestResult.success ? "✓ " : "✕ "}
-                      {smtpTestResult.message}
+                      {smtpTestResult.success ? (
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                      ) : (
+                        <XCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                      )}
+                      <span>{smtpTestResult.message}</span>
                     </div>
                   )}
                 </div>
@@ -2827,7 +2973,10 @@ export default function AdminOverviewPage() {
 
                 {/* Email Live Preview Accordion/Box */}
                 <div className="p-3 bg-stone-50 rounded-xl border border-stone-200 text-xs text-stone-600 space-y-1">
-                  <span className="font-bold text-[#0F172A]">📧 Branded Email Template:</span>
+                  <div className="flex items-center gap-1.5 font-bold text-[#0F172A]">
+                    <Mail className="w-3.5 h-3.5 text-slate-700 shrink-0" />
+                    <span>Branded Email Template:</span>
+                  </div>
                   <p className="text-[11px] leading-relaxed">
                     Emails are automatically delivered in responsive HTML with <strong>{brandingForm.institutionName}</strong> header, custom logo, personalized delegate greeting, and organizing committee signoff.
                   </p>
@@ -2905,24 +3054,26 @@ export default function AdminOverviewPage() {
                   <button
                     type="button"
                     onClick={() => setRegViewMode("COLLEGE")}
-                    className={`px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                    className={`px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer inline-flex items-center gap-1.5 ${
                       regViewMode === "COLLEGE"
                         ? "bg-white text-[#FF6B1A] shadow-2xs font-extrabold"
                         : "text-slate-600 hover:text-slate-900"
                     }`}
                   >
-                    🏫 Group by College ({collegeGroups.length})
+                    <Building2 className="w-3.5 h-3.5" />
+                    <span>Group by College ({collegeGroups.length})</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setRegViewMode("FLAT")}
-                    className={`px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                    className={`px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer inline-flex items-center gap-1.5 ${
                       regViewMode === "FLAT"
                         ? "bg-white text-[#FF6B1A] shadow-2xs font-extrabold"
                         : "text-slate-600 hover:text-slate-900"
                     }`}
                   >
-                    📋 Flat List ({filteredRegistrations.length})
+                    <ListFilter className="w-3.5 h-3.5" />
+                    <span>Flat List ({filteredRegistrations.length})</span>
                   </button>
                 </div>
 
@@ -2969,70 +3120,87 @@ export default function AdminOverviewPage() {
                     return (
                       <div
                         key={group.key}
-                        className="bg-[#FAF8F5] border border-stone-200 rounded-2xl p-5 hover:border-amber-400 transition-all shadow-2xs space-y-4"
+                        className="bg-[#FAF8F5] border border-stone-200 rounded-2xl p-5 hover:border-amber-400 transition-all shadow-2xs space-y-3.5"
                       >
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                          <div>
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="font-bold text-xs uppercase tracking-wider text-amber-800 bg-amber-100/90 px-2.5 py-0.5 rounded-full border border-amber-300">
-                                College Delegation
+                        {/* 1. Header Bar: College Tags (Left) & Approval Status (Right) */}
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="font-bold text-[10px] sm:text-xs uppercase tracking-wider text-amber-800 bg-amber-100/90 px-2.5 py-0.5 rounded-full border border-amber-300">
+                              College Delegation
+                            </span>
+                            {group.paymentStatus === "PAID" || group.paymentStatus === "VERIFIED" ? (
+                              <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full border border-emerald-300 inline-flex items-center gap-1">
+                                <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                <span>Fee Paid (₹{group.totalFee})</span>
                               </span>
-                              {group.paymentStatus === "PAID" || group.paymentStatus === "VERIFIED" ? (
-                                <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-300">
-                                  ✓ Fee Paid (₹{group.totalFee})
-                                </span>
-                              ) : (
-                                <span className="text-[10px] font-bold text-amber-900 bg-amber-100/70 px-2 py-0.5 rounded border border-amber-300">
-                                  Fee Pending (₹{group.totalFee})
-                                </span>
-                              )}
-                            </div>
-
-                            <h4 className="text-lg font-black text-stone-900 flex items-center gap-2">
-                              <Building2 className="w-5 h-5 text-[#FF6B1A]" />
-                              <span>{group.collegeName}</span>
-                            </h4>
-
-                            <div className="text-xs text-stone-600 mt-1 flex flex-wrap items-center gap-3">
-                              <span>Lead: <strong>{group.teamLeadName}</strong> ({group.teamLeadPhone})</span>
-                              {group.staffInchargeName && (
-                                <span>• Faculty: <strong>{group.staffInchargeName}</strong></span>
-                              )}
-                              {group.teamName && (
-                                <span>• Team: <strong>{group.teamName}</strong></span>
-                              )}
-                              <span className="text-stone-400">|</span>
-                              <span className="font-bold text-stone-900">
-                                👥 {group.uniqueStudentsCount} Participant(s) • 🎟️ {group.registrations.length} Event Registrations
+                            ) : (
+                              <span className="text-[10px] font-bold text-amber-900 bg-amber-100/70 px-2.5 py-0.5 rounded-full border border-amber-300">
+                                Fee Pending (₹{group.totalFee})
                               </span>
-                            </div>
+                            )}
                           </div>
 
-                          {/* Approval Status & Batch Action Buttons */}
-                          <div className="flex flex-wrap items-center gap-2.5 self-start md:self-auto">
+                          {/* Approval Status Badge - Aligned consistently at top right */}
+                          <div className="shrink-0">
                             {group.pendingCount === 0 && group.confirmedCount > 0 ? (
-                              <span className="text-xs font-black text-emerald-800 bg-emerald-100 border border-emerald-300 px-3 py-1.5 rounded-xl flex items-center gap-1.5">
+                              <span className="text-xs font-black text-emerald-800 bg-emerald-100 border border-emerald-300 px-3 py-1 rounded-xl flex items-center gap-1.5">
                                 <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                                 <span>ALL APPROVED ({group.confirmedCount}/{group.registrations.length})</span>
                               </span>
                             ) : group.pendingCount > 0 ? (
-                              <span className="text-xs font-black text-amber-900 bg-amber-100 border border-amber-300 px-3 py-1.5 rounded-xl flex items-center gap-1.5">
+                              <span className="text-xs font-black text-amber-900 bg-amber-100 border border-amber-300 px-3 py-1 rounded-xl flex items-center gap-1.5">
                                 <Clock className="w-4 h-4 text-amber-600 animate-pulse" />
                                 <span>PENDING ({group.pendingCount} Pending)</span>
                               </span>
                             ) : (
-                              <span className="text-xs font-black text-rose-800 bg-rose-100 border border-rose-300 px-3 py-1.5 rounded-xl flex items-center gap-1.5">
+                              <span className="text-xs font-black text-rose-800 bg-rose-100 border border-rose-300 px-3 py-1 rounded-xl flex items-center gap-1.5">
                                 <X className="w-4 h-4 text-rose-600" />
                                 <span>REJECTED</span>
                               </span>
                             )}
+                          </div>
+                        </div>
 
+                        {/* 2. College Identification & Delegation In-Charge Info */}
+                        <div className="space-y-1">
+                          <h4 className="text-lg font-black text-stone-900 flex items-center gap-2">
+                            <Building2 className="w-5 h-5 text-[#FF6B1A] shrink-0" />
+                            <span>{group.collegeName}</span>
+                          </h4>
+
+                          <div className="text-xs text-stone-600 flex flex-wrap items-center gap-x-3 gap-y-1">
+                            <span>Lead: <strong className="text-stone-900">{group.teamLeadName}</strong> ({group.teamLeadPhone})</span>
+                            {group.staffInchargeName && (
+                              <span>• Faculty: <strong className="text-stone-900">{group.staffInchargeName}</strong></span>
+                            )}
+                            {group.teamName && (
+                              <span>• Team: <strong className="text-stone-900">{group.teamName}</strong></span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* 3. Footer Bar: Metrics Badges (Left) & Unified Action Buttons (Right) */}
+                        <div className="pt-3 border-t border-stone-200/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                          {/* Metrics Badges */}
+                          <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-stone-800">
+                            <span className="inline-flex items-center gap-1.5 bg-stone-100/90 text-stone-800 px-2.5 py-1 rounded-lg border border-stone-200">
+                              <Users className="w-3.5 h-3.5 text-stone-500" />
+                              <span>{group.uniqueStudentsCount} Participant{group.uniqueStudentsCount !== 1 ? "s" : ""}</span>
+                            </span>
+                            <span className="inline-flex items-center gap-1.5 bg-stone-100/90 text-stone-800 px-2.5 py-1 rounded-lg border border-stone-200">
+                              <Ticket className="w-3.5 h-3.5 text-stone-500" />
+                              <span>{group.registrations.length} Event Registration{group.registrations.length !== 1 ? "s" : ""}</span>
+                            </span>
+                          </div>
+
+                          {/* Action Buttons Toolbar */}
+                          <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto shrink-0">
                             {/* Approve Entire College Button */}
                             {group.pendingCount > 0 && (
                               <button
                                 type="button"
                                 onClick={() => approveEntireCollege(group)}
-                                className="tap-target px-3.5 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 rounded-xl shadow-sm flex items-center gap-1.5 cursor-pointer"
+                                className="tap-target px-3.5 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 rounded-xl shadow-sm flex items-center gap-1.5 cursor-pointer transition-all"
                                 title={`Approve all ${group.uniqueStudentsCount} participants from ${group.collegeName}`}
                               >
                                 <Check className="w-4 h-4" />
@@ -3045,7 +3213,7 @@ export default function AdminOverviewPage() {
                               <button
                                 type="button"
                                 onClick={() => collectPaymentAndApproveDelegation(group.delegationId!, group.teamLeadName || group.collegeName, group.totalFee)}
-                                className="tap-target px-3.5 py-1.5 text-xs font-bold text-amber-950 bg-amber-300 hover:bg-amber-400 rounded-xl shadow-sm flex items-center gap-1.5 cursor-pointer"
+                                className="tap-target px-3.5 py-1.5 text-xs font-bold text-amber-950 bg-amber-300 hover:bg-amber-400 rounded-xl shadow-sm flex items-center gap-1.5 cursor-pointer transition-all"
                                 title="Collect spot fee and activate official passes"
                               >
                                 <ReceiptIndianRupee className="w-4 h-4 text-amber-900" />
@@ -3053,19 +3221,21 @@ export default function AdminOverviewPage() {
                               </button>
                             )}
 
+                            {/* Reject Entire College Button */}
                             <button
                               type="button"
                               onClick={() => rejectEntireCollege(group)}
-                              className="tap-target p-2 text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl transition cursor-pointer"
+                              className="tap-target p-2 text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl transition-all cursor-pointer"
                               title="Reject all registrations for this college"
                             >
                               <X className="w-4 h-4" />
                             </button>
 
+                            {/* View Roster Accordion Button */}
                             <button
                               type="button"
                               onClick={() => setExpandedColleges((prev) => ({ ...prev, [group.key]: !prev[group.key] }))}
-                              className="tap-target px-3 py-1.5 text-xs font-bold text-stone-700 bg-white border border-stone-300 rounded-xl hover:bg-stone-100 transition flex items-center gap-1 cursor-pointer"
+                              className="tap-target px-3 py-1.5 text-xs font-bold text-stone-700 bg-white border border-stone-300 rounded-xl hover:bg-stone-100 transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer"
                             >
                               <span>{isExpanded ? "Hide Details" : `View Roster (${group.registrations.length})`}</span>
                               <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
@@ -3335,6 +3505,479 @@ export default function AdminOverviewPage() {
                 </table>
               </div>
             )}
+          </div>
+        )}
+
+        {/* TAB 7: COMPREHENSIVE EVENT REPORTS */}
+        {activeTab === "reports" && (
+          <div className="space-y-8 animate-fade-in min-w-0">
+            {/* Header Executive Banner */}
+            <div className="dash-card p-5 sm:p-8 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white rounded-3xl shadow-md flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+              <div className="space-y-2 min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="px-2.5 py-0.5 rounded-full bg-orange-500/20 text-orange-300 border border-orange-500/30 text-[10px] sm:text-xs font-bold uppercase tracking-wider">
+                    Institutional Governance & Reporting
+                  </span>
+                  <span className="text-[11px] sm:text-xs text-slate-300">
+                    Annual College Report • Academic & IQAC Documentation
+                  </span>
+                </div>
+                <h2 className="text-lg sm:text-xl lg:text-2xl font-black text-white">
+                  {reportsData?.summary?.festName || "SHINE"} {reportsData?.summary?.festEdition || "2026"} — Official Event Report
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
+                  {reportsData?.summary?.institutionName || "Sacred Heart College (Autonomous), Tirupattur"} • {reportsData?.summary?.hostDepartment || "Department of Computer Applications (PG)"}
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3 shrink-0">
+                <button
+                  onClick={loadReports}
+                  disabled={loadingReports}
+                  className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${loadingReports ? "animate-spin" : ""}`} />
+                  <span>{loadingReports ? "Refreshing..." : "Refresh Data"}</span>
+                </button>
+
+                <Link
+                  href="/admin/reports"
+                  target="_blank"
+                  className="btn-ember !py-2 !px-4 text-xs font-bold flex items-center gap-2 shadow-lg"
+                >
+                  <Printer className="w-4 h-4" />
+                  <span>Open Printable Report (PDF) ↗</span>
+                </Link>
+              </div>
+            </div>
+
+            {loadingReports && !reportsData ? (
+              <div className="dash-card p-12 text-center space-y-3">
+                <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto" />
+                <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                  Compiling Comprehensive Event Report & Metrics...
+                </p>
+              </div>
+            ) : reportsData ? (
+              <>
+                {/* 1. KEY KPI CARDS */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+                  <div className="dash-card p-4 sm:p-5 border-l-4 border-orange-500 bg-white">
+                    <span className="text-xs font-bold text-slate-500 uppercase">Institutions</span>
+                    <div className="text-2xl sm:text-3xl font-black text-slate-900 mt-1 tabular-nums">
+                      {reportsData.summary.totalCollegesCount}
+                    </div>
+                    <span className="text-[10px] sm:text-[11px] text-slate-400">Colleges Represented</span>
+                  </div>
+
+                  <div className="dash-card p-4 sm:p-5 border-l-4 border-amber-500 bg-white">
+                    <span className="text-xs font-bold text-slate-500 uppercase">Total Delegates</span>
+                    <div className="text-2xl sm:text-3xl font-black text-slate-900 mt-1 tabular-nums">
+                      {reportsData.summary.totalUniqueStudentsCount}
+                    </div>
+                    <span className="text-[10px] sm:text-[11px] text-slate-400">Unique Students</span>
+                  </div>
+
+                  <div className="dash-card p-4 sm:p-5 border-l-4 border-emerald-500 bg-white">
+                    <span className="text-xs font-bold text-slate-500 uppercase">Verified Attendance</span>
+                    <div className="text-2xl sm:text-3xl font-black text-emerald-700 mt-1 tabular-nums">
+                      {reportsData.summary.attendedStudentsCount}
+                    </div>
+                    <span className="text-[10px] sm:text-[11px] text-emerald-600 font-semibold">
+                      {reportsData.summary.attendancePercentage}% Check-in Rate
+                    </span>
+                  </div>
+
+                  <div className="dash-card p-4 sm:p-5 border-l-4 border-blue-500 bg-white">
+                    <span className="text-xs font-bold text-slate-500 uppercase">Competitions</span>
+                    <div className="text-2xl sm:text-3xl font-black text-slate-900 mt-1 tabular-nums">
+                      {reportsData.summary.totalEvents}
+                    </div>
+                    <span className="text-[10px] sm:text-[11px] text-slate-400">
+                      {reportsData.summary.onStageEventsCount} On-Stage • {reportsData.summary.offStageEventsCount} Off-Stage
+                    </span>
+                  </div>
+                </div>
+
+                {/* 2. CSV EXPORT CENTER */}
+                <div className="dash-card p-5 sm:p-6 bg-white space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <div className="flex items-center gap-2">
+                      <Download className="w-5 h-5 text-orange-600" />
+                      <div>
+                        <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">
+                          Official Dataset CSV Export Hub
+                        </h3>
+                        <p className="text-xs text-slate-500">
+                          Instant CSV spreadsheets for college documentation, Excel analysis, and administrative reporting
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {/* CSV 1: Master Student Roster */}
+                    <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50 hover:bg-white hover:border-orange-200 hover:shadow-xs transition space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-black text-slate-900">Master Student Roster</span>
+                        <span className="text-[10px] font-extrabold bg-blue-100 text-blue-800 px-2 py-0.5 rounded">
+                          {reportsData.masterStudentRoster.length} Records
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-500">
+                        Full participant directory with colleges, departments, contacts, event enrollments, and check-in times.
+                      </p>
+                      <button
+                        onClick={() => {
+                          const headers = ["S.No", "Student Name", "Email", "Phone", "College", "Department", "Team Lead", "Badge Code", "Attendance", "Events"];
+                          const rows = reportsData.masterStudentRoster.map((s: any, idx: number) => [
+                            idx + 1,
+                            `"${s.name.replace(/"/g, '""')}"`,
+                            `"${s.email}"`,
+                            `"${s.phone}"`,
+                            `"${s.college.replace(/"/g, '""')}"`,
+                            `"${(s.department || "").replace(/"/g, '""')}"`,
+                            s.isTeamLead ? "YES" : "NO",
+                            `"${s.badgeCode || "—"}"`,
+                            s.attended ? "PRESENT" : "ABSENT",
+                            `"${s.events.map((e: any) => e.eventName).join("; ")}"`,
+                          ]);
+                          const csv = [headers.join(","), ...rows.map((r: any) => r.join(","))].join("\n");
+                          const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+                          const url = URL.createObjectURL(blob);
+                          const link = document.createElement("a");
+                          link.href = url;
+                          link.download = `${reportsData.summary.festName}_${reportsData.summary.festEdition}_Master_Roster.csv`;
+                          link.click();
+                          URL.revokeObjectURL(url);
+                        }}
+                        className="w-full py-2 bg-white hover:bg-orange-600 hover:text-white text-slate-700 border border-slate-200 hover:border-orange-600 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>Download Master Roster (CSV)</span>
+                      </button>
+                    </div>
+
+                    {/* CSV 2: Prelims Progression */}
+                    <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50 hover:bg-white hover:border-orange-200 hover:shadow-xs transition space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-black text-slate-900">Prelims & Mains Scores</span>
+                        <span className="text-[10px] font-extrabold bg-amber-100 text-amber-800 px-2 py-0.5 rounded">
+                          {reportsData.prelimsProgression.length} Nominees
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-500">
+                        Prelims evaluation scores, qualification status, coordinator remarks, and mains finalists.
+                      </p>
+                      <button
+                        onClick={() => {
+                          const headers = ["S.No", "Event", "Student", "College", "Prelims Score", "Prelims Status", "Advanced to Mains", "Mains Score", "Final Award"];
+                          const rows = reportsData.prelimsProgression.map((p: any, idx: number) => [
+                            idx + 1,
+                            `"${p.eventName.replace(/"/g, '""')}"`,
+                            `"${p.studentName.replace(/"/g, '""')}"`,
+                            `"${p.collegeName.replace(/"/g, '""')}"`,
+                            p.prelimsScore ?? "—",
+                            p.prelimsStatus,
+                            p.clearedToMains ? "QUALIFIED" : "ELIMINATED",
+                            p.mainsScore ?? "—",
+                            `"${(p.finalResult || "").replace(/"/g, '""')}"`,
+                          ]);
+                          const csv = [headers.join(","), ...rows.map((r: any) => r.join(","))].join("\n");
+                          const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+                          const url = URL.createObjectURL(blob);
+                          const link = document.createElement("a");
+                          link.href = url;
+                          link.download = `${reportsData.summary.festName}_${reportsData.summary.festEdition}_Prelims_Scores.csv`;
+                          link.click();
+                          URL.revokeObjectURL(url);
+                        }}
+                        className="w-full py-2 bg-white hover:bg-orange-600 hover:text-white text-slate-700 border border-slate-200 hover:border-orange-600 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>Download Prelims Scores (CSV)</span>
+                      </button>
+                    </div>
+
+                    {/* CSV 3: Final Results & Winners */}
+                    <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50 hover:bg-white hover:border-orange-200 hover:shadow-xs transition space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-black text-slate-900">Final Results & Winners</span>
+                        <span className="text-[10px] font-extrabold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded">
+                          {reportsData.finalResults.length} Awards
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-500">
+                        Official competition winners list, podium standings (1st, 2nd, 3rd), and final awarded scores.
+                      </p>
+                      <button
+                        onClick={() => {
+                          const headers = ["S.No", "Event", "Award", "Student Name", "College", "Final Score"];
+                          const rows = reportsData.finalResults.map((r: any, idx: number) => [
+                            idx + 1,
+                            `"${r.eventName.replace(/"/g, '""')}"`,
+                            `"${r.result.replace(/"/g, '""')}"`,
+                            `"${r.studentName.replace(/"/g, '""')}"`,
+                            `"${r.collegeName.replace(/"/g, '""')}"`,
+                            r.score ?? "—",
+                          ]);
+                          const csv = [headers.join(","), ...rows.map((r: any) => r.join(","))].join("\n");
+                          const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+                          const url = URL.createObjectURL(blob);
+                          const link = document.createElement("a");
+                          link.href = url;
+                          link.download = `${reportsData.summary.festName}_${reportsData.summary.festEdition}_Final_Winners.csv`;
+                          link.click();
+                          URL.revokeObjectURL(url);
+                        }}
+                        className="w-full py-2 bg-white hover:bg-orange-600 hover:text-white text-slate-700 border border-slate-200 hover:border-orange-600 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>Download Final Results (CSV)</span>
+                      </button>
+                    </div>
+
+                    {/* CSV 4: Events & Coordinators Directory */}
+                    <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50 hover:bg-white hover:border-orange-200 hover:shadow-xs transition space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-black text-slate-900">Events & Coordinators</span>
+                        <span className="text-[10px] font-extrabold bg-purple-100 text-purple-800 px-2 py-0.5 rounded">
+                          {reportsData.events.length} Events
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-500">
+                        Complete event catalog with category, venue, schedule, rules, and staff & student coordinator contacts.
+                      </p>
+                      <button
+                        onClick={() => {
+                          const headers = ["S.No", "Event", "Category", "Venue", "Staff Coordinator", "Staff Phone", "Student Coordinator", "Student Phone", "Registrations"];
+                          const rows = reportsData.events.map((ev: any, idx: number) => [
+                            idx + 1,
+                            `"${ev.name.replace(/"/g, '""')}"`,
+                            ev.category,
+                            `"${ev.venue.replace(/"/g, '""')}"`,
+                            `"${ev.staffCoordinator.name.replace(/"/g, '""')}"`,
+                            `"${ev.staffCoordinator.phone}"`,
+                            `"${ev.studentCoordinator.name.replace(/"/g, '""')}"`,
+                            `"${ev.studentCoordinator.phone}"`,
+                            ev.registrationsCount,
+                          ]);
+                          const csv = [headers.join(","), ...rows.map((r: any) => r.join(","))].join("\n");
+                          const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+                          const url = URL.createObjectURL(blob);
+                          const link = document.createElement("a");
+                          link.href = url;
+                          link.download = `${reportsData.summary.festName}_${reportsData.summary.festEdition}_Events_Directory.csv`;
+                          link.click();
+                          URL.revokeObjectURL(url);
+                        }}
+                        className="w-full py-2 bg-white hover:bg-orange-600 hover:text-white text-slate-700 border border-slate-200 hover:border-orange-600 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>Download Events Directory (CSV)</span>
+                      </button>
+                    </div>
+
+                    {/* CSV 5: College Championship Standings */}
+                    <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50 hover:bg-white hover:border-orange-200 hover:shadow-xs transition space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-black text-slate-900">Championship Leaderboard</span>
+                        <span className="text-[10px] font-extrabold bg-amber-100 text-amber-800 px-2 py-0.5 rounded">
+                          {reportsData.championshipLeaderboard.length} Colleges
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-500">
+                        Weighted institution points tally (Golds: 10pts, Silvers: 7pts, Bronzes: 5pts) and trophy standings.
+                      </p>
+                      <button
+                        onClick={() => {
+                          const headers = ["Rank", "College", "Golds (10pts)", "Silvers (7pts)", "Bronzes (5pts)", "Total Points"];
+                          const rows = reportsData.championshipLeaderboard.map((c: any, idx: number) => [
+                            idx + 1,
+                            `"${c.collegeName.replace(/"/g, '""')}"`,
+                            c.goldCount,
+                            c.silverCount,
+                            c.bronzeCount,
+                            c.totalPoints,
+                          ]);
+                          const csv = [headers.join(","), ...rows.map((r: any) => r.join(","))].join("\n");
+                          const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+                          const url = URL.createObjectURL(blob);
+                          const link = document.createElement("a");
+                          link.href = url;
+                          link.download = `${reportsData.summary.festName}_${reportsData.summary.festEdition}_Championship_Standings.csv`;
+                          link.click();
+                          URL.revokeObjectURL(url);
+                        }}
+                        className="w-full py-2 bg-white hover:bg-orange-600 hover:text-white text-slate-700 border border-slate-200 hover:border-orange-600 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>Download Championship (CSV)</span>
+                      </button>
+                    </div>
+
+                    {/* Print Report Callout */}
+                    <div className="p-4 rounded-2xl border-2 border-dashed border-orange-300 bg-orange-50/50 flex flex-col justify-between space-y-2.5">
+                      <div>
+                        <span className="text-xs font-black text-orange-900 block">
+                          Official Event Report
+                        </span>
+                        <p className="text-[11px] text-orange-800/80 mt-1">
+                          Generates the official printable document with institutional letterhead, tables, and formal signature blocks.
+                        </p>
+                      </div>
+                      <Link
+                        href="/admin/reports"
+                        target="_blank"
+                        className="w-full py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm text-center"
+                      >
+                        <Printer className="w-3.5 h-3.5" />
+                        <span>Open & Print Report (PDF) ↗</span>
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. COMPETITION CATALOG & COORDINATORS PREVIEW */}
+                <div className="dash-card p-5 sm:p-6 bg-white space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                      <Theater className="w-4 h-4 text-purple-600" />
+                      <span>Competitions & Coordinators Summary</span>
+                    </h3>
+                    <Link
+                      href="/admin/reports"
+                      target="_blank"
+                      className="text-xs font-bold text-orange-600 hover:underline"
+                    >
+                      View Full Report →
+                    </Link>
+                  </div>
+
+                  <div className="table-responsive">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200">
+                          <th className="p-2.5">Event</th>
+                          <th className="p-2.5">Category</th>
+                          <th className="p-2.5">Venue</th>
+                          <th className="p-2.5">Faculty / Staff In-Charge</th>
+                          <th className="p-2.5">Student Coordinator</th>
+                          <th className="p-2.5 text-center">Prelims?</th>
+                          <th className="p-2.5 text-center">Registrations</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {reportsData.events.slice(0, 8).map((ev: any) => (
+                          <tr key={ev.id} className="hover:bg-slate-50/60">
+                            <td className="p-2.5 font-bold text-slate-900">{ev.name}</td>
+                            <td className="p-2.5">
+                              <span
+                                className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase ${
+                                  ev.category === "ON_STAGE"
+                                    ? "bg-purple-100 text-purple-800"
+                                    : "bg-blue-100 text-blue-800"
+                                }`}
+                              >
+                                {ev.category === "ON_STAGE" ? "On-Stage" : "Off-Stage"}
+                              </span>
+                            </td>
+                            <td className="p-2.5 text-slate-600">{ev.venue}</td>
+                            <td className="p-2.5 font-semibold text-slate-800">
+                              {ev.staffCoordinator.name}
+                              <span className="text-[10px] text-slate-400 block">{ev.staffCoordinator.phone}</span>
+                            </td>
+                            <td className="p-2.5 font-semibold text-slate-800">
+                              {ev.studentCoordinator.name}
+                              <span className="text-[10px] text-slate-400 block">{ev.studentCoordinator.phone}</span>
+                            </td>
+                            <td className="p-2.5 text-center font-bold">
+                              {ev.hasPrelims ? <span className="text-amber-700">Yes</span> : <span className="text-slate-400">Direct</span>}
+                            </td>
+                            <td className="p-2.5 text-center font-extrabold text-slate-900 tabular-nums">
+                              {ev.registrationsCount}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* 4. CHAMPIONSHIP LEADERBOARD PREVIEW */}
+                <div className="dash-card p-5 sm:p-6 bg-white space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                      <Medal className="w-4 h-4 text-amber-600" />
+                      <span>College Championship Points Leaderboard</span>
+                    </h3>
+                    <Link
+                      href="/admin/reports"
+                      target="_blank"
+                      className="text-xs font-bold text-orange-600 hover:underline"
+                    >
+                      Open Full Standings →
+                    </Link>
+                  </div>
+
+                  <div className="table-responsive">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200">
+                          <th className="p-2.5 w-10 text-center">Rank</th>
+                          <th className="p-2.5">College / Institution Name</th>
+                          <th className="p-2.5 text-center">
+                            <span className="inline-flex items-center gap-1 justify-center">
+                              <Medal className="w-3.5 h-3.5 text-amber-500" />
+                              <span>Golds (10 pts)</span>
+                            </span>
+                          </th>
+                          <th className="p-2.5 text-center">
+                            <span className="inline-flex items-center gap-1 justify-center">
+                              <Medal className="w-3.5 h-3.5 text-slate-400" />
+                              <span>Silvers (7 pts)</span>
+                            </span>
+                          </th>
+                          <th className="p-2.5 text-center">
+                            <span className="inline-flex items-center gap-1 justify-center">
+                              <Medal className="w-3.5 h-3.5 text-amber-700" />
+                              <span>Bronzes (5 pts)</span>
+                            </span>
+                          </th>
+                          <th className="p-2.5 text-center font-black">Total Score</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {reportsData.championshipLeaderboard.slice(0, 5).map((c: any, idx: number) => (
+                          <tr key={c.collegeName} className="hover:bg-slate-50/60">
+                            <td className="p-2.5 text-center font-black">
+                              {idx === 0 && c.totalPoints > 0 ? (
+                                <span className="w-5 h-5 rounded-full bg-amber-400 text-amber-950 text-xs inline-flex items-center justify-center font-black">
+                                  1
+                                </span>
+                              ) : idx === 1 && c.totalPoints > 0 ? (
+                                <span className="w-5 h-5 rounded-full bg-slate-200 text-slate-900 text-xs inline-flex items-center justify-center font-black">
+                                  2
+                                </span>
+                              ) : (
+                                idx + 1
+                              )}
+                            </td>
+                            <td className="p-2.5 font-bold text-slate-900">{c.collegeName}</td>
+                            <td className="p-2.5 text-center font-bold text-amber-700">{c.goldCount}</td>
+                            <td className="p-2.5 text-center font-bold text-slate-600">{c.silverCount}</td>
+                            <td className="p-2.5 text-center font-bold text-amber-900">{c.bronzeCount}</td>
+                            <td className="p-2.5 text-center font-black text-sm text-orange-600 tabular-nums">
+                              {c.totalPoints} pts
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </>
+            ) : null}
           </div>
         )}
       </main>

@@ -88,10 +88,11 @@ export default function CountdownTimer({
             </span>
           </div>
           <h3
-            className="text-2xl sm:text-4xl md:text-5xl font-black tracking-tight"
+            className="text-2xl sm:text-4xl md:text-5xl font-black tracking-tight flex items-center justify-center gap-2"
             style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
           >
-            🔥 EVENT IS LIVE!
+            <Flame className="w-7 h-7 sm:w-9 sm:h-9 text-amber-200 animate-pulse" />
+            <span>EVENT IS LIVE!</span>
           </h3>
           <p className="text-xs sm:text-sm font-medium opacity-95 mt-2">
             SHINE 26 is officially underway ({displayDateText})
