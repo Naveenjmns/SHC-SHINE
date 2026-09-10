@@ -3833,13 +3833,13 @@ export default function AdminOverviewPage() {
         {activeTab === "reports" && (
           <div className="space-y-8 animate-fade-in min-w-0">
             {/* Header Executive Banner */}
-            <div className="dash-card p-5 sm:p-8 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white rounded-3xl shadow-md flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            <div className="p-5 sm:p-8 bg-slate-900 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 text-white rounded-3xl shadow-lg border border-slate-800 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
               <div className="space-y-2 min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="px-2.5 py-0.5 rounded-full bg-orange-500/20 text-orange-300 border border-orange-500/30 text-[10px] sm:text-xs font-bold uppercase tracking-wider">
+                  <span className="px-2.5 py-0.5 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30 text-[10px] sm:text-xs font-bold uppercase tracking-wider">
                     Institutional Governance & Reporting
                   </span>
-                  <span className="text-[11px] sm:text-xs text-slate-300">
+                  <span className="text-[11px] sm:text-xs text-slate-300 font-medium">
                     Annual College Report • Academic & IQAC Documentation
                   </span>
                 </div>
@@ -3875,8 +3875,8 @@ export default function AdminOverviewPage() {
             {loadingReports && !reportsData ? (
               <div className="dash-card p-12 text-center space-y-3">
                 <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto" />
-                <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                  Compiling Comprehensive Event Report & Metrics...
+                <p suppressHydrationWarning className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                  Loading Event Reports...
                 </p>
               </div>
             ) : reportsData ? (

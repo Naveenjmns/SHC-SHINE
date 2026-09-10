@@ -36,90 +36,90 @@ export async function GET(req: Request) {
         ? { editionId: edition.id }
         : {};
 
-    // 1. Fetch all events with staff, student & legacy coordinators, and all registrations
-    const events = await prisma.event.findMany({
-      where: editionWhere,
-      include: {
-        staffCoordinator: {
-          select: { id: true, name: true, email: true, phone: true, college: true },
-        },
-        studentCoordinator: {
-          select: { id: true, name: true, email: true, phone: true, college: true },
-        },
-        coordinator: {
-          select: { id: true, name: true, email: true, phone: true, college: true },
-        },
-        registrations: {
-          include: {
-            user: {
-              select: { id: true, name: true, email: true, phone: true, college: true },
-            },
-            delegation: {
-              select: {
-                id: true,
-                collegeName: true,
-                department: true,
-                teamName: true,
-                teamLeadName: true,
-                teamLeadPhone: true,
-                teamLeadEmail: true,
-                staffInchargeName: true,
-                staffInchargePhone: true,
-                staffInchargeEmail: true,
-                paymentStatus: true,
-                totalFee: true,
+    // Parallelize events & delegations database queries for maximum performance
+    const [events, delegations] = await Promise.all([
+      prisma.event.findMany({
+        where: editionWhere,
+        include: {
+          staffCoordinator: {
+            select: { id: true, name: true, email: true, phone: true, college: true },
+          },
+          studentCoordinator: {
+            select: { id: true, name: true, email: true, phone: true, college: true },
+          },
+          coordinator: {
+            select: { id: true, name: true, email: true, phone: true, college: true },
+          },
+          registrations: {
+            include: {
+              user: {
+                select: { id: true, name: true, email: true, phone: true, college: true },
+              },
+              delegation: {
+                select: {
+                  id: true,
+                  collegeName: true,
+                  department: true,
+                  teamName: true,
+                  teamLeadName: true,
+                  teamLeadPhone: true,
+                  teamLeadEmail: true,
+                  staffInchargeName: true,
+                  staffInchargePhone: true,
+                  staffInchargeEmail: true,
+                  paymentStatus: true,
+                  totalFee: true,
+                },
+              },
+              delegationMember: {
+                select: {
+                  id: true,
+                  badgeCode: true,
+                  foodTokenCode: true,
+                  eventCheckedIn: true,
+                  eventCheckedInAt: true,
+                  foodTokenClaimed: true,
+                  foodClaimedAt: true,
+                },
               },
             },
-            delegationMember: {
-              select: {
-                id: true,
-                badgeCode: true,
-                foodTokenCode: true,
-                eventCheckedIn: true,
-                eventCheckedInAt: true,
-                foodTokenClaimed: true,
-                foodClaimedAt: true,
-              },
+            orderBy: { createdAt: "asc" },
+          },
+        },
+        orderBy: [{ category: "asc" }, { dateTime: "asc" }, { name: "asc" }],
+      }),
+      prisma.delegation.findMany({
+        where: editionWhere,
+        include: {
+          members: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              phone: true,
+              isTeamLead: true,
+              badgeCode: true,
+              foodTokenCode: true,
+              eventCheckedIn: true,
+              eventCheckedInAt: true,
+              foodTokenClaimed: true,
+              foodClaimedAt: true,
             },
           },
-          orderBy: { createdAt: "asc" },
-        },
-      },
-      orderBy: [{ category: "asc" }, { dateTime: "asc" }, { name: "asc" }],
-    });
-
-    // 2. Fetch all delegations with members
-    const delegations = await prisma.delegation.findMany({
-      where: editionWhere,
-      include: {
-        members: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            phone: true,
-            isTeamLead: true,
-            badgeCode: true,
-            foodTokenCode: true,
-            eventCheckedIn: true,
-            eventCheckedInAt: true,
-            foodTokenClaimed: true,
-            foodClaimedAt: true,
+          registrations: {
+            select: {
+              id: true,
+              eventId: true,
+              status: true,
+              result: true,
+              score: true,
+              attended: true,
+            },
           },
         },
-        registrations: {
-          select: {
-            id: true,
-            eventId: true,
-            status: true,
-            result: true,
-            score: true,
-            attended: true,
-          },
-        },
-      },
-      orderBy: { collegeName: "asc" },
-    });
+        orderBy: { collegeName: "asc" },
+      }),
+    ]);
 
     // 3. Construct Master Student Registration Roster
     // Extract unique students and all their event participations
