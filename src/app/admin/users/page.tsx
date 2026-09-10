@@ -14,8 +14,14 @@ interface UserItem {
   email: string;
   phone: string | null;
   college: string | null;
-  role: "STUDENT" | "COORDINATOR" | "ADMIN";
+  role: "STUDENT" | "COORDINATOR" | "FOOD_COORDINATOR" | "ADMIN";
+  avatarUrl?: string | null;
   createdAt: string;
+  assignedEvents?: {
+    id: string;
+    name: string;
+    category?: string;
+  }[];
   _count: {
     registrations: number;
     coordEvents: number;
@@ -38,7 +44,7 @@ export default function AdminUsersPage() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [college, setCollege] = useState("Sacred Heart College (Autonomous)");
-  const [role, setRole] = useState<"COORDINATOR" | "ADMIN">("COORDINATOR");
+  const [role, setRole] = useState<"COORDINATOR" | "FOOD_COORDINATOR" | "ADMIN">("COORDINATOR");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -150,10 +156,13 @@ export default function AdminUsersPage() {
 
   const filteredUsers = users.filter((u) => {
     const matchesRole = roleFilter === "ALL" || u.role === roleFilter;
+    const q = search.toLowerCase().trim();
+    if (!q) return matchesRole;
     const matchesSearch =
-      u.name.toLowerCase().includes(search.toLowerCase()) ||
-      u.email.toLowerCase().includes(search.toLowerCase()) ||
-      (u.college && u.college.toLowerCase().includes(search.toLowerCase()));
+      u.name.toLowerCase().includes(q) ||
+      u.email.toLowerCase().includes(q) ||
+      (u.college && u.college.toLowerCase().includes(q)) ||
+      Boolean(u.assignedEvents?.some((ev) => ev.name.toLowerCase().includes(q)));
     return matchesRole && matchesSearch;
   });
 
@@ -171,6 +180,12 @@ export default function AdminUsersPage() {
           </div>
 
           <div className="flex items-center gap-3">
+            <Link
+              href="/food"
+              className="tap-target px-3 py-1.5 text-xs font-bold text-amber-900 bg-amber-100/80 hover:bg-amber-200 border border-amber-300 rounded-lg transition-colors flex items-center gap-1.5"
+            >
+              <span>🍱 Food Console</span>
+            </Link>
             <Link
               href="/admin/logs"
               className="tap-target px-3 py-1.5 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors flex items-center gap-1.5"
@@ -225,7 +240,7 @@ export default function AdminUsersPage() {
           <div className="relative flex-1 max-w-md">
             <input
               type="text"
-              placeholder="Search user name, email, or institution..."
+              placeholder="Search name, email, institution, or competition..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full h-11 bg-white border border-slate-300 rounded-xl px-4 text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-orange-500"
@@ -233,17 +248,30 @@ export default function AdminUsersPage() {
           </div>
 
           <div className="flex flex-wrap bg-white border border-slate-200 rounded-xl p-1 shrink-0 self-start sm:self-auto max-w-full">
-            {["ALL", "COORDINATOR", "ADMIN", "STUDENT"].map((r) => (
+            {([
+              { key: "ALL", label: "All Users", count: users.length },
+              { key: "COORDINATOR", label: "Coordinators", count: users.filter((u) => u.role === "COORDINATOR").length },
+              { key: "FOOD_COORDINATOR", label: "Food Committee", count: users.filter((u) => u.role === "FOOD_COORDINATOR").length },
+              { key: "ADMIN", label: "Admins", count: users.filter((u) => u.role === "ADMIN").length },
+              { key: "STUDENT", label: "Students", count: users.filter((u) => u.role === "STUDENT").length },
+            ] as const).map(({ key, label, count }) => (
               <button
-                key={r}
-                onClick={() => setRoleFilter(r)}
-                className={`tap-target px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  roleFilter === r
-                    ? "bg-slate-900 text-white"
+                key={key}
+                onClick={() => setRoleFilter(key)}
+                className={`tap-target px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  roleFilter === key
+                    ? "bg-slate-900 text-white shadow-xs"
                     : "text-slate-600 hover:text-slate-900"
                 }`}
               >
-                {r === "ALL" ? "All Users" : r}
+                <span>{label}</span>
+                <span
+                  className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono font-semibold ${
+                    roleFilter === key ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"
+                  }`}
+                >
+                  {count}
+                </span>
               </button>
             ))}
           </div>
@@ -267,15 +295,34 @@ export default function AdminUsersPage() {
                 {filteredUsers.map((u) => (
                   <tr key={u.id} className="hover:bg-slate-50/70 transition-colors">
                     <td className="p-4">
-                      <div className="font-bold text-slate-900 text-sm">{u.name}</div>
-                      <div className="text-xs text-slate-500">{u.email}</div>
-                      {u.phone && <div className="text-[11px] font-mono tabular-nums text-slate-400">{u.phone}</div>}
+                      <div className="flex items-center gap-2.5">
+                        {u.avatarUrl ? (
+                          <img
+                            src={u.avatarUrl}
+                            alt={u.name}
+                            className="w-8 h-8 rounded-full object-cover border border-slate-200 shrink-0"
+                          />
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-700 font-bold text-xs flex items-center justify-center border border-slate-200 shrink-0">
+                            {u.name ? u.name.charAt(0).toUpperCase() : "U"}
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <div className="font-bold text-slate-900 text-sm truncate">{u.name}</div>
+                          <div className="text-xs text-slate-500 truncate">{u.email}</div>
+                          {u.phone && <div className="text-[11px] font-mono tabular-nums text-slate-400">{u.phone}</div>}
+                        </div>
+                      </div>
                     </td>
 
                     <td className="p-4">
                       {u.role === "ADMIN" ? (
                         <span className="text-[11px] font-bold uppercase px-2.5 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-200">
                           Admin
+                        </span>
+                      ) : (u.role as string) === "FOOD_COORDINATOR" ? (
+                        <span className="text-[11px] font-bold uppercase px-2.5 py-0.5 rounded bg-orange-100 text-orange-950 border border-orange-300">
+                          Food Committee
                         </span>
                       ) : u.role === "COORDINATOR" ? (
                         <span className="text-[11px] font-bold uppercase px-2.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200">
@@ -293,10 +340,35 @@ export default function AdminUsersPage() {
                     </td>
 
                     <td className="p-4">
-                      {u.role === "COORDINATOR" ? (
-                        <span className="font-bold text-slate-900">
-                          {u._count.coordEvents} competition(s)
-                        </span>
+                      {u._count.coordEvents > 0 ? (
+                        <div>
+                          <div className="font-bold text-slate-900 inline-flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                            {u._count.coordEvents} competition{u._count.coordEvents === 1 ? "" : "s"}
+                          </div>
+                          {u.assignedEvents && u.assignedEvents.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-1.5 max-w-[280px]">
+                              {u.assignedEvents.map((ev) => (
+                                <span
+                                  key={ev.id}
+                                  className="text-[10.5px] font-semibold bg-amber-50 text-amber-900 border border-amber-200/80 px-2 py-0.5 rounded-md shadow-2xs"
+                                  title={ev.name}
+                                >
+                                  {ev.name}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                          {u._count.registrations > 0 && (
+                            <div className="text-[11px] text-slate-400 mt-1">
+                              +{u._count.registrations} registration(s)
+                            </div>
+                          )}
+                        </div>
+                      ) : u.role === "COORDINATOR" ? (
+                        <div className="text-slate-400 text-xs italic">
+                          0 competitions assigned
+                        </div>
                       ) : (
                         <span className="text-slate-600">
                           {u._count.registrations} registration(s)
@@ -354,11 +426,12 @@ export default function AdminUsersPage() {
                     <label className="block text-xs font-bold text-slate-700 mb-1">Account Role *</label>
                     <select
                       value={role}
-                      onChange={(e) => setRole(e.target.value as "COORDINATOR" | "ADMIN")}
+                      onChange={(e) => setRole(e.target.value as "COORDINATOR" | "FOOD_COORDINATOR" | "ADMIN")}
                       className="w-full h-11 bg-white border border-slate-300 rounded-xl px-3.5 text-sm text-slate-900 focus:outline-none focus:border-orange-500"
                     >
-                      <option value="COORDINATOR">Event Coordinator</option>
-                      <option value="ADMIN">System Administrator</option>
+                      <option value="COORDINATOR">Event Coordinator (Competitions & Attendance)</option>
+                      <option value="FOOD_COORDINATOR">Food Committee Coordinator (Meal Distribution & Counters)</option>
+                      <option value="ADMIN">System Administrator (Full Access)</option>
                     </select>
                   </div>
 

@@ -68,6 +68,7 @@ interface CheckInModalProps {
   onClose: () => void;
   activeEventId?: string; // Optional: if coordinator is in a specific event page
   onCheckInComplete?: () => void;
+  mode?: "all" | "event_only" | "food_only";
 }
 
 export default function CheckInModal({
@@ -75,6 +76,7 @@ export default function CheckInModal({
   onClose,
   activeEventId,
   onCheckInComplete,
+  mode = "all",
 }: CheckInModalProps) {
   const [scanMode, setScanMode] = useState<"camera" | "manual">("manual");
   const [inputCode, setInputCode] = useState("");
@@ -598,71 +600,73 @@ export default function CheckInModal({
                 </div>
               </div>
 
-              {/* 2. Food Token Voucher Claim Card */}
-              <div
-                className={`p-4 rounded-xl border-2 transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${
-                  delegate.foodTokenClaimed
-                    ? "bg-stone-100/90 border-stone-300"
-                    : "bg-amber-50/70 border-amber-300"
-                }`}
-              >
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-black uppercase tracking-wider text-amber-950 flex items-center gap-1.5">
-                      <Utensils className="w-4 h-4 text-amber-700" />
-                      <span>Meal & Food Voucher</span>
-                    </span>
-                    {delegate.foodTokenClaimed ? (
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-stone-700 text-white inline-flex items-center gap-1">
-                        <Check className="w-3 h-3 text-emerald-400" />
-                        <span>CLAIMED</span>
+              {/* 2. Food Token Voucher Claim Card (Hidden in event_only mode for event coordinators) */}
+              {mode !== "event_only" && (
+                <div
+                  className={`p-4 rounded-xl border-2 transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${
+                    delegate.foodTokenClaimed
+                      ? "bg-stone-100/90 border-stone-300"
+                      : "bg-amber-50/70 border-amber-300"
+                  }`}
+                >
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-black uppercase tracking-wider text-amber-950 flex items-center gap-1.5">
+                        <Utensils className="w-4 h-4 text-amber-700" />
+                        <span>Meal & Food Voucher</span>
                       </span>
-                    ) : (
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-400 text-amber-950 shadow-2xs">
-                        READY (1x MEAL)
-                      </span>
-                    )}
+                      {delegate.foodTokenClaimed ? (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-stone-700 text-white inline-flex items-center gap-1">
+                          <Check className="w-3 h-3 text-emerald-400" />
+                          <span>CLAIMED</span>
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-400 text-amber-950 shadow-2xs">
+                          READY (1x MEAL)
+                        </span>
+                      )}
+                    </div>
+
+                    <p className="text-xs text-stone-600">
+                      Token: <strong className="font-mono text-stone-900 bg-white px-1.5 py-0.5 rounded border border-amber-300">{delegate.foodTokenCode}</strong>
+                      {delegate.foodTokenClaimed ? (
+                        <span className="ml-2 text-stone-700 font-medium">
+                          (Issued at {delegate.foodClaimedAt ? new Date(delegate.foodClaimedAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) : "earlier"} by {delegate.foodClaimedBy || "staff"})
+                        </span>
+                      ) : (
+                        <span className="ml-2 text-stone-500">Valid for 1 lunch/refreshment packet</span>
+                      )}
+                    </p>
                   </div>
 
-                  <p className="text-xs text-stone-600">
-                    Token: <strong className="font-mono text-stone-900 bg-white px-1.5 py-0.5 rounded border border-amber-300">{delegate.foodTokenCode}</strong>
+                  <div className="self-end sm:self-auto shrink-0 flex items-center gap-2">
                     {delegate.foodTokenClaimed ? (
-                      <span className="ml-2 text-stone-700 font-medium">
-                        (Issued at {delegate.foodClaimedAt ? new Date(delegate.foodClaimedAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) : "earlier"} by {delegate.foodClaimedBy || "staff"})
+                      <button
+                        type="button"
+                        onClick={() => handleClaimFood(false)}
+                        disabled={actionLoading}
+                        className="text-[11px] text-stone-500 hover:text-amber-700 underline font-medium cursor-pointer"
+                      >
+                        Reset Token
+                      </button>
+                    ) : !delegate.isPaid ? (
+                      <span className="text-[11px] font-bold text-rose-700 bg-rose-50 px-3 py-1.5 rounded-xl border border-rose-200">
+                        Payment Required
                       </span>
                     ) : (
-                      <span className="ml-2 text-stone-500">Valid for 1 lunch/refreshment packet</span>
+                      <button
+                        type="button"
+                        onClick={() => handleClaimFood(true)}
+                        disabled={actionLoading}
+                        className="tap-target px-4 py-2 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-stone-950 transition flex items-center gap-1.5 shadow-xs cursor-pointer"
+                      >
+                        <Utensils className="w-3.5 h-3.5 text-stone-950" />
+                        <span>Issue Food (1x)</span>
+                      </button>
                     )}
-                  </p>
+                  </div>
                 </div>
-
-                <div className="self-end sm:self-auto shrink-0 flex items-center gap-2">
-                  {delegate.foodTokenClaimed ? (
-                    <button
-                      type="button"
-                      onClick={() => handleClaimFood(false)}
-                      disabled={actionLoading}
-                      className="text-[11px] text-stone-500 hover:text-amber-700 underline font-medium cursor-pointer"
-                    >
-                      Reset Token
-                    </button>
-                  ) : !delegate.isPaid ? (
-                    <span className="text-[11px] font-bold text-rose-700 bg-rose-50 px-3 py-1.5 rounded-xl border border-rose-200">
-                      Payment Required
-                    </span>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => handleClaimFood(true)}
-                      disabled={actionLoading}
-                      className="tap-target px-4 py-2 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-stone-950 transition flex items-center gap-1.5 shadow-xs cursor-pointer"
-                    >
-                      <Utensils className="w-3.5 h-3.5 text-stone-950" />
-                      <span>Issue Food (1x)</span>
-                    </button>
-                  )}
-                </div>
-              </div>
+              )}
             </div>
           )}
         </div>

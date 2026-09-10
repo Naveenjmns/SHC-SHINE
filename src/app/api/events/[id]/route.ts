@@ -120,7 +120,12 @@ export async function PUT(
         studentCoordinatorImageUrl: studentCoordinatorImageUrl !== undefined ? studentCoordinatorImageUrl?.trim() || null : undefined,
         staffCoordinatorId: staffCoordinatorId !== undefined ? staffCoordinatorId || null : undefined,
         studentCoordinatorId: studentCoordinatorId !== undefined ? studentCoordinatorId || null : undefined,
-        coordinatorId: coordinatorId !== undefined ? coordinatorId || null : undefined,
+        coordinatorId:
+          coordinatorId !== undefined
+            ? coordinatorId || null
+            : staffCoordinatorId !== undefined
+            ? staffCoordinatorId || null
+            : undefined,
         hasPrelims: hasPrelims !== undefined ? Boolean(hasPrelims) : undefined,
         prelimsDateTime: prelimsDateTime !== undefined ? (prelimsDateTime ? new Date(prelimsDateTime) : null) : undefined,
         prelimsVenue: prelimsVenue !== undefined ? prelimsVenue?.trim() || null : undefined,

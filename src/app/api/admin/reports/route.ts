@@ -76,10 +76,12 @@ export async function GET(req: Request) {
                   id: true,
                   badgeCode: true,
                   foodTokenCode: true,
+                  foodPreference: true,
                   eventCheckedIn: true,
                   eventCheckedInAt: true,
                   foodTokenClaimed: true,
                   foodClaimedAt: true,
+                  foodClaimedBy: true,
                 },
               },
             },
@@ -104,6 +106,8 @@ export async function GET(req: Request) {
               eventCheckedInAt: true,
               foodTokenClaimed: true,
               foodClaimedAt: true,
+              foodClaimedBy: true,
+              foodPreference: true,
             },
           },
           registrations: {
@@ -136,6 +140,7 @@ export async function GET(req: Request) {
         isTeamLead: boolean;
         badgeCode: string | null;
         foodTokenCode: string | null;
+        foodPreference?: string;
         attended: boolean;
         checkedInAt: Date | null;
         events: Array<{
@@ -171,6 +176,7 @@ export async function GET(req: Request) {
             isTeamLead: del?.teamLeadEmail?.toLowerCase() === u.email.toLowerCase(),
             badgeCode: member?.badgeCode || null,
             foodTokenCode: member?.foodTokenCode || null,
+            foodPreference: (member as any)?.foodPreference || "VEG",
             attended: reg.attended || member?.eventCheckedIn || false,
             checkedInAt: reg.checkedInAt || member?.eventCheckedInAt || null,
             events: [],
@@ -470,10 +476,76 @@ export async function GET(req: Request) {
       };
     });
 
+    // 7. Construct Catering & Food Committee Breakdown
+    const allPaidDelegates = delegations
+      .filter((d) => d.paymentStatus === "PAID")
+      .flatMap((d) =>
+        d.members.map((m) => ({
+          ...m,
+          collegeName: d.collegeName,
+          teamLeadName: d.teamLeadName,
+          teamLeadPhone: d.teamLeadPhone,
+        }))
+      );
+
+    let totalVegRequested = 0;
+    let totalVegClaimed = 0;
+    let totalNonVegRequested = 0;
+    let totalNonVegClaimed = 0;
+
+    const cateringRoster = allPaidDelegates.map((m, idx) => {
+      const isVeg = ((m as any).foodPreference || "VEG").toUpperCase() === "VEG";
+      if (isVeg) {
+        totalVegRequested++;
+        if (m.foodTokenClaimed) totalVegClaimed++;
+      } else {
+        totalNonVegRequested++;
+        if (m.foodTokenClaimed) totalNonVegClaimed++;
+      }
+
+      return {
+        sNo: idx + 1,
+        id: m.id,
+        name: m.name,
+        email: m.email,
+        phone: m.phone,
+        collegeName: m.collegeName,
+        foodPreference: isVeg ? "VEG" : "NON_VEG",
+        foodTokenCode: m.foodTokenCode,
+        badgeCode: m.badgeCode,
+        foodTokenClaimed: m.foodTokenClaimed,
+        foodClaimedAt: m.foodClaimedAt,
+        foodClaimedBy: (m as any).foodClaimedBy || null,
+      };
+    });
+
+    const cateringSummary = {
+      totalEligible: allPaidDelegates.length,
+      totalClaimed: totalVegClaimed + totalNonVegClaimed,
+      totalRemaining: Math.max(0, allPaidDelegates.length - (totalVegClaimed + totalNonVegClaimed)),
+      claimPercentage:
+        allPaidDelegates.length > 0
+          ? Math.round(((totalVegClaimed + totalNonVegClaimed) / allPaidDelegates.length) * 100)
+          : 0,
+      veg: {
+        requested: totalVegRequested,
+        claimed: totalVegClaimed,
+        remaining: Math.max(0, totalVegRequested - totalVegClaimed),
+      },
+      nonVeg: {
+        requested: totalNonVegRequested,
+        claimed: totalNonVegClaimed,
+        remaining: Math.max(0, totalNonVegRequested - totalNonVegClaimed),
+      },
+    };
+
     return NextResponse.json({
       success: true,
       report: {
-        summary: summaryMetrics,
+        summary: {
+          ...summaryMetrics,
+          catering: cateringSummary,
+        },
         events: eventsCatalog,
         delegations: delegations.map((d) => ({
           id: d.id,
@@ -491,11 +563,15 @@ export async function GET(req: Request) {
           totalFee: d.totalFee,
           checkedInCount: d.members.filter((m) => m.eventCheckedIn).length,
           foodClaimedCount: d.members.filter((m) => m.foodTokenClaimed).length,
+          vegCount: d.members.filter((m) => ((m as any).foodPreference || "VEG") === "VEG").length,
+          nonVegCount: d.members.filter((m) => (m as any).foodPreference === "NON_VEG").length,
         })),
         masterStudentRoster,
         prelimsProgression,
         finalResults,
         championshipLeaderboard,
+        cateringSummary,
+        cateringRoster,
       },
     });
   } catch (error: any) {

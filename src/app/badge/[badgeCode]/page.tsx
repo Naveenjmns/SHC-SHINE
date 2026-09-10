@@ -26,6 +26,7 @@ interface BadgeData {
   email: string;
   phone: string;
   foodTokenCode: string;
+  foodPreference?: "VEG" | "NON_VEG";
   foodTokenClaimed: boolean;
   foodClaimedAt?: string | null;
   eventCheckedIn?: boolean;
@@ -372,10 +373,19 @@ export default function BadgeDetailPage() {
 
               {/* Food Details */}
               <div className="flex-1 text-center sm:text-left min-w-0">
-                <div className="flex items-center justify-center sm:justify-start gap-2">
+                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
                   <span className="text-xs font-black text-amber-950 uppercase tracking-wider flex items-center gap-1.5">
                     <Utensils className="w-3.5 h-3.5 text-amber-700" />
                     <span>Official Lunch & Refreshment Token</span>
+                  </span>
+                  <span
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      (badge.foodPreference || "VEG") === "VEG"
+                        ? "bg-emerald-600 text-white"
+                        : "bg-amber-600 text-white"
+                    }`}
+                  >
+                    {(badge.foodPreference || "VEG") === "VEG" ? "🥗 Pure Veg" : "🍗 Non-Veg"}
                   </span>
                   <span className="bg-amber-200/80 text-amber-900 text-[9px] font-bold px-2 py-0.5 rounded-full">
                     1x Meal

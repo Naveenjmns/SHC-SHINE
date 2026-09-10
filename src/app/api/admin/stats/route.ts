@@ -32,6 +32,12 @@ export async function GET() {
           coordinator: {
             select: { id: true, name: true, email: true },
           },
+          staffCoordinator: {
+            select: { id: true, name: true, email: true },
+          },
+          studentCoordinator: {
+            select: { id: true, name: true, email: true },
+          },
           _count: {
             select: { registrations: true },
           },
@@ -40,25 +46,72 @@ export async function GET() {
       }),
     ]);
 
-    // PERFORMANCE: Use Prisma aggregate instead of fetching all registrations
-    const revenueResult = await prisma.event.aggregate({
-      _sum: {
-        fee: true,
-      },
-      where: {
-        registrations: {
-          some: {
-            status: "CONFIRMED",
+    // Calculate real revenue from paid/verified delegations and confirmed registrations:
+    const [paidDelegations, pendingDelegations] = await Promise.all([
+      prisma.delegation.findMany({
+        where: {
+          OR: [
+            { paymentStatus: "PAID" },
+            { paymentStatus: "VERIFIED" },
+            {
+              AND: [
+                { paymentStatus: { not: "REJECTED" } },
+                {
+                  registrations: {
+                    some: {
+                      status: "CONFIRMED",
+                    },
+                  },
+                },
+              ],
+            },
+          ],
+        },
+        select: {
+          id: true,
+          totalFee: true,
+        },
+      }),
+      prisma.delegation.findMany({
+        where: {
+          paymentStatus: "PENDING",
+          registrations: {
+            none: {
+              status: "CONFIRMED",
+            },
           },
+        },
+        select: {
+          totalFee: true,
+        },
+      }),
+    ]);
+
+    const delegationRevenue = paidDelegations.reduce((sum, d) => sum + (d.totalFee || 0), 0);
+    const pendingRevenue = pendingDelegations.reduce((sum, d) => sum + (d.totalFee || 0), 0);
+
+    // Direct event fees for confirmed registrations not belonging to a paid delegation
+    const paidDelegationIds = new Set(paidDelegations.map((d) => d.id));
+    const confirmedRegistrationsWithFee = await prisma.registration.findMany({
+      where: {
+        status: "CONFIRMED",
+        event: {
+          fee: { gt: 0 },
+        },
+      },
+      select: {
+        delegationId: true,
+        event: {
+          select: { fee: true },
         },
       },
     });
 
-    // For a more accurate per-registration revenue, use raw count * avg fee
-    // or simply sum the event fees weighted by confirmed registration counts
-    const confirmedRegCount = confirmedRegistrations;
-    const avgFee = events.reduce((sum, e) => sum + e.fee, 0) / (events.length || 1);
-    const totalRevenue = Math.round(confirmedRegCount * avgFee * 100) / 100;
+    const directEventRevenue = confirmedRegistrationsWithFee
+      .filter((reg) => !reg.delegationId || !paidDelegationIds.has(reg.delegationId))
+      .reduce((sum, reg) => sum + (reg.event.fee || 0), 0);
+
+    const totalRevenue = Math.round((delegationRevenue + directEventRevenue) * 100) / 100;
 
     const eventBreakdown = events.map((e) => ({
       id: e.id,
@@ -68,8 +121,20 @@ export async function GET() {
       capacity: e.capacity,
       venue: e.venue,
       dateTime: e.dateTime,
-      coordinatorName: e.coordinator?.name || "Unassigned",
-      coordinatorEmail: e.coordinator?.email || null,
+      coordinatorName:
+        e.staffCoordinator?.name ||
+        e.coordinator?.name ||
+        e.staffCoordinatorName ||
+        e.studentCoordinator?.name ||
+        e.studentCoordinatorName ||
+        "Unassigned",
+      coordinatorEmail:
+        e.staffCoordinator?.email ||
+        e.coordinator?.email ||
+        e.staffCoordinatorEmail ||
+        e.studentCoordinator?.email ||
+        e.studentCoordinatorEmail ||
+        null,
       registrationsCount: e._count.registrations,
     }));
 
@@ -85,6 +150,7 @@ export async function GET() {
         rejectedRegistrations,
         totalEvents: events.length,
         totalRevenue,
+        pendingRevenue,
       },
       eventBreakdown,
     });
