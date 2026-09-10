@@ -6,8 +6,11 @@ import {
   Search,
   CheckCircle2,
   AlertCircle,
+  AlertTriangle,
+  RefreshCw,
   X,
   Camera,
+  CameraOff,
   Utensils,
   GraduationCap,
   Building2,
@@ -19,6 +22,12 @@ import {
   Check,
 } from "lucide-react";
 import { safeJson } from "@/lib/safeFetch";
+import {
+  parseCameraError,
+  getAvailableCameras,
+  CameraErrorInfo,
+  CameraDeviceInfo,
+} from "@/lib/cameraScanner";
 
 interface RegistrationDetail {
   registrationId: string;
@@ -50,6 +59,7 @@ interface MemberLookupData {
   foodTokenClaimed: boolean;
   foodClaimedAt: string | null;
   foodClaimedBy: string | null;
+  foodPreference?: "VEG" | "NON_VEG" | null;
   collegeName: string;
   department: string | null;
   teamName: string | null;
@@ -66,7 +76,8 @@ interface MemberLookupData {
 interface CheckInModalProps {
   isOpen: boolean;
   onClose: () => void;
-  activeEventId?: string; // Optional: if coordinator is in a specific event page
+  activeEventId?: string; // Optional: if provided, coordinator is checking in for this specific event
+  activeEventName?: string;
   onCheckInComplete?: () => void;
   mode?: "all" | "event_only" | "food_only";
 }
@@ -75,6 +86,7 @@ export default function CheckInModal({
   isOpen,
   onClose,
   activeEventId,
+  activeEventName,
   onCheckInComplete,
   mode = "all",
 }: CheckInModalProps) {
@@ -85,6 +97,10 @@ export default function CheckInModal({
   const [delegate, setDelegate] = useState<MemberLookupData | null>(null);
   const [message, setMessage] = useState<{ type: "success" | "error" | "warning"; text: string } | null>(null);
   const [cameraActive, setCameraActive] = useState(false);
+  const [cameraStarting, setCameraStarting] = useState(false);
+  const [cameraError, setCameraError] = useState<CameraErrorInfo | null>(null);
+  const [availableCameras, setAvailableCameras] = useState<CameraDeviceInfo[]>([]);
+  const [selectedCameraId, setSelectedCameraId] = useState<string | null>(null);
 
   const scannerRef = useRef<any>(null);
   const scannerDivId = "reader-camera-stream";
@@ -102,6 +118,7 @@ export default function CheckInModal({
       setDelegate(null);
       setMessage(null);
       setInputCode("");
+      setCameraError(null);
     }
   }, [isOpen]);
 
@@ -116,14 +133,17 @@ export default function CheckInModal({
       scannerRef.current = null;
     }
     setCameraActive(false);
+    setCameraStarting(false);
   };
 
-  const startCameraScanner = async () => {
+  const startCameraScanner = async (specificCameraId?: string) => {
     try {
+      setCameraError(null);
       setMessage(null);
-      const { Html5Qrcode } = await import("html5-qrcode");
       setScanMode("camera");
-      setCameraActive(true);
+      setCameraStarting(true);
+
+      const { Html5Qrcode } = await import("html5-qrcode");
 
       // Slight timeout to allow DOM element to render
       setTimeout(async () => {
@@ -135,41 +155,82 @@ export default function CheckInModal({
           const html5QrCode = new Html5Qrcode(scannerDivId);
           scannerRef.current = html5QrCode;
 
-          await html5QrCode.start(
-            { facingMode: "environment" },
-            {
-              fps: 10,
-              qrbox: { width: 250, height: 250 },
-            },
-            (decodedText: string) => {
-              // Successfully decoded QR code
-              console.log("QR Decoded successfully:", decodedText);
-              handleLookup(decodedText);
-              stopCameraScanner();
-            },
-            () => {
-              // Ignore scan failures per frame
+          // Enumerate devices for camera switching & fallback
+          const cameras = await getAvailableCameras(Html5Qrcode);
+          setAvailableCameras(cameras);
+
+          // Determine preferred camera target
+          let targetConfig: any = { facingMode: "environment" };
+
+          const camIdToUse = specificCameraId || selectedCameraId;
+          if (camIdToUse && cameras.some((c) => c.id === camIdToUse)) {
+            targetConfig = camIdToUse;
+          } else if (cameras.length > 0) {
+            // Prefer rear/back camera on mobile, fallback to primary camera on laptop/desktop
+            const backCam = cameras.find((c) => c.isBackCamera);
+            const chosen = backCam || cameras[0];
+            targetConfig = chosen.id;
+            setSelectedCameraId(chosen.id);
+          }
+
+          const config = {
+            fps: 10,
+            qrbox: { width: 250, height: 250 },
+            aspectRatio: 1.0,
+          };
+
+          const onScanSuccess = (decodedText: string) => {
+            console.log("QR Decoded successfully:", decodedText);
+            handleLookup(decodedText);
+            stopCameraScanner();
+          };
+
+          // Try starting with target camera
+          try {
+            await html5QrCode.start(targetConfig, config, onScanSuccess, () => {});
+          } catch (primaryErr: any) {
+            console.warn("Primary camera start failed, attempting user camera fallback:", primaryErr);
+            // If primary was specific cameraId or environment, attempt fallback to facingMode: "user"
+            // (e.g. laptop integrated front webcam)
+            const isPermDenied =
+              primaryErr?.name === "NotAllowedError" ||
+              primaryErr?.name === "PermissionDeniedError" ||
+              /permission denied/i.test(primaryErr?.message || "");
+
+            if (!isPermDenied) {
+              await html5QrCode.start({ facingMode: "user" }, config, onScanSuccess, () => {});
+            } else {
+              throw primaryErr;
             }
-          );
-        } catch (err: any) {
-          console.error("Camera start inner error:", err);
-          setMessage({
-            type: "warning",
-            text: "Camera unavailable or permission denied. Please enter the unique code manually below.",
-          });
-          setScanMode("manual");
+          }
+
+          setCameraActive(true);
+          setCameraError(null);
+        } catch (innerErr: any) {
+          console.error("Camera start inner error:", innerErr);
+          const parsed = parseCameraError(innerErr);
+          setCameraError(parsed);
           setCameraActive(false);
+        } finally {
+          setCameraStarting(false);
         }
-      }, 200);
+      }, 150);
     } catch (err: any) {
       console.error("Camera load error:", err);
-      setMessage({
-        type: "warning",
-        text: "Camera scanner could not initialize. Please use manual code lookup.",
-      });
-      setScanMode("manual");
+      const parsed = parseCameraError(err);
+      setCameraError(parsed);
       setCameraActive(false);
+      setCameraStarting(false);
     }
+  };
+
+  const switchCamera = async () => {
+    if (availableCameras.length <= 1) return;
+    const currentIndex = availableCameras.findIndex((c) => c.id === selectedCameraId);
+    const nextIndex = (currentIndex + 1) % availableCameras.length;
+    const nextCam = availableCameras[nextIndex];
+    setSelectedCameraId(nextCam.id);
+    await startCameraScanner(nextCam.id);
   };
 
   const handleLookup = async (codeToSearch?: string) => {
@@ -346,7 +407,7 @@ export default function CheckInModal({
 
             <button
               type="button"
-              onClick={startCameraScanner}
+              onClick={() => startCameraScanner()}
               className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
                 scanMode === "camera"
                   ? "bg-[#1C1917] text-white shadow-xs"
@@ -360,21 +421,108 @@ export default function CheckInModal({
 
           {/* Scanner / Input Area */}
           {scanMode === "camera" ? (
-            <div className="bg-stone-900 rounded-2xl p-4 text-center text-white space-y-3">
-              <div
-                id={scannerDivId}
-                className="w-full max-w-xs mx-auto overflow-hidden rounded-xl border-2 border-amber-400"
-              />
-              <p className="text-xs text-stone-300">
-                Point your mobile or webcam at the participant&apos;s <strong>Event Entry QR</strong> or <strong>Food Token QR</strong>
-              </p>
-              <button
-                type="button"
-                onClick={stopCameraScanner}
-                className="text-xs text-amber-400 hover:underline font-semibold"
-              >
-                Switch to Manual Code Entry
-              </button>
+            <div className="bg-stone-900 rounded-2xl p-4 sm:p-5 text-center text-white space-y-4 border border-stone-800">
+              {/* Diagnostic Error State */}
+              {cameraError ? (
+                <div className="space-y-3.5 py-2">
+                  <div className="w-12 h-12 mx-auto rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+                    <AlertTriangle className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-white flex items-center justify-center gap-1.5">
+                      <span>{cameraError.title}</span>
+                    </h3>
+                    <p className="text-xs text-stone-300 mt-1 max-w-sm mx-auto">
+                      {cameraError.message}
+                    </p>
+                  </div>
+
+                  {cameraError.steps && cameraError.steps.length > 0 && (
+                    <div className="text-left bg-stone-950/80 rounded-xl p-3.5 border border-stone-800/80 max-w-sm mx-auto space-y-2">
+                      <p className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">How to resolve:</p>
+                      <ol className="text-xs text-stone-300 space-y-1.5 list-decimal list-inside">
+                        {cameraError.steps.map((step, idx) => (
+                          <li key={idx} className="leading-relaxed">
+                            <span className="text-stone-200">{step}</span>
+                          </li>
+                        ))}
+                      </ol>
+                    </div>
+                  )}
+
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => startCameraScanner()}
+                      className="w-full sm:w-auto px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs rounded-xl transition flex items-center justify-center gap-1.5 shadow-md shadow-amber-500/20 cursor-pointer"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      <span>Retry Camera Access</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setScanMode("manual");
+                        setCameraError(null);
+                      }}
+                      className="w-full sm:w-auto px-4 py-2.5 bg-stone-800 hover:bg-stone-700 text-stone-300 font-semibold text-xs rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <Search className="w-3.5 h-3.5" />
+                      <span>Use Manual Lookup Instead</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="relative">
+                    {cameraStarting && (
+                      <div className="py-12 flex flex-col items-center justify-center gap-2 text-stone-400">
+                        <span className="w-6 h-6 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
+                        <span className="text-xs">Connecting camera...</span>
+                      </div>
+                    )}
+
+                    <div
+                      id={scannerDivId}
+                      className={`w-full max-w-xs mx-auto overflow-hidden rounded-xl border-2 border-amber-400 shadow-lg ${
+                        cameraActive ? "block" : "hidden"
+                      }`}
+                    />
+                  </div>
+
+                  {cameraActive && (
+                    <div className="space-y-2">
+                      <p className="text-xs text-stone-300">
+                        Point camera at participant&apos;s <strong>QR Code</strong>
+                      </p>
+
+                      <div className="flex items-center justify-center gap-2 pt-1">
+                        {availableCameras.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={switchCamera}
+                            className="px-3 py-1.5 bg-stone-800 hover:bg-stone-700 text-amber-300 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
+                          >
+                            <RefreshCw className="w-3 h-3" />
+                            <span>Switch Camera ({availableCameras.length})</span>
+                          </button>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            stopCameraScanner();
+                            setScanMode("manual");
+                          }}
+                          className="text-xs text-stone-400 hover:text-stone-200 underline font-semibold px-2 py-1 cursor-pointer"
+                        >
+                          Switch to Manual Code Entry
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           ) : (
             <form
