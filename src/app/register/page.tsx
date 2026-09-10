@@ -51,6 +51,7 @@ interface MemberFormState {
   phone: string;
   eventIds: string[];
   prelimsEventIds?: string[];
+  foodPreference?: "VEG" | "NON_VEG";
 }
 
 interface RegisteredDelegate {
@@ -60,6 +61,7 @@ interface RegisteredDelegate {
   phone: string;
   badgeCode: string;
   foodTokenCode: string;
+  foodPreference?: "VEG" | "NON_VEG";
   qrData: string;
   foodQrData?: string;
   events: Array<{
@@ -116,7 +118,7 @@ function RegisterForm() {
 
   // Step 2: Student Contingent Members
   const [members, setMembers] = useState<MemberFormState[]>([
-    { name: "", email: "", phone: "", eventIds: [] },
+    { name: "", email: "", phone: "", eventIds: [], foodPreference: "VEG" },
   ]);
 
   // Events
@@ -143,7 +145,7 @@ function RegisterForm() {
           setEvents(eventsData.events);
           if (preselectedEventId) {
             setMembers([
-              { name: "", email: "", phone: "", eventIds: [preselectedEventId] },
+              { name: "", email: "", phone: "", eventIds: [preselectedEventId], foodPreference: "VEG" },
             ]);
           }
         }
@@ -204,7 +206,7 @@ function RegisterForm() {
   const addMember = () => {
     setMembers((prev) => [
       ...prev,
-      { name: "", email: "", phone: "", eventIds: [] },
+      { name: "", email: "", phone: "", eventIds: [], foodPreference: "VEG" },
     ]);
   };
 
@@ -1023,6 +1025,43 @@ function RegisterForm() {
                         </div>
                       </div>
 
+                      {/* Participant Dietary Preference for Food Committee */}
+                      <div className="bg-amber-50/40 border border-amber-200/60 rounded-xl p-3">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-2">
+                          <label className="text-[11px] font-black text-amber-950 uppercase tracking-wider flex items-center gap-1.5">
+                            <Utensils className="w-3.5 h-3.5 text-amber-600" />
+                            <span>Lunch Food Preference *</span>
+                          </label>
+                          <span className="text-[10px] text-stone-500">
+                            Pre-allocates lunch counter token
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => updateMember(mIdx, "foodPreference", "VEG")}
+                            className={`py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                              (member.foodPreference || "VEG") === "VEG"
+                                ? "bg-emerald-600 border-emerald-600 text-white shadow-xs"
+                                : "bg-white border-stone-200 text-stone-700 hover:border-emerald-300"
+                            }`}
+                          >
+                            <span>🥗 Vegetarian</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => updateMember(mIdx, "foodPreference", "NON_VEG")}
+                            className={`py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                              member.foodPreference === "NON_VEG"
+                                ? "bg-amber-600 border-amber-600 text-white shadow-xs"
+                                : "bg-white border-stone-200 text-stone-700 hover:border-amber-300"
+                            }`}
+                          >
+                            <span>🍗 Non-Vegetarian</span>
+                          </button>
+                        </div>
+                      </div>
+
                       {/* Event Enrollment for this participant (Categorized into On-Stage & Off-Stage) */}
                       <div className="pt-4 border-t border-stone-200 space-y-4">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
@@ -1344,6 +1383,13 @@ function RegisterForm() {
                   </div>
 
                   <div className="flex justify-between pb-2 border-b border-stone-200">
+                    <span className="text-stone-500">Catering Food Breakdown:</span>
+                    <span className="font-semibold text-stone-800">
+                      🥗 {members.filter((m) => (m.foodPreference || "VEG") === "VEG").length} Veg • 🍗 {members.filter((m) => m.foodPreference === "NON_VEG").length} Non-Veg
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between pb-2 border-b border-stone-200">
                     <span className="text-stone-500">Fee Per Head:</span>
                     <span className="font-semibold text-stone-800">
                       {participantFee > 0 ? `₹${participantFee}` : "Free Entry"}
@@ -1374,9 +1420,20 @@ function RegisterForm() {
                         <strong className="text-stone-900">{m.name}</strong>
                         <span className="text-stone-400 text-[11px] ml-2">({m.phone})</span>
                       </div>
-                      <span className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded shrink-0">
-                        {m.eventIds.length} Event(s)
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                            (m.foodPreference || "VEG") === "VEG"
+                              ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
+                              : "bg-amber-100 text-amber-900 border border-amber-200"
+                          }`}
+                        >
+                          {(m.foodPreference || "VEG") === "VEG" ? "🥗 Veg" : "🍗 Non-Veg"}
+                        </span>
+                        <span className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded shrink-0">
+                          {m.eventIds.length} Event(s)
+                        </span>
+                      </div>
                     </div>
                   ))}
                 </div>

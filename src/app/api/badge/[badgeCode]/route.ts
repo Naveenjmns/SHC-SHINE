@@ -88,6 +88,7 @@ export async function GET(
           email: member.email,
           phone: member.phone,
           foodTokenCode: member.foodTokenCode,
+          foodPreference: (member as any).foodPreference || "VEG",
           eventCheckedIn: member.eventCheckedIn,
           eventCheckedInAt: member.eventCheckedInAt,
           foodTokenClaimed: member.foodTokenClaimed,

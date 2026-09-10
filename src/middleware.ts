@@ -30,10 +30,11 @@ export async function middleware(req: NextRequest) {
   // Paths that require authentication
   const isDashboard = pathname.startsWith("/dashboard");
   const isCoordinator = pathname.startsWith("/coordinator");
+  const isFood = pathname.startsWith("/food");
   const isAdmin = pathname.startsWith("/admin");
 
   // For non-protected routes, just add security headers and pass through
-  if (!isDashboard && !isCoordinator && !isAdmin) {
+  if (!isDashboard && !isCoordinator && !isFood && !isAdmin) {
     const response = NextResponse.next();
     return applySecurityHeaders(response);
   }
@@ -89,10 +90,18 @@ export async function middleware(req: NextRequest) {
     let redirectUrl: URL;
     if (role === "COORDINATOR") {
       redirectUrl = new URL("/coordinator", req.url);
+    } else if (role === "FOOD_COORDINATOR") {
+      redirectUrl = new URL("/food", req.url);
     } else {
       redirectUrl = new URL("/dashboard", req.url);
     }
     const response = NextResponse.redirect(redirectUrl);
+    return applySecurityHeaders(response);
+  }
+
+  // Food Coordinator route protection: FOOD_COORDINATOR or ADMIN
+  if (isFood && role !== "FOOD_COORDINATOR" && role !== "ADMIN") {
+    const response = NextResponse.redirect(new URL("/dashboard", req.url));
     return applySecurityHeaders(response);
   }
 
@@ -103,11 +112,17 @@ export async function middleware(req: NextRequest) {
     role !== "ADMIN" &&
     !token.isEventCoordinator
   ) {
-    const response = NextResponse.redirect(new URL("/dashboard", req.url));
+    let redirectUrl: URL;
+    if (role === "FOOD_COORDINATOR") {
+      redirectUrl = new URL("/food", req.url);
+    } else {
+      redirectUrl = new URL("/dashboard", req.url);
+    }
+    const response = NextResponse.redirect(redirectUrl);
     return applySecurityHeaders(response);
   }
 
-  // Dashboard route: STUDENT, COORDINATOR, or ADMIN are allowed
+  // Dashboard route: STUDENT, COORDINATOR, FOOD_COORDINATOR, or ADMIN are allowed
   const response = NextResponse.next();
   return applySecurityHeaders(response);
 }
@@ -122,6 +137,7 @@ export const config = {
      */
     "/dashboard/:path*",
     "/coordinator/:path*",
+    "/food/:path*",
     "/admin/:path*",
     "/api/:path*",
     "/login",

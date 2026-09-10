@@ -64,6 +64,7 @@ interface PassData {
   isTeamLead: boolean;
   badgeCode: string;
   foodTokenCode: string;
+  foodPreference?: "VEG" | "NON_VEG";
   eventCheckedIn: boolean;
   foodTokenClaimed: boolean;
   qrData: string | null;
@@ -376,14 +377,25 @@ export default function StudentDashboard() {
                       </div>
 
                       {/* Food & Lunch Token Box */}
-                      <div className="bg-amber-100/70 border border-amber-300/80 rounded-xl p-3 flex items-center justify-between text-xs max-w-sm">
+                      <div className="bg-amber-100/70 border border-amber-300/80 rounded-xl p-3 flex flex-wrap items-center justify-between gap-2 text-xs max-w-md">
                         <div className="flex items-center gap-2 text-amber-950 font-bold">
                           <Utensils className="w-4 h-4 text-amber-700" />
-                          <span>Food & Lunch Token</span>
+                          <span>Lunch & Food Token</span>
                         </div>
-                        <span className="font-mono font-black text-stone-900 bg-white px-2.5 py-0.5 rounded border border-amber-300 shadow-2xs">
-                          {pass.foodTokenCode}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                              (pass.foodPreference || "VEG") === "VEG"
+                                ? "bg-emerald-600 text-white"
+                                : "bg-amber-600 text-white"
+                            }`}
+                          >
+                            {(pass.foodPreference || "VEG") === "VEG" ? "🥗 Pure Veg" : "🍗 Non-Veg"}
+                          </span>
+                          <span className="font-mono font-black text-stone-900 bg-white px-2.5 py-0.5 rounded border border-amber-300 shadow-2xs">
+                            {pass.foodTokenCode}
+                          </span>
+                        </div>
                       </div>
 
                       {/* Events Enrolled */}

@@ -31,6 +31,9 @@ import {
   Award,
   ChevronDown,
   Target,
+  Utensils,
+  Leaf,
+  Flame,
 } from "lucide-react";
 import { safeJson } from "@/lib/safeFetch";
 
@@ -113,6 +116,7 @@ interface ReportData {
     isTeamLead: boolean;
     badgeCode: string | null;
     foodTokenCode: string | null;
+    foodPreference?: "VEG" | "NON_VEG" | string;
     attended: boolean;
     checkedInAt: string | null;
     events: Array<{
@@ -168,6 +172,28 @@ interface ReportData {
     participantsCount: number;
     eventsEnrolledCount: number;
   }>;
+  cateringSummary?: {
+    totalEligible: number;
+    totalClaimed: number;
+    totalRemaining: number;
+    claimPercentage: number;
+    veg: { requested: number; claimed: number; remaining: number };
+    nonVeg: { requested: number; claimed: number; remaining: number };
+  };
+  cateringRoster?: Array<{
+    sNo: number;
+    id: string;
+    name: string;
+    email: string;
+    phone: string;
+    collegeName: string;
+    foodPreference: "VEG" | "NON_VEG";
+    foodTokenCode: string;
+    badgeCode: string;
+    foodTokenClaimed: boolean;
+    foodClaimedAt: string | null;
+    foodClaimedBy: string | null;
+  }>;
 }
 
 function formatReportDate(dateStr?: string | null): string {
@@ -215,7 +241,7 @@ export default function AdminReportsPage() {
   }, []);
 
   const [activeSection, setActiveSection] = useState<
-    "all" | "summary" | "events" | "delegations" | "roster" | "prelims" | "results" | "championship"
+    "all" | "summary" | "catering" | "events" | "delegations" | "roster" | "prelims" | "results" | "championship"
   >("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedEventFilter, setSelectedEventFilter] = useState("ALL");
@@ -283,6 +309,7 @@ export default function AdminReportsPage() {
       "Department",
       "Contingent Team",
       "Is Team Lead",
+      "Dietary Choice",
       "Badge Code",
       "Food Token Code",
       "Attendance Status",
@@ -300,6 +327,7 @@ export default function AdminReportsPage() {
       `"${(s.department || "").replace(/"/g, '""')}"`,
       `"${(s.teamName || "").replace(/"/g, '""')}"`,
       s.isTeamLead ? "YES" : "NO",
+      s.foodPreference === "NON_VEG" ? "NON-VEGETARIAN" : "VEGETARIAN",
       `"${s.badgeCode || "—"}"`,
       `"${s.foodTokenCode || "—"}"`,
       s.attended ? "PRESENT" : "ABSENT",
@@ -468,6 +496,37 @@ export default function AdminReportsPage() {
 
     const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
     downloadCsv(`${data.summary.festName}_${data.summary.festEdition}_College_Championship_Standings.csv`, csv);
+  };
+
+  // 6. Export Catering & Food Vendor List CSV
+  const exportCateringVendorCSV = () => {
+    if (!data || !data.cateringRoster) return;
+    const headers = [
+      "S.No",
+      "Student Delegate Name",
+      "College / Institution",
+      "Dietary Preference",
+      "Meal Token Code",
+      "Delegate Badge Code",
+      "Claim Status",
+      "Claim Timestamp",
+      "Claimed By Staff",
+    ];
+
+    const rows = data.cateringRoster.map((r, idx) => [
+      idx + 1,
+      `"${r.name.replace(/"/g, '""')}"`,
+      `"${r.collegeName.replace(/"/g, '""')}"`,
+      r.foodPreference === "NON_VEG" ? "NON-VEGETARIAN (🍗)" : "VEGETARIAN (🥗)",
+      `"${r.foodTokenCode}"`,
+      `"${r.badgeCode}"`,
+      r.foodTokenClaimed ? "SERVED" : "PENDING",
+      `"${r.foodClaimedAt ? new Date(r.foodClaimedAt).toLocaleString() : "—"}"`,
+      `"${r.foodClaimedBy || "—"}"`,
+    ]);
+
+    const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+    downloadCsv(`${data.summary.festName}_${data.summary.festEdition}_Catering_Vendor_List.csv`, csv);
   };
 
   // Filtered master student list based on search and event filter
@@ -759,6 +818,13 @@ export default function AdminReportsPage() {
                   <Medal className="w-3.5 h-3.5 text-orange-600 shrink-0" />
                   <span>College Championship Standings</span>
                 </button>
+                <button
+                  onClick={exportCateringVendorCSV}
+                  className="w-full text-left px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-orange-50 hover:text-orange-700 transition flex items-center gap-2 border-t border-slate-100 cursor-pointer"
+                >
+                  <Utensils className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span>Catering & Food Vendor List ({data.cateringRoster?.length || 0})</span>
+                </button>
               </div>
             </div>
           </div>
@@ -769,6 +835,7 @@ export default function AdminReportsPage() {
           {[
             { id: "all", label: "Full Report (All Sections)" },
             { id: "summary", label: "Executive Summary" },
+            { id: "catering", label: `🍱 Catering & Dietary (${data.cateringSummary?.totalClaimed ?? 0}/${data.cateringSummary?.totalEligible ?? 0})` },
             { id: "events", label: `Events & Coordinators (${data.events.length})` },
             { id: "delegations", label: `College Delegations (${data.delegations.length})` },
             { id: "roster", label: `Master Student Roster (${data.masterStudentRoster.length})` },
@@ -1577,6 +1644,156 @@ export default function AdminReportsPage() {
                           </span>
                         ) : (
                           <span className="text-slate-400 text-[9px] print:text-[6.5pt]">Participant</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* =========================================================================
+            SECTION: CATERING LOGISTICS & DIETARY DISTRIBUTION REPORT
+            ========================================================================= */}
+        {(activeSection === "all" || activeSection === "catering") && (
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-xs print:border-none print:shadow-none print:p-0 space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-wider text-orange-600 block mb-0.5">
+                  Dining & Hospitality Services
+                </span>
+                <h3 className="text-base sm:text-lg font-black text-slate-950 uppercase flex items-center gap-2">
+                  <Utensils className="w-5 h-5 text-amber-600 print:hidden" />
+                  <span>Catering Logistics & Dietary Distribution Report</span>
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Official meal tally & dietary preference roster for food contractors, catering vendors, and dining hall audit.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 no-print print:hidden">
+                <Link
+                  href="/food"
+                  className="px-3.5 py-1.5 rounded-xl bg-amber-50 border border-amber-300 text-xs font-bold text-amber-900 hover:bg-amber-100 transition flex items-center gap-1.5"
+                >
+                  <Utensils className="w-3.5 h-3.5" />
+                  <span>Open Food Console</span>
+                </Link>
+                <button
+                  onClick={exportCateringVendorCSV}
+                  className="px-3.5 py-1.5 rounded-xl bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold flex items-center gap-1.5 transition shadow-xs cursor-pointer"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Vendor CSV</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Catering Breakdown KPI Cards */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 print:grid-cols-4">
+              <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-50 border border-slate-200">
+                <div className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">Total Meals Ordered</div>
+                <div className="text-xl sm:text-2xl font-black text-slate-900 mt-1 tabular-nums">
+                  {data.cateringSummary?.totalEligible ?? 0}
+                </div>
+                <div className="text-[11px] text-slate-500 mt-1">
+                  {data.cateringSummary?.totalClaimed ?? 0} served ({data.cateringSummary?.claimPercentage ?? 0}%)
+                </div>
+              </div>
+
+              <div className="p-3.5 sm:p-4 rounded-2xl bg-emerald-50 border border-emerald-200">
+                <div className="text-[10px] font-bold uppercase text-emerald-800 tracking-wider flex items-center gap-1">
+                  <Leaf className="w-3 h-3 text-emerald-600 print:hidden" />
+                  <span>Vegetarian Meals</span>
+                </div>
+                <div className="text-xl sm:text-2xl font-black text-emerald-900 mt-1 tabular-nums">
+                  {data.cateringSummary?.veg.requested ?? 0}
+                </div>
+                <div className="text-[11px] text-emerald-700 mt-1">
+                  {data.cateringSummary?.veg.claimed ?? 0} served • {data.cateringSummary?.veg.remaining ?? 0} pending
+                </div>
+              </div>
+
+              <div className="p-3.5 sm:p-4 rounded-2xl bg-amber-50 border border-amber-200">
+                <div className="text-[10px] font-bold uppercase text-amber-900 tracking-wider flex items-center gap-1">
+                  <Flame className="w-3 h-3 text-amber-600 print:hidden" />
+                  <span>Non-Vegetarian Meals</span>
+                </div>
+                <div className="text-xl sm:text-2xl font-black text-amber-950 mt-1 tabular-nums">
+                  {data.cateringSummary?.nonVeg.requested ?? 0}
+                </div>
+                <div className="text-[11px] text-amber-800 mt-1">
+                  {data.cateringSummary?.nonVeg.claimed ?? 0} served • {data.cateringSummary?.nonVeg.remaining ?? 0} pending
+                </div>
+              </div>
+
+              <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-50 border border-slate-200">
+                <div className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">Queue Remaining</div>
+                <div className="text-xl sm:text-2xl font-black text-slate-900 mt-1 tabular-nums">
+                  {data.cateringSummary?.totalRemaining ?? 0}
+                </div>
+                <div className="text-[11px] text-slate-500 mt-1">
+                  Delegates yet to claim lunch token
+                </div>
+              </div>
+            </div>
+
+            {/* Detailed Catering Roster Table */}
+            <div className="overflow-x-auto print:overflow-visible pt-2">
+              <table className="w-full text-left text-xs border-collapse border border-slate-200 print:text-[7pt] print:table-fixed">
+                <thead>
+                  <tr className="bg-slate-100 text-slate-800 font-extrabold border-b border-slate-200">
+                    <th className="p-2 border border-slate-200 w-10 text-center print:w-[5%]">S.No</th>
+                    <th className="p-2 border border-slate-200 print:w-[25%]">Student Delegate Name</th>
+                    <th className="p-2 border border-slate-200 print:w-[25%]">College / Institution</th>
+                    <th className="p-2 border border-slate-200 print:w-[15%] text-center">Dietary Choice</th>
+                    <th className="p-2 border border-slate-200 print:w-[15%] text-center font-mono">Token Code</th>
+                    <th className="p-2 border border-slate-200 print:w-[15%] text-center">Claim Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200">
+                  {(data.cateringRoster || []).map((c) => (
+                    <tr key={c.id} className="hover:bg-slate-50/70 print:break-inside-avoid">
+                      <td className="p-2 border border-slate-200 text-center font-mono text-slate-500">
+                        {c.sNo}
+                      </td>
+                      <td className="p-2 border border-slate-200 font-bold text-slate-900">
+                        {c.name}
+                        {c.phone && (
+                          <span className="block text-[10px] font-normal text-slate-400 font-mono">
+                            {c.phone}
+                          </span>
+                        )}
+                      </td>
+                      <td className="p-2 border border-slate-200 text-slate-700">
+                        {c.collegeName}
+                      </td>
+                      <td className="p-2 border border-slate-200 text-center">
+                        <span
+                          className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider inline-flex items-center gap-1 ${
+                            c.foodPreference === "VEG"
+                              ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                              : "bg-amber-100 text-amber-900 border border-amber-300"
+                          }`}
+                        >
+                          <span>{c.foodPreference === "VEG" ? "🥗 VEG" : "🍗 NON-VEG"}</span>
+                        </span>
+                      </td>
+                      <td className="p-2 border border-slate-200 text-center font-mono font-bold text-slate-800">
+                        {c.foodTokenCode}
+                      </td>
+                      <td className="p-2 border border-slate-200 text-center">
+                        {c.foodTokenClaimed ? (
+                          <span className="text-[10px] font-bold text-emerald-700 inline-flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-600 print:hidden" />
+                            <span>SERVED</span>
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-semibold text-slate-400">
+                            PENDING
+                          </span>
                         )}
                       </td>
                     </tr>

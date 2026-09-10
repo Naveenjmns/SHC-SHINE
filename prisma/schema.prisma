@@ -15,6 +15,7 @@ enum Role {
   STUDENT
   COORDINATOR
   ADMIN
+  FOOD_COORDINATOR
 }
 
 enum EventCategory {
@@ -31,16 +32,17 @@ enum RegistrationStatus {
 // ===== Models =====
 
 model User {
-  id           String   @id @default(cuid())
-  name         String
-  email        String   @unique
-  phone        String?
-  passwordHash String?
-  role         Role     @default(STUDENT)
-  college      String?
-  avatarUrl    String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id             String   @id @default(cuid())
+  name           String
+  email          String   @unique
+  phone          String?
+  passwordHash   String?
+  role           Role     @default(STUDENT)
+  college        String?
+  avatarUrl      String?
+  foodPreference String?  @default("VEG") // VEG, NON_VEG
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   // Relations
   registrations      Registration[]   // Events the user has registered for (as student)
@@ -148,6 +150,7 @@ model DelegationMember {
   isTeamLead       Boolean        @default(false)
   badgeCode        String         @unique
   foodTokenCode    String         @unique
+  foodPreference   String         @default("VEG") // VEG, NON_VEG
   eventCheckedIn    Boolean        @default(false)
   eventCheckedInAt  DateTime?
   eventCheckedInBy  String?

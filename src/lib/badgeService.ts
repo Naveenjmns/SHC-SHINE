@@ -62,6 +62,7 @@ export async function generateFoodTokenQr(payload: {
   foodTokenCode: string;
   badgeCode: string;
   name: string;
+  foodPreference?: string;
   verifyUrl?: string;
 }): Promise<string> {
   try {
@@ -72,6 +73,7 @@ export async function generateFoodTokenQr(payload: {
         code: payload.foodTokenCode,
         badge: payload.badgeCode,
         name: payload.name,
+        diet: payload.foodPreference || "VEG",
       });
 
     return await QRCode.toDataURL(rawContent, {
