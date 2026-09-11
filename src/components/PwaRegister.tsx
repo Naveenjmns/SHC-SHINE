@@ -8,7 +8,26 @@ export default function PwaRegister() {
   const [showOnlineToast, setShowOnlineToast] = useState(false);
 
   useEffect(() => {
-    // 1. Register Service Worker (cross-browser safe for both early and late hydration)
+    // In development mode, unregister any active service worker so it doesn't intercept Turbopack HMR chunks
+    if (process.env.NODE_ENV === "development") {
+      if (typeof window !== "undefined" && "serviceWorker" in navigator) {
+        navigator.serviceWorker.getRegistrations().then((registrations) => {
+          for (const reg of registrations) {
+            reg.unregister();
+          }
+        });
+        if ("caches" in window) {
+          caches.keys().then((keys) => {
+            for (const key of keys) {
+              caches.delete(key);
+            }
+          });
+        }
+      }
+      return;
+    }
+
+    // 1. Register Service Worker in production
     if (typeof window !== "undefined" && "serviceWorker" in navigator) {
       const registerSW = () => {
         navigator.serviceWorker
