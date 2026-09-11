@@ -19,6 +19,9 @@ import {
   ShieldCheck,
   AlertCircle,
 } from "lucide-react";
+import { copyToClipboard } from "@/lib/clipboard";
+import { formatDateSafe } from "@/lib/dateUtils";
+import { safeJson } from "@/lib/safeFetch";
 
 interface BadgeData {
   badgeCode: string;
@@ -82,7 +85,7 @@ export default function BadgeDetailPage() {
       if (!badgeCode) return;
       try {
         const res = await fetch(`/api/badge/${encodeURIComponent(badgeCode)}`);
-        const data = await res.json();
+        const data = await safeJson(res, { success: false });
         if (data.success && data.badge) {
           setBadge(data.badge);
         } else {
@@ -115,9 +118,11 @@ export default function BadgeDetailPage() {
         console.log("Share skipped/aborted:", e);
       }
     } else {
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2500);
+      const ok = await copyToClipboard(url);
+      if (ok) {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2500);
+      }
     }
   };
 
@@ -150,32 +155,40 @@ export default function BadgeDetailPage() {
     );
   }
 
-  const formattedDate = new Date(badge.fest.startDate).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
+  const formattedDate = formatDateSafe(
+    badge.fest.startDate,
+    {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    },
+    "en-US"
+  );
 
   return (
     <div className="min-h-screen bg-[#FAF8F5] text-stone-900 py-8 px-4 sm:px-6">
-      <style jsx global>{`
-        @media print {
-          body {
-            background: white !important;
-            color: black !important;
-          }
-          .no-print {
-            display: none !important;
-          }
-          .print-badge-wrapper {
-            box-shadow: none !important;
-            border: 2px solid #1C1917 !important;
-            page-break-inside: avoid;
-            margin: 0 auto;
-            max-width: 500px;
-          }
-        }
-      `}</style>
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+            @media print {
+              body {
+                background: white !important;
+                color: black !important;
+              }
+              .no-print {
+                display: none !important;
+              }
+              .print-badge-wrapper {
+                box-shadow: none !important;
+                border: 2px solid #1C1917 !important;
+                page-break-inside: avoid;
+                margin: 0 auto;
+                max-width: 500px;
+              }
+            }
+          `,
+        }}
+      />
 
       {/* Action Bar (Screen Only) */}
       <div className="max-w-2xl mx-auto mb-6 flex items-center justify-between no-print">

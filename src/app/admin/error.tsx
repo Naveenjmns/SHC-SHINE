@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ShieldAlert, RefreshCcw, Home, LayoutDashboard, ArrowLeft, Copy, Check } from "lucide-react";
+import { copyToClipboard } from "@/lib/clipboard";
 
 export default function AdminError({
   error,
@@ -18,13 +19,16 @@ export default function AdminError({
     console.error("Admin Portal Error:", error);
   }, [error]);
 
-  const copyDigest = () => {
+  const copyDigest = async () => {
     if (error?.digest) {
-      navigator.clipboard.writeText(error.digest);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      const ok = await copyToClipboard(error.digest);
+      if (ok) {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
     }
   };
+
 
   const handleRetry = () => {
     setIsRetrying(true);

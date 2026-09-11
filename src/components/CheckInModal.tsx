@@ -33,6 +33,7 @@ import {
   CameraErrorInfo,
   CameraDeviceInfo,
 } from "@/lib/cameraScanner";
+import { formatTimeSafe } from "@/lib/dateUtils";
 
 interface RegistrationDetail {
   registrationId: string;
@@ -115,12 +116,15 @@ export default function CheckInModal({
   const [fileScanning, setFileScanning] = useState(false);
   const isStoppingCameraRef = useRef(false);
 
-  // Play audio chime on successful scan
+  // Play audio chime on successful scan (cross-browser safe with AudioContext cleanup)
   const playBeep = () => {
     try {
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
       if (!AudioCtx) return;
       const ctx = new AudioCtx();
+      if (ctx.state === "suspended") {
+        ctx.resume().catch(() => {});
+      }
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = "sine";
@@ -129,10 +133,16 @@ export default function CheckInModal({
       gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.12);
       osc.connect(gain);
       gain.connect(ctx.destination);
+      osc.onended = () => {
+        try {
+          ctx.close();
+        } catch (_) {}
+      };
       osc.start();
       osc.stop(ctx.currentTime + 0.12);
     } catch (_) {}
   };
+
 
   // Haptic feedback
   const triggerVibrate = () => {
@@ -216,6 +226,7 @@ export default function CheckInModal({
     if (!file) return;
     setFileScanning(true);
     setMessage(null);
+
     try {
       const { Html5Qrcode } = await import("html5-qrcode");
       const tempId = "file-qr-decoder-checkin";
@@ -359,6 +370,15 @@ export default function CheckInModal({
         }
       }
 
+      // Enforce iOS Safari inline video attributes on dynamically rendered video
+      if (scannerEl) {
+        const vids = scannerEl.getElementsByTagName("video");
+        for (let i = 0; i < vids.length; i++) {
+          vids[i].setAttribute("playsinline", "true");
+          vids[i].setAttribute("webkit-playsinline", "true");
+          vids[i].setAttribute("muted", "true");
+        }
+      }
       setCameraActive(true);
       setCameraError(null);
 
@@ -904,7 +924,7 @@ export default function CheckInModal({
                           </div>
                           <div className="text-[11px] text-stone-500 flex items-center gap-2 flex-wrap">
                             {reg.venue && <span>Venue: <b>{reg.venue}</b> • </span>}
-                            <span>Scheduled: {reg.dateTime ? new Date(reg.dateTime).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) : "TBD"}</span>
+                            <span>Scheduled: {reg.dateTime ? formatTimeSafe(reg.dateTime) : "TBD"}</span>
                           </div>
                         </div>
 
@@ -917,7 +937,7 @@ export default function CheckInModal({
                                 Present
                                 {reg.checkedInAt && (
                                   <span className="font-normal text-[9px] text-emerald-700 ml-1">
-                                    {new Date(reg.checkedInAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                                    {formatTimeSafe(reg.checkedInAt)}
                                   </span>
                                 )}
                               </span>
@@ -993,7 +1013,7 @@ export default function CheckInModal({
                       Token: <strong className="font-mono text-stone-900 bg-white px-1.5 py-0.5 rounded border border-amber-300">{delegate.foodTokenCode}</strong>
                       {delegate.foodTokenClaimed ? (
                         <span className="ml-2 text-stone-700 font-medium">
-                          (Issued at {delegate.foodClaimedAt ? new Date(delegate.foodClaimedAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) : "earlier"} by {delegate.foodClaimedBy || "staff"})
+                          (Issued at {delegate.foodClaimedAt ? formatTimeSafe(delegate.foodClaimedAt) : "earlier"} by {delegate.foodClaimedBy || "staff"})
                         </span>
                       ) : (
                         <span className="ml-2 text-stone-500">Valid for 1 lunch/refreshment packet</span>

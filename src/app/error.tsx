@@ -12,6 +12,7 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
+import { copyToClipboard } from "@/lib/clipboard";
 
 export default function Error({
   error,
@@ -28,13 +29,16 @@ export default function Error({
     console.error("Runtime Exception:", error);
   }, [error]);
 
-  const copyDigest = () => {
+  const copyDigest = async () => {
     if (error?.digest) {
-      navigator.clipboard.writeText(error.digest);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      const ok = await copyToClipboard(error.digest);
+      if (ok) {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
     }
   };
+
 
   const handleRetry = () => {
     setIsRetrying(true);
