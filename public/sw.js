@@ -1,5 +1,5 @@
 // SHINE 26 Event Platform — High-Performance Service Worker
-const CACHE_NAME = "shine26-cache-v1";
+const CACHE_NAME = "shine26-cache-v2";
 const STATIC_ASSETS = [
   "/",
   "/offline.html",
@@ -44,8 +44,16 @@ self.addEventListener("fetch", (event) => {
   // Skip non-GET and API mutations
   if (req.method !== "GET") return;
 
-  // Don't intercept auth or NextAuth session requests
-  if (url.pathname.startsWith("/api/auth")) return;
+  // Never intercept Turbopack HMR chunks, development bundles, or NextAuth
+  if (
+    url.pathname.startsWith("/api/auth") ||
+    url.pathname.includes("hot-update") ||
+    url.pathname.includes("turbopack") ||
+    url.pathname.startsWith("/_next/webpack-hmr") ||
+    url.pathname.startsWith("/_next/static/development/")
+  ) {
+    return;
+  }
 
   // Navigation requests (HTML pages): Network-first with offline fallback
   if (req.mode === "navigate") {
