@@ -35,6 +35,7 @@ import {
   parseCameraError,
   getAvailableCameras,
   getCameraPermissionStatus,
+  isSecureCameraContext,
   CameraErrorInfo,
   CameraDeviceInfo,
 } from "@/lib/cameraScanner";
@@ -216,12 +217,7 @@ export default function FoodCoordinatorPage() {
       setCameraStarting(true);
 
       // Pre-flight secure context check
-      if (
-        typeof window !== "undefined" &&
-        !window.isSecureContext &&
-        window.location.hostname !== "localhost" &&
-        window.location.hostname !== "127.0.0.1"
-      ) {
+      if (!isSecureCameraContext()) {
         const parsed = parseCameraError(new Error("Insecure context"));
         setCameraError(parsed);
         setCameraActive(false);
@@ -229,17 +225,22 @@ export default function FoodCoordinatorPage() {
         return;
       }
 
-      // Pre-flight camera permission check via Permissions API to avoid triggering browser errors
-      const permStatus = await getCameraPermissionStatus();
-      if (permStatus === "denied") {
-        const parsed = parseCameraError(new Error("NotAllowedError: Permission denied"));
-        setCameraError(parsed);
+      // Check mediaDevices support in current browser / PWA environment
+      if (typeof navigator === "undefined" || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setCameraError({
+          type: "INSECURE_CONTEXT",
+          title: "Camera Hardware API Not Available",
+          message: "Live video stream access is blocked by your browser. This typically occurs on mobile when accessing over HTTP via a local network IP.",
+          steps: [
+            "Access this application over HTTPS (e.g. 'npm run dev:https') or localhost.",
+            "Tap 'Upload QR / Snap Photo' below to scan directly using your phone's camera app without live stream restrictions.",
+            "Or use the Manual Code Lookup to enter the participant code.",
+          ],
+        });
         setCameraActive(false);
         setCameraStarting(false);
         return;
       }
-
-
 
       const { Html5Qrcode } = await import("html5-qrcode");
 
@@ -247,24 +248,29 @@ export default function FoodCoordinatorPage() {
         await stopScanner();
       }
 
+      let scannerEl = document.getElementById(scannerDivId);
+      if (!scannerEl) {
+        for (let i = 0; i < 15; i++) {
+          await new Promise((resolve) => setTimeout(resolve, 30));
+          scannerEl = document.getElementById(scannerDivId);
+          if (scannerEl) break;
+        }
+      }
+      if (!scannerEl) {
+        throw new Error("Scanner viewport element could not be initialized in DOM.");
+      }
+
       // Initialize with verbose=false so html5-qrcode logger does not trigger Turbopack console error overlay
       const qr = new Html5Qrcode(scannerDivId, false);
       scannerRef.current = qr;
 
-      // Enumerate devices for camera switching & fallback
-      const cameras = await getAvailableCameras(Html5Qrcode);
-      setAvailableCameras(cameras);
-
-      let targetConfig: any = { facingMode: "environment" };
-
-      const camIdToUse = specificCameraId || selectedCameraId;
-      if (camIdToUse && cameras.some((c) => c.id === camIdToUse)) {
-        targetConfig = camIdToUse;
-      } else if (cameras.length > 0) {
-        const backCam = cameras.find((c) => c.isBackCamera);
-        const chosen = backCam || cameras[0];
-        targetConfig = chosen.id;
-        setSelectedCameraId(chosen.id);
+      let targetConfig: any;
+      if (specificCameraId) {
+        targetConfig = specificCameraId;
+      } else if (selectedCameraId && availableCameras.some((c) => c.id === selectedCameraId)) {
+        targetConfig = selectedCameraId;
+      } else {
+        targetConfig = { facingMode: "environment" };
       }
 
       const config = {
@@ -283,7 +289,7 @@ export default function FoodCoordinatorPage() {
         const errText = typeof primaryErr === "string" ? primaryErr : String(primaryErr?.message || primaryErr || "");
         const isPermDenied = /notallowederror|permission denied|not allowed/i.test(errText);
 
-        if (!isPermDenied) {
+        if (!isPermDenied && typeof targetConfig === "object" && targetConfig.facingMode === "environment") {
           try {
             await qr.start({ facingMode: "user" }, config, onScanSuccess, () => {});
           } catch (fallbackErr: any) {
@@ -294,8 +300,24 @@ export default function FoodCoordinatorPage() {
         }
       }
 
+      // Enforce iOS Safari inline video attributes on dynamically rendered video
+      if (scannerEl) {
+        const vids = scannerEl.getElementsByTagName("video");
+        for (let i = 0; i < vids.length; i++) {
+          vids[i].setAttribute("playsinline", "true");
+          vids[i].setAttribute("webkit-playsinline", "true");
+          vids[i].setAttribute("muted", "true");
+        }
+      }
+
       setCameraActive(true);
       setCameraError(null);
+
+      // Enumerate devices for camera switching & fallback
+      try {
+        const cameras = await getAvailableCameras(Html5Qrcode);
+        setAvailableCameras(cameras);
+      } catch (_) {}
     } catch (err: any) {
       const parsed = parseCameraError(err);
       setCameraError(parsed);

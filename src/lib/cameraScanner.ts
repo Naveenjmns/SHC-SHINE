@@ -53,12 +53,13 @@ export function parseCameraError(err: any): CameraErrorInfo {
     const origin = typeof window !== "undefined" ? window.location.origin : "insecure origin";
     return {
       type: "INSECURE_CONTEXT",
-      title: "HTTPS Required for Camera",
-      message: `Your browser strictly blocks camera access on unencrypted HTTP (${origin}).`,
+      title: "HTTPS Required for Camera on Mobile / LAN",
+      message: `Your browser strictly blocks live camera access on unencrypted HTTP (${origin}).`,
       steps: [
-        "Open this application using https:// or on the host PC via http://localhost:3000.",
-        "Browsers (Chrome, Edge, Safari, iOS, Android) forbid camera access over local network IPs without HTTPS.",
-        "Alternatively, enter or paste the unique delegate code manually below.",
+        "Modern mobile browsers (Chrome, Safari, Edge, Samsung Internet) require HTTPS or localhost to access the camera.",
+        "If testing locally from a mobile phone over Wi-Fi, run the dev server with HTTPS: 'npm run dev:https' or use ngrok/Cloudflare tunnel.",
+        "In Chrome on Android, you can also enable: chrome://flags/#unsafely-treat-insecure-origin-as-secure and add your local IP.",
+        "Instant fallback: Tap 'Upload QR / Snap Photo' below to scan using your phone's built-in camera app without HTTPS restrictions!",
       ],
       rawError: err,
     };
@@ -74,14 +75,14 @@ export function parseCameraError(err: any): CameraErrorInfo {
   ) {
     return {
       type: "PERMISSION_DENIED",
-      title: "Camera Access Blocked (Windows / System / Browser)",
-      message: "Even if allowed in browser settings, Windows or another app is preventing camera stream access.",
+      title: "Camera Permission Needed",
+      message: "Camera access was denied or blocked by your browser or operating system settings.",
       steps: [
-        "Windows 10/11 Settings: Press Win + I → Privacy & security → Camera. Make sure 'Camera access' AND 'Let desktop apps access your camera' are turned ON.",
-        "Hardware Shutter: Check if your laptop webcam has a physical sliding lens cover or Fn hotkey (e.g., Fn+F10, Fn+F6) that cuts camera power.",
-        "Close background apps: Ensure Zoom, Microsoft Teams, Skype, or OBS are closed so they release exclusive camera locks.",
-        "Browser permissions: Confirm the padlock (🔒) or camera icon in the address bar is set to 'Allow'.",
-        "Instant fallback: Click 'Upload QR / Snap Photo' below to scan without needing live webcam stream permissions.",
+        "Mobile (Chrome / Edge / PWA): Tap the tune/settings icon (🔒 or ⚙️) in the address bar → Site Settings → Camera → tap 'Allow' or 'Reset'.",
+        "iOS Safari / PWA: Open iOS Settings → Safari (or the installed PWA) → Camera → select 'Allow' or 'Ask'.",
+        "Android System: Open Android Settings → Apps → Chrome/SHINE → Permissions → Camera → 'Allow only while using the app'.",
+        "Laptops (Windows/Mac): Check Windows Privacy settings (Win+I → Privacy → Camera → On) or Mac System Preferences → Privacy → Camera.",
+        "Instant fallback: Tap 'Upload QR / Snap Photo' below to capture a picture of the QR code immediately!",
       ],
       rawError: err,
     };
@@ -97,9 +98,9 @@ export function parseCameraError(err: any): CameraErrorInfo {
       title: "No Camera Detected",
       message: "No working camera or video capture hardware was detected on this device.",
       steps: [
-        "Ensure your webcam is plugged in, powered on, and recognized by your computer.",
-        "Check that no physical privacy shutter or hardware switch is blocking the lens.",
-        "Or use the Manual Code Lookup below.",
+        "Ensure your device has a functional camera sensor.",
+        "Check that no physical privacy shutter or hardware switch is covering the lens.",
+        "Use 'Upload QR / Snap Photo' or Manual Code Lookup below.",
       ],
       rawError: err,
     };
@@ -113,11 +114,11 @@ export function parseCameraError(err: any): CameraErrorInfo {
     return {
       type: "CAMERA_IN_USE",
       title: "Camera Currently In Use",
-      message: "Your camera is currently being used by another program or browser tab.",
+      message: "The camera sensor is currently held by another program, tab, or background process.",
       steps: [
-        "Close other applications using the camera (Zoom, Teams, Google Meet, Skype, etc.).",
-        "Close any other browser tabs that may have opened the camera.",
-        "Click the 'Retry Camera Access' button below.",
+        "Close any other apps using the camera (Zoom, Teams, Google Meet, WhatsApp, Camera app).",
+        "Close other browser tabs that may have opened the camera.",
+        "Tap 'Retry Camera Access' below.",
       ],
       rawError: err,
     };
@@ -129,24 +130,41 @@ export function parseCameraError(err: any): CameraErrorInfo {
     message: errStr || "Could not start video stream. Please check permissions or use manual code lookup.",
     steps: [
       "Click the 🔒 icon in your browser address bar to ensure camera permission is Allowed.",
-      "Click 'Retry Camera Access' below, or switch to manual code lookup.",
+      "Tap 'Retry Camera Access' below, or tap 'Upload QR / Snap Photo'.",
     ],
     rawError: err,
   };
 }
 
 /**
- * Attempts to enumerate video input devices cleanly.
+ * Attempts to enumerate video input devices cleanly without opening a dummy media stream.
  */
-export async function getAvailableCameras(Html5QrcodeClass: any): Promise<CameraDeviceInfo[]> {
+export async function getAvailableCameras(Html5QrcodeClass?: any): Promise<CameraDeviceInfo[]> {
   try {
-    const devices = await Html5QrcodeClass.getCameras();
-    if (!Array.isArray(devices)) return [];
-    return devices.map((d: any) => ({
-      id: d.id,
-      label: d.label || `Camera ${d.id.slice(0, 6)}...`,
-      isBackCamera: /back|rear|environment/i.test(d.label || ""),
-    }));
+    // Prefer navigator.mediaDevices.enumerateDevices to avoid opening/stopping streams
+    if (typeof navigator !== "undefined" && navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+      const allDevices = await navigator.mediaDevices.enumerateDevices();
+      const videoDevices = allDevices.filter((d) => d.kind === "videoinput");
+      if (videoDevices.length > 0) {
+        return videoDevices.map((d, index) => ({
+          id: d.deviceId,
+          label: d.label || `Camera ${index + 1}`,
+          isBackCamera: /back|rear|environment/i.test(d.label || "") || (videoDevices.length > 1 && index === 0),
+        }));
+      }
+    }
+
+    if (Html5QrcodeClass && typeof Html5QrcodeClass.getCameras === "function") {
+      const devices = await Html5QrcodeClass.getCameras();
+      if (!Array.isArray(devices)) return [];
+      return devices.map((d: any, index: number) => ({
+        id: d.id,
+        label: d.label || `Camera ${index + 1}`,
+        isBackCamera: /back|rear|environment/i.test(d.label || "") || (devices.length > 1 && index === 0),
+      }));
+    }
+
+    return [];
   } catch {
     return [];
   }
