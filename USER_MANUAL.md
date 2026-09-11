@@ -297,6 +297,15 @@ The platform includes an interactive, dark-mode 3D error suite inspired by Locom
 #### Q: How do I export data for IQAC / NAAC file submissions?
 **A**: Navigate to `/admin/reports`, verify the data, and click **Print Official Report (PDF)**. The generated PDF includes the official certification statement and 4 formal signature blocks. You can also download the individual CSV datasets from the **Export CSVs** menu.
 
+#### Q: How does the QR Check-in scanner work on mobile and how do I troubleshoot camera access?
+**A**: The **QR Check-In & Food Claim Hub** modal supports live badge and meal voucher scanning using your device camera:
+- **Lens Flipping**: If your phone has multiple rear/front cameras, tap **Flip Lens** to cycle through available sensors.
+- **Auditorium Flashlight**: Tap **Flashlight** to illuminate dark auditioriums or night stages (supported on rear cameras with torch capability).
+- **Troubleshooting "Camera Unavailable"**:
+  1. Verify camera permissions in browser site settings (padlock icon in address bar → Permissions → Camera: **Allowed**).
+  2. If the camera was held by another app or background tab, tap **Retry Camera** or **Try Next Lens**.
+  3. If hardware access remains blocked, use **Manual Code Lookup** to instantly verify attendees via their alphanumeric badge code (e.g. `SHN27-DEL-XXXX`) or food token code (e.g. `FT-XXXX-MEAL`).
+
 #### Q: How is the Intercollegiate Championship Trophy calculated?
 **A**: Points are tallied automatically across all events:
 - 🥇 1st Place = 10 Points

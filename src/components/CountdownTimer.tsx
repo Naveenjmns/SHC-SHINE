@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Clock, Flame, Radio, Sparkles } from "lucide-react";
+import { parseDateSafe } from "@/lib/dateUtils";
 
 interface CountdownTimerProps {
   targetDate?: Date | string | null;
@@ -28,8 +29,8 @@ export default function CountdownTimer({
     if (eventDateText) return eventDateText;
     if (!targetDate) return "17-09-2026 09:30 AM";
     try {
-      const d = new Date(targetDate);
-      if (isNaN(d.getTime())) return "17-09-2026 09:30 AM";
+      const d = parseDateSafe(targetDate);
+      if (!d || isNaN(d.getTime())) return "17-09-2026 09:30 AM";
       const pad = (n: number) => String(n).padStart(2, "0");
       const day = pad(d.getDate());
       const month = pad(d.getMonth() + 1);
@@ -48,9 +49,13 @@ export default function CountdownTimer({
 
   useEffect(() => {
     const calculateTimeLeft = () => {
-      const target = targetDate ? new Date(targetDate).getTime() : new Date("2026-09-17T09:30:00+05:30").getTime();
+      const parsedTarget = parseDateSafe(targetDate);
+      const target = parsedTarget
+        ? parsedTarget.getTime()
+        : new Date("2026-09-17T09:30:00+05:30").getTime();
       const now = Date.now();
       const diff = target - now;
+
 
       if (diff <= 0) {
         setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0, isLive: true });

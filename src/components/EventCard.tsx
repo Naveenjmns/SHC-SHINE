@@ -17,6 +17,7 @@ import {
   Mail,
   Sparkles,
 } from "lucide-react";
+import { formatDateSafe, formatTimeSafe } from "@/lib/dateUtils";
 
 export interface CoordinatorInfo {
   id?: string;
@@ -89,19 +90,20 @@ export default function EventCard({
   );
 
   const formattedTime = dateTime
-    ? new Date(dateTime).toLocaleTimeString("en-IN", {
+    ? formatTimeSafe(dateTime, {
         hour: "2-digit",
         minute: "2-digit",
       })
     : null;
 
   const formattedDate = dateTime
-    ? new Date(dateTime).toLocaleDateString("en-IN", {
+    ? formatDateSafe(dateTime, {
         day: "numeric",
         month: "short",
         year: "numeric",
       })
     : null;
+
 
   // Resolve Staff Coordinator details
   const effectiveStaffName =

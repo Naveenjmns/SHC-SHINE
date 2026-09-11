@@ -91,8 +91,13 @@ body {
   color: var(--fest-text);
   overflow-x: hidden;
   min-height: 100vh;
+  min-height: 100dvh;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  -webkit-tap-highlight-color: transparent;
 }
+
 
 /* Fluid Typography Utilities */
 .text-fluid-hero {
@@ -399,7 +404,12 @@ body {
   scrollbar-width: none;
 }
 
-/* Custom Styled Slim Scrollbars for Dashboards */
+/* Custom Styled Slim Scrollbars for Dashboards (Firefox + WebKit) */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.4) transparent;
+}
+
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -415,20 +425,34 @@ body {
   background: rgba(100, 116, 139, 0.6);
 }
 
-/* Responsive Touch Target Helper for Mobile Forms */
+/* Safe Area Insets for Notched Mobile Screens (iOS Safari, Samsung, etc.) */
+.safe-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.safe-left {
+  padding-left: env(safe-area-inset-left, 0px);
+}
+.safe-right {
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+/* Responsive Touch Target Helper & iOS Auto-Zoom Prevention */
 @media (max-width: 640px) {
-  input[type="text"],
-  input[type="email"],
-  input[type="password"],
-  input[type="number"],
-  input[type="tel"],
-  input[type="time"],
-  input[type="datetime-local"],
+  input,
   select,
   textarea {
-    font-size: 16px !important; /* Prevents iOS auto-zoom on form inputs */
+    font-size: 16px !important; /* Prevents iOS Safari auto-zoom on input focus */
   }
 }
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
 
 /* ==========================================================================
    UX POLISH — Performance & Accessibility Enhancements

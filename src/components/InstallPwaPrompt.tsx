@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Download, X, Sparkles, Smartphone } from "lucide-react";
+import { Download, Sparkles, X, Check } from "lucide-react";
+import { safeStorage } from "@/lib/storage";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -24,8 +25,8 @@ export default function InstallPwaPrompt() {
       return;
     }
 
-    // Check if previously dismissed recently (within 24 hours)
-    const dismissedAt = localStorage.getItem("shine26_pwa_dismissed");
+    // Check if previously dismissed recently (within 24 hours) - safe for Safari Private Browsing
+    const dismissedAt = safeStorage.getItem("shine26_pwa_dismissed");
     if (dismissedAt) {
       const hoursSinceDismiss = (Date.now() - parseInt(dismissedAt, 10)) / (1000 * 60 * 60);
       if (hoursSinceDismiss < 24) {
@@ -83,7 +84,7 @@ export default function InstallPwaPrompt() {
 
   const handleDismiss = () => {
     setShowPrompt(false);
-    localStorage.setItem("shine26_pwa_dismissed", Date.now().toString());
+    safeStorage.setItem("shine26_pwa_dismissed", Date.now().toString());
   };
 
   if (!showPrompt || isInstalled || !deferredPrompt) return null;
@@ -91,7 +92,11 @@ export default function InstallPwaPrompt() {
   return (
     <aside
       aria-label="Install App"
-      className="fixed bottom-5 right-5 z-50 max-w-sm w-[calc(100vw-2.5rem)] animate-in fade-in slide-in-from-bottom-5 duration-300"
+      className="fixed z-50 max-w-sm w-[calc(100vw-2.5rem)] animate-in fade-in slide-in-from-bottom-5 duration-300"
+      style={{
+        bottom: "calc(1.25rem + env(safe-area-inset-bottom, 0px))",
+        right: "calc(1.25rem + env(safe-area-inset-right, 0px))",
+      }}
     >
       <div className="bg-white/95 border-2 border-[#FF6B1A]/40 rounded-3xl p-4 sm:p-5 shadow-2xl backdrop-blur-md relative overflow-hidden">
         {/* Glow ambient accent */}

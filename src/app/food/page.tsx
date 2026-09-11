@@ -28,8 +28,16 @@ import {
   Check,
   History,
   X,
+  Upload,
 } from "lucide-react";
 import { safeJson } from "@/lib/safeFetch";
+import {
+  parseCameraError,
+  getAvailableCameras,
+  getCameraPermissionStatus,
+  CameraErrorInfo,
+  CameraDeviceInfo,
+} from "@/lib/cameraScanner";
 
 interface FoodStats {
   totalEligible: number;
@@ -60,7 +68,7 @@ interface RecentClaim {
 }
 
 interface ScanPopup {
-  status: "success" | "already_claimed" | "unpaid" | "not_found" | "error";
+  status: "success" | "already_claimed" | "unpaid" | "not_found" | "error" | "warning";
   title: string;
   name?: string;
   college?: string;
@@ -71,6 +79,10 @@ interface ScanPopup {
   claimedBy?: string;
   message: string;
   memberId?: string;
+  delegateName?: string;
+  regNo?: string;
+  collegeName?: string;
+  code?: string;
 }
 
 export default function FoodCoordinatorPage() {
@@ -80,13 +92,15 @@ export default function FoodCoordinatorPage() {
   const [stats, setStats] = useState<FoodStats | null>(null);
   const [recentClaims, setRecentClaims] = useState<RecentClaim[]>([]);
   const [loadingStats, setLoadingStats] = useState(true);
-
-  // Scanner & Mode Controls
-  const [cameraActive, setCameraActive] = useState(false);
-  const [autoClaim, setAutoClaim] = useState(true); // Default ON for fast queues
-  const [soundEnabled, setSoundEnabled] = useState(true);
   const [inputCode, setInputCode] = useState("");
+  const [cameraActive, setCameraActive] = useState(false);
+  const [cameraStarting, setCameraStarting] = useState(false);
+  const [cameraError, setCameraError] = useState<CameraErrorInfo | null>(null);
+  const [availableCameras, setAvailableCameras] = useState<CameraDeviceInfo[]>([]);
+  const [selectedCameraId, setSelectedCameraId] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
+  const [autoClaim, setAutoClaim] = useState(true); // Default to fast auto-claim for rush hours
+  const [soundEnabled, setSoundEnabled] = useState(true);
 
   // Popup Modal / Toast state for quick scan review
   const [popup, setPopup] = useState<ScanPopup | null>(null);
@@ -97,6 +111,8 @@ export default function FoodCoordinatorPage() {
   const lastScannedTimeRef = useRef<number>(0);
   const scannerRef = useRef<any>(null);
   const popupTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [fileScanning, setFileScanning] = useState(false);
 
   const scannerDivId = "food-qr-reader";
 
@@ -191,46 +207,143 @@ export default function FoodCoordinatorPage() {
       scannerRef.current = null;
     }
     setCameraActive(false);
+    setCameraStarting(false);
   };
 
-  const startScanner = async () => {
+  const startScanner = async (specificCameraId?: string) => {
+    try {
+      setCameraError(null);
+      setCameraStarting(true);
+
+      // Pre-flight secure context check
+      if (
+        typeof window !== "undefined" &&
+        !window.isSecureContext &&
+        window.location.hostname !== "localhost" &&
+        window.location.hostname !== "127.0.0.1"
+      ) {
+        const parsed = parseCameraError(new Error("Insecure context"));
+        setCameraError(parsed);
+        setCameraActive(false);
+        setCameraStarting(false);
+        return;
+      }
+
+      // Pre-flight camera permission check via Permissions API to avoid triggering browser errors
+      const permStatus = await getCameraPermissionStatus();
+      if (permStatus === "denied") {
+        const parsed = parseCameraError(new Error("NotAllowedError: Permission denied"));
+        setCameraError(parsed);
+        setCameraActive(false);
+        setCameraStarting(false);
+        return;
+      }
+
+
+
+      const { Html5Qrcode } = await import("html5-qrcode");
+
+      if (scannerRef.current) {
+        await stopScanner();
+      }
+
+      // Initialize with verbose=false so html5-qrcode logger does not trigger Turbopack console error overlay
+      const qr = new Html5Qrcode(scannerDivId, false);
+      scannerRef.current = qr;
+
+      // Enumerate devices for camera switching & fallback
+      const cameras = await getAvailableCameras(Html5Qrcode);
+      setAvailableCameras(cameras);
+
+      let targetConfig: any = { facingMode: "environment" };
+
+      const camIdToUse = specificCameraId || selectedCameraId;
+      if (camIdToUse && cameras.some((c) => c.id === camIdToUse)) {
+        targetConfig = camIdToUse;
+      } else if (cameras.length > 0) {
+        const backCam = cameras.find((c) => c.isBackCamera);
+        const chosen = backCam || cameras[0];
+        targetConfig = chosen.id;
+        setSelectedCameraId(chosen.id);
+      }
+
+      const config = {
+        fps: 12,
+        qrbox: { width: 260, height: 260 },
+        aspectRatio: 1.0,
+      };
+
+      const onScanSuccess = (decodedText: string) => {
+        handleDetectedCode(decodedText);
+      };
+
+      try {
+        await qr.start(targetConfig, config, onScanSuccess, () => {});
+      } catch (primaryErr: any) {
+        const errText = typeof primaryErr === "string" ? primaryErr : String(primaryErr?.message || primaryErr || "");
+        const isPermDenied = /notallowederror|permission denied|not allowed/i.test(errText);
+
+        if (!isPermDenied) {
+          try {
+            await qr.start({ facingMode: "user" }, config, onScanSuccess, () => {});
+          } catch (fallbackErr: any) {
+            throw fallbackErr;
+          }
+        } else {
+          throw primaryErr;
+        }
+      }
+
+      setCameraActive(true);
+      setCameraError(null);
+    } catch (err: any) {
+      const parsed = parseCameraError(err);
+      setCameraError(parsed);
+      setCameraActive(false);
+    } finally {
+      setCameraStarting(false);
+    }
+  };
+
+  const switchScannerCamera = async () => {
+    if (availableCameras.length <= 1) return;
+    const currentIndex = availableCameras.findIndex((c) => c.id === selectedCameraId);
+    const nextIndex = (currentIndex + 1) % availableCameras.length;
+    const nextCam = availableCameras[nextIndex];
+    setSelectedCameraId(nextCam.id);
+    await startScanner(nextCam.id);
+  };
+
+  const handleFileScan = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setFileScanning(true);
     try {
       const { Html5Qrcode } = await import("html5-qrcode");
-      setCameraActive(true);
-
-      setTimeout(async () => {
-        try {
-          if (scannerRef.current) {
-            await stopScanner();
-          }
-
-          const qr = new Html5Qrcode(scannerDivId);
-          scannerRef.current = qr;
-
-          await qr.start(
-            { facingMode: "environment" },
-            {
-              fps: 12,
-              qrbox: { width: 260, height: 260 },
-            },
-            (decodedText: string) => {
-              handleDetectedCode(decodedText);
-            },
-            () => {}
-          );
-        } catch (err: any) {
-          console.error("Camera start failed:", err);
-          setCameraActive(false);
-          setPopup({
-            status: "error",
-            title: "Camera Unavailable",
-            message: "Please allow camera access or use manual code lookup below.",
-          });
-        }
-      }, 150);
+      const tempId = "file-qr-decoder-food";
+      let tempEl = document.getElementById(tempId);
+      if (!tempEl) {
+        tempEl = document.createElement("div");
+        tempEl.id = tempId;
+        tempEl.style.display = "none";
+        document.body.appendChild(tempEl);
+      }
+      const qrScanner = new Html5Qrcode(tempId, false);
+      const decodedText = await qrScanner.scanFile(file, false);
+      qrScanner.clear();
+      if (decodedText) {
+        handleDetectedCode(decodedText);
+      }
     } catch (err: any) {
-      console.error("Html5Qrcode import failed:", err);
-      setCameraActive(false);
+      console.warn("Food photo QR scan error:", err);
+      setPopup({
+        status: "error",
+        title: "QR Code Not Found",
+        message: "Could not read a valid QR code in that photo. Please ensure it is clear or enter the code manually.",
+      });
+    } finally {
+      setFileScanning(false);
+      if (e.target) e.target.value = "";
     }
   };
 
@@ -662,14 +775,85 @@ export default function FoodCoordinatorPage() {
               </div>
 
               {/* Camera Scanner Viewport */}
-              <div className="relative rounded-2xl overflow-hidden bg-slate-950 border border-slate-800 min-h-[300px] flex flex-col items-center justify-center">
+              <div className="relative rounded-2xl overflow-hidden bg-slate-950 border border-slate-800 min-h-[320px] flex flex-col items-center justify-center p-4">
                 {/* HTML5 QR Code Container */}
                 <div
                   id={scannerDivId}
                   className={`w-full max-w-md ${cameraActive ? "block" : "hidden"}`}
                 />
 
-                {!cameraActive && (
+                {/* Camera Starting Spinner */}
+                {cameraStarting && (
+                  <div className="flex flex-col items-center justify-center p-8 text-center space-y-3">
+                    <span className="w-8 h-8 border-3 border-amber-400 border-t-transparent rounded-full animate-spin" />
+                    <span className="text-xs text-slate-300 font-semibold">Initializing camera stream...</span>
+                  </div>
+                )}
+
+                {/* Diagnostic Error State */}
+                {!cameraActive && !cameraStarting && cameraError && (
+                  <div className="w-full max-w-md p-5 rounded-2xl bg-slate-900/90 border border-amber-500/30 text-center space-y-4">
+                    <div className="w-12 h-12 mx-auto rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+                      <AlertTriangle className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-sm text-white">{cameraError.title}</h4>
+                      <p className="text-xs text-slate-300 mt-1">{cameraError.message}</p>
+                    </div>
+
+                    {cameraError.steps && cameraError.steps.length > 0 && (
+                      <div className="text-left bg-slate-950 rounded-xl p-3.5 border border-slate-800 space-y-1.5">
+                        <p className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">How to resolve:</p>
+                        <ol className="text-xs text-slate-300 space-y-1.5 list-decimal list-inside">
+                          {cameraError.steps.map((step, idx) => (
+                            <li key={idx} className="leading-relaxed">
+                              <span className="text-slate-200">{step}</span>
+                            </li>
+                          ))}
+                        </ol>
+                      </div>
+                    )}
+
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      onChange={handleFileScan}
+                      className="hidden"
+                    />
+
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => startScanner()}
+                        className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-amber-500/20 transition cursor-pointer"
+                      >
+                        <RefreshCw className="w-3.5 h-3.5" />
+                        <span>Retry Camera Access</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={fileScanning}
+                        className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/20 transition cursor-pointer"
+                      >
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>{fileScanning ? "Reading Photo..." : "Upload QR / Snap Photo"}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setCameraError(null)}
+                        className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs transition cursor-pointer"
+                      >
+                        Dismiss
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Inactive initial state */}
+                {!cameraActive && !cameraStarting && !cameraError && (
                   <div className="flex flex-col items-center justify-center p-8 text-center space-y-4">
                     <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
                       <Camera className="w-8 h-8" />
@@ -677,24 +861,45 @@ export default function FoodCoordinatorPage() {
                     <div>
                       <h3 className="font-bold text-base text-white">Camera Scanner Inactive</h3>
                       <p className="text-xs text-slate-400 max-w-xs mt-1">
-                        Turn on your device camera for hands-free instant QR verification and auto-claiming.
+                        Turn on your device camera or upload a QR image for hands-free instant verification.
                       </p>
                     </div>
-                    <button
-                      onClick={startScanner}
-                      className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-bold text-sm shadow-lg shadow-amber-500/20 hover:brightness-110 active:scale-95 transition"
-                    >
-                      <Camera className="w-4 h-4" />
-                      Start Camera Scanner
-                    </button>
+                    <div className="flex flex-wrap items-center justify-center gap-3">
+                      <button
+                        onClick={() => startScanner()}
+                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-bold text-sm shadow-lg shadow-amber-500/20 hover:brightness-110 active:scale-95 transition cursor-pointer"
+                      >
+                        <Camera className="w-4 h-4" />
+                        Start Camera Scanner
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={fileScanning}
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-sm border border-slate-700 transition cursor-pointer"
+                      >
+                        <Upload className="w-4 h-4 text-emerald-400" />
+                        <span>{fileScanning ? "Reading..." : "Upload QR / Snap Photo"}</span>
+                      </button>
+                    </div>
                   </div>
                 )}
 
+                {/* Active Controls Header */}
                 {cameraActive && (
                   <div className="absolute top-3 right-3 z-10 flex items-center gap-2">
+                    {availableCameras.length > 1 && (
+                      <button
+                        onClick={switchScannerCamera}
+                        className="px-3 py-1.5 rounded-lg bg-slate-900/90 border border-slate-700 text-xs font-medium text-amber-300 hover:text-white flex items-center gap-1.5 shadow cursor-pointer transition"
+                      >
+                        <RefreshCw className="w-3 h-3" />
+                        <span>Switch Camera ({availableCameras.length})</span>
+                      </button>
+                    )}
                     <button
                       onClick={stopScanner}
-                      className="px-3 py-1.5 rounded-lg bg-slate-900/90 border border-slate-700 text-xs font-medium text-slate-300 hover:text-white flex items-center gap-1.5 shadow"
+                      className="px-3 py-1.5 rounded-lg bg-slate-900/90 border border-slate-700 text-xs font-medium text-slate-300 hover:text-white flex items-center gap-1.5 shadow cursor-pointer transition"
                     >
                       <CameraOff className="w-3.5 h-3.5 text-red-400" />
                       Stop Camera
@@ -740,6 +945,19 @@ export default function FoodCoordinatorPage() {
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </form>
+
+              <div className="flex items-center justify-between text-xs text-slate-500 pt-2 px-1">
+                <span>Enter badge / token code and press Enter</span>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={fileScanning}
+                  className="text-amber-400 hover:text-amber-300 inline-flex items-center gap-1.5 font-semibold transition cursor-pointer"
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>{fileScanning ? "Reading Photo..." : "Upload QR Photo"}</span>
+                </button>
+              </div>
             </div>
           </div>
 

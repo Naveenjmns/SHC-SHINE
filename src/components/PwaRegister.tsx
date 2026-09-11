@@ -8,18 +8,24 @@ export default function PwaRegister() {
   const [showOnlineToast, setShowOnlineToast] = useState(false);
 
   useEffect(() => {
-    // 1. Register Service Worker
+    // 1. Register Service Worker (cross-browser safe for both early and late hydration)
     if (typeof window !== "undefined" && "serviceWorker" in navigator) {
-      window.addEventListener("load", () => {
+      const registerSW = () => {
         navigator.serviceWorker
           .register("/sw.js")
           .then((reg) => {
             console.log("[PWA] Service Worker registered with scope:", reg.scope);
           })
           .catch((err) => {
-            console.error("[PWA] Service Worker registration failed:", err);
+            console.warn("[PWA] Service Worker registration note:", err);
           });
-      });
+      };
+
+      if (document.readyState === "complete") {
+        registerSW();
+      } else {
+        window.addEventListener("load", registerSW);
+      }
     }
 
     // 2. Track Network Status

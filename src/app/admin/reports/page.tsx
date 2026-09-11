@@ -36,6 +36,7 @@ import {
   Flame,
 } from "lucide-react";
 import { safeJson } from "@/lib/safeFetch";
+import { parseDateSafe } from "@/lib/dateUtils";
 
 interface ReportData {
   summary: {
@@ -199,8 +200,8 @@ interface ReportData {
 function formatReportDate(dateStr?: string | null): string {
   if (!dateStr) return "—";
   try {
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return "—";
+    const d = parseDateSafe(dateStr);
+    if (!d || isNaN(d.getTime())) return "—";
     const months = [
       "January", "February", "March", "April", "May", "June",
       "July", "August", "September", "October", "November", "December"
@@ -214,8 +215,8 @@ function formatReportDate(dateStr?: string | null): string {
 function formatReportTime(dateStr?: string | null): string {
   if (!dateStr) return "—";
   try {
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return "—";
+    const d = parseDateSafe(dateStr);
+    if (!d || isNaN(d.getTime())) return "—";
     let hours = d.getHours();
     const minutes = d.getMinutes().toString().padStart(2, "0");
     const ampm = hours >= 12 ? "PM" : "AM";
@@ -226,6 +227,7 @@ function formatReportTime(dateStr?: string | null): string {
     return "—";
   }
 }
+
 
 export default function AdminReportsPage() {
   const { data: session, status } = useSession();
