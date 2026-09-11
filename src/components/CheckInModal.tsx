@@ -30,6 +30,7 @@ import {
   parseCameraError,
   getAvailableCameras,
   getCameraPermissionStatus,
+  isSecureCameraContext,
   CameraErrorInfo,
   CameraDeviceInfo,
 } from "@/lib/cameraScanner";
@@ -268,12 +269,7 @@ export default function CheckInModal({
       setTorchSupported(false);
 
       // Pre-flight secure context check
-      if (
-        typeof window !== "undefined" &&
-        !window.isSecureContext &&
-        window.location.hostname !== "localhost" &&
-        window.location.hostname !== "127.0.0.1"
-      ) {
+      if (!isSecureCameraContext()) {
         const parsed = parseCameraError(new Error("Insecure context"));
         setCameraError(parsed);
         setCameraActive(false);
@@ -281,11 +277,18 @@ export default function CheckInModal({
         return;
       }
 
-      // Pre-flight camera permission check via Permissions API to avoid triggering browser errors
-      const permStatus = await getCameraPermissionStatus();
-      if (permStatus === "denied") {
-        const parsed = parseCameraError(new Error("NotAllowedError: Permission denied"));
-        setCameraError(parsed);
+      // Check mediaDevices support in current browser / PWA environment
+      if (typeof navigator === "undefined" || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setCameraError({
+          type: "INSECURE_CONTEXT",
+          title: "Camera Hardware API Not Available",
+          message: "Live video stream access is blocked by your browser. This typically occurs on mobile when accessing over HTTP via a local network IP.",
+          steps: [
+            "Access this application over HTTPS (e.g. 'npm run dev:https') or localhost.",
+            "Tap 'Upload QR / Snap Photo' below to scan directly using your phone's camera app without live stream restrictions.",
+            "Or use the Manual Code Lookup to enter the participant code.",
+          ],
+        });
         setCameraActive(false);
         setCameraStarting(false);
         return;
@@ -297,13 +300,11 @@ export default function CheckInModal({
         await stopCameraScanner();
       }
 
-      // Give browser time to paint container
-      await new Promise((resolve) => setTimeout(resolve, 80));
-
+      // Give browser time to ensure DOM element exists
       let scannerEl = document.getElementById(scannerDivId);
       if (!scannerEl) {
         for (let i = 0; i < 15; i++) {
-          await new Promise((resolve) => setTimeout(resolve, 50));
+          await new Promise((resolve) => setTimeout(resolve, 30));
           scannerEl = document.getElementById(scannerDivId);
           if (scannerEl) break;
         }
@@ -316,30 +317,12 @@ export default function CheckInModal({
       const html5QrCode = new Html5Qrcode(scannerDivId, false);
       scannerRef.current = html5QrCode;
 
-      // Enumerate devices for camera switching & fallback
-      const cameras = await getAvailableCameras(Html5Qrcode);
-      setAvailableCameras(cameras);
-
-      // Determine preferred camera target
-      let targetConfig: any = { facingMode: "environment" };
-
-      const camIdToUse = specificCameraId || selectedCameraId;
-      if (camIdToUse && cameras.some((c) => c.id === camIdToUse)) {
-        targetConfig = camIdToUse;
-      } else if (cameras.length > 0) {
-        // Prefer rear/back camera on mobile, fallback to primary camera on laptop/desktop
-        const backCam = cameras.find((c) => c.isBackCamera);
-        const chosen = backCam || cameras[0];
-        targetConfig = chosen.id;
-        setSelectedCameraId(chosen.id);
-      }
-
       // Dynamic qrbox calculation: 70% of viewport width up to 250px
       const containerWidth = scannerEl.clientWidth || 300;
       const boxSize = Math.min(250, Math.max(180, Math.floor(containerWidth * 0.7)));
 
       const config = {
-        fps: 10,
+        fps: 12,
         qrbox: { width: boxSize, height: boxSize },
         aspectRatio: 1.0,
       };
@@ -352,14 +335,25 @@ export default function CheckInModal({
         stopCameraScanner();
       };
 
-      // Try starting with target camera
+      // Determine camera target: specificCameraId -> selectedCameraId -> environment (rear camera)
+      let targetConfig: any;
+      if (specificCameraId) {
+        targetConfig = specificCameraId;
+      } else if (selectedCameraId && availableCameras.some((c) => c.id === selectedCameraId)) {
+        targetConfig = selectedCameraId;
+      } else {
+        targetConfig = { facingMode: "environment" };
+      }
+
+      // Start stream: invokes getUserMedia which triggers browser permission prompt if needed
       try {
         await html5QrCode.start(targetConfig, config, onScanSuccess, () => {});
       } catch (primaryErr: any) {
         const errText = typeof primaryErr === "string" ? primaryErr : String(primaryErr?.message || primaryErr || "");
         const isPermDenied = /notallowederror|permission denied|not allowed/i.test(errText);
 
-        if (!isPermDenied) {
+        // If rear camera failed for constraint reasons (not permission denied), fallback to user/front facing camera
+        if (!isPermDenied && typeof targetConfig === "object" && targetConfig.facingMode === "environment") {
           try {
             await html5QrCode.start({ facingMode: "user" }, config, onScanSuccess, () => {});
           } catch (fallbackErr: any) {
@@ -388,6 +382,12 @@ export default function CheckInModal({
         if (capabilities && "torch" in capabilities) {
           setTorchSupported(true);
         }
+      } catch (_) {}
+
+      // Enumerate available cameras cleanly after stream is active for lens flipping
+      try {
+        const cameras = await getAvailableCameras(Html5Qrcode);
+        setAvailableCameras(cameras);
       } catch (_) {}
     } catch (innerErr: any) {
       const parsed = parseCameraError(innerErr);
@@ -587,6 +587,16 @@ export default function CheckInModal({
             }
           `}} />
 
+          {/* Hidden File Input for QR Photo / Camera Snapshot */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={handleFileScan}
+            className="hidden"
+          />
+
           {/* Mode Switcher */}
           <div className="flex items-center justify-center gap-2 p-1 bg-stone-100 rounded-2xl max-w-md mx-auto">
             <button
@@ -649,15 +659,6 @@ export default function CheckInModal({
                       </ol>
                     </div>
                   )}
-
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    onChange={handleFileScan}
-                    className="hidden"
-                  />
 
                   <div className="flex flex-col sm:flex-row items-center justify-center gap-2 pt-2">
                     <button
@@ -795,13 +796,6 @@ export default function CheckInModal({
               </form>
 
               <div className="text-center pt-1">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileScan}
-                  className="hidden"
-                />
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
