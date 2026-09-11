@@ -36,6 +36,7 @@ import {
   getAvailableCameras,
   getCameraPermissionStatus,
   isSecureCameraContext,
+  extractLookupCode,
   CameraErrorInfo,
   CameraDeviceInfo,
 } from "@/lib/cameraScanner";
@@ -114,6 +115,7 @@ export default function FoodCoordinatorPage() {
   const popupTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [fileScanning, setFileScanning] = useState(false);
+  const isStoppingCameraRef = useRef(false);
 
   const scannerDivId = "food-qr-reader";
 
@@ -198,17 +200,51 @@ export default function FoodCoordinatorPage() {
   }, []);
 
   const stopScanner = async () => {
-    if (scannerRef.current) {
-      try {
-        await scannerRef.current.stop();
-        scannerRef.current.clear();
-      } catch (err) {
-        console.log("Scanner cleanup notice:", err);
+    if (isStoppingCameraRef.current) return;
+    isStoppingCameraRef.current = true;
+
+    try {
+      if (scannerRef.current) {
+        const state = scannerRef.current.getState?.();
+        // State 2 = SCANNING, State 3 = PAUSED
+        if (state === 2 || state === 3) {
+          try {
+            await scannerRef.current.stop();
+          } catch (stopErr) {
+            console.log("Scanner stop notice:", stopErr);
+          }
+        }
+        try {
+          scannerRef.current.clear();
+        } catch (_) {}
+        scannerRef.current = null;
       }
-      scannerRef.current = null;
+    } catch (err) {
+      console.log("Scanner cleanup notice:", err);
+    } finally {
+      // Clean up hardware tracks and video elements
+      try {
+        const container = document.getElementById(scannerDivId);
+        if (container) {
+          const videos = container.getElementsByTagName("video");
+          for (let i = 0; i < videos.length; i++) {
+            const stream = videos[i].srcObject as MediaStream | null;
+            if (stream && typeof stream.getTracks === "function") {
+              stream.getTracks().forEach((t) => {
+                try {
+                  t.stop();
+                } catch (_) {}
+              });
+            }
+          }
+          container.innerHTML = "";
+        }
+      } catch (_) {}
+
+      setCameraActive(false);
+      setCameraStarting(false);
+      isStoppingCameraRef.current = false;
     }
-    setCameraActive(false);
-    setCameraStarting(false);
   };
 
   const startScanner = async (specificCameraId?: string) => {
@@ -248,9 +284,10 @@ export default function FoodCoordinatorPage() {
         await stopScanner();
       }
 
+      // Ensure viewport element exists in DOM and is rendered
       let scannerEl = document.getElementById(scannerDivId);
       if (!scannerEl) {
-        for (let i = 0; i < 15; i++) {
+        for (let i = 0; i < 20; i++) {
           await new Promise((resolve) => setTimeout(resolve, 30));
           scannerEl = document.getElementById(scannerDivId);
           if (scannerEl) break;
@@ -260,65 +297,106 @@ export default function FoodCoordinatorPage() {
         throw new Error("Scanner viewport element could not be initialized in DOM.");
       }
 
-      // Initialize with verbose=false so html5-qrcode logger does not trigger Turbopack console error overlay
       const qr = new Html5Qrcode(scannerDivId, false);
       scannerRef.current = qr;
 
-      let targetConfig: any;
-      if (specificCameraId) {
-        targetConfig = specificCameraId;
-      } else if (selectedCameraId && availableCameras.some((c) => c.id === selectedCameraId)) {
-        targetConfig = selectedCameraId;
-      } else {
-        targetConfig = { facingMode: "environment" };
-      }
-
-      const config = {
-        fps: 12,
-        qrbox: { width: 260, height: 260 },
-        aspectRatio: 1.0,
+      // Dynamic qrbox based on actual rendered viewfinder width & height
+      // Does not hardcode hardware aspectRatio to prevent OverconstrainedError on laptop/webcams
+      const config: any = {
+        fps: 20,
+        qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
+          const edge = Math.min(viewfinderWidth, viewfinderHeight);
+          const size = Math.max(160, Math.min(280, Math.floor(edge * 0.78)));
+          return { width: size, height: size };
+        },
+        experimentalFeatures: {
+          useBarCodeDetectorIfSupported: true,
+        },
       };
 
       const onScanSuccess = (decodedText: string) => {
         handleDetectedCode(decodedText);
       };
 
-      try {
-        await qr.start(targetConfig, config, onScanSuccess, () => {});
-      } catch (primaryErr: any) {
-        const errText = typeof primaryErr === "string" ? primaryErr : String(primaryErr?.message || primaryErr || "");
-        const isPermDenied = /notallowederror|permission denied|not allowed/i.test(errText);
+      let started = false;
 
-        if (!isPermDenied && typeof targetConfig === "object" && targetConfig.facingMode === "environment") {
-          try {
-            await qr.start({ facingMode: "user" }, config, onScanSuccess, () => {});
-          } catch (fallbackErr: any) {
-            throw fallbackErr;
-          }
-        } else {
-          throw primaryErr;
+      // Strategy 1: User explicitly picked a specific camera
+      if (specificCameraId) {
+        try {
+          await qr.start(specificCameraId, config, onScanSuccess, () => {});
+          started = true;
+          setSelectedCameraId(specificCameraId);
+        } catch (specErr) {
+          console.warn("Specific camera failed, trying fallback:", specErr);
         }
       }
 
-      // Enforce iOS Safari inline video attributes on dynamically rendered video
+      // Strategy 2: Pre-selected camera if available
+      if (!started && selectedCameraId) {
+        try {
+          await qr.start(selectedCameraId, config, onScanSuccess, () => {});
+          started = true;
+        } catch (selErr) {
+          console.warn("Selected camera failed, trying fallback:", selErr);
+        }
+      }
+
+      // Strategy 3: Mobile environment rear camera -> Front camera -> Any available camera
+      if (!started) {
+        try {
+          await qr.start({ facingMode: "environment" }, config, onScanSuccess, () => {});
+          started = true;
+        } catch (envErr: any) {
+          console.log("Environment facing camera not available, attempting user camera:", envErr);
+          const errStr = String(envErr?.message || envErr || "");
+          if (/notallowederror|permission denied|not allowed/i.test(errStr)) {
+            throw envErr;
+          }
+
+          try {
+            await qr.start({ facingMode: "user" }, config, onScanSuccess, () => {});
+            started = true;
+          } catch (userErr: any) {
+            console.log("User facing camera failed, enumerating cameras:", userErr);
+            const userErrStr = String(userErr?.message || userErr || "");
+            if (/notallowederror|permission denied|not allowed/i.test(userErrStr)) {
+              throw userErr;
+            }
+
+            const devices = await getAvailableCameras(Html5Qrcode);
+            if (devices.length > 0) {
+              await qr.start(devices[0].id, config, onScanSuccess, () => {});
+              started = true;
+              setSelectedCameraId(devices[0].id);
+            } else {
+              throw userErr;
+            }
+          }
+        }
+      }
+
+      // Enforce iOS Safari and desktop inline video autoplay attributes
       if (scannerEl) {
         const vids = scannerEl.getElementsByTagName("video");
         for (let i = 0; i < vids.length; i++) {
           vids[i].setAttribute("playsinline", "true");
           vids[i].setAttribute("webkit-playsinline", "true");
           vids[i].setAttribute("muted", "true");
+          vids[i].setAttribute("autoplay", "true");
+          vids[i].play().catch(() => {});
         }
       }
 
       setCameraActive(true);
       setCameraError(null);
 
-      // Enumerate devices for camera switching & fallback
+      // Enumerate available devices for camera switcher
       try {
         const cameras = await getAvailableCameras(Html5Qrcode);
         setAvailableCameras(cameras);
       } catch (_) {}
     } catch (err: any) {
+      console.error("Camera start error:", err);
       const parsed = parseCameraError(err);
       setCameraError(parsed);
       setCameraActive(false);
@@ -371,7 +449,8 @@ export default function FoodCoordinatorPage() {
 
   // Process code (from camera or manual input)
   const handleDetectedCode = async (rawCode: string) => {
-    const code = rawCode.trim();
+    const { code: normalizedCode } = extractLookupCode(rawCode);
+    const code = (normalizedCode || rawCode).trim();
     if (!code || processing) return;
 
     // Throttle duplicate scans within 3.5 seconds
@@ -797,18 +876,46 @@ export default function FoodCoordinatorPage() {
               </div>
 
               {/* Camera Scanner Viewport */}
-              <div className="relative rounded-2xl overflow-hidden bg-slate-950 border border-slate-800 min-h-[320px] flex flex-col items-center justify-center p-4">
-                {/* HTML5 QR Code Container */}
+              <div className="relative rounded-2xl overflow-hidden bg-slate-950 border border-slate-800 min-h-[340px] flex flex-col items-center justify-center p-4">
+                {/* Global Scanner CSS for html5-qrcode video framing */}
+                <style dangerouslySetInnerHTML={{ __html: `
+                  #${scannerDivId} {
+                    position: relative !important;
+                    width: 100% !important;
+                    max-width: 440px !important;
+                    margin: 0 auto !important;
+                    border-radius: 1rem !important;
+                    overflow: hidden !important;
+                  }
+                  #${scannerDivId} video {
+                    object-fit: cover !important;
+                    width: 100% !important;
+                    max-height: 320px !important;
+                    border-radius: 1rem !important;
+                    display: block !important;
+                  }
+                  #${scannerDivId} img {
+                    display: none !important;
+                  }
+                  #${scannerDivId} #qr-shaded-region {
+                    border-radius: 1rem !important;
+                  }
+                `}} />
+
+                {/* HTML5 QR Code Container: rendered whenever camera is starting or active */}
                 <div
                   id={scannerDivId}
-                  className={`w-full max-w-md ${cameraActive ? "block" : "hidden"}`}
+                  className={`w-full max-w-md mx-auto overflow-hidden rounded-2xl border-2 border-amber-500/40 shadow-2xl bg-black ${
+                    cameraActive || cameraStarting ? "block" : "hidden"
+                  }`}
                 />
 
-                {/* Camera Starting Spinner */}
+                {/* Camera Starting Spinner Overlay */}
                 {cameraStarting && (
-                  <div className="flex flex-col items-center justify-center p-8 text-center space-y-3">
-                    <span className="w-8 h-8 border-3 border-amber-400 border-t-transparent rounded-full animate-spin" />
-                    <span className="text-xs text-slate-300 font-semibold">Initializing camera stream...</span>
+                  <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-slate-950/85 backdrop-blur-xs text-center space-y-3 p-8">
+                    <span className="w-10 h-10 border-3 border-amber-400 border-t-transparent rounded-full animate-spin" />
+                    <span className="text-sm text-amber-300 font-semibold">Connecting to camera sensor...</span>
+                    <span className="text-xs text-slate-400">Please grant browser permission if prompted</span>
                   </div>
                 )}
 
@@ -927,6 +1034,12 @@ export default function FoodCoordinatorPage() {
                       Stop Camera
                     </button>
                   </div>
+                )}
+
+                {cameraActive && (
+                  <p className="text-xs text-slate-400 mt-3 text-center">
+                    Point camera at participant&apos;s <strong>Food Token QR Code</strong> or delegate badge
+                  </p>
                 )}
 
                 {/* Processing Overlay */}

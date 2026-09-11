@@ -59,6 +59,25 @@ export async function GET(req: Request) {
       },
     });
 
+    if (events.length > 0) {
+      try {
+        const rawPrizes: any = await prisma.$queryRaw`
+          SELECT "id", "firstPrize", "secondPrize", "thirdPrize" FROM "events"
+        `;
+        if (Array.isArray(rawPrizes)) {
+          const pMap = new Map(rawPrizes.map((p: any) => [p.id, p]));
+          for (const ev of events as any[]) {
+            const p: any = pMap.get(ev.id);
+            if (p) {
+              if (p.firstPrize !== undefined) ev.firstPrize = p.firstPrize;
+              if (p.secondPrize !== undefined) ev.secondPrize = p.secondPrize;
+              if (p.thirdPrize !== undefined) ev.thirdPrize = p.thirdPrize;
+            }
+          }
+        }
+      } catch (_) {}
+    }
+
     return NextResponse.json(
       { success: true, events },
       {
@@ -110,6 +129,9 @@ export async function POST(req: Request) {
       prelimsDateTime,
       prelimsVenue,
       prelimsRules,
+      firstPrize,
+      secondPrize,
+      thirdPrize,
     } = body;
 
     if (!name || !category || !dateTime) {
@@ -121,6 +143,9 @@ export async function POST(req: Request) {
 
     const activeEdition = await getActiveEdition();
     const editionId = activeEdition.id && activeEdition.id !== "default-shine" ? activeEdition.id : null;
+    const defaultFirst = (activeEdition as any)?.defaultFirstPrize || "Cash Prize + Trophy + Certificate";
+    const defaultSecond = (activeEdition as any)?.defaultSecondPrize || "Cash Prize + Merit Certificate";
+    const defaultThird = (activeEdition as any)?.defaultThirdPrize || "Distinction Certificate";
 
     const event = await prisma.event.create({
       data: {
@@ -150,12 +175,32 @@ export async function POST(req: Request) {
         prelimsDateTime: prelimsDateTime ? new Date(prelimsDateTime) : null,
         prelimsVenue: prelimsVenue?.trim() || null,
         prelimsRules: prelimsRules?.trim() || null,
-      },
+      } as any,
       include: {
         staffCoordinator: { select: { id: true, name: true, email: true, phone: true, avatarUrl: true } },
         studentCoordinator: { select: { id: true, name: true, email: true, phone: true, avatarUrl: true } },
       },
     });
+
+    const finalFirst = firstPrize !== undefined ? (firstPrize?.trim() || null) : defaultFirst;
+    const finalSecond = secondPrize !== undefined ? (secondPrize?.trim() || null) : defaultSecond;
+    const finalThird = thirdPrize !== undefined ? (thirdPrize?.trim() || null) : defaultThird;
+
+    try {
+      await prisma.$executeRawUnsafe(
+        `UPDATE "events" SET "firstPrize" = $1, "secondPrize" = $2, "thirdPrize" = $3 WHERE "id" = $4`,
+        finalFirst,
+        finalSecond,
+        finalThird,
+        event.id
+      );
+    } catch (rawErr) {
+      console.error("ExecuteRaw error on event create prizes:", rawErr);
+    }
+
+    (event as any).firstPrize = finalFirst;
+    (event as any).secondPrize = finalSecond;
+    (event as any).thirdPrize = finalThird;
 
     await logActivity({
       action: "EVENT_CREATED",

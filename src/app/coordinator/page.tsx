@@ -7,6 +7,7 @@ import Link from "next/link";
 import { Trophy, FolderOpen, Theater, Laptop, MapPin, Clock, CheckCircle2, QrCode } from "lucide-react";
 import { safeJson } from "@/lib/safeFetch";
 import CheckInModal from "@/components/CheckInModal";
+import Footer from "@/components/Footer";
 
 interface CoordEvent {
   id: string;
@@ -128,7 +129,7 @@ export default function CoordinatorDashboard() {
               className="tap-target px-3.5 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 rounded-lg transition-colors flex items-center gap-1.5 shadow-sm cursor-pointer"
             >
               <QrCode className="w-3.5 h-3.5" />
-              <span>QR Check-In Hub</span>
+              <span>QR Check-in</span>
             </button>
             {session?.user?.role === "ADMIN" && (
               <Link
@@ -314,9 +315,7 @@ export default function CoordinatorDashboard() {
         </div>
       </div>
 
-      <footer className="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500">
-        SHINE 26 • Department of Computer Applications (PG), Sacred Heart College (Autonomous)
-      </footer>
+      <Footer />
 
       <CheckInModal
         isOpen={showCheckInModal}

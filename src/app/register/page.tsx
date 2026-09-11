@@ -380,6 +380,7 @@ function RegisterForm() {
           phone: m.phone.trim(),
           eventIds: m.eventIds,
           prelimsEventIds: m.prelimsEventIds || [],
+          foodPreference: m.foodPreference || "VEG",
         })),
       };
 

@@ -169,3 +169,59 @@ export async function getAvailableCameras(Html5QrcodeClass?: any): Promise<Camer
     return [];
   }
 }
+
+/**
+ * Extracts normalized clean code from scanned QR or typed input.
+ * Handles raw badge codes, food token codes, URLs, and JSON stringified payloads.
+ */
+export function extractLookupCode(rawInput: string): { code: string; typeHint?: "EVENT" | "FOOD" } {
+  const trimmed = (rawInput || "").trim();
+  if (!trimmed) return { code: "" };
+
+  // 1. Handle JSON encoded QR codes: e.g. {"type":"FOOD_TOKEN","code":"FT-..."}
+  if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (parsed.code) {
+        return {
+          code: String(parsed.code).toUpperCase().trim(),
+          typeHint: parsed.type === "FOOD_TOKEN" ? "FOOD" : "EVENT",
+        };
+      }
+      if (parsed.b) return { code: String(parsed.b).toUpperCase().trim(), typeHint: "EVENT" };
+      if (parsed.f) return { code: String(parsed.f).toUpperCase().trim(), typeHint: "FOOD" };
+    } catch {
+      // Fall through to plain text
+    }
+  }
+
+  // 2. Handle URLs like https://.../badge/SHN27-DEL-XXXX or /badge/SHN27-DEL-XXXX
+  if (trimmed.includes("/badge/")) {
+    const parts = trimmed.split("/badge/");
+    const slug = parts[parts.length - 1].split(/[?#]/)[0];
+    return { code: slug.toUpperCase().trim(), typeHint: "EVENT" };
+  }
+
+  // 3. Handle URLs like https://.../food?code=FT-XXXX or /food/claim/FT-XXXX
+  if (trimmed.includes("/food")) {
+    try {
+      const url = new URL(trimmed, "http://localhost");
+      const c = url.searchParams.get("code") || url.pathname.split("/").pop();
+      if (c && c !== "food") {
+        return { code: c.toUpperCase().trim(), typeHint: "FOOD" };
+      }
+    } catch {
+      const match = trimmed.match(/[?&]code=([^&#]+)/);
+      if (match) {
+        return { code: decodeURIComponent(match[1]).toUpperCase().trim(), typeHint: "FOOD" };
+      }
+    }
+  }
+
+  const upper = trimmed.toUpperCase();
+  if (upper.startsWith("FT-")) {
+    return { code: upper, typeHint: "FOOD" };
+  }
+
+  return { code: upper };
+}

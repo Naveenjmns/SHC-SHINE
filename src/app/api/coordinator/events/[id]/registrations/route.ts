@@ -71,6 +71,7 @@ export async function GET(
             teamLeadPhone: true,
             staffInchargeName: true,
             staffInchargePhone: true,
+            paymentStatus: true,
           },
         },
         delegationMember: {

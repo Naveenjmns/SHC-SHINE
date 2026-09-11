@@ -46,6 +46,20 @@ export interface ActiveEditionConfig {
   participantFee: number;
   isRegistrationOpen: boolean;
   registrationClosedNotice: string | null;
+  prizePool?: string | null;
+  expectedDelegates?: string | null;
+  defaultFirstPrize?: string | null;
+  defaultSecondPrize?: string | null;
+  defaultThirdPrize?: string | null;
+  showStageModeInStudentPortal?: boolean;
+
+  // Symposium Rules & Guidelines
+  rulesEligibilityTitle?: string | null;
+  rulesEligibilityText?: string | null;
+  rulesTimingsTitle?: string | null;
+  rulesTimingsText?: string | null;
+  rulesChampionshipTitle?: string | null;
+  rulesChampionshipText?: string | null;
 
   navItems: {
     id: string;
@@ -112,6 +126,22 @@ export const DEFAULT_EDITION_CONFIG: ActiveEditionConfig = {
   participantFee: 0,
   isRegistrationOpen: true,
   registrationClosedNotice: "Registrations for this edition are currently closed. Please contact the event coordinators for queries.",
+  prizePool: "₹25K+",
+  expectedDelegates: "500+",
+  defaultFirstPrize: "Cash Prize - 1000Rs + Certificate",
+  defaultSecondPrize: "Cash Prize - 750Rs + Certificate",
+  defaultThirdPrize: "Cash Prize - 500Rs + Certificate",
+  showStageModeInStudentPortal: false,
+
+  rulesEligibilityTitle: "Eligibility & Registration",
+  rulesEligibilityText:
+    "Open to all bona fide UG and PG students of Computer Science, Applications, IT, and related engineering disciplines with valid college ID cards.",
+  rulesTimingsTitle: "Reporting & Timings",
+  rulesTimingsText:
+    "Participants must report at the registration desk by 09:00 AM sharp on Sep 17, 2026. Spot registrations close at 10:30 AM.",
+  rulesChampionshipTitle: "Overall Championship",
+  rulesChampionshipText:
+    "The institution securing maximum cumulative points across both On-Stage and Off-Stage events will be crowned the SHINE Overall Champions.",
 
   navItems: [
     { id: "1", label: "About", url: "#about", order: 1, isEnabled: true },
@@ -141,6 +171,48 @@ async function fetchActiveEditionFromDb(): Promise<ActiveEditionConfig> {
     if (!active) {
       return DEFAULT_EDITION_CONFIG;
     }
+
+    let pool = (active as any).prizePool;
+    let delegates = (active as any).expectedDelegates;
+    let rulesEligibilityTitle = (active as any).rulesEligibilityTitle;
+    let rulesEligibilityText = (active as any).rulesEligibilityText;
+    let rulesTimingsTitle = (active as any).rulesTimingsTitle;
+    let rulesTimingsText = (active as any).rulesTimingsText;
+    let rulesChampionshipTitle = (active as any).rulesChampionshipTitle;
+    let rulesChampionshipText = (active as any).rulesChampionshipText;
+    let defaultFirst = (active as any).defaultFirstPrize;
+    let defaultSecond = (active as any).defaultSecondPrize;
+    let defaultThird = (active as any).defaultThirdPrize;
+    let showStageModeInStudentPortal = (active as any).showStageModeInStudentPortal;
+
+    try {
+      const rawList: any = await prisma.$queryRaw`
+        SELECT "prizePool", "expectedDelegates",
+               "rulesEligibilityTitle", "rulesEligibilityText",
+               "rulesTimingsTitle", "rulesTimingsText",
+               "rulesChampionshipTitle", "rulesChampionshipText",
+               "defaultFirstPrize", "defaultSecondPrize", "defaultThirdPrize",
+               "showStageModeInStudentPortal"
+        FROM "event_editions"
+        WHERE "id" = ${active.id}
+        LIMIT 1
+      `;
+      if (rawList && rawList[0]) {
+        const r = rawList[0];
+        if (r.prizePool !== undefined) pool = r.prizePool;
+        if (r.expectedDelegates !== undefined) delegates = r.expectedDelegates;
+        if (r.rulesEligibilityTitle !== undefined) rulesEligibilityTitle = r.rulesEligibilityTitle;
+        if (r.rulesEligibilityText !== undefined) rulesEligibilityText = r.rulesEligibilityText;
+        if (r.rulesTimingsTitle !== undefined) rulesTimingsTitle = r.rulesTimingsTitle;
+        if (r.rulesTimingsText !== undefined) rulesTimingsText = r.rulesTimingsText;
+        if (r.rulesChampionshipTitle !== undefined) rulesChampionshipTitle = r.rulesChampionshipTitle;
+        if (r.rulesChampionshipText !== undefined) rulesChampionshipText = r.rulesChampionshipText;
+        if (r.defaultFirstPrize !== undefined) defaultFirst = r.defaultFirstPrize;
+        if (r.defaultSecondPrize !== undefined) defaultSecond = r.defaultSecondPrize;
+        if (r.defaultThirdPrize !== undefined) defaultThird = r.defaultThirdPrize;
+        if (r.showStageModeInStudentPortal !== undefined) showStageModeInStudentPortal = Boolean(r.showStageModeInStudentPortal);
+      }
+    } catch (_) {}
 
     return {
       id: active.id,
@@ -187,6 +259,25 @@ async function fetchActiveEditionFromDb(): Promise<ActiveEditionConfig> {
       participantFee: active.participantFee ?? 0,
       isRegistrationOpen: active.isRegistrationOpen ?? true,
       registrationClosedNotice: active.registrationClosedNotice || DEFAULT_EDITION_CONFIG.registrationClosedNotice,
+      prizePool: pool || DEFAULT_EDITION_CONFIG.prizePool,
+      expectedDelegates: delegates || DEFAULT_EDITION_CONFIG.expectedDelegates,
+      defaultFirstPrize: defaultFirst || DEFAULT_EDITION_CONFIG.defaultFirstPrize,
+      defaultSecondPrize: defaultSecond || DEFAULT_EDITION_CONFIG.defaultSecondPrize,
+      defaultThirdPrize: defaultThird || DEFAULT_EDITION_CONFIG.defaultThirdPrize,
+      showStageModeInStudentPortal: showStageModeInStudentPortal !== undefined ? showStageModeInStudentPortal : false,
+
+      rulesEligibilityTitle:
+        rulesEligibilityTitle || DEFAULT_EDITION_CONFIG.rulesEligibilityTitle,
+      rulesEligibilityText:
+        rulesEligibilityText || DEFAULT_EDITION_CONFIG.rulesEligibilityText,
+      rulesTimingsTitle:
+        rulesTimingsTitle || DEFAULT_EDITION_CONFIG.rulesTimingsTitle,
+      rulesTimingsText:
+        rulesTimingsText || DEFAULT_EDITION_CONFIG.rulesTimingsText,
+      rulesChampionshipTitle:
+        rulesChampionshipTitle || DEFAULT_EDITION_CONFIG.rulesChampionshipTitle,
+      rulesChampionshipText:
+        rulesChampionshipText || DEFAULT_EDITION_CONFIG.rulesChampionshipText,
 
       navItems: active.navItems && active.navItems.length > 0 ? active.navItems : DEFAULT_EDITION_CONFIG.navItems,
       scheduleItems: active.scheduleItems || [],

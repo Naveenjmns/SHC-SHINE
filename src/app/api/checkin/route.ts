@@ -5,46 +5,9 @@ import prisma from "@/lib/prisma";
 import { logActivity } from "@/lib/activityLogger";
 import { buildSecureErrorResponse } from "@/lib/security";
 
+import { extractLookupCode } from "@/lib/cameraScanner";
+
 export const dynamic = "force-dynamic";
-
-/**
- * Extracts normalized clean code from scanned QR or typed input.
- * Handles raw badge codes, food token codes, and JSON stringified payloads.
- */
-function extractLookupCode(rawInput: string): { code: string; typeHint?: "EVENT" | "FOOD" } {
-  const trimmed = rawInput.trim();
-
-  // Handle JSON encoded QR codes
-  if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
-    try {
-      const parsed = JSON.parse(trimmed);
-      if (parsed.code) {
-        return {
-          code: String(parsed.code).toUpperCase().trim(),
-          typeHint: parsed.type === "FOOD_TOKEN" ? "FOOD" : "EVENT",
-        };
-      }
-      if (parsed.b) return { code: String(parsed.b).toUpperCase().trim(), typeHint: "EVENT" };
-      if (parsed.f) return { code: String(parsed.f).toUpperCase().trim(), typeHint: "FOOD" };
-    } catch {
-      // Fall through to plain text
-    }
-  }
-
-  // Handle URLs like https://.../badge/SHN27-DEL-XXXX
-  if (trimmed.includes("/badge/")) {
-    const parts = trimmed.split("/badge/");
-    const slug = parts[parts.length - 1].split(/[?#]/)[0];
-    return { code: slug.toUpperCase().trim(), typeHint: "EVENT" };
-  }
-
-  const upper = trimmed.toUpperCase();
-  if (upper.startsWith("FT-")) {
-    return { code: upper, typeHint: "FOOD" };
-  }
-
-  return { code: upper };
-}
 
 // GET: Lookup delegate by Badge Code or Food Token Code
 export async function GET(req: NextRequest) {

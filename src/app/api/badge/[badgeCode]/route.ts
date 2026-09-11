@@ -3,6 +3,8 @@ import prisma from "@/lib/prisma";
 import { getActiveEdition } from "@/lib/eventService";
 import { generateFoodTokenQr, generateEventPassQr } from "@/lib/badgeService";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(
   req: Request,
   { params }: { params: Promise<{ badgeCode: string }> }
@@ -19,7 +21,11 @@ export async function GET(
     let member = await prisma.delegationMember.findUnique({
       where: { badgeCode: badgeCode.toUpperCase() },
       include: {
-        delegation: true,
+        delegation: {
+          include: {
+            edition: true,
+          },
+        },
         registrations: {
           include: {
             event: {
@@ -62,7 +68,11 @@ export async function GET(
         where: { id: member.id },
         data: { qrData, foodQrData },
         include: {
-          delegation: true,
+          delegation: {
+            include: {
+              edition: true,
+            },
+          },
           registrations: {
             include: {
               event: {
@@ -77,7 +87,11 @@ export async function GET(
       });
     }
 
-    const edition = await getActiveEdition();
+    // Resolve live edition directly from delegation, DB, or fallback for 100% dynamic updates
+    const liveEdition =
+      (member.delegation as any)?.edition ||
+      (await prisma.eventEdition.findFirst({ where: { isActive: true } })) ||
+      (await getActiveEdition());
 
     return NextResponse.json(
       {
@@ -118,20 +132,20 @@ export async function GET(
             studentIncharge: r.event.studentCoordinator?.name || null,
           })),
           fest: {
-            name: edition.name,
-            edition: edition.edition,
-            tagline: edition.tagline,
-            institutionName: edition.institutionName,
-            departmentName: edition.hostDepartment,
-            venue: edition.venue,
-            startDate: edition.startDate,
-            endDate: edition.endDate,
+            name: liveEdition?.name || "SHINE",
+            edition: liveEdition?.edition || "'26",
+            tagline: liveEdition?.tagline || "National Level Intercollegiate IT Fest",
+            institutionName: liveEdition?.institutionName || "Sacred Heart College (Autonomous)",
+            departmentName: liveEdition?.hostDepartment || "Department of Computer Applications (PG)",
+            venue: liveEdition?.venue || "SGB Main Auditorium, Sacred Heart College (Autonomous), Tirupattur",
+            startDate: liveEdition?.startDate || null,
+            endDate: liveEdition?.endDate || null,
           },
         },
       },
       {
         headers: {
-          "Cache-Control": "public, max-age=10, s-maxage=30, stale-while-revalidate=60",
+          "Cache-Control": "no-store, no-cache, must-revalidate",
         },
       }
     );

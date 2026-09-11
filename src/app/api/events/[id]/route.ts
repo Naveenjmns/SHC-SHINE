@@ -52,6 +52,17 @@ export async function GET(
       return NextResponse.json({ success: false, message: "Event not found" }, { status: 404 });
     }
 
+    try {
+      const rawEvent: any = await prisma.$queryRaw`
+        SELECT "firstPrize", "secondPrize", "thirdPrize" FROM "events" WHERE "id" = ${id} LIMIT 1
+      `;
+      if (rawEvent && rawEvent[0]) {
+        if (rawEvent[0].firstPrize !== undefined) (event as any).firstPrize = rawEvent[0].firstPrize;
+        if (rawEvent[0].secondPrize !== undefined) (event as any).secondPrize = rawEvent[0].secondPrize;
+        if (rawEvent[0].thirdPrize !== undefined) (event as any).thirdPrize = rawEvent[0].thirdPrize;
+      }
+    } catch (_) {}
+
     return NextResponse.json({ success: true, event });
   } catch (error) {
     console.error("Error fetching event:", error);
@@ -96,6 +107,9 @@ export async function PUT(
       prelimsDateTime,
       prelimsVenue,
       prelimsRules,
+      firstPrize,
+      secondPrize,
+      thirdPrize,
     } = body;
 
     const updated = await prisma.event.update({
@@ -130,12 +144,29 @@ export async function PUT(
         prelimsDateTime: prelimsDateTime !== undefined ? (prelimsDateTime ? new Date(prelimsDateTime) : null) : undefined,
         prelimsVenue: prelimsVenue !== undefined ? prelimsVenue?.trim() || null : undefined,
         prelimsRules: prelimsRules !== undefined ? prelimsRules?.trim() || null : undefined,
-      },
+      } as any,
       include: {
         staffCoordinator: { select: { id: true, name: true, email: true, phone: true, avatarUrl: true } },
         studentCoordinator: { select: { id: true, name: true, email: true, phone: true, avatarUrl: true } },
       },
     });
+
+    try {
+      if (firstPrize !== undefined) {
+        await prisma.$executeRawUnsafe(`UPDATE "events" SET "firstPrize" = $1 WHERE "id" = $2`, firstPrize?.trim() || null, id);
+        (updated as any).firstPrize = firstPrize?.trim() || null;
+      }
+      if (secondPrize !== undefined) {
+        await prisma.$executeRawUnsafe(`UPDATE "events" SET "secondPrize" = $1 WHERE "id" = $2`, secondPrize?.trim() || null, id);
+        (updated as any).secondPrize = secondPrize?.trim() || null;
+      }
+      if (thirdPrize !== undefined) {
+        await prisma.$executeRawUnsafe(`UPDATE "events" SET "thirdPrize" = $1 WHERE "id" = $2`, thirdPrize?.trim() || null, id);
+        (updated as any).thirdPrize = thirdPrize?.trim() || null;
+      }
+    } catch (rawErr) {
+      console.error("ExecuteRaw error on event update prizes:", rawErr);
+    }
 
     await logActivity({
       action: "EVENT_UPDATED",

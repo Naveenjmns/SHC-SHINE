@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Footer from "@/components/Footer";
 import { safeJson } from "@/lib/safeFetch";
 import {
   Trophy,
@@ -24,6 +25,7 @@ import {
   Sparkles,
   Users,
   ShieldCheck,
+  Maximize2,
 } from "lucide-react";
 
 interface RegistrationItem {
@@ -93,9 +95,52 @@ export default function StudentDashboard() {
 
   const [registrations, setRegistrations] = useState<RegistrationItem[]>([]);
   const [isApproved, setIsApproved] = useState(false);
+  const [showStageMode, setShowStageMode] = useState(false);
+  const [editionInfo, setEditionInfo] = useState<{
+    startDate?: string | Date | null;
+    participantFee?: number;
+    institutionName?: string | null;
+    name?: string;
+    edition?: string;
+    venue?: string | null;
+  } | null>(null);
   const [pass, setPass] = useState<PassData | null>(null);
   const [delegation, setDelegation] = useState<DelegationData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [enlargedQr, setEnlargedQr] = useState<{
+    title: string;
+    subtitle: string;
+    code: string;
+    qrData: string;
+    badgeType: "EVENT" | "FOOD";
+    statusText?: string;
+  } | null>(null);
+  const [updatingFoodPref, setUpdatingFoodPref] = useState(false);
+
+  const handleToggleFoodPreference = async () => {
+    if (!pass || pass.foodTokenClaimed || updatingFoodPref) return;
+    const currentPref = (pass.foodPreference || "VEG").toUpperCase();
+    const nextPref = currentPref === "VEG" ? "NON_VEG" : "VEG";
+
+    setUpdatingFoodPref(true);
+    try {
+      const res = await fetch("/api/student/registrations", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ preference: nextPref }),
+      });
+      const data = await safeJson(res, { success: false });
+      if (data.success) {
+        setPass((prev) => (prev ? { ...prev, foodPreference: nextPref as "VEG" | "NON_VEG" } : null));
+      } else {
+        alert(data.message || "Failed to update dietary preference.");
+      }
+    } catch {
+      alert("Network error while updating dietary preference.");
+    } finally {
+      setUpdatingFoodPref(false);
+    }
+  };
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -110,13 +155,19 @@ export default function StudentDashboard() {
           const data = await safeJson(res, {
             success: false,
             isApproved: false,
+            showStageMode: false,
             registrations: [],
             pass: null,
             delegation: null,
+            edition: null,
           });
           if (data.success) {
             setRegistrations(data.registrations || []);
             setIsApproved(!!data.isApproved);
+            setShowStageMode(Boolean(data.showStageMode));
+            if (data.edition) {
+              setEditionInfo(data.edition);
+            }
             setPass(data.pass || null);
             setDelegation(data.delegation || null);
           }
@@ -143,6 +194,16 @@ export default function StudentDashboard() {
 
   const confirmed = registrations.filter((r) => r.status === "CONFIRMED");
   const pending = registrations.filter((r) => r.status === "PENDING");
+
+  const formattedFestDate = editionInfo?.startDate
+    ? new Date(editionInfo.startDate).toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      })
+    : "September 17, 2026";
+
+  const individualFee = editionInfo?.participantFee ?? 200;
 
   return (
     <main className="dash-layout flex flex-col min-h-screen">
@@ -171,13 +232,15 @@ export default function StudentDashboard() {
             >
               + Register More
             </Link>
-            <Link
-              href="/leaderboard"
-              className="tap-target px-3 py-1.5 text-xs font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 rounded-lg transition-colors hidden sm:inline-flex items-center gap-1.5"
-            >
-              <Trophy className="w-3.5 h-3.5 text-amber-600" />
-              Stage Results
-            </Link>
+            {showStageMode && (
+              <Link
+                href="/leaderboard"
+                className="tap-target px-3 py-1.5 text-xs font-bold text-amber-900 bg-amber-100 hover:bg-amber-200 border border-amber-300 rounded-lg transition-colors inline-flex items-center gap-1.5 shadow-sm"
+              >
+                <Trophy className="w-3.5 h-3.5 text-amber-700" />
+                <span>Stage Results</span>
+              </Link>
+            )}
             <button
               onClick={() => signOut({ callbackUrl: "/" })}
               className="tap-target px-3 py-1.5 text-xs font-medium text-slate-500 hover:text-rose-600 transition-colors cursor-pointer"
@@ -190,6 +253,37 @@ export default function StudentDashboard() {
 
       {/* Main Content Body */}
       <div className="container-shine py-8 flex-1">
+        {/* Stage Mode Live Announcement (Visible only when toggle is enabled in Admin) */}
+        {showStageMode && (
+          <div className="dash-card p-5 sm:p-6 mb-8 border-l-4 border-amber-500 bg-gradient-to-r from-amber-500/10 via-orange-500/5 to-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold shadow-sm shrink-0">
+                <Trophy className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-200 text-amber-900 uppercase tracking-wider">
+                    Stage Mode Active
+                  </span>
+                  <h3 className="text-sm sm:text-base font-bold text-slate-900">
+                    Symposium Winners & Podium Announced!
+                  </h3>
+                </div>
+                <p className="text-xs text-slate-600 mt-0.5">
+                  Official competition evaluations, rankings, and awards are now live on stage.
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/leaderboard"
+              className="tap-target px-4 py-2 text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-xl shadow-sm transition inline-flex items-center gap-1.5 shrink-0"
+            >
+              <Trophy className="w-4 h-4" />
+              <span>Explore Stage Winners</span>
+            </Link>
+          </div>
+        )}
+
         {/* Welcome Banner */}
         <div className="dash-card p-6 sm:p-8 mb-8">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -208,8 +302,19 @@ export default function StudentDashboard() {
               <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
                 Welcome, {session?.user?.name || "Participant"}!
               </h1>
-              <p className="text-xs sm:text-sm text-slate-600 mt-1">
-                Sacred Heart College (Autonomous) • Fest Date: October 15, 2026
+              <p className="text-xs sm:text-sm text-slate-600 mt-1 flex flex-wrap items-center gap-y-1 gap-x-2">
+                <span>{editionInfo?.institutionName || "Sacred Heart College (Autonomous)"}</span>
+                <span>•</span>
+                <span>Fest Date: {formattedFestDate}</span>
+                {editionInfo?.venue && (
+                  <>
+                    <span>•</span>
+                    <span className="inline-flex items-center gap-1 text-slate-700 font-semibold">
+                      <MapPin className="w-3.5 h-3.5 text-[#FF6B1A]" />
+                      <span>{editionInfo.venue}</span>
+                    </span>
+                  </>
+                )}
               </p>
             </div>
 
@@ -279,8 +384,13 @@ export default function StudentDashboard() {
                 <div className="text-right border-l border-stone-200 pl-4 hidden sm:block">
                   <div className="text-[10px] text-stone-500">Participant Fee</div>
                   <div className="text-base font-black text-stone-900 font-mono">
-                    ₹{delegation?.totalFee || 0}
+                    ₹{individualFee}
                   </div>
+                  {delegation && delegation.memberCount > 1 && (
+                    <div className="text-[10px] text-stone-400">
+                      Team Total ({delegation.memberCount}): ₹{delegation.totalFee || individualFee * delegation.memberCount}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -312,7 +422,7 @@ export default function StudentDashboard() {
                   </p>
                   <div className="pt-2 border-t border-stone-200/80 flex flex-wrap items-center justify-between text-[11px] text-stone-500">
                     <span>Team Lead Contact: <strong>{delegation?.teamLeadName}</strong> ({delegation?.teamLeadPhone})</span>
-                    <span>Fee Amount: <strong>₹{delegation?.totalFee || 0}</strong></span>
+                    <span>Fee per Participant: <strong>₹{individualFee}</strong></span>
                   </div>
                 </div>
               </div>
@@ -377,21 +487,32 @@ export default function StudentDashboard() {
                       </div>
 
                       {/* Food & Lunch Token Box */}
-                      <div className="bg-amber-100/70 border border-amber-300/80 rounded-xl p-3 flex flex-wrap items-center justify-between gap-2 text-xs max-w-md">
+                      <div className="bg-amber-100/70 border border-amber-300/80 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 text-xs max-w-md">
                         <div className="flex items-center gap-2 text-amber-950 font-bold">
                           <Utensils className="w-4 h-4 text-amber-700" />
                           <span>Lunch & Food Token</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span
-                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                          <button
+                            type="button"
+                            disabled={pass.foodTokenClaimed || updatingFoodPref}
+                            onClick={handleToggleFoodPreference}
+                            title={pass.foodTokenClaimed ? "Meal already redeemed" : "Click to switch dietary preference"}
+                            className={`text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1 transition-all ${
+                              pass.foodTokenClaimed ? "cursor-default opacity-80" : "cursor-pointer hover:scale-105 active:scale-95"
+                            } ${
                               (pass.foodPreference || "VEG") === "VEG"
-                                ? "bg-emerald-600 text-white"
-                                : "bg-amber-600 text-white"
+                                ? "bg-emerald-600 text-white shadow-2xs hover:bg-emerald-700"
+                                : "bg-amber-600 text-white shadow-2xs hover:bg-amber-700"
                             }`}
                           >
-                            {(pass.foodPreference || "VEG") === "VEG" ? "🥗 Pure Veg" : "🍗 Non-Veg"}
-                          </span>
+                            <span>{(pass.foodPreference || "VEG") === "VEG" ? "🥗 Pure Veg" : "🍗 Non-Veg"}</span>
+                            {!pass.foodTokenClaimed && (
+                              <span className="text-[9px] opacity-80 font-medium ml-0.5 underline">
+                                {updatingFoodPref ? "Saving..." : "Switch"}
+                              </span>
+                            )}
+                          </button>
                           <span className="font-mono font-black text-stone-900 bg-white px-2.5 py-0.5 rounded border border-amber-300 shadow-2xs">
                             {pass.foodTokenCode}
                           </span>
@@ -418,31 +539,77 @@ export default function StudentDashboard() {
 
                     {/* QR Codes & View & Print ID Card Action */}
                     <div className="flex flex-col sm:flex-row lg:flex-col items-center gap-4 shrink-0 w-full lg:w-auto pt-4 lg:pt-0 border-t lg:border-t-0 border-stone-200">
-                      <div className="flex items-center gap-4">
+                      <div className="grid grid-cols-2 gap-3 w-full sm:w-auto">
                         {pass.qrData && (
-                          <div className="text-center">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={pass.qrData}
-                              alt={`Event Pass QR for ${pass.badgeCode}`}
-                              className="w-20 h-20 rounded-xl border border-stone-300 p-1.5 bg-white shadow-2xs"
-                            />
-                            <span className="text-[9px] font-bold text-stone-600 block mt-1 uppercase tracking-wider">
-                              Event Entry QR
+                          <div
+                            onClick={() =>
+                              setEnlargedQr({
+                                title: "Event Registration Entry Pass",
+                                subtitle: pass.name,
+                                code: pass.badgeCode,
+                                qrData: pass.qrData!,
+                                badgeType: "EVENT",
+                                statusText: pass.eventCheckedIn ? "✓ Venue Entry Checked In" : "Ready for Gate Scan",
+                              })
+                            }
+                            className="text-center group cursor-pointer p-2 rounded-2xl bg-white border border-stone-200 hover:border-stone-400 hover:shadow-md transition-all"
+                            title="Tap to zoom Event Pass QR"
+                          >
+                            <div className="relative inline-block">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={pass.qrData}
+                                alt={`Event Pass QR for ${pass.badgeCode}`}
+                                className="w-24 h-24 sm:w-28 sm:h-28 rounded-xl p-1 bg-white"
+                                style={{ imageRendering: "pixelated" }}
+                              />
+                              <div className="absolute inset-0 bg-black/40 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[10px] font-bold gap-1">
+                                <Maximize2 className="w-3.5 h-3.5" />
+                                <span>Zoom</span>
+                              </div>
+                            </div>
+                            <span className="text-[10px] font-black text-stone-800 block mt-1 uppercase tracking-wider">
+                              1. Event Entry QR
+                            </span>
+                            <span className="font-mono text-[9px] text-stone-500 font-semibold block truncate">
+                              {pass.badgeCode}
                             </span>
                           </div>
                         )}
 
                         {pass.foodQrData && (
-                          <div className="text-center">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={pass.foodQrData}
-                              alt={`Food QR for ${pass.foodTokenCode}`}
-                              className="w-20 h-20 rounded-xl border border-amber-300 p-1.5 bg-white shadow-2xs"
-                            />
-                            <span className="text-[9px] font-bold text-amber-800 block mt-1 uppercase tracking-wider">
-                              Food Token QR
+                          <div
+                            onClick={() =>
+                              setEnlargedQr({
+                                title: "Official Food & Meal Token",
+                                subtitle: `${pass.name} • ${pass.foodPreference === "NON_VEG" ? "🍗 Non-Veg" : "🥗 Pure Veg"}`,
+                                code: pass.foodTokenCode,
+                                qrData: pass.foodQrData!,
+                                badgeType: "FOOD",
+                                statusText: pass.foodTokenClaimed ? "✓ Meal Already Redeemed" : "Ready for Food Counter Scan",
+                              })
+                            }
+                            className="text-center group cursor-pointer p-2 rounded-2xl bg-amber-50/40 border border-amber-300/70 hover:border-amber-500 hover:shadow-md transition-all"
+                            title="Tap to zoom Food Token QR"
+                          >
+                            <div className="relative inline-block">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={pass.foodQrData}
+                                alt={`Food QR for ${pass.foodTokenCode}`}
+                                className="w-24 h-24 sm:w-28 sm:h-28 rounded-xl p-1 bg-white border border-amber-200"
+                                style={{ imageRendering: "pixelated" }}
+                              />
+                              <div className="absolute inset-0 bg-amber-950/40 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[10px] font-bold gap-1">
+                                <Maximize2 className="w-3.5 h-3.5" />
+                                <span>Zoom</span>
+                              </div>
+                            </div>
+                            <span className="text-[10px] font-black text-amber-900 block mt-1 uppercase tracking-wider">
+                              2. Food Token QR
+                            </span>
+                            <span className="font-mono text-[9px] text-amber-700 font-semibold block truncate">
+                              {pass.foodTokenCode}
                             </span>
                           </div>
                         )}
@@ -611,9 +778,6 @@ export default function StudentDashboard() {
                               </strong>
                             </span>
                           </span>
-                          <span>
-                            Fee: <strong className="text-slate-900 tabular-nums">₹{reg.event.fee}</strong>
-                          </span>
                           {(reg.event.staffCoordinator || reg.event.coordinator) && (
                             <span>
                               Coordinator: <strong className="text-slate-700">{(reg.event.staffCoordinator || reg.event.coordinator)?.name}</strong>
@@ -640,10 +804,74 @@ export default function StudentDashboard() {
         </div>
       </div>
 
-      {/* Footer */}
-      <footer className="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500">
-        SHINE 26 • Department of Computer Applications (PG), Sacred Heart College (Autonomous), Tirupattur
-      </footer>
+      {/* Tap-to-Zoom Large QR Modal for Optical Scanning */}
+      {enlargedQr && (
+        <div
+          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onClick={() => setEnlargedQr(null)}
+        >
+          <div
+            className="bg-white rounded-3xl p-6 sm:p-8 max-w-sm w-full shadow-2xl text-center relative border border-stone-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setEnlargedQr(null)}
+              className="absolute top-4 right-4 p-2 text-stone-400 hover:text-stone-700 hover:bg-stone-100 rounded-full transition-colors cursor-pointer"
+              aria-label="Close"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-2 bg-stone-100 text-stone-800 border border-stone-300">
+              {enlargedQr.badgeType === "FOOD" ? (
+                <>
+                  <Utensils className="w-3.5 h-3.5 text-amber-600" />
+                  <span>Official Food Voucher</span>
+                </>
+              ) : (
+                <>
+                  <QrCode className="w-3.5 h-3.5 text-stone-800" />
+                  <span>Official Event Pass</span>
+                </>
+              )}
+            </div>
+
+            <h3 className="text-lg font-black text-stone-900 tracking-tight">
+              {enlargedQr.title}
+            </h3>
+            <p className="text-xs text-stone-500 mb-4">{enlargedQr.subtitle}</p>
+
+            {/* High-Contrast Large QR Container */}
+            <div className="bg-white p-4 rounded-2xl border-2 border-stone-900 shadow-inner inline-block mx-auto">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={enlargedQr.qrData}
+                alt={enlargedQr.title}
+                className="w-56 h-56 sm:w-64 sm:h-64 object-contain mx-auto"
+                style={{ imageRendering: "pixelated" }}
+              />
+            </div>
+
+            <div className="mt-4">
+              <div className="font-mono text-sm font-black text-stone-900 bg-stone-100 px-4 py-2 rounded-xl border border-stone-300 inline-block tracking-wider shadow-2xs">
+                {enlargedQr.code}
+              </div>
+            </div>
+
+            {enlargedQr.statusText && (
+              <div className="mt-3 text-xs font-semibold text-stone-600">
+                {enlargedQr.statusText}
+              </div>
+            )}
+
+            <p className="mt-4 text-[11px] text-stone-400 font-medium">
+              Present this enlarged screen to the coordinator or food desk scanner.
+            </p>
+          </div>
+        </div>
+      )}
+
+      <Footer />
     </main>
   );
 }

@@ -7,6 +7,7 @@ import Link from "next/link";
 import { X, History } from "lucide-react";
 import { useToast } from "@/components/ToastProvider";
 import { safeJson } from "@/lib/safeFetch";
+import Footer from "@/components/Footer";
 
 interface UserItem {
   id: string;
@@ -515,9 +516,7 @@ export default function AdminUsersPage() {
         )}
       </div>
 
-      <footer className="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500">
-        SHINE 26 • Sacred Heart College (Autonomous), Tirupattur
-      </footer>
+      <Footer />
     </main>
   );
 }

@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -140,6 +140,7 @@ export async function GET(req: Request) {
             isTeamLead: true,
             badgeCode,
             foodTokenCode,
+            foodPreference: (user as any).foodPreference || "VEG",
             qrData,
             foodQrData,
           },
@@ -211,15 +212,108 @@ export async function GET(req: Request) {
       member?.delegation?.paymentStatus === "PAID" ||
       member?.delegation?.paymentStatus === "VERIFIED";
 
+    const activeEdition = await getActiveEdition();
+    let showStageMode = Boolean(activeEdition?.showStageModeInStudentPortal);
+
+    if (activeEdition?.id && activeEdition.id !== "default-shine") {
+      try {
+        const rawEd: any = await prisma.$queryRaw`
+          SELECT "showStageModeInStudentPortal", "startDate", "participantFee", "institutionName", "name", "edition"
+          FROM "event_editions"
+          WHERE "id" = ${activeEdition.id}
+          LIMIT 1
+        `;
+        if (rawEd && rawEd[0]) {
+          if (rawEd[0].showStageModeInStudentPortal !== undefined) {
+            showStageMode = Boolean(rawEd[0].showStageModeInStudentPortal);
+          }
+          if (rawEd[0].startDate) activeEdition.startDate = rawEd[0].startDate;
+          if (rawEd[0].participantFee !== undefined && rawEd[0].participantFee !== null) {
+            activeEdition.participantFee = Number(rawEd[0].participantFee);
+          }
+          if (rawEd[0].institutionName) activeEdition.institutionName = rawEd[0].institutionName;
+        }
+      } catch (_) {}
+    }
+
     return NextResponse.json({
       success: true,
       isApproved,
+      showStageMode,
       registrations,
       pass,
       delegation: delegationInfo,
+      edition: {
+        startDate: activeEdition.startDate,
+        participantFee: activeEdition.participantFee || 200,
+        institutionName: activeEdition.institutionName || "Sacred Heart College (Autonomous)",
+        name: activeEdition.name || "SHINE",
+        edition: activeEdition.edition || "26",
+        venue: activeEdition.venue,
+      },
     });
   } catch (error) {
     console.error("Error fetching student registrations:", error);
     return NextResponse.json({ success: false, message: "Failed to fetch registrations." }, { status: 500 });
+  }
+}
+
+// PATCH: Allow logged-in student to update their dietary food preference (VEG <-> NON_VEG)
+export async function PATCH(req: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user?.email) {
+      return NextResponse.json({ success: false, message: "Unauthorized." }, { status: 401 });
+    }
+
+    const body = await req.json();
+    const preference = String(body.preference || "").toUpperCase().trim();
+    if (preference !== "VEG" && preference !== "NON_VEG") {
+      return NextResponse.json(
+        { success: false, message: "Invalid preference. Must be VEG or NON_VEG." },
+        { status: 400 }
+      );
+    }
+
+    const email = session.user.email.toLowerCase().trim();
+
+    // Find the student's delegation member record
+    const member = await prisma.delegationMember.findFirst({
+      where: {
+        email: { equals: email, mode: "insensitive" },
+      },
+    });
+
+    if (member) {
+      if (member.foodTokenClaimed) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Your food token has already been served and redeemed. Dietary preference cannot be changed.",
+          },
+          { status: 400 }
+        );
+      }
+
+      await prisma.delegationMember.update({
+        where: { id: member.id },
+        data: { foodPreference: preference },
+      });
+    }
+
+    // Also update User account record
+    await prisma.user.updateMany({
+      where: { email: { equals: email, mode: "insensitive" } },
+      data: { foodPreference: preference },
+    });
+
+    return NextResponse.json({
+      success: true,
+      foodPreference: preference,
+      message: `Dietary preference successfully changed to ${preference === "VEG" ? "Vegetarian (🥗)" : "Non-Vegetarian (🍗)"}.`,
+    });
+  } catch (error: any) {
+    console.error("Error updating food preference:", error);
+    return NextResponse.json({ success: false, message: "Failed to update dietary preference." }, { status: 500 });
   }
 }

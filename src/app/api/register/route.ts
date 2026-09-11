@@ -362,6 +362,7 @@ export async function POST(req: Request) {
         isTeamLead: memberRecord.isTeamLead,
         badgeCode: memberRecord.badgeCode,
         foodTokenCode: memberRecord.foodTokenCode,
+        foodPreference: memberRecord.foodPreference,
         qrData: memberRecord.qrData,
         foodQrData: memberRecord.foodQrData,
         eventCheckedIn: memberRecord.eventCheckedIn,

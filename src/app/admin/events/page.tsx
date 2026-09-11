@@ -23,6 +23,7 @@ import {
   Phone,
   Mail,
   Target,
+  Trophy,
 } from "lucide-react";
 import { useToast } from "@/components/ToastProvider";
 import { safeJson } from "@/lib/safeFetch";
@@ -51,6 +52,9 @@ interface EventItem {
   prelimsDateTime?: string | null;
   prelimsVenue?: string | null;
   prelimsRules?: string | null;
+  firstPrize?: string | null;
+  secondPrize?: string | null;
+  thirdPrize?: string | null;
   imageUrl?: string | null;
   logoUrl?: string | null;
   staffCoordinatorName?: string | null;
@@ -114,6 +118,18 @@ export default function AdminEventsPage() {
   const [prelimsVenue, setPrelimsVenue] = useState("");
   const [prelimsRules, setPrelimsRules] = useState("");
 
+  // Competition Awards & Prizes (Dynamic on Leaderboard)
+  const [firstPrize, setFirstPrize] = useState("Cash Prize + Trophy + Certificate");
+  const [secondPrize, setSecondPrize] = useState("Cash Prize + Merit Certificate");
+  const [thirdPrize, setThirdPrize] = useState("Distinction Certificate");
+
+  // Centralized Awards from Admin -> Branding & Stage Tab
+  const [centralizedPrizes, setCentralizedPrizes] = useState({
+    first: "Cash Prize + Trophy + Certificate",
+    second: "Cash Prize + Merit Certificate",
+    third: "Distinction Certificate",
+  });
+
   // Staff Coordinator form fields
   const [staffCoordinatorId, setStaffCoordinatorId] = useState("");
   const [staffCoordName, setStaffCoordName] = useState("");
@@ -148,12 +164,14 @@ export default function AdminEventsPage() {
 
       async function loadData() {
         try {
-          const [eventsRes, usersRes] = await Promise.all([
+          const [eventsRes, usersRes, edRes] = await Promise.all([
             fetch("/api/events"),
             fetch("/api/admin/users"),
+            fetch("/api/admin/edition"),
           ]);
           const eventsData = await safeJson(eventsRes, { success: false, events: [] });
           const usersData = await safeJson(usersRes, { success: false, users: [] });
+          const edData = await safeJson(edRes, { success: false, editions: [] });
 
           if (eventsData.success && eventsData.events) setEvents(eventsData.events);
           if (usersData.success && usersData.users) {
@@ -162,6 +180,16 @@ export default function AdminEventsPage() {
             setStaffCoordinators(allUsers.filter((u) => u.role === "COORDINATOR" || u.role === "ADMIN"));
             // Student Coordinators: STUDENT or COORDINATOR
             setStudentCoordinators(allUsers.filter((u) => u.role === "STUDENT" || u.role === "COORDINATOR"));
+          }
+          if (edData.success && edData.editions) {
+            const activeEd = edData.editions.find((e: any) => e.isActive) || edData.editions[0];
+            if (activeEd) {
+              setCentralizedPrizes({
+                first: activeEd.defaultFirstPrize || "Cash Prize + Trophy + Certificate",
+                second: activeEd.defaultSecondPrize || "Cash Prize + Merit Certificate",
+                third: activeEd.defaultThirdPrize || "Distinction Certificate",
+              });
+            }
           }
         } catch (err) {
           console.error("Error loading events admin data:", err);
@@ -245,6 +273,9 @@ export default function AdminEventsPage() {
     setPrelimsDateTime("2026-10-15T09:00");
     setPrelimsVenue("");
     setPrelimsRules("");
+    setFirstPrize(centralizedPrizes.first);
+    setSecondPrize(centralizedPrizes.second);
+    setThirdPrize(centralizedPrizes.third);
     setStaffCoordinatorId("");
     setStaffCoordName("");
     setStaffCoordEmail("");
@@ -274,6 +305,9 @@ export default function AdminEventsPage() {
     setPrelimsDateTime(toLocalDatetimeInput(ev.prelimsDateTime, "2026-10-15T09:00"));
     setPrelimsVenue(ev.prelimsVenue || "");
     setPrelimsRules(ev.prelimsRules || "");
+    setFirstPrize(ev.firstPrize || centralizedPrizes.first);
+    setSecondPrize(ev.secondPrize || centralizedPrizes.second);
+    setThirdPrize(ev.thirdPrize || centralizedPrizes.third);
     setStaffCoordinatorId(ev.staffCoordinator?.id || ev.coordinator?.id || "");
     setStaffCoordName(ev.staffCoordinatorName || ev.staffCoordinator?.name || ev.coordinator?.name || "");
     setStaffCoordEmail(ev.staffCoordinatorEmail || ev.staffCoordinator?.email || ev.coordinator?.email || "");
@@ -305,6 +339,9 @@ export default function AdminEventsPage() {
       prelimsDateTime: hasPrelims && prelimsDateTime ? new Date(prelimsDateTime).toISOString() : null,
       prelimsVenue: hasPrelims ? prelimsVenue.trim() || null : null,
       prelimsRules: hasPrelims ? prelimsRules.trim() || null : null,
+      firstPrize: firstPrize.trim() || null,
+      secondPrize: secondPrize.trim() || null,
+      thirdPrize: thirdPrize.trim() || null,
       staffCoordinatorId: staffCoordinatorId || null,
       staffCoordinatorName: staffCoordName.trim() || null,
       staffCoordinatorEmail: staffCoordEmail.trim() || null,
@@ -495,6 +532,11 @@ export default function AdminEventsPage() {
                             <div className="font-bold text-slate-900 text-sm">{ev.name}</div>
                             {ev.description && (
                               <div className="text-[11px] text-slate-500 line-clamp-1 max-w-xs">{ev.description}</div>
+                            )}
+                            {ev.firstPrize && (
+                              <div className="text-[10px] font-semibold text-amber-800 flex items-center gap-1 mt-0.5">
+                                <span>🥇 {ev.firstPrize}</span>
+                              </div>
                             )}
                           </div>
                         </div>
@@ -874,6 +916,75 @@ export default function AdminEventsPage() {
                         </div>
                       </div>
                     )}
+                  </div>
+
+                  {/* COMPETITION AWARDS & PODIUM PRIZES (DYNAMIC LEADERBOARD PRIZES) */}
+                  <div className="bg-gradient-to-br from-amber-50/70 to-orange-50/50 border border-amber-300/90 p-4 rounded-2xl space-y-3.5 shadow-2xs">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <span className="block text-xs font-black text-slate-900 flex items-center gap-1.5">
+                          <Trophy className="w-4 h-4 text-amber-500 shrink-0" />
+                          <span>Competition Awards & Podium Prizes (Dynamic on Leaderboard)</span>
+                        </span>
+                        <span className="text-[11px] text-slate-500">
+                          Pre-populated from Admin &rarr; Branding & Stage defaults. You can customize them for this competition or reset to defaults anytime.
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFirstPrize(centralizedPrizes.first);
+                          setSecondPrize(centralizedPrizes.second);
+                          setThirdPrize(centralizedPrizes.third);
+                          toast.success("Awards reset to centralized defaults.");
+                        }}
+                        className="text-[10px] font-bold text-amber-900 bg-amber-100 hover:bg-amber-200 border border-amber-300 px-2.5 py-1 rounded-lg transition-colors cursor-pointer shrink-0"
+                        title="Reset to Admin Branding & Stage defaults"
+                      >
+                        Reset to Centralized
+                      </button>
+                    </div>
+
+                    <div className="space-y-3 pt-1 border-t border-amber-200/60">
+                      <div>
+                        <label className="block text-[11px] font-extrabold text-amber-950 mb-1 flex items-center gap-1.5">
+                          <span>🥇 1st Place Award (Champion)</span>
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Cash Prize ₹5,000 + Trophy + Certificate"
+                          value={firstPrize}
+                          onChange={(e) => setFirstPrize(e.target.value)}
+                          className="w-full h-9 bg-white border border-amber-300 rounded-lg px-2.5 text-xs text-slate-900 font-semibold focus:outline-none focus:border-amber-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-extrabold text-stone-800 mb-1 flex items-center gap-1.5">
+                          <span>🥈 2nd Place Award (Runner-Up)</span>
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Cash Prize ₹3,000 + Merit Certificate"
+                          value={secondPrize}
+                          onChange={(e) => setSecondPrize(e.target.value)}
+                          className="w-full h-9 bg-white border border-stone-300 rounded-lg px-2.5 text-xs text-slate-900 font-semibold focus:outline-none focus:border-stone-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-extrabold text-[#C2410C] mb-1 flex items-center gap-1.5">
+                          <span>🥉 3rd Place Award (Finalist)</span>
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Distinction Certificate"
+                          value={thirdPrize}
+                          onChange={(e) => setThirdPrize(e.target.value)}
+                          className="w-full h-9 bg-white border border-orange-200 rounded-lg px-2.5 text-xs text-slate-900 font-semibold focus:outline-none focus:border-orange-500"
+                        />
+                      </div>
+                    </div>
                   </div>
 
                   {/* Staff Coordinator Section */}

@@ -28,6 +28,7 @@ import {
   getAvailableCameras,
   getCameraPermissionStatus,
   isSecureCameraContext,
+  extractLookupCode,
   CameraErrorInfo,
   CameraDeviceInfo,
 } from "@/lib/cameraScanner";
@@ -216,6 +217,15 @@ export default function CheckInModal({
       setMessage(null);
       setInputCode("");
       setCameraError(null);
+      setScanMode("manual");
+    } else {
+      // Whenever modal opens, guarantee Manual Code Lookup is the default selected mode
+      stopCameraScanner();
+      setScanMode("manual");
+      setDelegate(null);
+      setMessage(null);
+      setInputCode("");
+      setCameraError(null);
     }
   }, [isOpen]);
 
@@ -314,14 +324,14 @@ export default function CheckInModal({
       const html5QrCode = new Html5Qrcode(scannerDivId, false);
       scannerRef.current = html5QrCode;
 
-      // Dynamic qrbox calculation: 70% of viewport width up to 250px
-      const containerWidth = scannerEl.clientWidth || 300;
-      const boxSize = Math.min(250, Math.max(180, Math.floor(containerWidth * 0.7)));
-
-      const config = {
-        fps: 12,
-        qrbox: { width: boxSize, height: boxSize },
-        aspectRatio: 1.0,
+      // Dynamic qrbox calculation based on real viewfinder dimensions without hardcoded aspectRatio
+      const config: any = {
+        fps: 15,
+        qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
+          const edge = Math.min(viewfinderWidth, viewfinderHeight);
+          const size = Math.max(160, Math.min(250, Math.floor(edge * 0.72)));
+          return { width: size, height: size };
+        },
       };
 
       const onScanSuccess = (decodedText: string) => {
@@ -332,32 +342,55 @@ export default function CheckInModal({
         stopCameraScanner();
       };
 
-      // Determine camera target: specificCameraId -> selectedCameraId -> environment (rear camera)
-      let targetConfig: any;
+      let started = false;
+
+      // 1. Specific camera if explicitly provided
       if (specificCameraId) {
-        targetConfig = specificCameraId;
-      } else if (selectedCameraId && availableCameras.some((c) => c.id === selectedCameraId)) {
-        targetConfig = selectedCameraId;
-      } else {
-        targetConfig = { facingMode: "environment" };
+        try {
+          await html5QrCode.start(specificCameraId, config, onScanSuccess, () => {});
+          started = true;
+          setSelectedCameraId(specificCameraId);
+        } catch (specErr) {
+          console.warn("Specific camera failed:", specErr);
+        }
       }
 
-      // Start stream: invokes getUserMedia which triggers browser permission prompt if needed
-      try {
-        await html5QrCode.start(targetConfig, config, onScanSuccess, () => {});
-      } catch (primaryErr: any) {
-        const errText = typeof primaryErr === "string" ? primaryErr : String(primaryErr?.message || primaryErr || "");
-        const isPermDenied = /notallowederror|permission denied|not allowed/i.test(errText);
+      // 2. Pre-selected camera if available
+      if (!started && selectedCameraId) {
+        try {
+          await html5QrCode.start(selectedCameraId, config, onScanSuccess, () => {});
+          started = true;
+        } catch (selErr) {
+          console.warn("Selected camera failed:", selErr);
+        }
+      }
 
-        // If rear camera failed for constraint reasons (not permission denied), fallback to user/front facing camera
-        if (!isPermDenied && typeof targetConfig === "object" && targetConfig.facingMode === "environment") {
+      // 3. Fallback hierarchy: environment -> user -> enumerated devices
+      if (!started) {
+        try {
+          await html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess, () => {});
+          started = true;
+        } catch (primaryErr: any) {
+          const errText = typeof primaryErr === "string" ? primaryErr : String(primaryErr?.message || primaryErr || "");
+          const isPermDenied = /notallowederror|permission denied|not allowed/i.test(errText);
+          if (isPermDenied) throw primaryErr;
+
           try {
             await html5QrCode.start({ facingMode: "user" }, config, onScanSuccess, () => {});
+            started = true;
           } catch (fallbackErr: any) {
-            throw fallbackErr;
+            const fbText = String(fallbackErr?.message || fallbackErr || "");
+            if (/notallowederror|permission denied|not allowed/i.test(fbText)) throw fallbackErr;
+
+            const devices = await getAvailableCameras(Html5Qrcode);
+            if (devices.length > 0) {
+              await html5QrCode.start(devices[0].id, config, onScanSuccess, () => {});
+              started = true;
+              setSelectedCameraId(devices[0].id);
+            } else {
+              throw fallbackErr;
+            }
           }
-        } else {
-          throw primaryErr;
         }
       }
 
@@ -368,6 +401,8 @@ export default function CheckInModal({
           vids[i].setAttribute("playsinline", "true");
           vids[i].setAttribute("webkit-playsinline", "true");
           vids[i].setAttribute("muted", "true");
+          vids[i].setAttribute("autoplay", "true");
+          vids[i].play().catch(() => {});
         }
       }
       setCameraActive(true);
@@ -418,7 +453,9 @@ export default function CheckInModal({
   };
 
   const handleLookup = async (codeToSearch?: string) => {
-    const code = (codeToSearch || inputCode).trim();
+    const raw = (codeToSearch || inputCode).trim();
+    const { code: normalized } = extractLookupCode(raw);
+    const code = normalized || raw;
     if (!code) {
       setMessage({ type: "warning", text: "Please enter or scan a code." });
       return;
@@ -550,13 +587,23 @@ export default function CheckInModal({
             </div>
             <div>
               <h2 className="text-lg font-black text-stone-900 tracking-tight flex items-center gap-2">
-                <span>QR Check-In & Food Claim Hub</span>
+                <span>
+                  {mode === "event_only"
+                    ? "QR Check-In Hub"
+                    : mode === "food_only"
+                    ? "Food Token Claim Hub"
+                    : "QR Check-In & Food Claim Hub"}
+                </span>
                 <span className="text-[10px] bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-full font-bold">
                   LIVE VERIFIER
                 </span>
               </h2>
               <p className="text-xs text-stone-500">
-                Scan or enter student delegate badge / meal QR codes to confirm attendance and issue food
+                {mode === "event_only"
+                  ? "Scan or enter student delegate badge codes to verify competition attendance"
+                  : mode === "food_only"
+                  ? "Scan or enter food token QR codes to issue meal tokens"
+                  : "Scan or enter student delegate badge / meal QR codes to confirm attendance and issue food"}
               </p>
             </div>
           </div>
@@ -701,7 +748,7 @@ export default function CheckInModal({
                     <div
                       id={scannerDivId}
                       className={`w-full max-w-xs mx-auto overflow-hidden rounded-xl border-2 border-amber-400 shadow-lg ${
-                        cameraActive ? "block" : "hidden"
+                        cameraActive || cameraStarting ? "block" : "hidden"
                       }`}
                     />
                   </div>
@@ -998,6 +1045,15 @@ export default function CheckInModal({
                           READY (1x MEAL)
                         </span>
                       )}
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          (delegate.foodPreference || "VEG") === "VEG"
+                            ? "bg-emerald-600 text-white"
+                            : "bg-amber-600 text-white"
+                        }`}
+                      >
+                        {(delegate.foodPreference || "VEG") === "VEG" ? "🥗 Pure Veg" : "🍗 Non-Veg"}
+                      </span>
                     </div>
 
                     <p className="text-xs text-stone-600">
@@ -1048,7 +1104,13 @@ export default function CheckInModal({
         <div className="bg-stone-50 border-t border-stone-200 p-4 px-6 flex items-center justify-between text-xs text-stone-500">
           <div className="flex items-center gap-1">
             <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-            <span>Accepts both Event QR & Food QR codes</span>
+            <span>
+              {mode === "event_only"
+                ? "Accepts Event Badge QR codes & Manual Code Entry"
+                : mode === "food_only"
+                ? "Accepts Food Token QR codes"
+                : "Accepts both Event QR & Food QR codes"}
+            </span>
           </div>
           <button
             type="button"

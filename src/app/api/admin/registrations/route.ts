@@ -134,7 +134,7 @@ export async function PATCH(req: Request) {
         });
         await prisma.registration.updateMany({
           where: { delegationId },
-          data: { status: RegistrationStatus.REJECTED },
+          data: { status: RegistrationStatus.REJECTED, prelimsStatus: null, result: null },
         });
       } else if (collegeName) {
         const users = await prisma.user.findMany({
@@ -144,7 +144,7 @@ export async function PATCH(req: Request) {
         const userIds = users.map((u) => u.id);
         await prisma.registration.updateMany({
           where: { userId: { in: userIds } },
-          data: { status: RegistrationStatus.REJECTED },
+          data: { status: RegistrationStatus.REJECTED, prelimsStatus: null, result: null },
         });
       }
       return NextResponse.json({ success: true, message: `Registrations for ${collegeName || "this college"} have been REJECTED.` });
@@ -277,9 +277,13 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ success: false, message: "Registration ID is required." }, { status: 400 });
     }
 
-    const updateData: { status?: RegistrationStatus; result?: string | null; score?: number | null } = {};
+    const updateData: { status?: RegistrationStatus; result?: string | null; score?: number | null; prelimsStatus?: string | null } = {};
     if (status && Object.values(RegistrationStatus).includes(status)) {
       updateData.status = status as RegistrationStatus;
+      if (status === "REJECTED") {
+        updateData.prelimsStatus = null;
+        updateData.result = null;
+      }
     }
     if (result !== undefined) {
       updateData.result = result ? result.trim() : null;

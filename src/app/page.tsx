@@ -8,6 +8,7 @@ import dynamicImport from "next/dynamic";
 import { getActiveEdition } from "@/lib/eventService";
 import prisma from "@/lib/prisma";
 import Link from "next/link";
+import { formatDateSafe, formatTimeSafe } from "@/lib/dateUtils";
 
 const PresentationController = dynamicImport(
   () => import("@/components/PresentationController")
@@ -111,6 +112,35 @@ export default async function Home() {
   const eventName = activeEdition.name || "SHINE";
   const editionYear = activeEdition.edition || "2026";
   const startDate = activeEdition.startDate ? new Date(activeEdition.startDate).toISOString() : "2026-09-17T09:30:00+05:30";
+
+  const prizePoolDisplay = activeEdition.prizePool || "₹25K+";
+  const expectedDelegatesDisplay = activeEdition.expectedDelegates || "500+";
+
+  const eventTimeDisplay = activeEdition.startDate
+    ? formatTimeSafe(activeEdition.startDate, { hour: "2-digit", minute: "2-digit", hour12: true })
+    : "09:30 AM";
+
+  const eventDateDisplay = activeEdition.startDate
+    ? formatDateSafe(activeEdition.startDate, { month: "short", day: "numeric", year: "numeric" })
+    : "Sept 17, 2026";
+
+  const rulesEligibilityTitle =
+    activeEdition.rulesEligibilityTitle || "Eligibility & Registration";
+  const rulesEligibilityText =
+    activeEdition.rulesEligibilityText ||
+    "Open to all bona fide UG and PG students of Computer Science, Applications, IT, and related engineering disciplines with valid college ID cards.";
+
+  const rulesTimingsTitle =
+    activeEdition.rulesTimingsTitle || "Reporting & Timings";
+  const rulesTimingsText =
+    activeEdition.rulesTimingsText ||
+    `Participants must report at the registration desk by 09:00 AM sharp on ${eventDateDisplay}. Spot registrations close at 10:30 AM.`;
+
+  const rulesChampionshipTitle =
+    activeEdition.rulesChampionshipTitle || "Overall Championship";
+  const rulesChampionshipText =
+    activeEdition.rulesChampionshipText ||
+    `The institution securing maximum cumulative points across both On-Stage and Off-Stage events will be crowned the ${eventName} Overall Champions.`;
 
   return (
     <main className="min-h-screen flex flex-col bg-[#FAF8F5] text-[#1C1917]">
@@ -217,9 +247,9 @@ export default async function Home() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
               { num: events.length > 0 ? `${events.length}+` : "0+", label: "Competitive Events", icon: <Zap className="w-5 h-5 text-[#FF6B1A] mx-auto" /> },
-              { num: "₹25K+", label: "Cash Prize Pool", icon: <Trophy className="w-5 h-5 text-[#D9A441] mx-auto" /> },
-              { num: "500+", label: "Expected Delegates", icon: <Users className="w-5 h-5 text-[#FF6B1A] mx-auto" /> },
-              { num: "09:30 AM", label: "Sept 17, 2026", icon: <Calendar className="w-5 h-5 text-[#D9A441] mx-auto" /> },
+              { num: prizePoolDisplay, label: "Cash Prize Pool", icon: <Trophy className="w-5 h-5 text-[#D9A441] mx-auto" /> },
+              { num: expectedDelegatesDisplay, label: "Expected Delegates", icon: <Users className="w-5 h-5 text-[#FF6B1A] mx-auto" /> },
+              { num: eventTimeDisplay, label: eventDateDisplay, icon: <Calendar className="w-5 h-5 text-[#D9A441] mx-auto" /> },
             ].map((stat) => (
               <div key={stat.label} className="fest-card p-5 text-center">
                 <div className="mb-2">{stat.icon}</div>
@@ -430,9 +460,9 @@ export default async function Home() {
               <div className="w-10 h-10 rounded-xl bg-[#FF6B1A]/10 border border-[#FF6B1A]/20 flex items-center justify-center text-[#FF6B1A] mb-4">
                 <Ticket className="w-5 h-5" />
               </div>
-              <h3 className="text-lg font-bold text-[#1C1917] mb-2">Eligibility & Registration</h3>
+              <h3 className="text-lg font-bold text-[#1C1917] mb-2">{rulesEligibilityTitle}</h3>
               <p className="text-sm text-[#57534E] leading-relaxed">
-                Open to all bona fide UG and PG students of Computer Science, Applications, IT, and related engineering disciplines with valid college ID cards.
+                {rulesEligibilityText}
               </p>
             </div>
 
@@ -440,9 +470,9 @@ export default async function Home() {
               <div className="w-10 h-10 rounded-xl bg-[#D9A441]/10 border border-[#D9A441]/20 flex items-center justify-center text-[#D9A441] mb-4">
                 <Clock className="w-5 h-5" />
               </div>
-              <h3 className="text-lg font-bold text-[#1C1917] mb-2">Reporting & Timings</h3>
+              <h3 className="text-lg font-bold text-[#1C1917] mb-2">{rulesTimingsTitle}</h3>
               <p className="text-sm text-[#57534E] leading-relaxed">
-                Participants must report at the registration desk by 09:00 AM sharp on Sep 17, 2026. Spot registrations close at 10:30 AM.
+                {rulesTimingsText}
               </p>
             </div>
 
@@ -450,9 +480,9 @@ export default async function Home() {
               <div className="w-10 h-10 rounded-xl bg-[#FF6B1A]/10 border border-[#FF6B1A]/20 flex items-center justify-center text-[#FF6B1A] mb-4">
                 <Trophy className="w-5 h-5" />
               </div>
-              <h3 className="text-lg font-bold text-[#1C1917] mb-2">Overall Championship</h3>
+              <h3 className="text-lg font-bold text-[#1C1917] mb-2">{rulesChampionshipTitle}</h3>
               <p className="text-sm text-[#57534E] leading-relaxed">
-                The institution securing maximum cumulative points across both On-Stage and Off-Stage events will be crowned the {eventName} Overall Champions.
+                {rulesChampionshipText}
               </p>
             </div>
           </div>

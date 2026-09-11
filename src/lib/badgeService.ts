@@ -31,21 +31,14 @@ export async function generateEventPassQr(payload: {
   verifyUrl?: string;
 }): Promise<string> {
   try {
-    const rawContent =
-      payload.verifyUrl ||
-      JSON.stringify({
-        type: "EVENT_ENTRY",
-        code: payload.badgeCode,
-        name: payload.name,
-        college: payload.college || "",
-      });
+    const rawContent = payload.verifyUrl || payload.badgeCode;
 
     return await QRCode.toDataURL(rawContent, {
       errorCorrectionLevel: "M",
-      margin: 2,
-      scale: 6,
+      margin: 3,
+      scale: 8,
       color: {
-        dark: "#1C1917",
+        dark: "#000000", // Pure pitch black for maximum camera optical contrast
         light: "#FFFFFF",
       },
     });
@@ -57,6 +50,7 @@ export async function generateEventPassQr(payload: {
 
 /**
  * Generates a Food & Meal Token QR Code Data URL.
+ * Optimized for high-speed scanning at food counters under varied ambient lighting.
  */
 export async function generateFoodTokenQr(payload: {
   foodTokenCode: string;
@@ -66,22 +60,17 @@ export async function generateFoodTokenQr(payload: {
   verifyUrl?: string;
 }): Promise<string> {
   try {
-    const rawContent =
-      payload.verifyUrl ||
-      JSON.stringify({
-        type: "FOOD_TOKEN",
-        code: payload.foodTokenCode,
-        badge: payload.badgeCode,
-        name: payload.name,
-        diet: payload.foodPreference || "VEG",
-      });
+    // Ultra-high scannability: Use direct foodTokenCode (e.g. "FT-4819AB-MEAL").
+    // A concise 14-character payload produces a Version 1/2 QR code with large, chunky modules
+    // that decode instantly under camera video streams.
+    const rawContent = payload.verifyUrl || payload.foodTokenCode;
 
     return await QRCode.toDataURL(rawContent, {
       errorCorrectionLevel: "M",
-      margin: 2,
-      scale: 6,
+      margin: 3,
+      scale: 8,
       color: {
-        dark: "#78350F", // Amber-900 warm tone for food court scanner
+        dark: "#000000", // Pure high-contrast black for 100% optical camera recognition
         light: "#FFFFFF",
       },
     });

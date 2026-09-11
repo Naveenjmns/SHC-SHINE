@@ -98,6 +98,24 @@ model EventEdition {
   participantFee            Float    @default(0)
   isRegistrationOpen        Boolean  @default(true)
   registrationClosedNotice  String?  @default("Registrations for this edition are currently closed. Please contact the event coordinators for queries.")
+  prizePool                 String?  @default("₹25K+")
+  expectedDelegates         String?  @default("500+")
+
+  // Symposium Rules & Guidelines
+  rulesEligibilityTitle     String?  @default("Eligibility & Registration")
+  rulesEligibilityText      String?  @default("Open to all bona fide UG and PG students of Computer Science, Applications, IT, and related engineering disciplines with valid college ID cards.")
+  rulesTimingsTitle         String?  @default("Reporting & Timings")
+  rulesTimingsText          String?  @default("Participants must report at the registration desk by 09:00 AM sharp on Sep 17, 2026. Spot registrations close at 10:30 AM.")
+  rulesChampionshipTitle    String?  @default("Overall Championship")
+  rulesChampionshipText     String?  @default("The institution securing maximum cumulative points across both On-Stage and Off-Stage events will be crowned the SHINE Overall Champions.")
+
+  // Default Competition Awards (Dynamic for Leaderboard)
+  defaultFirstPrize         String?  @default("Cash Prize + Trophy + Certificate")
+  defaultSecondPrize        String?  @default("Cash Prize + Merit Certificate")
+  defaultThirdPrize         String?  @default("Distinction Certificate")
+
+  // Student Portal Stage Mode (Event Winners Display) Visibility
+  showStageModeInStudentPortal Boolean @default(false)
 
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
@@ -238,6 +256,9 @@ model Event {
   prelimsDateTime            DateTime?
   prelimsVenue               String?
   prelimsRules               String?       @db.Text
+  firstPrize                 String?       @default("Cash Prize + Trophy + Certificate")
+  secondPrize                String?       @default("Cash Prize + Merit Certificate")
+  thirdPrize                 String?       @default("Distinction Certificate")
   createdAt                  DateTime      @default(now())
   updatedAt                  DateTime      @updatedAt
 

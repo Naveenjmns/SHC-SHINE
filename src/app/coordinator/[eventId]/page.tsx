@@ -8,6 +8,7 @@ import { ShieldAlert, Download, Theater, Laptop, MapPin, Clock, Check, X, QrCode
 import { useToast } from "@/components/ToastProvider";
 import { safeJson } from "@/lib/safeFetch";
 import CheckInModal from "@/components/CheckInModal";
+import Footer from "@/components/Footer";
 
 interface RegistrationRow {
   id: string;
@@ -22,6 +23,7 @@ interface RegistrationRow {
   prelimsStatus?: string | null;
   prelimsScore?: number | null;
   prelimsNotes?: string | null;
+  delegationId?: string | null;
   user: {
     id: string;
     name: string;
@@ -37,6 +39,7 @@ interface RegistrationRow {
     teamLeadPhone: string;
     staffInchargeName: string | null;
     staffInchargePhone: string | null;
+    paymentStatus?: string | null;
   } | null;
   delegationMember?: {
     id: string;
@@ -47,6 +50,17 @@ interface RegistrationRow {
     foodTokenClaimed?: boolean;
     foodClaimedAt?: string | null;
   } | null;
+}
+
+interface FinalistTeam {
+  teamKey: string;
+  primaryRegistration: RegistrationRow;
+  members: RegistrationRow[];
+  collegeName: string;
+  teamName: string | null;
+  isAttended: boolean;
+  score: number | null;
+  result: string | null;
 }
 
 interface EventMeta {
@@ -160,6 +174,94 @@ export default function CoordinatorEventDetailPage({
     }
   }, [status, eventId, router, loadEventData]);
 
+  const [showPendingPrelims, setShowPendingPrelims] = useState(false);
+
+  // Tab 2: Prelims Subsets (Only CONFIRMED and non-rejected registrations are eligible)
+  const eligiblePrelims = registrations.filter(
+    (r) =>
+      r.isPrelimsParticipant &&
+      r.status === "CONFIRMED" &&
+      r.delegation?.paymentStatus !== "REJECTED"
+  );
+
+  // Present in Prelims (gate checked in / attended) -> Main evaluation table
+  const presentPrelims = eligiblePrelims.filter(
+    (r) => r.attended || r.delegationMember?.eventCheckedIn
+  );
+
+  // Absent / Gate-Pending in Prelims
+  const pendingPrelims = eligiblePrelims.filter(
+    (r) => !r.attended && !r.delegationMember?.eventCheckedIn
+  );
+
+  // Tab 3: Teams for "Scores & Awards Evaluation Table":
+  // - If event has prelims: Team is eligible if at least one member is present/checked-in
+  //   AND at least one member (e.g. prelims nominee) has QUALIFIED in Prelims.
+  // - If event has NO prelims: Team is eligible if at least one member is present/checked-in.
+  const finalsTeams: FinalistTeam[] = (() => {
+    const approvedRegistrations = registrations.filter(
+      (r) => r.status === "CONFIRMED" && r.delegation?.paymentStatus !== "REJECTED"
+    );
+
+    const groups = new Map<string, RegistrationRow[]>();
+    for (const reg of approvedRegistrations) {
+      const delId = reg.delegation?.id || reg.delegationId;
+      const key = delId ? `del_${delId}` : `solo_${reg.id}`;
+      if (!groups.has(key)) {
+        groups.set(key, []);
+      }
+      groups.get(key)!.push(reg);
+    }
+
+    const resultList: FinalistTeam[] = [];
+
+    for (const [key, teamMembers] of groups.entries()) {
+      const isAttended = teamMembers.some(
+        (m) => m.attended || m.delegationMember?.eventCheckedIn
+      );
+      if (!isAttended) continue;
+
+      if (event?.hasPrelims) {
+        const isQualified = teamMembers.some(
+          (m) => (prelimsStatusInputs[m.id] || m.prelimsStatus) === "QUALIFIED"
+        );
+        if (!isQualified) continue;
+      }
+
+      const primaryRegistration =
+        teamMembers.find((m) => m.isPrelimsParticipant) || teamMembers[0];
+
+      const collegeName =
+        primaryRegistration.delegation?.collegeName ||
+        primaryRegistration.user.college ||
+        "Independent";
+      const teamName = primaryRegistration.delegation?.teamName || null;
+
+      const score =
+        primaryRegistration.score !== null && primaryRegistration.score !== undefined
+          ? primaryRegistration.score
+          : teamMembers.find((m) => m.score !== null && m.score !== undefined)?.score ?? null;
+
+      const result =
+        primaryRegistration.result ||
+        teamMembers.find((m) => m.result)?.result ||
+        null;
+
+      resultList.push({
+        teamKey: key,
+        primaryRegistration,
+        members: teamMembers,
+        collegeName,
+        teamName,
+        isAttended,
+        score,
+        result,
+      });
+    }
+
+    return resultList;
+  })();
+
   const handleSavePrelims = async (regId: string, customStatus?: string) => {
     setSavingId(regId);
     const pStatus = customStatus || prelimsStatusInputs[regId] || "PENDING";
@@ -192,7 +294,22 @@ export default function CoordinatorEventDetailPage({
           )
         );
         setPrelimsStatusInputs((prev) => ({ ...prev, [regId]: pStatus }));
-        toast.success(`Prelims status updated to ${pStatus}.`);
+
+        const currentReg = registrations.find((r) => r.id === regId);
+        const currentDelId = currentReg?.delegation?.id || currentReg?.delegationId;
+        const teamMates = currentDelId
+          ? registrations.filter(
+              (r) => (r.delegation?.id || r.delegationId) === currentDelId && r.id !== regId
+            )
+          : [];
+
+        if (pStatus === "QUALIFIED" && teamMates.length > 0) {
+          toast.success(
+            `Nominee qualified! Entire team (${teamMates.length + 1} members) promoted to Finals.`
+          );
+        } else {
+          toast.success(`Prelims status updated to ${pStatus}.`);
+        }
       } else {
         toast.error(data.message || "Failed to update prelims status.");
       }
@@ -204,22 +321,23 @@ export default function CoordinatorEventDetailPage({
     }
   };
 
-  const handleSaveResult = async (regId: string) => {
+  const handleSaveResult = async (regId: string, customResult?: string) => {
     setSavingId(regId);
-    const newResult = resultInputs[regId];
+    const newResult = customResult !== undefined ? customResult : resultInputs[regId];
     try {
       const res = await fetch(`/api/coordinator/registrations/${regId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ result: newResult }),
+        body: JSON.stringify({ result: newResult || null }),
       });
 
       const data = await safeJson(res, { success: false, message: "Network error occurred." });
       if (data.success) {
         setRegistrations((prev) =>
-          prev.map((r) => (r.id === regId ? { ...r, result: newResult } : r))
+          prev.map((r) => (r.id === regId ? { ...r, result: newResult || null } : r))
         );
-        toast.success("Award / position updated successfully.");
+        setResultInputs((prev) => ({ ...prev, [regId]: newResult || "" }));
+        toast.success(newResult ? `Award position set to ${newResult}.` : "Award cleared.");
       } else {
         toast.error(data.message || "Failed to save award result.");
       }
@@ -231,36 +349,100 @@ export default function CoordinatorEventDetailPage({
     }
   };
 
-  const handleSaveScore = async (regId: string) => {
-    setSavingId(regId);
-    const newScore = scoreInputs[regId];
-    const newResult = resultInputs[regId];
-    try {
-      const res = await fetch(`/api/coordinator/registrations/${regId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          score: newScore !== "" && newScore !== undefined ? parseFloat(newScore) : null,
-          result: newResult || null,
-        }),
-      });
+  const handleSaveScore = async (team: FinalistTeam) => {
+    const primaryId = team.primaryRegistration.id;
+    setSavingId(primaryId);
+    const newScore = scoreInputs[primaryId];
+    const newResult = resultInputs[primaryId];
 
-      const data = await safeJson(res, { success: false, message: "Network error occurred." });
-      if (data.success) {
-        setRegistrations((prev) =>
-          prev.map((r) =>
-            r.id === regId
-              ? {
-                  ...r,
-                  score: newScore !== "" && newScore !== undefined ? parseFloat(newScore) : null,
-                  result: newResult || null,
-                }
-              : r
-          )
+    try {
+      const parsedScore = newScore !== "" && newScore !== undefined ? parseFloat(newScore) : null;
+      const parsedResult = newResult || null;
+
+      const updatePromises = team.members.map((m) =>
+        fetch(`/api/coordinator/registrations/${m.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            score: parsedScore,
+            result: parsedResult,
+          }),
+        })
+      );
+
+      const results = await Promise.all(updatePromises);
+      const allOk = results.every((r) => r.ok);
+
+      if (allOk) {
+        const memberIdSet = new Set(team.members.map((m) => m.id));
+
+        // If assigning a podium position, clear any previous holder in DB
+        if (parsedResult) {
+          const previousHolders = registrations.filter(
+            (r) => !memberIdSet.has(r.id) && r.result === parsedResult
+          );
+          if (previousHolders.length > 0) {
+            await Promise.all(
+              previousHolders.map((ph) =>
+                fetch(`/api/coordinator/registrations/${ph.id}`, {
+                  method: "PATCH",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ result: null }),
+                }).catch(() => {})
+              )
+            );
+            const prevHolderIds = new Set(previousHolders.map((ph) => ph.id));
+            setRegistrations((prev) =>
+              prev.map((r) =>
+                prevHolderIds.has(r.id)
+                  ? { ...r, result: null }
+                  : memberIdSet.has(r.id)
+                  ? { ...r, score: parsedScore, result: parsedResult }
+                  : r
+              )
+            );
+          } else {
+            setRegistrations((prev) =>
+              prev.map((r) =>
+                memberIdSet.has(r.id)
+                  ? { ...r, score: parsedScore, result: parsedResult }
+                  : r
+              )
+            );
+          }
+        } else {
+          setRegistrations((prev) =>
+            prev.map((r) =>
+              memberIdSet.has(r.id)
+                ? { ...r, score: parsedScore, result: parsedResult }
+                : r
+            )
+          );
+        }
+
+        setScoreInputs((prev) => {
+          const updated = { ...prev };
+          team.members.forEach((m) => {
+            if (newScore !== undefined) updated[m.id] = newScore;
+          });
+          return updated;
+        });
+
+        setResultInputs((prev) => {
+          const updated = { ...prev };
+          team.members.forEach((m) => {
+            if (newResult !== undefined) updated[m.id] = newResult;
+          });
+          return updated;
+        });
+
+        toast.success(
+          team.members.length > 1
+            ? `Scores & Awards updated for Team (${team.members.length} members).`
+            : "Score and Result updated successfully."
         );
-        toast.success("Score and Result updated successfully.");
       } else {
-        toast.error(data.message || "Failed to save score.");
+        toast.error("Failed to save score for all team members.");
       }
     } catch (err) {
       console.error("Save score error:", err);
@@ -270,28 +452,89 @@ export default function CoordinatorEventDetailPage({
     }
   };
 
+  const handleTogglePodiumPosition = (team: FinalistTeam, targetPosition: string) => {
+    const primaryId = team.primaryRegistration.id;
+    const currentVal =
+      resultInputs[primaryId] !== undefined ? resultInputs[primaryId] : (team.result ?? "");
+    const isAlreadySelected = currentVal === targetPosition;
+    const nextVal = isAlreadySelected ? "" : targetPosition;
+
+    // Check if another team currently has this position
+    let previousHolderName: string | null = null;
+    if (nextVal !== "") {
+      const prevTeam = finalsTeams.find(
+        (t) =>
+          t.teamKey !== team.teamKey &&
+          ((resultInputs[t.primaryRegistration.id] !== undefined
+            ? resultInputs[t.primaryRegistration.id]
+            : t.result) === targetPosition)
+      );
+      if (prevTeam) {
+        previousHolderName = prevTeam.teamName || prevTeam.primaryRegistration.user.name;
+      }
+    }
+
+    setResultInputs((prev) => {
+      const updated = { ...prev };
+
+      // If assigning a position, clear it from all other participants in the event
+      if (nextVal !== "") {
+        Object.keys(updated).forEach((regId) => {
+          if (updated[regId] === nextVal) {
+            updated[regId] = "";
+          }
+        });
+        registrations.forEach((r) => {
+          if (r.result === nextVal && !team.members.some((m) => m.id === r.id)) {
+            updated[r.id] = "";
+          }
+        });
+      }
+
+      // Assign to this team's members
+      updated[primaryId] = nextVal;
+      team.members.forEach((m) => {
+        updated[m.id] = nextVal;
+      });
+
+      return updated;
+    });
+
+    if (previousHolderName) {
+      toast.success(
+        `${targetPosition} assigned to ${team.teamName || team.primaryRegistration.user.name} (moved from ${previousHolderName}).`
+      );
+    }
+  };
+
   const handleBulkSaveScores = async () => {
     setIsSaving(true);
     let savedCount = 0;
     try {
-      for (const reg of registrations) {
-        const sc = scoreInputs[reg.id];
-        const rs = resultInputs[reg.id];
+      for (const team of finalsTeams) {
+        const primaryId = team.primaryRegistration.id;
+        const sc = scoreInputs[primaryId];
+        const rs = resultInputs[primaryId];
         if (sc !== undefined || rs !== undefined) {
-          try {
-            await fetch(`/api/coordinator/registrations/${reg.id}`, {
-              method: "PATCH",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                score: sc !== "" && sc !== undefined ? parseFloat(sc) : null,
-                result: rs || null,
-              }),
-            });
-            savedCount++;
-          } catch {}
+          const parsedScore = sc !== "" && sc !== undefined ? parseFloat(sc) : null;
+          const parsedResult = rs || null;
+
+          await Promise.all(
+            team.members.map((m) =>
+              fetch(`/api/coordinator/registrations/${m.id}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  score: parsedScore,
+                  result: parsedResult,
+                }),
+              })
+            )
+          );
+          savedCount++;
         }
       }
-      toast.success(`Successfully saved scores for ${savedCount} participants.`);
+      toast.success(`Successfully saved marks and award rankings for ${savedCount} team(s).`);
       await loadEventData();
     } catch (err) {
       console.error("Bulk save error:", err);
@@ -302,21 +545,39 @@ export default function CoordinatorEventDetailPage({
   };
 
   const exportScoreSheetCSV = () => {
-    if (!event || registrations.length === 0) return;
-    const headers = ["Badge ID", "Student Name", "Email", "Phone", "College", "Team", "Attendance", "Score", "Award / Position"];
-    const rows = registrations.map((r) => [
-      `"${r.delegationMember?.badgeCode || ""}"`,
-      `"${r.user.name}"`,
-      `"${r.user.email}"`,
-      `"${r.user.phone || ""}"`,
-      `"${r.delegation?.collegeName || r.user.college || ""}"`,
-      `"${r.delegation?.teamName || ""}"`,
-      `"${r.attended || r.delegationMember?.eventCheckedIn ? "PRESENT" : "ABSENT"}"`,
-      `"${scoreInputs[r.id] ?? r.score ?? ""}"`,
-      `"${resultInputs[r.id] ?? r.result ?? ""}"`,
-    ]);
+    if (!event || finalsTeams.length === 0) {
+      toast.error("No evaluated teams or competitors to export.");
+      return;
+    }
+    const headers = [
+      "College",
+      "Team Name",
+      "Prelims Representative / Primary Member",
+      "Other Team Members",
+      "Attendance",
+      "Score",
+      "Award / Position",
+    ];
+    const rows = finalsTeams.map((team) => {
+      const primary = team.primaryRegistration;
+      const others = team.members
+        .filter((m) => m.id !== primary.id)
+        .map((m) => m.user.name)
+        .join(", ");
+      const primaryId = primary.id;
+      return [
+        `"${team.collegeName}"`,
+        `"${team.teamName || "—"}"`,
+        `"${primary.user.name}"`,
+        `"${others || "—"}"`,
+        `"${team.isAttended ? "PRESENT" : "ABSENT"}"`,
+        `"${scoreInputs[primaryId] ?? team.score ?? ""}"`,
+        `"${resultInputs[primaryId] ?? team.result ?? ""}"`,
+      ];
+    });
 
-    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
+    const csvContent =
+      "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
@@ -411,7 +672,7 @@ export default function CoordinatorEventDetailPage({
               className="tap-target px-3.5 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 shadow-sm"
             >
               <QrCode className="w-3.5 h-3.5" />
-              <span>QR Check-In & Food</span>
+              <span>QR Check-in</span>
             </button>
             <button
               onClick={exportCSV}
@@ -524,7 +785,10 @@ export default function CoordinatorEventDetailPage({
             >
               <span className="inline-flex items-center gap-1.5">
                 <Target className="w-3.5 h-3.5" />
-                <span>Prelims Evaluation ({registrations.filter((r) => r.isPrelimsParticipant).length} Nominated)</span>
+                <span>
+                  Prelims Evaluation ({presentPrelims.length} Present
+                  {pendingPrelims.length > 0 ? ` • ${pendingPrelims.length} Pending` : ""})
+                </span>
               </span>
             </button>
           )}
@@ -538,7 +802,7 @@ export default function CoordinatorEventDetailPage({
             }`}
           >
             <Trophy className="w-4 h-4 text-amber-500" />
-            <span>Scores & Awards Evaluation Table</span>
+            <span>Scores & Awards Evaluation Table ({finalsTeams.length})</span>
           </button>
         </div>
 
@@ -584,13 +848,12 @@ export default function CoordinatorEventDetailPage({
                   <th className="p-4">Contact</th>
                   <th className="p-4">Event Check-In & Food</th>
                   <th className="p-4">Approval Status</th>
-                  <th className="p-4">Competition Award / Result</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="p-10 text-center text-xs text-slate-500">
+                    <td colSpan={5} className="p-10 text-center text-xs text-slate-500">
                       No participants found matching the selected filter.
                     </td>
                   </tr>
@@ -695,31 +958,6 @@ export default function CoordinatorEventDetailPage({
                             {reg.status}
                           </span>
                         </td>
-
-                        {/* Award Result Input */}
-                        <td className="p-4">
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="text"
-                              placeholder="e.g. 1st Place / Distinction"
-                              value={resultInputs[reg.id] || ""}
-                              onChange={(e) =>
-                                setResultInputs((prev) => ({
-                                  ...prev,
-                                  [reg.id]: e.target.value,
-                                }))
-                              }
-                              className="h-9 w-32 sm:w-40 bg-white border border-slate-300 rounded-lg px-2.5 text-xs text-slate-900 focus:outline-none focus:border-orange-500"
-                            />
-                            <button
-                              disabled={isSaving}
-                              onClick={() => handleSaveResult(reg.id)}
-                              className="tap-target h-9 px-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer"
-                            >
-                              {isSaving ? "..." : "Save"}
-                            </button>
-                          </div>
-                        </td>
                       </tr>
                     );
                   })
@@ -757,15 +995,23 @@ export default function CoordinatorEventDetailPage({
                       </strong>
                     </span>
                     <span className="font-bold text-amber-900">
-                      Nominated Participants: {registrations.filter((r) => r.isPrelimsParticipant).length}
+                      Approved Nominees: {eligiblePrelims.length}
                     </span>
+                    <span className="font-bold text-emerald-800">
+                      Present in Room: {presentPrelims.length}
+                    </span>
+                    {pendingPrelims.length > 0 && (
+                      <span className="font-bold text-stone-500">
+                        Gate Pending: {pendingPrelims.length}
+                      </span>
+                    )}
                   </div>
                 </div>
 
                 <div className="bg-white border border-amber-300 rounded-xl p-3 text-right">
                   <div className="text-[10px] font-bold text-stone-500 uppercase">Qualified for Finals</div>
                   <div className="text-xl font-black text-emerald-700 tabular-nums">
-                    {registrations.filter((r) => r.isPrelimsParticipant && r.prelimsStatus === "QUALIFIED").length}
+                    {presentPrelims.filter((r) => (prelimsStatusInputs[r.id] || r.prelimsStatus) === "QUALIFIED").length}
                   </div>
                 </div>
               </div>
@@ -777,143 +1023,470 @@ export default function CoordinatorEventDetailPage({
               )}
             </div>
 
-            {/* Prelims Participant Table */}
+            {/* Main Prelims Participant Table: ONLY Present Competitors */}
             <div className="dash-card overflow-hidden">
+              <div className="p-4 bg-stone-50 border-b border-stone-200 flex items-center justify-between">
+                <div>
+                  <h4 className="text-sm font-bold text-stone-900 flex items-center gap-2">
+                    <span>Active Prelims Competitors in Room</span>
+                    <span className="text-[10px] font-extrabold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full border border-emerald-300">
+                      {presentPrelims.length} Present & Checked-In
+                    </span>
+                  </h4>
+                  <p className="text-xs text-stone-500 mt-0.5">
+                    Grade and qualify participants who are physically present and verified at the venue.
+                  </p>
+                </div>
+              </div>
+
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs sm:text-sm">
                   <thead className="bg-stone-50 text-stone-500 text-[11px] uppercase tracking-wider border-b border-stone-200">
                     <tr>
                       <th className="p-4">Nominated Delegate</th>
                       <th className="p-4">College Delegation</th>
-                      <th className="p-4">Prelims Attendance</th>
                       <th className="p-4">Qualification Status</th>
                       <th className="p-4">Score (Marks)</th>
                       <th className="p-4 text-right">Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-stone-100">
-                    {registrations.filter((r) => r.isPrelimsParticipant).length === 0 ? (
+                    {presentPrelims.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="p-10 text-center text-xs text-stone-400">
-                          No student participants have been nominated for the Prelims round of this competition yet.
+                        <td colSpan={5} className="p-10 text-center text-xs text-stone-500 space-y-2">
+                          <div className="w-10 h-10 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600 mx-auto mb-2">
+                            <Target className="w-5 h-5" />
+                          </div>
+                          <p className="font-bold text-sm text-stone-800">No checked-in participants in the prelims room yet.</p>
+                          <p className="text-stone-400 max-w-md mx-auto">
+                            {pendingPrelims.length > 0
+                              ? `${pendingPrelims.length} approved participant(s) are pending check-in. Scan their QR badges with the 'QR Check-in' button above, and they will immediately appear here for grading.`
+                              : "No participants have been nominated for this prelims event yet."}
+                          </p>
                         </td>
                       </tr>
                     ) : (
-                      registrations
-                        .filter((r) => r.isPrelimsParticipant)
-                        .map((reg) => {
-                          const currentPStatus = prelimsStatusInputs[reg.id] || reg.prelimsStatus || "PENDING";
-                          const isSaving = savingId === reg.id;
-                          const isAttended = reg.attended || reg.delegationMember?.eventCheckedIn;
+                      presentPrelims.map((reg) => {
+                        const currentPStatus = prelimsStatusInputs[reg.id] || reg.prelimsStatus || "PENDING";
+                        const isSaving = savingId === reg.id;
 
-                          return (
-                            <tr key={reg.id} className="hover:bg-stone-50/70 transition-colors">
-                              {/* Delegate Info */}
-                              <td className="p-4">
-                                <div className="font-bold text-stone-900 text-sm">{reg.user.name}</div>
-                                <div className="text-[11px] text-stone-500">{reg.user.email}</div>
-                                {reg.delegationMember?.badgeCode && (
-                                  <span className="inline-block mt-1 text-[10px] font-mono font-bold bg-amber-100/80 text-amber-900 px-1.5 py-0.5 rounded border border-amber-300">
-                                    Badge: {reg.delegationMember.badgeCode}
-                                  </span>
-                                )}
-                              </td>
+                        return (
+                          <tr key={reg.id} className="hover:bg-stone-50/70 transition-colors">
+                            {/* Delegate Info */}
+                            <td className="p-4">
+                              <div className="font-bold text-stone-900 text-sm">{reg.user.name}</div>
+                              <div className="text-[11px] text-stone-500">{reg.user.email}</div>
+                              {reg.delegationMember?.badgeCode && (
+                                <span className="inline-block mt-1 text-[10px] font-mono font-bold bg-amber-100/80 text-amber-900 px-1.5 py-0.5 rounded border border-amber-300">
+                                  Badge: {reg.delegationMember.badgeCode}
+                                </span>
+                              )}
+                              {(() => {
+                                const delId = reg.delegation?.id || reg.delegationId;
+                                const partners = delId
+                                  ? registrations.filter(
+                                      (r) => (r.delegation?.id || r.delegationId) === delId && r.id !== reg.id
+                                    )
+                                  : [];
+                                if (partners.length > 0) {
+                                  return (
+                                    <div className="text-[10px] font-medium text-amber-800 bg-amber-50/80 border border-amber-200 rounded px-1.5 py-0.5 mt-1.5 w-fit">
+                                      Represents team with: {partners.map((p) => p.user.name).join(", ")}
+                                    </div>
+                                  );
+                                }
+                                return null;
+                              })()}
+                            </td>
 
-                              {/* College & Team */}
-                              <td className="p-4">
-                                <div className="font-bold text-stone-900 text-xs">
-                                  {reg.delegation?.collegeName || reg.user.college || "N/A"}
+                            {/* College & Team */}
+                            <td className="p-4">
+                              <div className="font-bold text-stone-900 text-xs">
+                                {reg.delegation?.collegeName || reg.user.college || "N/A"}
+                              </div>
+                              {reg.delegation?.teamName && (
+                                <div className="text-[11px] text-amber-800 font-medium mt-0.5">
+                                  Team: {reg.delegation.teamName}
                                 </div>
-                                {reg.delegation?.teamName && (
-                                  <div className="text-[11px] text-amber-800 font-medium mt-0.5">
-                                    Team: {reg.delegation.teamName}
-                                  </div>
-                                )}
-                              </td>
+                              )}
+                            </td>
 
-                              {/* Attendance Status */}
-                              <td className="p-4">
-                                {isAttended ? (
-                                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">
-                                    <Check className="w-3 h-3 text-emerald-600" />
-                                    Present
-                                  </span>
-                                ) : (
-                                  <span className="inline-flex items-center gap-1 text-[11px] font-medium text-stone-400 bg-stone-100 px-2 py-0.5 rounded">
-                                    Gate Pending
-                                  </span>
-                                )}
-                              </td>
-
-                              {/* Qualification Toggle Buttons */}
-                              <td className="p-4">
-                                <div className="flex items-center gap-1.5">
-                                  <button
-                                    type="button"
-                                    disabled={isSaving}
-                                    onClick={() => handleSavePrelims(reg.id, "QUALIFIED")}
-                                    className={`tap-target px-3 py-1 rounded-lg text-xs font-extrabold transition-all cursor-pointer inline-flex items-center gap-1 ${
-                                      currentPStatus === "QUALIFIED"
-                                        ? "bg-emerald-600 text-white shadow-xs"
-                                        : "bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200"
-                                    }`}
-                                  >
-                                    <Check className="w-3.5 h-3.5" />
-                                    <span>QUALIFIED</span>
-                                  </button>
-
-                                  <button
-                                    type="button"
-                                    disabled={isSaving}
-                                    onClick={() => handleSavePrelims(reg.id, "ELIMINATED")}
-                                    className={`tap-target px-3 py-1 rounded-lg text-xs font-extrabold transition-all cursor-pointer inline-flex items-center gap-1 ${
-                                      currentPStatus === "ELIMINATED"
-                                        ? "bg-rose-600 text-white shadow-xs"
-                                        : "bg-rose-50 text-rose-800 hover:bg-rose-100 border border-rose-200"
-                                    }`}
-                                  >
-                                    <X className="w-3.5 h-3.5" />
-                                    <span>ELIMINATED</span>
-                                  </button>
-
-                                  {currentPStatus === "PENDING" && (
-                                    <span className="text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded border border-amber-300">
-                                      PENDING
-                                    </span>
-                                  )}
-                                </div>
-                              </td>
-
-                              {/* Score Field */}
-                              <td className="p-4">
-                                <input
-                                  type="number"
-                                  placeholder="Marks / 100"
-                                  value={prelimsScoreInputs[reg.id] || ""}
-                                  onChange={(e) =>
-                                    setPrelimsScoreInputs((prev) => ({
-                                      ...prev,
-                                      [reg.id]: e.target.value,
-                                    }))
-                                  }
-                                  className="h-9 w-28 bg-white border border-stone-300 rounded-lg px-2 text-xs text-stone-900 focus:outline-none focus:border-amber-500"
-                                />
-                              </td>
-
-                              {/* Action */}
-                              <td className="p-4 text-right">
+                            {/* Qualification Toggle Buttons */}
+                            <td className="p-4">
+                              <div className="flex items-center gap-1.5">
                                 <button
                                   type="button"
                                   disabled={isSaving}
-                                  onClick={() => handleSavePrelims(reg.id)}
-                                  className="tap-target px-3 py-1.5 bg-stone-900 hover:bg-stone-800 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                                  onClick={() => handleSavePrelims(reg.id, "QUALIFIED")}
+                                  className={`tap-target px-3 py-1 rounded-lg text-xs font-extrabold transition-all cursor-pointer inline-flex items-center gap-1 ${
+                                    currentPStatus === "QUALIFIED"
+                                      ? "bg-emerald-600 text-white shadow-xs"
+                                      : "bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200"
+                                  }`}
                                 >
-                                  {isSaving ? "Saving..." : "Save Prelims"}
+                                  <Check className="w-3.5 h-3.5" />
+                                  <span>QUALIFIED</span>
                                 </button>
-                              </td>
-                            </tr>
-                          );
-                        })
+
+                                <button
+                                  type="button"
+                                  disabled={isSaving}
+                                  onClick={() => handleSavePrelims(reg.id, "ELIMINATED")}
+                                  className={`tap-target px-3 py-1 rounded-lg text-xs font-extrabold transition-all cursor-pointer inline-flex items-center gap-1 ${
+                                    currentPStatus === "ELIMINATED"
+                                      ? "bg-rose-600 text-white shadow-xs"
+                                      : "bg-rose-50 text-rose-800 hover:bg-rose-100 border border-rose-200"
+                                  }`}
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                  <span>ELIMINATED</span>
+                                </button>
+
+                                {currentPStatus === "PENDING" && (
+                                  <span className="text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded border border-amber-300">
+                                    PENDING
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+
+                            {/* Score Field */}
+                            <td className="p-4">
+                              <input
+                                type="number"
+                                placeholder="Marks / 100"
+                                value={prelimsScoreInputs[reg.id] || ""}
+                                onChange={(e) =>
+                                  setPrelimsScoreInputs((prev) => ({
+                                    ...prev,
+                                    [reg.id]: e.target.value,
+                                  }))
+                                }
+                                className="h-9 w-28 bg-white border border-stone-300 rounded-lg px-2 text-xs text-stone-900 focus:outline-none focus:border-amber-500 font-bold"
+                              />
+                            </td>
+
+                            {/* Action */}
+                            <td className="p-4 text-right">
+                              <button
+                                type="button"
+                                disabled={isSaving}
+                                onClick={() => handleSavePrelims(reg.id)}
+                                className="tap-target px-3.5 py-1.5 bg-stone-900 hover:bg-stone-800 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                              >
+                                {isSaving ? "Saving..." : "Save Prelims"}
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Absent / Gate-Pending Nominated Participants Accordion */}
+            {pendingPrelims.length > 0 && (
+              <div className="bg-white border border-stone-200 rounded-2xl overflow-hidden shadow-2xs">
+                <button
+                  type="button"
+                  onClick={() => setShowPendingPrelims((prev) => !prev)}
+                  className="w-full p-4 px-5 flex items-center justify-between bg-stone-50 hover:bg-stone-100/80 transition-colors text-left cursor-pointer"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" />
+                    <span className="text-xs font-bold text-stone-800">
+                      Absent / Gate-Pending Nominees ({pendingPrelims.length})
+                    </span>
+                    <span className="text-[11px] text-stone-500 hidden sm:inline">
+                      — Nominated for Prelims but not yet checked in at venue
+                    </span>
+                  </div>
+                  <span className="text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-lg">
+                    {showPendingPrelims ? "Hide List ▲" : "View List ▼"}
+                  </span>
+                </button>
+
+                {showPendingPrelims && (
+                  <div className="overflow-x-auto border-t border-stone-200">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-stone-100/70 text-stone-500 text-[10px] uppercase font-bold tracking-wider">
+                        <tr>
+                          <th className="p-3.5">Participant</th>
+                          <th className="p-3.5">College & Team</th>
+                          <th className="p-3.5">Badge ID</th>
+                          <th className="p-3.5">Gate Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-stone-100">
+                        {pendingPrelims.map((reg) => (
+                          <tr key={reg.id} className="hover:bg-stone-50/50">
+                            <td className="p-3.5">
+                              <span className="font-bold text-stone-900">{reg.user.name}</span>
+                              <div className="text-[10px] text-stone-500">{reg.user.email}</div>
+                            </td>
+                            <td className="p-3.5 font-medium text-stone-700">
+                              {reg.delegation?.collegeName || reg.user.college || "N/A"}
+                            </td>
+                            <td className="p-3.5 font-mono font-bold text-stone-600">
+                              {reg.delegationMember?.badgeCode || "N/A"}
+                            </td>
+                            <td className="p-3.5">
+                              <span className="text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded">
+                                Gate Pending
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === "scores" && (
+          <div className="space-y-4">
+            {/* Score Table Header Bar */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Trophy className="w-5 h-5 text-amber-500" />
+                  <h2 className="text-base sm:text-lg font-bold text-slate-900">
+                    Official Marks & Awards Evaluation Sheet
+                  </h2>
+                  <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
+                    {finalsTeams.length} {event?.hasPrelims ? "Qualified Teams" : "Present Teams"}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 mt-1">
+                  {event?.hasPrelims
+                    ? "Official final jury sheet for qualified teams. Enter final scores and assign podium finishes (1st, 2nd, 3rd)."
+                    : "Official jury sheet for verified attending teams. Enter event scores and assign podium finishes (1st, 2nd, 3rd)."}
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                <button
+                  type="button"
+                  onClick={exportScoreSheetCSV}
+                  className="tap-target flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Export CSV</span>
+                </button>
+                <button
+                  type="button"
+                  disabled={isSaving || finalsTeams.length === 0}
+                  onClick={handleBulkSaveScores}
+                  className="tap-target flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white rounded-xl text-xs font-bold shadow-md hover:shadow-lg transition-all cursor-pointer disabled:opacity-50"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  <span>{isSaving ? "Saving..." : "Bulk Save All Scores"}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Scores Table */}
+            <div className="dash-card overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs sm:text-sm">
+                  <thead className="bg-slate-50 text-slate-500 text-[11px] uppercase tracking-wider border-b border-slate-200">
+                    <tr>
+                      <th className="p-4">Participant / Team Members</th>
+                      <th className="p-4">College & Team</th>
+                      <th className="p-4">Score (Marks)</th>
+                      <th className="p-4">Award / Position</th>
+                      <th className="p-4 text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {finalsTeams.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="p-12 text-center">
+                          <div className="max-w-md mx-auto space-y-3">
+                            <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center mx-auto text-amber-600">
+                              <Trophy className="w-6 h-6" />
+                            </div>
+                            <p className="text-sm font-bold text-slate-900">
+                              {event?.hasPrelims ? "No Teams Qualified Yet" : "No Present Teams Yet"}
+                            </p>
+                            <p className="text-xs text-slate-500 leading-relaxed">
+                              {event?.hasPrelims ? (
+                                <>
+                                  This event includes a preliminary round. When the prelims representative is marked as{" "}
+                                  <strong className="text-emerald-700 font-bold">QUALIFIED</strong> in the{" "}
+                                  <span className="font-semibold text-amber-700">Prelims Evaluation</span> tab,
+                                  their whole team will automatically advance here to the finals evaluation sheet.
+                                </>
+                              ) : (
+                                <>
+                                  Only confirmed teams with verified attending members (<strong className="text-emerald-700 font-bold">Present</strong>) appear on this evaluation sheet.
+                                  Use the <strong className="text-orange-600 font-semibold">QR Check-in</strong> button above to scan delegate badges.
+                                </>
+                              )}
+                            </p>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : (
+                      finalsTeams.map((team) => {
+                        const primary = team.primaryRegistration;
+                        const otherMembers = team.members.filter((m) => m.id !== primary.id);
+                        const primaryId = primary.id;
+                        const currentResult =
+                          resultInputs[primaryId] !== undefined
+                            ? resultInputs[primaryId]
+                            : (team.result ?? "");
+
+                        return (
+                          <tr key={team.teamKey} className="hover:bg-slate-50/50 transition-colors">
+                            {/* Participant & Team Members (No email, no badge) */}
+                            <td className="p-4">
+                              {team.members.length > 1 ? (
+                                <div className="space-y-1.5">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="font-bold text-slate-900 text-sm">{primary.user.name}</span>
+                                    {event?.hasPrelims && primary.isPrelimsParticipant && (
+                                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200">
+                                        Prelims Rep
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                      Teammates:
+                                    </span>
+                                    {otherMembers.map((om) => (
+                                      <span
+                                        key={om.id}
+                                        className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-slate-100 text-slate-800 border border-slate-200"
+                                      >
+                                        {om.user.name}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="font-bold text-slate-900 text-sm">{primary.user.name}</div>
+                              )}
+                            </td>
+
+                            {/* College & Team Name */}
+                            <td className="p-4">
+                              <div className="font-semibold text-slate-800 text-xs">
+                                {team.collegeName}
+                              </div>
+                              {team.teamName && (
+                                <div className="text-[11px] text-orange-600 font-medium mt-0.5">
+                                  Team: {team.teamName}
+                                </div>
+                              )}
+                            </td>
+
+                            {/* Score Field */}
+                            <td className="p-4">
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="number"
+                                  step="0.1"
+                                  min="0"
+                                  max="100"
+                                  placeholder="0 - 100"
+                                  value={
+                                    scoreInputs[primaryId] !== undefined
+                                      ? scoreInputs[primaryId]
+                                      : (team.score ?? "")
+                                  }
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    setScoreInputs((prev) => {
+                                      const next = { ...prev, [primaryId]: val };
+                                      team.members.forEach((m) => {
+                                        next[m.id] = val;
+                                      });
+                                      return next;
+                                    });
+                                  }}
+                                  className="h-9 w-24 bg-white border border-slate-300 rounded-lg px-2.5 text-xs text-slate-900 font-bold focus:outline-none focus:border-orange-500"
+                                />
+                                <span className="text-[11px] text-slate-400 font-medium">/ 100</span>
+                              </div>
+                            </td>
+
+                            {/* 3 Podium Award Buttons */}
+                            <td className="p-4">
+                              <div className="flex items-center gap-1.5 flex-wrap sm:flex-nowrap">
+                                <button
+                                  type="button"
+                                  onClick={() => handleTogglePodiumPosition(team, "1st Place")}
+                                  className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
+                                    currentResult === "1st Place"
+                                      ? "bg-amber-400 text-amber-950 border-amber-500 shadow-md ring-2 ring-amber-400/50 scale-105"
+                                      : "bg-amber-50/70 hover:bg-amber-100 text-amber-900 border-amber-200 hover:border-amber-300"
+                                  }`}
+                                  title="1st Place (Gold / Champion)"
+                                >
+                                  <span>🥇</span>
+                                  <span>1st</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleTogglePodiumPosition(team, "2nd Place")}
+                                  className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
+                                    currentResult === "2nd Place"
+                                      ? "bg-slate-300 text-slate-900 border-slate-400 shadow-md ring-2 ring-slate-400/50 scale-105"
+                                      : "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200 hover:border-slate-300"
+                                  }`}
+                                  title="2nd Place (Silver / Runner Up)"
+                                >
+                                  <span>🥈</span>
+                                  <span>2nd</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleTogglePodiumPosition(team, "3rd Place")}
+                                  className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
+                                    currentResult === "3rd Place"
+                                      ? "bg-amber-700 text-white border-amber-800 shadow-md ring-2 ring-amber-700/50 scale-105"
+                                      : "bg-amber-50/50 hover:bg-amber-100 text-amber-900 border-amber-200 hover:border-amber-300"
+                                  }`}
+                                  title="3rd Place (Bronze / Second Runner Up)"
+                                >
+                                  <span>🥉</span>
+                                  <span>3rd</span>
+                                </button>
+
+                                {currentResult && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleTogglePodiumPosition(team, currentResult)}
+                                    className="p-1.5 text-slate-400 hover:text-rose-600 rounded-md hover:bg-rose-50 transition-colors cursor-pointer"
+                                    title="Clear Position"
+                                  >
+                                    <X className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+
+                            {/* Action */}
+                            <td className="p-4 text-right">
+                              <button
+                                type="button"
+                                disabled={isSaving || savingId === primaryId}
+                                onClick={() => handleSaveScore(team)}
+                                className="tap-target h-9 px-3.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-bold transition-all cursor-pointer disabled:opacity-50"
+                              >
+                                {savingId === primaryId ? "Saving..." : "Save"}
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })
                     )}
                   </tbody>
                 </table>
@@ -921,160 +1494,9 @@ export default function CoordinatorEventDetailPage({
             </div>
           </div>
         )}
-
-        {activeTab === "scores" && (
-      <div className="space-y-4">
-        {/* Score Table Header Bar */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
-          <div>
-            <div className="flex items-center gap-2">
-              <Trophy className="w-5 h-5 text-amber-500" />
-              <h2 className="text-base sm:text-lg font-bold text-slate-900">
-                Official Marks & Awards Evaluation Sheet
-              </h2>
-            </div>
-            <p className="text-xs text-slate-500 mt-1">
-              Enter jury marks and assign rankings for {event?.name}. Changes can be saved individually or in bulk.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-            <button
-              type="button"
-              onClick={exportScoreSheetCSV}
-              className="tap-target flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-bold transition-all cursor-pointer"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>Export CSV</span>
-            </button>
-            <button
-              type="button"
-              disabled={isSaving}
-              onClick={handleBulkSaveScores}
-              className="tap-target flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white rounded-xl text-xs font-bold shadow-md hover:shadow-lg transition-all cursor-pointer"
-            >
-              <Save className="w-3.5 h-3.5" />
-              <span>Bulk Save All Scores</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Scores Table */}
-        <div className="dash-card overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs sm:text-sm">
-              <thead className="bg-slate-50 text-slate-500 text-[11px] uppercase tracking-wider border-b border-slate-200">
-                <tr>
-                  <th className="p-4">Participant / Badge</th>
-                  <th className="p-4">College & Team</th>
-                  <th className="p-4">Attendance</th>
-                  <th className="p-4">Score (Marks)</th>
-                  <th className="p-4">Award / Position</th>
-                  <th className="p-4 text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {registrations.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="p-8 text-center text-slate-400">
-                      No registered participants found for this event.
-                    </td>
-                  </tr>
-                ) : (
-                  registrations.map((reg) => {
-                    const isAttended = reg.attended || reg.delegationMember?.eventCheckedIn;
-                    return (
-                      <tr key={reg.id} className="hover:bg-slate-50/50 transition-colors">
-                        <td className="p-4">
-                          <div className="font-bold text-slate-900">{reg.user.name}</div>
-                          <div className="text-[11px] text-slate-500">{reg.user.email}</div>
-                          {reg.delegationMember?.badgeCode && (
-                            <span className="inline-block mt-1 text-[10px] font-mono font-bold bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded">
-                              {reg.delegationMember.badgeCode}
-                            </span>
-                          )}
-                        </td>
-                        <td className="p-4">
-                          <div className="font-semibold text-slate-800 text-xs">
-                            {reg.delegation?.collegeName || reg.user.college || "Independent"}
-                          </div>
-                          {reg.delegation?.teamName && (
-                            <div className="text-[11px] text-orange-600 font-medium">
-                              Team: {reg.delegation.teamName}
-                            </div>
-                          )}
-                        </td>
-                        <td className="p-4">
-                          {isAttended ? (
-                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">
-                              <Check className="w-3 h-3 text-emerald-600" />
-                              Present
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
-                              Absent
-                            </span>
-                          )}
-                        </td>
-                        <td className="p-4">
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="number"
-                              step="0.1"
-                              min="0"
-                              max="100"
-                              placeholder="0 - 100"
-                              value={scoreInputs[reg.id] !== undefined ? scoreInputs[reg.id] : (reg.score ?? "")}
-                              onChange={(e) =>
-                                setScoreInputs((prev) => ({
-                                  ...prev,
-                                  [reg.id]: e.target.value,
-                                }))
-                              }
-                              className="h-9 w-24 bg-white border border-slate-300 rounded-lg px-2.5 text-xs text-slate-900 font-bold focus:outline-none focus:border-orange-500"
-                            />
-                            <span className="text-[11px] text-slate-400 font-medium">/ 100</span>
-                          </div>
-                        </td>
-                        <td className="p-4">
-                          <input
-                            type="text"
-                            placeholder="e.g. 1st Place / Distinction"
-                            value={resultInputs[reg.id] !== undefined ? resultInputs[reg.id] : (reg.result ?? "")}
-                            onChange={(e) =>
-                              setResultInputs((prev) => ({
-                                ...prev,
-                                [reg.id]: e.target.value,
-                              }))
-                            }
-                            className="h-9 w-44 bg-white border border-slate-300 rounded-lg px-2.5 text-xs text-slate-900 focus:outline-none focus:border-orange-500"
-                          />
-                        </td>
-                        <td className="p-4 text-right">
-                          <button
-                            type="button"
-                            disabled={isSaving}
-                            onClick={() => handleSaveScore(reg.id)}
-                            className="tap-target h-9 px-3.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-bold transition-all cursor-pointer"
-                          >
-                            Save
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    )}
   </div>
 
-      <footer className="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500">
-        SHINE 26 Event Management System • Sacred Heart College (Autonomous)
-      </footer>
+      <Footer />
 
       <CheckInModal
         isOpen={showCheckInModal}
