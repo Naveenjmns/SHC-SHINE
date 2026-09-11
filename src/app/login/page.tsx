@@ -65,6 +65,8 @@ function LoginForm() {
         const normalizedInput = email.toLowerCase().trim();
         if (role === "ADMIN" || normalizedInput.includes("admin")) {
           target = "/admin";
+        } else if (role === "FOOD_COORDINATOR" || normalizedInput.includes("food")) {
+          target = "/food";
         } else if (role === "COORDINATOR" || normalizedInput.includes("coord")) {
           target = "/coordinator";
         }

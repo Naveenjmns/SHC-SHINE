@@ -20,7 +20,10 @@ declare module "html5-qrcode" {
     resume(): void;
     applyVideoConstraints(videoConstraints: any): Promise<void>;
     getRunningTrackCapabilities(): any;
+    scanFile(imageFile: File, showImage?: boolean): Promise<string>;
+    scanFileV2(imageFile: File, showImage?: boolean): Promise<any>;
   }
+
   export class Html5QrcodeScanner {
     constructor(elementId: string, config: any, verbose: boolean);
     render(

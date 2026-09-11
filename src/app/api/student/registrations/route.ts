@@ -182,6 +182,7 @@ export async function GET(req: Request) {
           foodTokenCode: member.foodTokenCode,
           eventCheckedIn: member.eventCheckedIn,
           foodTokenClaimed: member.foodTokenClaimed,
+          foodPreference: (member as any).foodPreference || (user as any).foodPreference || "VEG",
           qrData: member.qrData,
           foodQrData: member.foodQrData,
           badgeUrl: `${origin}/badge/${member.badgeCode}`,

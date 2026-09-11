@@ -14,6 +14,7 @@ interface MemberInput {
   phone: string;
   eventIds: string[];
   prelimsEventIds?: string[];
+  foodPreference?: "VEG" | "NON_VEG";
 }
 
 export async function POST(req: Request) {
@@ -223,6 +224,8 @@ export async function POST(req: Request) {
       const normalizedEmail = m.email.toLowerCase().trim();
       const isLead = i === 0 || normalizedEmail === teamLead.email.toLowerCase().trim();
 
+      const foodPref = (m.foodPreference || "VEG").toUpperCase() === "NON_VEG" ? "NON_VEG" : "VEG";
+
       // Find or create User account for this student
       let user = await prisma.user.findUnique({
         where: { email: normalizedEmail },
@@ -240,8 +243,14 @@ export async function POST(req: Request) {
             college: collegeName.trim(),
             passwordHash,
             role: Role.STUDENT,
+            foodPreference: foodPref,
           },
         });
+      } else {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { foodPreference: foodPref },
+        }).catch(() => {});
       }
 
       // Generate unique badge ID & Food Token
@@ -261,6 +270,7 @@ export async function POST(req: Request) {
         foodTokenCode,
         badgeCode,
         name: m.name.trim(),
+        foodPreference: foodPref,
       });
 
       // Create DelegationMember record
@@ -275,6 +285,7 @@ export async function POST(req: Request) {
           foodTokenCode,
           eventCheckedIn: false,
           foodTokenClaimed: false,
+          foodPreference: foodPref,
           qrData,
           foodQrData,
         },

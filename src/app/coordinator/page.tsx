@@ -321,6 +321,7 @@ export default function CoordinatorDashboard() {
       <CheckInModal
         isOpen={showCheckInModal}
         onClose={() => setShowCheckInModal(false)}
+        mode="event_only"
       />
     </main>
   );

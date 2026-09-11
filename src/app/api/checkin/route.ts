@@ -54,10 +54,11 @@ export async function GET(req: NextRequest) {
       !session ||
       (session.user.role !== "COORDINATOR" &&
         session.user.role !== "ADMIN" &&
+        session.user.role !== "FOOD_COORDINATOR" &&
         !(session.user as any).isEventCoordinator)
     ) {
       return NextResponse.json(
-        { success: false, message: "Unauthorized. Staff or Coordinator login required." },
+        { success: false, message: "Unauthorized. Staff, Coordinator, or Food Committee login required." },
         { status: 401 }
       );
     }
@@ -148,6 +149,7 @@ export async function GET(req: NextRequest) {
         foodTokenClaimed: member.foodTokenClaimed,
         foodClaimedAt: member.foodClaimedAt,
         foodClaimedBy: member.foodClaimedBy,
+        foodPreference: (member as any).foodPreference || "VEG",
         collegeName: member.delegation.collegeName,
         department: member.delegation.department,
         teamName: member.delegation.teamName,
@@ -192,10 +194,11 @@ export async function POST(req: NextRequest) {
       !session ||
       (session.user.role !== "COORDINATOR" &&
         session.user.role !== "ADMIN" &&
+        session.user.role !== "FOOD_COORDINATOR" &&
         !(session.user as any).isEventCoordinator)
     ) {
       return NextResponse.json(
-        { success: false, message: "Unauthorized. Staff or Coordinator login required." },
+        { success: false, message: "Unauthorized. Staff, Coordinator, or Food Committee login required." },
         { status: 401 }
       );
     }
@@ -240,6 +243,16 @@ export async function POST(req: NextRequest) {
 
     // 1. EVENT CHECK-IN ACTION
     if (action === "EVENT_CHECKIN") {
+      if (session.user.role === "FOOD_COORDINATOR") {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Unauthorized: Food Committee coordinators cannot perform competition event check-ins. Competition check-ins must be conducted by Event Coordinators.",
+          },
+          { status: 403 }
+        );
+      }
+
       // Payment Guard: Must be PAID at registration desk
       if (member.delegation.paymentStatus !== "PAID") {
         return NextResponse.json(
@@ -442,11 +455,22 @@ export async function POST(req: NextRequest) {
     }
 
     if (action === "FOOD_CLAIM") {
+      if (session.user.role !== "ADMIN" && session.user.role !== "FOOD_COORDINATOR") {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Unauthorized: Food token distribution is restricted to the Food Committee and Administrators. Please direct delegates to the Food Counter.",
+          },
+          { status: 403 }
+        );
+      }
+
       if (member.delegation.paymentStatus !== "PAID") {
         return NextResponse.json(
           {
             success: false,
             paymentPending: true,
+            foodPreference: (member as any).foodPreference || "VEG",
             message: `Payment Desk Approval Required: ${member.name}'s contingent fee is UNPAID (${member.delegation.paymentStatus}). Food tokens cannot be issued until payment is verified at the Registration Desk.`,
           },
           { status: 403 }
@@ -458,15 +482,19 @@ export async function POST(req: NextRequest) {
           {
             success: false,
             alreadyClaimed: true,
-            message: `Warning: Food already received by ${member.name} on ${
+            foodPreference: (member as any).foodPreference || "VEG",
+            message: `Already Claimed: Food token was already redeemed by ${member.name} on ${
               member.foodClaimedAt
                 ? new Date(member.foodClaimedAt).toLocaleTimeString("en-IN", {
                     hour: "2-digit",
                     minute: "2-digit",
                   })
                 : "earlier today"
-            } (Claim verified by ${member.foodClaimedBy || "staff"}).`,
-            member,
+            } (Verified by ${member.foodClaimedBy || "staff"}).`,
+            member: {
+              ...member,
+              foodPreference: (member as any).foodPreference || "VEG",
+            },
           },
           { status: 409 }
         );
@@ -481,6 +509,8 @@ export async function POST(req: NextRequest) {
         },
       });
 
+      const pref = (member as any).foodPreference || "VEG";
+
       await logActivity({
         action: "FOOD_TOKEN_CLAIMED",
         actorId: session.user.id,
@@ -489,20 +519,23 @@ export async function POST(req: NextRequest) {
         actorRole: session.user.role,
         targetType: "Registration",
         targetId: member.id,
-        targetTitle: `Food Issued: ${member.name} (${member.foodTokenCode})`,
+        targetTitle: `Food Issued: ${member.name} [${pref}] (${member.foodTokenCode})`,
         details: {
           foodTokenCode: member.foodTokenCode,
           badgeCode: member.badgeCode,
           studentName: member.name,
           college: member.delegation.collegeName,
+          foodPreference: pref,
         },
       });
 
       return NextResponse.json({
         success: true,
-        message: `Food token verified! 1x Meal issued to ${member.name}.`,
+        foodPreference: pref,
+        message: `Meal successfully issued to ${member.name} (${pref === "VEG" ? "🥗 VEG" : "🍗 NON-VEG"})!`,
         member: {
           ...member,
+          foodPreference: pref,
           foodTokenClaimed: true,
           foodClaimedAt: updated.foodClaimedAt,
           foodClaimedBy: updated.foodClaimedBy,
@@ -511,6 +544,16 @@ export async function POST(req: NextRequest) {
     }
 
     if (action === "FOOD_UNCLAIM") {
+      if (session.user.role !== "ADMIN" && session.user.role !== "FOOD_COORDINATOR") {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Unauthorized: Food claim reversal is restricted to the Food Committee and Administrators.",
+          },
+          { status: 403 }
+        );
+      }
+
       const updated = await prisma.delegationMember.update({
         where: { id: member.id },
         data: {
@@ -520,14 +563,84 @@ export async function POST(req: NextRequest) {
         },
       });
 
+      const pref = (member as any).foodPreference || "VEG";
+
+      await logActivity({
+        action: "FOOD_TOKEN_REVERTED",
+        actorId: session.user.id,
+        actorName,
+        actorEmail: session.user.email,
+        actorRole: session.user.role,
+        targetType: "Registration",
+        targetId: member.id,
+        targetTitle: `Food Claim Reverted: ${member.name} (${member.foodTokenCode})`,
+        details: {
+          foodTokenCode: member.foodTokenCode,
+          studentName: member.name,
+        },
+      });
+
       return NextResponse.json({
         success: true,
+        foodPreference: pref,
         message: `Food claim status reset to Unclaimed for ${member.name}.`,
         member: {
           ...member,
+          foodPreference: pref,
           foodTokenClaimed: false,
           foodClaimedAt: null,
           foodClaimedBy: null,
+        },
+      });
+    }
+
+    if (action === "UPDATE_FOOD_PREFERENCE") {
+      if (session.user.role !== "ADMIN" && session.user.role !== "FOOD_COORDINATOR") {
+        return NextResponse.json(
+          { success: false, message: "Unauthorized: Food Committee or Admin login required." },
+          { status: 403 }
+        );
+      }
+
+      const newPref = body.preference === "NON_VEG" ? "NON_VEG" : "VEG";
+      const updated = await prisma.delegationMember.update({
+        where: { id: member.id },
+        data: {
+          foodPreference: newPref,
+        },
+      });
+
+      if (member.email) {
+        await prisma.user.updateMany({
+          where: { email: { equals: member.email, mode: "insensitive" } },
+          data: { foodPreference: newPref },
+        }).catch(() => {});
+      }
+
+      await logActivity({
+        action: "UPDATE_FOOD_PREFERENCE",
+        actorId: session.user.id,
+        actorName,
+        actorEmail: session.user.email,
+        actorRole: session.user.role,
+        targetType: "Registration",
+        targetId: member.id,
+        targetTitle: `Food Preference updated: ${member.name} -> ${newPref}`,
+        details: {
+          oldPreference: (member as any).foodPreference,
+          newPreference: newPref,
+          studentName: member.name,
+        },
+      });
+
+      return NextResponse.json({
+        success: true,
+        foodPreference: newPref,
+        message: `Dietary preference updated for ${member.name} to ${newPref === "VEG" ? "Vegetarian (🥗)" : "Non-Vegetarian (🍗)"}.`,
+        member: {
+          ...member,
+          foodPreference: newPref,
+          foodTokenClaimed: updated.foodTokenClaimed,
         },
       });
     }

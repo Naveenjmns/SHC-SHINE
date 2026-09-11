@@ -66,6 +66,7 @@ interface StatsData {
   rejectedRegistrations: number;
   totalEvents: number;
   totalRevenue: number;
+  pendingRevenue?: number;
 }
 
 interface EventBreakdown {
@@ -1057,6 +1058,35 @@ export default function AdminOverviewPage() {
     return Array.from(map.values());
   }, [filteredRegistrations]);
 
+  const displayRevenue = useMemo(() => {
+    if (stats && stats.totalRevenue > 0) return stats.totalRevenue;
+
+    // Client-side fallback from loaded registrations & delegations
+    const delegationMap = new Map<string, { totalFee: number; isPaid: boolean }>();
+    for (const reg of registrations) {
+      if (reg.delegation?.id) {
+        const isPaid =
+          reg.delegation.paymentStatus === "PAID" ||
+          reg.delegation.paymentStatus === "VERIFIED" ||
+          reg.status === "CONFIRMED";
+        if (!delegationMap.has(reg.delegation.id)) {
+          delegationMap.set(reg.delegation.id, {
+            totalFee: reg.delegation.totalFee || 0,
+            isPaid,
+          });
+        } else if (isPaid) {
+          delegationMap.get(reg.delegation.id)!.isPaid = true;
+        }
+      }
+    }
+
+    let sum = 0;
+    for (const d of delegationMap.values()) {
+      if (d.isPaid) sum += d.totalFee;
+    }
+    return sum;
+  }, [stats?.totalRevenue, registrations]);
+
   if (status === "loading" || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
@@ -1445,9 +1475,13 @@ export default function AdminOverviewPage() {
                   <Trophy className="w-4 h-4 text-[#D9A441]" />
                 </div>
                 <div className="text-3xl font-black text-[#0F172A] tabular-nums">
-                  ₹{stats.totalRevenue.toLocaleString()}
+                  ₹{displayRevenue.toLocaleString()}
                 </div>
-                <p className="text-xs text-[#94A3B8] mt-1 font-medium">From verified registrations</p>
+                <p className="text-xs text-[#94A3B8] mt-1 font-medium">
+                  {stats?.pendingRevenue && stats.pendingRevenue > 0
+                    ? `From verified registrations (Pending: ₹${stats.pendingRevenue.toLocaleString()})`
+                    : "From verified registrations"}
+                </p>
               </div>
 
               <div className="dash-card p-5">

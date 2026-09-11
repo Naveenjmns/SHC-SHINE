@@ -31,18 +31,56 @@ export async function GET(req: Request) {
         phone: true,
         college: true,
         role: true,
+        avatarUrl: true,
         createdAt: true,
         _count: {
           select: {
             registrations: true,
-            coordEvents: true,
           },
+        },
+        coordEvents: {
+          select: { id: true, name: true, category: true },
+        },
+        staffCoordEvents: {
+          select: { id: true, name: true, category: true },
+        },
+        studentCoordEvents: {
+          select: { id: true, name: true, category: true },
         },
       },
       orderBy: { createdAt: "desc" },
     });
 
-    return NextResponse.json({ success: true, users });
+    const formattedUsers = users.map((u) => {
+      // Deduplicate competitions across legacy coordinatorId, staffCoordinatorId, and studentCoordinatorId
+      const eventMap = new Map<string, { id: string; name: string; category?: string }>();
+      [
+        ...(u.coordEvents || []),
+        ...(u.staffCoordEvents || []),
+        ...(u.studentCoordEvents || []),
+      ].forEach((ev) => {
+        eventMap.set(ev.id, ev);
+      });
+      const assignedEvents = Array.from(eventMap.values());
+
+      return {
+        id: u.id,
+        name: u.name,
+        email: u.email,
+        phone: u.phone,
+        college: u.college,
+        role: u.role,
+        avatarUrl: u.avatarUrl,
+        createdAt: u.createdAt,
+        assignedEvents,
+        _count: {
+          registrations: u._count.registrations,
+          coordEvents: assignedEvents.length,
+        },
+      };
+    });
+
+    return NextResponse.json({ success: true, users: formattedUsers });
   } catch (error) {
     console.error("Error fetching admin users:", error);
     return NextResponse.json({ success: false, message: "Failed to fetch users." }, { status: 500 });
