@@ -17,6 +17,10 @@ import {
   RotateCcw,
   Sparkles,
   Check,
+  SwitchCamera,
+  Zap,
+  ZapOff,
+  RefreshCw,
 } from "lucide-react";
 import { safeJson } from "@/lib/safeFetch";
 
@@ -83,9 +87,97 @@ export default function CheckInModal({
   const [delegate, setDelegate] = useState<MemberLookupData | null>(null);
   const [message, setMessage] = useState<{ type: "success" | "error" | "warning"; text: string } | null>(null);
   const [cameraActive, setCameraActive] = useState(false);
+  const [cameraLoading, setCameraLoading] = useState(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const [camerasList, setCamerasList] = useState<Array<{ id: string; label: string }>>([]);
+  const [selectedCameraIndex, setSelectedCameraIndex] = useState(0);
+  const [torchSupported, setTorchSupported] = useState(false);
+  const [torchOn, setTorchOn] = useState(false);
 
   const scannerRef = useRef<any>(null);
   const scannerDivId = "reader-camera-stream";
+  const lastScannedCodeRef = useRef<{ code: string; time: number } | null>(null);
+  const isStartingCameraRef = useRef(false);
+  const isStoppingCameraRef = useRef(false);
+
+  // Play audio chime on successful scan
+  const playBeep = () => {
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      gain.gain.setValueAtTime(0.12, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.12);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.12);
+    } catch (_) {}
+  };
+
+  // Haptic feedback
+  const triggerVibrate = () => {
+    if (typeof navigator !== "undefined" && navigator.vibrate) {
+      try {
+        navigator.vibrate(80);
+      } catch (_) {}
+    }
+  };
+
+  // Stop camera and release all hardware tracks cleanly
+  const stopCameraScanner = async () => {
+    if (isStoppingCameraRef.current) return;
+    isStoppingCameraRef.current = true;
+    setTorchOn(false);
+    setTorchSupported(false);
+
+    try {
+      if (scannerRef.current) {
+        const state = scannerRef.current.getState?.();
+        // State 2 = SCANNING, State 3 = PAUSED
+        if (state === 2 || state === 3) {
+          try {
+            await scannerRef.current.stop();
+          } catch (stopErr) {
+            console.warn("Scanner stop note:", stopErr);
+          }
+        }
+        try {
+          scannerRef.current.clear();
+        } catch (_) {}
+        scannerRef.current = null;
+      }
+    } catch (err) {
+      console.warn("Scanner shutdown note:", err);
+    } finally {
+      // Explicitly stop all video tracks in the container to release Android OS camera sensor
+      try {
+        const container = document.getElementById(scannerDivId);
+        if (container) {
+          const videos = container.getElementsByTagName("video");
+          for (let i = 0; i < videos.length; i++) {
+            const stream = videos[i].srcObject as MediaStream | null;
+            if (stream && typeof stream.getTracks === "function") {
+              stream.getTracks().forEach((track) => {
+                try {
+                  track.stop();
+                } catch (_) {}
+              });
+            }
+          }
+          container.innerHTML = "";
+        }
+      } catch (_) {}
+
+      setCameraActive(false);
+      setCameraLoading(false);
+      isStoppingCameraRef.current = false;
+    }
+  };
 
   // Stop camera when closing modal or unmounting
   useEffect(() => {
@@ -99,76 +191,194 @@ export default function CheckInModal({
       stopCameraScanner();
       setDelegate(null);
       setMessage(null);
+      setCameraError(null);
       setInputCode("");
     }
   }, [isOpen]);
 
-  const stopCameraScanner = async () => {
-    if (scannerRef.current) {
-      try {
-        await scannerRef.current.stop();
-        scannerRef.current.clear();
-      } catch (err) {
-        console.log("Scanner stop ignored:", err);
-      }
-      scannerRef.current = null;
-    }
-    setCameraActive(false);
-  };
+  const startCameraScanner = async (targetCameraId?: string) => {
+    if (isStartingCameraRef.current) return;
+    isStartingCameraRef.current = true;
+    setCameraLoading(true);
+    setCameraError(null);
+    setMessage(null);
+    setScanMode("camera");
 
-  const startCameraScanner = async () => {
+    // Clean up any existing instances first
+    await stopCameraScanner();
+
     try {
-      setMessage(null);
       const { Html5Qrcode } = await import("html5-qrcode");
-      setScanMode("camera");
-      setCameraActive(true);
 
-      // Slight timeout to allow DOM element to render
-      setTimeout(async () => {
-        try {
-          if (scannerRef.current) {
-            await stopCameraScanner();
-          }
+      // Give browser time to paint container and calculate dimensions
+      await new Promise((resolve) => setTimeout(resolve, 80));
 
-          const html5QrCode = new Html5Qrcode(scannerDivId);
-          scannerRef.current = html5QrCode;
-
-          await html5QrCode.start(
-            { facingMode: "environment" },
-            {
-              fps: 10,
-              qrbox: { width: 250, height: 250 },
-            },
-            (decodedText: string) => {
-              // Successfully decoded QR code
-              console.log("QR Decoded successfully:", decodedText);
-              handleLookup(decodedText);
-              stopCameraScanner();
-            },
-            () => {
-              // Ignore scan failures per frame
-            }
-          );
-        } catch (err: any) {
-          console.error("Camera start inner error:", err);
-          setMessage({
-            type: "warning",
-            text: "Camera unavailable or permission denied. Please enter the unique code manually below.",
-          });
-          setScanMode("manual");
-          setCameraActive(false);
+      let scannerEl = document.getElementById(scannerDivId);
+      if (!scannerEl) {
+        for (let i = 0; i < 15; i++) {
+          await new Promise((resolve) => setTimeout(resolve, 50));
+          scannerEl = document.getElementById(scannerDivId);
+          if (scannerEl) break;
         }
-      }, 200);
+      }
+
+      if (!scannerEl) {
+        throw new Error("Scanner display area could not be prepared.");
+      }
+
+      // Query available video devices
+      let cameras: Array<{ id: string; label: string }> = [];
+      try {
+        cameras = await Html5Qrcode.getCameras();
+        if (Array.isArray(cameras) && cameras.length > 0) {
+          setCamerasList(cameras);
+        }
+      } catch (enumErr) {
+        console.warn("Camera device enumeration note:", enumErr);
+      }
+
+      // Determine target camera configuration
+      let cameraToUse: any = targetCameraId;
+
+      if (!cameraToUse && cameras && cameras.length > 0) {
+        // Prioritize back/environment camera by inspecting device label
+        const backIndex = cameras.findIndex((cam) => {
+          const lbl = (cam.label || "").toLowerCase();
+          return (
+            lbl.includes("back") ||
+            lbl.includes("rear") ||
+            lbl.includes("environment") ||
+            lbl.includes("0, facing back")
+          );
+        });
+
+        if (backIndex !== -1) {
+          cameraToUse = cameras[backIndex].id;
+          setSelectedCameraIndex(backIndex);
+        } else {
+          cameraToUse = cameras[0].id;
+          setSelectedCameraIndex(0);
+        }
+      }
+
+      const html5QrCode = new Html5Qrcode(scannerDivId);
+      scannerRef.current = html5QrCode;
+
+      const qrConfig = {
+        fps: 15,
+        qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
+          const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+          const edge = Math.max(Math.floor(minEdge * 0.72), 160);
+          return { width: edge, height: edge };
+        },
+        aspectRatio: 1.0,
+      };
+
+      const onScanSuccess = (decodedText: string) => {
+        const now = Date.now();
+        if (
+          lastScannedCodeRef.current &&
+          lastScannedCodeRef.current.code === decodedText &&
+          now - lastScannedCodeRef.current.time < 2000
+        ) {
+          return; // Ignore duplicate scan events within 2 seconds
+        }
+        lastScannedCodeRef.current = { code: decodedText, time: now };
+
+        playBeep();
+        triggerVibrate();
+        handleLookup(decodedText);
+        stopCameraScanner();
+      };
+
+      // Multi-tier fallback strategy for maximum Android / iOS compatibility
+      const candidateConfigs: any[] = [];
+      if (cameraToUse) {
+        candidateConfigs.push(cameraToUse);
+      }
+      candidateConfigs.push({ facingMode: "environment" });
+      if (cameras && cameras.length > 0) {
+        cameras.forEach((c) => {
+          if (c.id !== cameraToUse) candidateConfigs.push(c.id);
+        });
+      }
+      candidateConfigs.push({ facingMode: "user" });
+
+      let started = false;
+      let lastErr: any = null;
+
+      for (const config of candidateConfigs) {
+        try {
+          await html5QrCode.start(config, qrConfig, onScanSuccess, () => {});
+          started = true;
+          break;
+        } catch (candidateErr: any) {
+          console.warn("Scanner config attempt failed:", config, candidateErr);
+          lastErr = candidateErr;
+        }
+      }
+
+      if (!started) {
+        throw lastErr || new Error("Failed to initialize camera on this device.");
+      }
+
+      setCameraActive(true);
+      setCameraError(null);
+
+      // Check if torch/flashlight is supported
+      try {
+        const capabilities = html5QrCode.getRunningTrackCapabilities?.();
+        if (capabilities && "torch" in capabilities) {
+          setTorchSupported(true);
+        }
+      } catch (_) {}
     } catch (err: any) {
-      console.error("Camera load error:", err);
-      setMessage({
-        type: "warning",
-        text: "Camera scanner could not initialize. Please use manual code lookup.",
-      });
-      setScanMode("manual");
+      console.error("Camera scanner failure:", err);
+      let errorMsg = "Camera stream could not start. Please retry or enter code manually.";
+      const rawMsg = (err?.message || String(err)).toLowerCase();
+
+      if (rawMsg.includes("permission") || rawMsg.includes("notallowed") || rawMsg.includes("denied")) {
+        errorMsg = "Camera permission denied. Please allow camera permissions in browser site settings and tap Retry.";
+      } else if (rawMsg.includes("notreadable") || rawMsg.includes("trackstart") || rawMsg.includes("could not start")) {
+        errorMsg = "Camera hardware is currently held by another app or tab. Please close any background camera apps and tap Retry.";
+      } else if (rawMsg.includes("notfound") || rawMsg.includes("devicesnotfound")) {
+        errorMsg = "No camera was detected on this device.";
+      } else if (rawMsg.includes("overconstrained")) {
+        errorMsg = "Camera resolution/lens constraint error. Tap 'Switch Camera' or Retry.";
+      } else if (err?.message) {
+        errorMsg = `Camera error: ${err.message}`;
+      }
+
+      setCameraError(errorMsg);
       setCameraActive(false);
+    } finally {
+      setCameraLoading(false);
+      isStartingCameraRef.current = false;
     }
   };
+
+  // Flip or cycle to the next available camera
+  const switchCamera = async () => {
+    if (!camerasList || camerasList.length <= 1) return;
+    const nextIndex = (selectedCameraIndex + 1) % camerasList.length;
+    setSelectedCameraIndex(nextIndex);
+    await startCameraScanner(camerasList[nextIndex].id);
+  };
+
+  // Toggle torch / flashlight
+  const toggleTorch = async () => {
+    if (!scannerRef.current || !torchSupported) return;
+    const nextTorch = !torchOn;
+    try {
+      await scannerRef.current.applyVideoConstraints({
+        advanced: [{ torch: nextTorch }],
+      });
+      setTorchOn(nextTorch);
+    } catch (torchErr) {
+      console.warn("Toggle torch failed:", torchErr);
+    }
+  };
+
 
   const handleLookup = async (codeToSearch?: string) => {
     const code = (codeToSearch || inputCode).trim();
@@ -324,6 +534,21 @@ export default function CheckInModal({
         </div>
 
         <div className="p-5 sm:p-6 space-y-6">
+          <style dangerouslySetInnerHTML={{ __html: `
+            #${scannerDivId} video {
+              width: 100% !important;
+              max-height: 260px !important;
+              object-fit: cover !important;
+              border-radius: 0.625rem !important;
+            }
+            #${scannerDivId} canvas {
+              max-width: 100% !important;
+            }
+            #${scannerDivId} img[alt="Info icon"] {
+              display: none !important;
+            }
+          `}} />
+
           {/* Mode Switcher */}
           <div className="flex items-center justify-center gap-2 p-1 bg-stone-100 rounded-2xl max-w-md mx-auto">
             <button
@@ -344,7 +569,7 @@ export default function CheckInModal({
 
             <button
               type="button"
-              onClick={startCameraScanner}
+              onClick={() => startCameraScanner()}
               className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
                 scanMode === "camera"
                   ? "bg-[#1C1917] text-white shadow-xs"
@@ -356,25 +581,123 @@ export default function CheckInModal({
             </button>
           </div>
 
-          {/* Scanner / Input Area */}
-          {scanMode === "camera" ? (
-            <div className="bg-stone-900 rounded-2xl p-4 text-center text-white space-y-3">
+          {/* Camera Scanner Viewport (kept persistent in DOM) */}
+          <div className={scanMode === "camera" ? "block space-y-3 max-w-md mx-auto" : "hidden"}>
+            <div className="bg-stone-900 rounded-2xl p-4 text-center text-white space-y-3 relative shadow-inner">
+              {/* Camera Loading Spinner */}
+              {cameraLoading && (
+                <div className="py-8 flex flex-col items-center justify-center gap-2.5 text-stone-300">
+                  <div className="w-8 h-8 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
+                  <p className="text-xs font-semibold text-amber-300">Accessing camera sensor...</p>
+                  <p className="text-[11px] text-stone-400">Connecting to live video stream</p>
+                </div>
+              )}
+
+              {/* Camera Error Display with In-Place Action Buttons */}
+              {cameraError && !cameraLoading && (
+                <div className="bg-amber-950/70 border border-amber-500/50 rounded-xl p-4 text-left space-y-3 animate-in fade-in">
+                  <div className="flex items-start gap-2.5">
+                    <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                    <div className="space-y-1">
+                      <p className="text-xs font-bold text-amber-200 leading-snug">{cameraError}</p>
+                      <p className="text-[11px] text-stone-300 leading-normal">
+                        If browser permissions are allowed, the camera sensor may need a restart or is reserved by another lens or app.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => startCameraScanner()}
+                      className="tap-target px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-stone-950 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-xs"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      <span>Retry Camera</span>
+                    </button>
+                    {camerasList.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={switchCamera}
+                        className="tap-target px-3 py-1.5 rounded-lg bg-stone-800 hover:bg-stone-700 text-stone-200 text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <SwitchCamera className="w-3.5 h-3.5 text-amber-400" />
+                        <span>Try Next Lens</span>
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        stopCameraScanner();
+                        setScanMode("manual");
+                      }}
+                      className="tap-target px-3 py-1.5 rounded-lg bg-stone-800 hover:bg-stone-700 text-stone-300 text-xs font-medium transition cursor-pointer"
+                    >
+                      Use Manual Code Lookup
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* The html5-qrcode rendering element */}
               <div
                 id={scannerDivId}
-                className="w-full max-w-xs mx-auto overflow-hidden rounded-xl border-2 border-amber-400"
+                className={`w-full max-w-xs mx-auto overflow-hidden rounded-xl border-2 border-amber-400 bg-black min-h-[200px] transition-opacity duration-200 ${
+                  cameraLoading || cameraError ? "opacity-30 pointer-events-none" : "opacity-100"
+                }`}
               />
+
+              {/* Controls Bar for Live Active Camera */}
+              {cameraActive && !cameraLoading && (
+                <div className="flex items-center justify-center gap-2 pt-1 flex-wrap">
+                  {camerasList.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={switchCamera}
+                      className="tap-target px-3 py-1.5 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-200 text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer border border-stone-700"
+                    >
+                      <SwitchCamera className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Flip Lens ({selectedCameraIndex + 1}/{camerasList.length})</span>
+                    </button>
+                  )}
+
+                  {torchSupported && (
+                    <button
+                      type="button"
+                      onClick={toggleTorch}
+                      className={`tap-target px-3 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer border border-stone-700 ${
+                        torchOn
+                          ? "bg-amber-400 text-stone-950 font-bold"
+                          : "bg-stone-800 hover:bg-stone-700 text-stone-200"
+                      }`}
+                    >
+                      {torchOn ? <Zap className="w-3.5 h-3.5 fill-current" /> : <ZapOff className="w-3.5 h-3.5" />}
+                      <span>{torchOn ? "Torch On" : "Flashlight"}</span>
+                    </button>
+                  )}
+                </div>
+              )}
+
               <p className="text-xs text-stone-300">
-                Point your mobile or webcam at the participant&apos;s <strong>Event Entry QR</strong> or <strong>Food Token QR</strong>
+                Point camera at participant&apos;s <strong>Event Entry QR</strong> or <strong>Food Token QR</strong>
               </p>
-              <button
-                type="button"
-                onClick={stopCameraScanner}
-                className="text-xs text-amber-400 hover:underline font-semibold"
-              >
-                Switch to Manual Code Entry
-              </button>
+
+              <div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    stopCameraScanner();
+                    setScanMode("manual");
+                  }}
+                  className="text-xs text-amber-400 hover:underline font-semibold cursor-pointer"
+                >
+                  Switch to Manual Code Entry
+                </button>
+              </div>
             </div>
-          ) : (
+          </div>
+
+          {/* Manual Input Viewport (kept in DOM, visible when scanMode === "manual") */}
+          <div className={scanMode === "manual" ? "block" : "hidden"}>
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -389,7 +712,7 @@ export default function CheckInModal({
                   onChange={(e) => setInputCode(e.target.value)}
                   placeholder="e.g. SHN27-DEL-XXXX or FT-XXXX-MEAL"
                   className="w-full pl-9 pr-4 py-2.5 text-sm font-mono border border-stone-300 rounded-xl focus:ring-2 focus:ring-[#FF6B1A] outline-none"
-                  autoFocus
+                  autoFocus={scanMode === "manual"}
                 />
                 <Search className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
               </div>
@@ -408,7 +731,7 @@ export default function CheckInModal({
                 )}
               </button>
             </form>
-          )}
+          </div>
 
           {/* Status / Alert Message */}
           {message && (
