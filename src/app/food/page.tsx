@@ -25,6 +25,7 @@ import {
   RefreshCw,
   LogOut,
   Users,
+  User,
   ShieldCheck,
   Building2,
   Phone,
@@ -868,6 +869,14 @@ export default function FoodCoordinatorPage() {
                 Admin Panel →
               </Link>
             )}
+
+            <Link
+              href="/profile"
+              className="tap-target px-2.5 sm:px-3 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-lg transition-colors flex items-center gap-1.5 shadow-2xs"
+            >
+              <User className="w-3.5 h-3.5 text-slate-500" />
+              <span className="hidden sm:inline">My Profile</span>
+            </Link>
 
             <button
               onClick={() => signOut({ callbackUrl: "/login" })}

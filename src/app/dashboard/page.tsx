@@ -27,6 +27,7 @@ import {
   Users,
   ShieldCheck,
   Maximize2,
+  User,
 } from "lucide-react";
 
 interface RegistrationItem {
@@ -244,6 +245,13 @@ export default function StudentDashboard() {
                 <span>Stage Results</span>
               </Link>
             )}
+            <Link
+              href="/profile"
+              className="tap-target px-3 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-lg transition-colors inline-flex items-center gap-1.5 shadow-2xs"
+            >
+              <User className="w-3.5 h-3.5 text-slate-500" />
+              <span>My Profile</span>
+            </Link>
             <button
               onClick={() => signOut({ callbackUrl: "/" })}
               className="tap-target px-3 py-1.5 text-xs font-medium text-slate-500 hover:text-rose-600 transition-colors cursor-pointer"

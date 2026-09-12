@@ -6,7 +6,38 @@ const prisma = new PrismaClient();
 async function main() {
   console.log("⚡ Creating / Updating Demo Credentials for SHINE 26...\n");
 
-  // 1. Food Committee Coordinator
+  // 1. System Administrator
+  const adminEmail = "admin@shctpt.edu";
+  const adminPassword = "admin123";
+  const adminHash = await bcrypt.hash(adminPassword, 10);
+
+  const adminUser = await prisma.user.upsert({
+    where: { email: adminEmail },
+    update: {
+      name: "SHINE Master Administrator",
+      role: Role.ADMIN,
+      phone: "+91 9876543210",
+      college: "Sacred Heart College (Autonomous), Tirupattur",
+      foodPreference: "VEG",
+      passwordHash: adminHash,
+    },
+    create: {
+      email: adminEmail,
+      name: "SHINE Master Administrator",
+      role: Role.ADMIN,
+      phone: "+91 9876543210",
+      college: "Sacred Heart College (Autonomous), Tirupattur",
+      foodPreference: "VEG",
+      passwordHash: adminHash,
+    },
+  });
+  console.log(`✅ System Administrator User ready:`);
+  console.log(`   Email:    ${adminUser.email}`);
+  console.log(`   Password: ${adminPassword}`);
+  console.log(`   Role:     ${adminUser.role}`);
+  console.log(`   Portal:   /admin\n`);
+
+  // 2. Food Committee Coordinator
   const foodEmail = "food@shctpt.edu";
   const foodPassword = "food123";
   const foodHash = await bcrypt.hash(foodPassword, 10);
@@ -35,7 +66,7 @@ async function main() {
   console.log(`   Role:     ${foodUser.role}`);
   console.log(`   Portal:   /food\n`);
 
-  // 2. Event Coordinator
+  // 3. Event Coordinator
   const coordEmail = "coord.alex@shctpt.edu";
   const coordPassword = "coord123";
   const coordHash = await bcrypt.hash(coordPassword, 10);
@@ -84,7 +115,7 @@ async function main() {
   console.log(`   Role:     ${coordUser.role}`);
   console.log(`   Portal:   /coordinator\n`);
 
-  // 3. Student Delegate
+  // 4. Student Delegate
   const studentEmail = "student@example.com";
   const studentPassword = "student123";
   const studentHash = await bcrypt.hash(studentPassword, 10);

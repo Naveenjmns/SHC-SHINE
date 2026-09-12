@@ -9,6 +9,7 @@ import { safeJson } from "@/lib/safeFetch";
 import {
   Settings,
   Users,
+  User,
   Trophy,
   CheckCircle2,
   Clock,
@@ -1299,6 +1300,13 @@ export default function AdminOverviewPage() {
                   <Eye className="w-3.5 h-3.5 text-slate-600" />
                   <span>Preview</span>
                 </Link>
+                <Link
+                  href="/profile"
+                  className="flex items-center gap-1.5 text-xs font-semibold text-[#0F172A] bg-stone-100 hover:bg-stone-200 px-3 py-1.5 rounded-xl transition"
+                >
+                  <User className="w-3.5 h-3.5 text-purple-600" />
+                  <span>My Profile</span>
+                </Link>
                 <button
                   onClick={() => signOut({ callbackUrl: "/" })}
                   className="text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-xl transition cursor-pointer"
@@ -1354,6 +1362,14 @@ export default function AdminOverviewPage() {
                 >
                   <History className="w-4 h-4 text-slate-600 shrink-0" />
                   <span>Activity Logs</span>
+                </Link>
+                <Link
+                  href="/profile"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 flex items-center gap-2 hover:bg-orange-50 hover:text-orange-700 transition col-span-2"
+                >
+                  <User className="w-4 h-4 text-purple-600 shrink-0" />
+                  <span>My Admin Profile & Security</span>
                 </Link>
               </div>
 
