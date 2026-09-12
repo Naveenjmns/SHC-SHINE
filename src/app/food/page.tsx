@@ -2,6 +2,9 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useSession, signOut } from "next-auth/react";
+import Link from "next/link";
+import Footer from "@/components/Footer";
+import CheckInModal from "@/components/CheckInModal";
 import {
   Utensils,
   QrCode,
@@ -16,6 +19,8 @@ import {
   Volume2,
   VolumeX,
   Zap,
+  ZapOff,
+  AlertCircle,
   ArrowRight,
   RefreshCw,
   LogOut,
@@ -70,7 +75,7 @@ interface RecentClaim {
 }
 
 interface ScanPopup {
-  status: "success" | "already_claimed" | "unpaid" | "not_found" | "error" | "warning";
+  status: "success" | "already_claimed" | "unpaid" | "not_found" | "error" | "warning" | "eligible";
   title: string;
   name?: string;
   college?: string;
@@ -95,13 +100,35 @@ export default function FoodCoordinatorPage() {
   const [recentClaims, setRecentClaims] = useState<RecentClaim[]>([]);
   const [loadingStats, setLoadingStats] = useState(true);
   const [inputCode, setInputCode] = useState("");
+  const [scanMode, setScanMode] = useState<"manual" | "camera">("manual");
+  const [showCheckInModal, setShowCheckInModal] = useState(false);
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraStarting, setCameraStarting] = useState(false);
   const [cameraError, setCameraError] = useState<CameraErrorInfo | null>(null);
   const [availableCameras, setAvailableCameras] = useState<CameraDeviceInfo[]>([]);
   const [selectedCameraId, setSelectedCameraId] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
-  const [autoClaim, setAutoClaim] = useState(true); // Default to fast auto-claim for rush hours
+  const [autoClaim, setAutoClaim] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("shine_auto_claim");
+      if (saved !== null) return saved === "true";
+    }
+    return true; // Default to fast auto-claim for rush hours
+  });
+  const autoClaimRef = useRef(autoClaim);
+  autoClaimRef.current = autoClaim;
+
+  const toggleAutoClaim = () => {
+    setAutoClaim((prev) => {
+      const next = !prev;
+      autoClaimRef.current = next;
+      if (typeof window !== "undefined") {
+        localStorage.setItem("shine_auto_claim", String(next));
+      }
+      return next;
+    });
+  };
+
   const [soundEnabled, setSoundEnabled] = useState(true);
 
   // Popup Modal / Toast state for quick scan review
@@ -451,7 +478,7 @@ export default function FoodCoordinatorPage() {
   const handleDetectedCode = async (rawCode: string) => {
     const { code: normalizedCode } = extractLookupCode(rawCode);
     const code = (normalizedCode || rawCode).trim();
-    if (!code || processing) return;
+    if (!code || processing || popup?.status === "eligible") return;
 
     // Throttle duplicate scans within 3.5 seconds
     const now = Date.now();
@@ -467,8 +494,10 @@ export default function FoodCoordinatorPage() {
 
     setProcessing(true);
 
+    const isAuto = autoClaimRef.current;
+
     try {
-      if (autoClaim) {
+      if (isAuto) {
         // Fast Continuous Auto-Claim: Claim meal in 1 shot!
         const res = await fetch("/api/checkin", {
           method: "POST",
@@ -601,15 +630,15 @@ export default function FoodCoordinatorPage() {
           } else {
             playSound("success");
             setPopup({
-              status: "success",
-              title: "Eligible for Meal",
+              status: "eligible",
+              title: "Approve or Reject Meal Issue?",
               name: m.name,
               college: m.collegeName,
               foodPreference: m.foodPreference || "VEG",
               tokenCode: m.foodTokenCode,
               badgeCode: m.badgeCode,
               memberId: m.id,
-              message: "Ready to issue. Click Claim Meal below to record.",
+              message: `Delegate verified! 1x ${m.foodPreference === "NON_VEG" ? "🍗 Non-Veg" : "🥗 Pure Veg"} meal pending approval. Please choose to Approve or Reject below.`,
             });
           }
         } else {
@@ -634,6 +663,68 @@ export default function FoodCoordinatorPage() {
       setProcessing(false);
       setInputCode("");
     }
+  };
+
+  // Manual Claim Confirmation (when Auto-Claim Mode is OFF)
+  const handleManualClaim = async (tokenCode: string) => {
+    setActionLoading(true);
+    try {
+      const res = await fetch("/api/checkin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: tokenCode, action: "FOOD_CLAIM" }),
+      });
+      const data = await safeJson(res);
+      if (res.ok && data.success) {
+        playSound("success");
+        if (typeof navigator !== "undefined" && navigator.vibrate) {
+          navigator.vibrate([80, 40, 80]);
+        }
+        const member = data.member;
+        const pref = data.foodPreference || member?.foodPreference || popup?.foodPreference || "VEG";
+        setPopup({
+          status: "success",
+          title: "Meal Token Claimed!",
+          name: member?.name || popup?.name || "Participant",
+          college: member?.collegeName || popup?.college || "Registered Contingent",
+          foodPreference: pref,
+          tokenCode: member?.foodTokenCode || tokenCode,
+          badgeCode: member?.badgeCode || popup?.badgeCode,
+          memberId: member?.id || popup?.memberId,
+          message: data.message || `1x ${pref === "VEG" ? "Vegetarian" : "Non-Vegetarian"} meal confirmed and approved.`,
+        });
+        fetchStats();
+      } else {
+        playSound("error");
+        setPopup({
+          status: "error",
+          title: "Claim Failed",
+          tokenCode,
+          message: data.message || "Failed to record meal claim.",
+        });
+      }
+    } catch (err: any) {
+      playSound("error");
+      setPopup({
+        status: "error",
+        title: "Network Error",
+        tokenCode,
+        message: err?.message || "Failed to connect to server.",
+      });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Reject / Decline meal issue (when Auto-Claim Mode is OFF)
+  const handleRejectClaim = (delegateName: string) => {
+    playSound("warning");
+    setPopup({
+      status: "warning",
+      title: "Meal Issue Declined",
+      name: delegateName,
+      message: `Meal distribution for ${delegateName} was declined/rejected by staff. No meal voucher was consumed.`,
+    });
   };
 
   // Revert / Undo a claim
@@ -717,102 +808,151 @@ export default function FoodCoordinatorPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white selection:bg-amber-500/30">
-      {/* Top Header */}
-      <header className="sticky top-0 z-30 border-b border-slate-800 bg-slate-900/90 backdrop-blur-md px-4 py-3 sm:px-6">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/20">
-              <Utensils className="w-5 h-5 text-slate-950 font-bold" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="font-bold text-lg text-white tracking-wide">SHINE &apos;26 FOOD CONSOLE</h1>
-                <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                  Food Committee
-                </span>
+    <main className="dash-layout flex flex-col min-h-screen">
+      {/* Calm Light Navigation — Synced with Coordinator / App UI */}
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-20 shadow-xs">
+        <div className="container-shine py-3 sm:py-3.5 flex items-center justify-between">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Link href="/" className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-orange-600 flex items-center justify-center text-white font-black text-base shadow-sm">
+                S
               </div>
-              <p className="text-xs text-slate-400">
-                Logged in as <span className="text-slate-200 font-medium">{session?.user?.name || session?.user?.email}</span>
-              </p>
-            </div>
+              <span className="font-extrabold text-slate-900 tracking-tight text-base sm:text-lg">
+                SHINE <span className="text-orange-600">26</span>
+              </span>
+            </Link>
+            <span className="text-slate-300">/</span>
+            <span className="text-xs font-bold text-amber-800 bg-amber-50 border border-amber-200 px-2 sm:px-2.5 py-0.5 rounded-md flex items-center gap-1.5">
+              <Utensils className="w-3.5 h-3.5 text-amber-600" />
+              <span className="hidden xs:inline">Food Committee Console</span>
+              <span className="xs:hidden">Food Desk</span>
+            </span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={() => setSoundEnabled(!soundEnabled)}
-              title={soundEnabled ? "Mute chimes" : "Enable chimes"}
-              className={`p-2 rounded-lg border transition-all ${
+              title={soundEnabled ? "Mute audio chimes" : "Enable audio chimes"}
+              className={`tap-target px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors flex items-center gap-1.5 cursor-pointer ${
                 soundEnabled
-                  ? "bg-slate-800 border-slate-700 text-amber-400"
-                  : "bg-slate-900 border-slate-800 text-slate-500"
+                  ? "bg-amber-50 border-amber-200 text-amber-800 hover:bg-amber-100"
+                  : "bg-slate-100 border-slate-200 text-slate-500 hover:bg-slate-200"
               }`}
             >
-              {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+              {soundEnabled ? <Volume2 className="w-4 h-4 text-amber-600" /> : <VolumeX className="w-4 h-4 text-slate-400" />}
+              <span className="hidden md:inline">{soundEnabled ? "Audio On" : "Muted"}</span>
             </button>
 
             <button
               onClick={fetchStats}
-              title="Refresh Stats"
-              className="p-2 rounded-lg border border-slate-800 bg-slate-900 text-slate-300 hover:text-white hover:bg-slate-800 transition"
+              title="Refresh Statistics"
+              className="tap-target px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 transition-colors flex items-center gap-1.5 cursor-pointer"
             >
-              <RefreshCw className={`w-4 h-4 ${loadingStats ? "animate-spin text-amber-400" : ""}`} />
+              <RefreshCw className={`w-3.5 h-3.5 ${loadingStats ? "animate-spin text-orange-600" : "text-slate-500"}`} />
+              <span className="hidden md:inline">Refresh</span>
             </button>
 
             <button
+              onClick={() => setShowCheckInModal(true)}
+              className="tap-target px-3.5 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 rounded-lg transition-colors flex items-center gap-1.5 shadow-sm cursor-pointer"
+            >
+              <QrCode className="w-3.5 h-3.5" />
+              <span>QR Check-in</span>
+            </button>
+
+            {session?.user?.role === "ADMIN" && (
+              <Link
+                href="/admin"
+                className="tap-target hidden sm:inline-flex px-3 py-1.5 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors items-center"
+              >
+                Admin Panel →
+              </Link>
+            )}
+
+            <button
               onClick={() => signOut({ callbackUrl: "/login" })}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-red-500/20 bg-red-500/10 text-red-400 hover:bg-red-500/20 transition"
+              className="tap-target px-2.5 sm:px-3 py-1.5 text-xs font-medium text-slate-500 hover:text-rose-600 transition-colors flex items-center gap-1 cursor-pointer"
             >
               <LogOut className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Logout</span>
+              <span className="hidden sm:inline">Sign Out</span>
             </button>
           </div>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
+      {/* Main Content Body */}
+      <div className="container-shine py-6 sm:py-8 flex-1 space-y-6">
+        {/* Banner Card */}
+        <div className="dash-card p-6 sm:p-8">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  Catering & Hospitality Desk
+                </span>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  Live Distribution
+                </span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                Meal Pass Verification
+              </h1>
+              <p className="text-xs text-slate-500 mt-1">
+                Logged in as <span className="font-semibold text-slate-800">{session?.user?.name || session?.user?.email}</span> • Real-time dietary pass verification & meal quota tracking.
+              </p>
+            </div>
+
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 text-left sm:text-right w-full sm:w-auto shadow-xs">
+              <div className="text-[11px] font-bold text-amber-900 uppercase tracking-wide">Dining Facility</div>
+              <div className="text-base sm:text-lg font-black text-amber-950">
+                SGB Quadrangle Dining Hall
+              </div>
+              <div className="text-[11px] text-amber-700 font-medium">Sacred Heart College (Autonomous)</div>
+            </div>
+          </div>
+        </div>
+
         {/* Live Catering KPI Cards */}
-        <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {/* Total Meals Progress */}
-          <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 relative overflow-hidden group hover:border-slate-700 transition">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Served</span>
-              <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
+          <div className="dash-card p-4 sm:p-5 border-l-4 border-l-blue-500">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Served</span>
+              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
                 {stats?.claimPercentage ?? 0}%
               </span>
             </div>
             <div className="flex items-baseline gap-2">
-              <span className="text-2xl sm:text-3xl font-black text-white">{stats?.totalClaimed ?? 0}</span>
-              <span className="text-xs text-slate-400">/ {stats?.totalEligible ?? 0}</span>
+              <span className="text-2xl sm:text-3xl font-black text-slate-900 tabular-nums">{stats?.totalClaimed ?? 0}</span>
+              <span className="text-xs text-slate-500">/ {stats?.totalEligible ?? 0}</span>
             </div>
-            {/* Mini Progress Bar */}
-            <div className="mt-3 w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+            <div className="mt-3 w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
               <div
-                className="bg-gradient-to-r from-blue-500 to-indigo-500 h-full rounded-full transition-all duration-500"
+                className="bg-blue-600 h-full rounded-full transition-all duration-500"
                 style={{ width: `${stats?.claimPercentage ?? 0}%` }}
               />
             </div>
           </div>
 
           {/* 🥗 Vegetarian Counter */}
-          <div className="p-4 rounded-2xl bg-emerald-950/20 border border-emerald-800/40 relative overflow-hidden group hover:border-emerald-700/60 transition">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
-                <Leaf className="w-3.5 h-3.5" />
+          <div className="dash-card p-4 sm:p-5 border-l-4 border-l-emerald-500">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-xs font-bold text-emerald-800 uppercase tracking-wider flex items-center gap-1">
+                <Leaf className="w-3.5 h-3.5 text-emerald-600" />
                 Vegetarian
               </span>
-              <span className="text-xs font-semibold text-emerald-300">
+              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
                 {stats?.veg.remaining ?? 0} left
               </span>
             </div>
             <div className="flex items-baseline gap-2">
-              <span className="text-2xl sm:text-3xl font-black text-emerald-300">{stats?.veg.claimed ?? 0}</span>
-              <span className="text-xs text-emerald-500/80">served of {stats?.veg.requested ?? 0}</span>
+              <span className="text-2xl sm:text-3xl font-black text-emerald-700 tabular-nums">{stats?.veg.claimed ?? 0}</span>
+              <span className="text-xs text-slate-500">of {stats?.veg.requested ?? 0}</span>
             </div>
-            <div className="mt-3 w-full bg-emerald-950/60 rounded-full h-1.5 overflow-hidden">
+            <div className="mt-3 w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
               <div
-                className="bg-emerald-500 h-full rounded-full transition-all duration-500"
+                className="bg-emerald-600 h-full rounded-full transition-all duration-500"
                 style={{
                   width: `${
                     stats?.veg.requested ? Math.round((stats.veg.claimed / stats.veg.requested) * 100) : 0
@@ -823,23 +963,23 @@ export default function FoodCoordinatorPage() {
           </div>
 
           {/* 🍗 Non-Vegetarian Counter */}
-          <div className="p-4 rounded-2xl bg-amber-950/20 border border-amber-800/40 relative overflow-hidden group hover:border-amber-700/60 transition">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
-                <Flame className="w-3.5 h-3.5" />
-                Non-Vegetarian
+          <div className="dash-card p-4 sm:p-5 border-l-4 border-l-orange-500">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-xs font-bold text-orange-800 uppercase tracking-wider flex items-center gap-1">
+                <Flame className="w-3.5 h-3.5 text-orange-600" />
+                Non-Veg
               </span>
-              <span className="text-xs font-semibold text-amber-300">
+              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-orange-50 text-orange-700 border border-orange-200">
                 {stats?.nonVeg.remaining ?? 0} left
               </span>
             </div>
             <div className="flex items-baseline gap-2">
-              <span className="text-2xl sm:text-3xl font-black text-amber-300">{stats?.nonVeg.claimed ?? 0}</span>
-              <span className="text-xs text-amber-500/80">served of {stats?.nonVeg.requested ?? 0}</span>
+              <span className="text-2xl sm:text-3xl font-black text-orange-700 tabular-nums">{stats?.nonVeg.claimed ?? 0}</span>
+              <span className="text-xs text-slate-500">of {stats?.nonVeg.requested ?? 0}</span>
             </div>
-            <div className="mt-3 w-full bg-amber-950/60 rounded-full h-1.5 overflow-hidden">
+            <div className="mt-3 w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
               <div
-                className="bg-gradient-to-r from-amber-500 to-orange-500 h-full rounded-full transition-all duration-500"
+                className="bg-gradient-to-r from-orange-600 to-amber-600 h-full rounded-full transition-all duration-500"
                 style={{
                   width: `${
                     stats?.nonVeg.requested
@@ -852,322 +992,418 @@ export default function FoodCoordinatorPage() {
           </div>
 
           {/* Queue Remaining */}
-          <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 relative overflow-hidden">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Queue Remaining</span>
-              <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20">
+          <div className="dash-card p-4 sm:p-5 border-l-4 border-l-purple-500">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-xs font-bold text-purple-800 uppercase tracking-wider">Queue Remaining</span>
+              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
                 Pending
               </span>
             </div>
             <div className="flex items-baseline gap-2">
-              <span className="text-2xl sm:text-3xl font-black text-purple-300">{stats?.totalRemaining ?? 0}</span>
-              <span className="text-xs text-slate-400">delegates yet to eat</span>
+              <span className="text-2xl sm:text-3xl font-black text-purple-800 tabular-nums">{stats?.totalRemaining ?? 0}</span>
+              <span className="text-xs text-slate-500">delegates left</span>
             </div>
-            <p className="text-[11px] text-slate-500 mt-3 truncate">
+            <p className="text-[11px] text-slate-500 mt-3 truncate font-medium">
               {stats?.veg.remaining ?? 0} Veg • {stats?.nonVeg.remaining ?? 0} Non-Veg
             </p>
           </div>
-        </section>
+        </div>
 
         {/* Scanner & Rapid Queue Interface */}
-        <section className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Scanner Console (Left 7 Cols) */}
-          <div className="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6 shadow-2xl flex flex-col justify-between">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Scanner / Check-In Console (Left 7 Cols) - Synced with Check-In Hub UI */}
+          <div className="lg:col-span-7 dash-card p-5 sm:p-6 flex flex-col justify-between">
             <div>
-              {/* Mode Toggle Controls */}
-              <div className="flex flex-wrap items-center justify-between gap-3 mb-5 pb-4 border-b border-slate-800">
-                <div className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-                  <span className="text-sm font-semibold text-white">Live Food Scanner</span>
+              {/* Header Matching Hub UI */}
+              <div className="flex flex-wrap items-center justify-between gap-3 mb-4 pb-4 border-b border-stone-100">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-[#FF6B1A]/10 border border-[#FF6B1A]/20 flex items-center justify-center text-[#FF6B1A] shrink-0">
+                    <QrCode className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-base sm:text-lg font-black text-stone-900 tracking-tight flex items-center gap-2">
+                      <span>QR Check-In & Food Claim Hub</span>
+                      <span className="text-[10px] bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-full font-bold">
+                        LIVE VERIFIER
+                      </span>
+                    </h2>
+                    <p className="text-xs text-stone-500">
+                      Scan or enter student delegate badge / meal QR codes to confirm attendance and issue food
+                    </p>
+                  </div>
                 </div>
 
-                {/* Auto-Claim Switch requested by user for fast lunch queue */}
-                <div className="flex items-center gap-3 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800">
-                  <div className="flex items-center gap-1.5 text-xs">
-                    <Zap className={`w-3.5 h-3.5 ${autoClaim ? "text-amber-400" : "text-slate-500"}`} />
-                    <span className={autoClaim ? "text-amber-400 font-semibold" : "text-slate-400"}>
-                      Auto-Claim Mode
-                    </span>
+                {/* Auto-Claim Switch */}
+                <button
+                  type="button"
+                  onClick={toggleAutoClaim}
+                  className="flex items-center gap-3 bg-stone-50 hover:bg-stone-100/90 active:scale-[0.98] px-3.5 py-2 rounded-xl border border-stone-200 ml-auto sm:ml-0 shadow-2xs transition text-left cursor-pointer select-none"
+                  title={autoClaim ? "Click to turn OFF (ask to approve or reject)" : "Click to turn ON (fast auto-claim)"}
+                >
+                  <div className="flex items-center gap-2">
+                    <div
+                      className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${
+                        autoClaim ? "bg-[#FF6B1A]/15 text-[#FF6B1A]" : "bg-stone-200 text-stone-500"
+                      }`}
+                    >
+                      {autoClaim ? <Zap className="w-3.5 h-3.5 fill-current" /> : <ZapOff className="w-3.5 h-3.5" />}
+                    </div>
+                    <div>
+                      <span className="text-xs font-bold text-stone-900 block leading-tight flex items-center gap-1.5">
+                        <span>Auto-Claim Mode</span>
+                        <span
+                          className={`text-[9px] uppercase font-black px-1.5 py-0.5 rounded ${
+                            autoClaim ? "bg-amber-100 text-amber-900 border border-amber-300" : "bg-stone-200 text-stone-600"
+                          }`}
+                        >
+                          {autoClaim ? "ON" : "OFF"}
+                        </span>
+                      </span>
+                      <span className="text-[10px] text-stone-500 block leading-tight mt-0.5">
+                        {autoClaim ? "⚡ Scans auto-issue meal immediately" : "🛡️ Scans ask to Approve or Reject"}
+                      </span>
+                    </div>
                   </div>
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={autoClaim}
-                    onClick={() => setAutoClaim(!autoClaim)}
-                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                      autoClaim ? "bg-amber-500" : "bg-slate-700"
+                  <div
+                    className={`relative inline-flex h-5 w-10 items-center rounded-full transition-colors shrink-0 ml-1 pointer-events-none ${
+                      autoClaim ? "bg-[#FF6B1A]" : "bg-stone-300"
                     }`}
                   >
                     <span
-                      className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
-                        autoClaim ? "translate-x-4.5" : "translate-x-1"
+                      className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-xs transition-transform ${
+                        autoClaim ? "translate-x-5.5" : "translate-x-1"
                       }`}
                     />
-                  </button>
-                </div>
-              </div>
-
-              {/* Camera Scanner Viewport */}
-              <div className="relative rounded-2xl overflow-hidden bg-slate-950 border border-slate-800 min-h-[340px] flex flex-col items-center justify-center p-4">
-                {/* Global Scanner CSS for html5-qrcode video framing */}
-                <style dangerouslySetInnerHTML={{ __html: `
-                  #${scannerDivId} {
-                    position: relative !important;
-                    width: 100% !important;
-                    max-width: 440px !important;
-                    margin: 0 auto !important;
-                    border-radius: 1rem !important;
-                    overflow: hidden !important;
-                  }
-                  #${scannerDivId} video {
-                    object-fit: cover !important;
-                    width: 100% !important;
-                    max-height: 320px !important;
-                    border-radius: 1rem !important;
-                    display: block !important;
-                  }
-                  #${scannerDivId} img {
-                    display: none !important;
-                  }
-                  #${scannerDivId} #qr-shaded-region {
-                    border-radius: 1rem !important;
-                  }
-                `}} />
-
-                {/* HTML5 QR Code Container: rendered whenever camera is starting or active */}
-                <div
-                  id={scannerDivId}
-                  className={`w-full max-w-md mx-auto overflow-hidden rounded-2xl border-2 border-amber-500/40 shadow-2xl bg-black ${
-                    cameraActive || cameraStarting ? "block" : "hidden"
-                  }`}
-                />
-
-                {/* Camera Starting Spinner Overlay */}
-                {cameraStarting && (
-                  <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-slate-950/85 backdrop-blur-xs text-center space-y-3 p-8">
-                    <span className="w-10 h-10 border-3 border-amber-400 border-t-transparent rounded-full animate-spin" />
-                    <span className="text-sm text-amber-300 font-semibold">Connecting to camera sensor...</span>
-                    <span className="text-xs text-slate-400">Please grant browser permission if prompted</span>
                   </div>
-                )}
-
-                {/* Diagnostic Error State */}
-                {!cameraActive && !cameraStarting && cameraError && (
-                  <div className="w-full max-w-md p-5 rounded-2xl bg-slate-900/90 border border-amber-500/30 text-center space-y-4">
-                    <div className="w-12 h-12 mx-auto rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
-                      <AlertTriangle className="w-6 h-6" />
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-sm text-white">{cameraError.title}</h4>
-                      <p className="text-xs text-slate-300 mt-1">{cameraError.message}</p>
-                    </div>
-
-                    {cameraError.steps && cameraError.steps.length > 0 && (
-                      <div className="text-left bg-slate-950 rounded-xl p-3.5 border border-slate-800 space-y-1.5">
-                        <p className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">How to resolve:</p>
-                        <ol className="text-xs text-slate-300 space-y-1.5 list-decimal list-inside">
-                          {cameraError.steps.map((step, idx) => (
-                            <li key={idx} className="leading-relaxed">
-                              <span className="text-slate-200">{step}</span>
-                            </li>
-                          ))}
-                        </ol>
-                      </div>
-                    )}
-
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      capture="environment"
-                      onChange={handleFileScan}
-                      className="hidden"
-                    />
-
-                    <div className="flex flex-col sm:flex-row items-center justify-center gap-2 pt-1">
-                      <button
-                        type="button"
-                        onClick={() => startScanner()}
-                        className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-amber-500/20 transition cursor-pointer"
-                      >
-                        <RefreshCw className="w-3.5 h-3.5" />
-                        <span>Retry Camera Access</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={fileScanning}
-                        className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/20 transition cursor-pointer"
-                      >
-                        <Upload className="w-3.5 h-3.5" />
-                        <span>{fileScanning ? "Reading Photo..." : "Upload QR / Snap Photo"}</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setCameraError(null)}
-                        className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs transition cursor-pointer"
-                      >
-                        Dismiss
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Inactive initial state */}
-                {!cameraActive && !cameraStarting && !cameraError && (
-                  <div className="flex flex-col items-center justify-center p-8 text-center space-y-4">
-                    <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
-                      <Camera className="w-8 h-8" />
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-base text-white">Camera Scanner Inactive</h3>
-                      <p className="text-xs text-slate-400 max-w-xs mt-1">
-                        Turn on your device camera or upload a QR image for hands-free instant verification.
-                      </p>
-                    </div>
-                    <div className="flex flex-wrap items-center justify-center gap-3">
-                      <button
-                        onClick={() => startScanner()}
-                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-bold text-sm shadow-lg shadow-amber-500/20 hover:brightness-110 active:scale-95 transition cursor-pointer"
-                      >
-                        <Camera className="w-4 h-4" />
-                        Start Camera Scanner
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={fileScanning}
-                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-sm border border-slate-700 transition cursor-pointer"
-                      >
-                        <Upload className="w-4 h-4 text-emerald-400" />
-                        <span>{fileScanning ? "Reading..." : "Upload QR / Snap Photo"}</span>
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Active Controls Header */}
-                {cameraActive && (
-                  <div className="absolute top-3 right-3 z-10 flex items-center gap-2">
-                    {availableCameras.length > 1 && (
-                      <button
-                        onClick={switchScannerCamera}
-                        className="px-3 py-1.5 rounded-lg bg-slate-900/90 border border-slate-700 text-xs font-medium text-amber-300 hover:text-white flex items-center gap-1.5 shadow cursor-pointer transition"
-                      >
-                        <RefreshCw className="w-3 h-3" />
-                        <span>Switch Camera ({availableCameras.length})</span>
-                      </button>
-                    )}
-                    <button
-                      onClick={stopScanner}
-                      className="px-3 py-1.5 rounded-lg bg-slate-900/90 border border-slate-700 text-xs font-medium text-slate-300 hover:text-white flex items-center gap-1.5 shadow cursor-pointer transition"
-                    >
-                      <CameraOff className="w-3.5 h-3.5 text-red-400" />
-                      Stop Camera
-                    </button>
-                  </div>
-                )}
-
-                {cameraActive && (
-                  <p className="text-xs text-slate-400 mt-3 text-center">
-                    Point camera at participant&apos;s <strong>Food Token QR Code</strong> or delegate badge
-                  </p>
-                )}
-
-                {/* Processing Overlay */}
-                {processing && (
-                  <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm flex flex-col items-center justify-center z-20 space-y-2">
-                    <div className="w-10 h-10 border-4 border-amber-500/20 border-t-amber-400 rounded-full animate-spin" />
-                    <span className="text-xs font-semibold text-amber-300">Verifying & Claiming Meal...</span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Manual Code Input Bar */}
-            <div className="mt-5 pt-4 border-t border-slate-800">
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (inputCode.trim()) handleDetectedCode(inputCode.trim());
-                }}
-                className="flex items-center gap-2"
-              >
-                <div className="relative flex-1">
-                  <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    value={inputCode}
-                    onChange={(e) => setInputCode(e.target.value.toUpperCase())}
-                    placeholder="Enter Token Code (e.g. FT-26-XXXX) or Badge Code..."
-                    className="w-full pl-10 pr-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm font-mono text-white placeholder:text-slate-600 focus:outline-none focus:border-amber-500/60 focus:ring-1 focus:ring-amber-500/60 transition"
-                  />
-                </div>
-                <button
-                  type="submit"
-                  disabled={!inputCode.trim() || processing}
-                  className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-sm disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 transition flex items-center gap-2"
-                >
-                  <span>Submit</span>
-                  <ArrowRight className="w-4 h-4" />
                 </button>
-              </form>
+              </div>
 
-              <div className="flex items-center justify-between text-xs text-slate-500 pt-2 px-1">
-                <span>Enter badge / token code and press Enter</span>
+              {/* Mode Switcher Segmented Pill Matching Screenshot */}
+              <div className="flex items-center justify-center gap-2 p-1 bg-stone-100 rounded-2xl max-w-md mx-auto my-4">
                 <button
                   type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={fileScanning}
-                  className="text-amber-400 hover:text-amber-300 inline-flex items-center gap-1.5 font-semibold transition cursor-pointer"
+                  onClick={() => {
+                    stopScanner();
+                    setScanMode("manual");
+                  }}
+                  className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                    scanMode === "manual"
+                      ? "bg-white text-stone-900 shadow-xs"
+                      : "text-stone-500 hover:text-stone-800"
+                  }`}
                 >
-                  <Upload className="w-3.5 h-3.5" />
-                  <span>{fileScanning ? "Reading Photo..." : "Upload QR Photo"}</span>
+                  <Search className="w-3.5 h-3.5" />
+                  <span>Manual Code Lookup</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setScanMode("camera");
+                    startScanner();
+                  }}
+                  className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                    scanMode === "camera"
+                      ? "bg-[#1C1917] text-white shadow-xs"
+                      : "text-stone-500 hover:text-stone-800"
+                  }`}
+                >
+                  <Camera className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Camera QR Scanner</span>
                 </button>
               </div>
+
+              {/* Viewport: Manual vs Camera */}
+              {scanMode === "manual" ? (
+                /* Manual Input Viewport Matching Screenshot */
+                <div className="block max-w-md mx-auto space-y-4 py-6">
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      if (inputCode.trim()) handleDetectedCode(inputCode.trim());
+                    }}
+                    className="flex gap-2"
+                  >
+                    <div className="relative flex-1">
+                      <input
+                        type="text"
+                        value={inputCode}
+                        onChange={(e) => setInputCode(e.target.value.toUpperCase())}
+                        placeholder="e.g. SHN27-DEL-XXXX or FT-XXXX..."
+                        className="w-full pl-9 pr-4 py-3 text-sm font-mono border-2 border-stone-300 rounded-xl focus:border-[#FF6B1A] focus:ring-2 focus:ring-[#FF6B1A]/20 outline-none transition bg-white"
+                        autoFocus
+                      />
+                      <Search className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={!inputCode.trim() || processing}
+                      className="btn-ember px-6 py-3 rounded-xl text-xs font-bold shrink-0 flex items-center gap-1.5 shadow-xs cursor-pointer disabled:opacity-40"
+                    >
+                      {processing ? (
+                        <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <>
+                          <span>Lookup</span>
+                          <Search className="w-3.5 h-3.5" />
+                        </>
+                      )}
+                    </button>
+                  </form>
+
+                  <div className="text-center pt-2">
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={fileScanning}
+                      className="text-xs text-stone-500 hover:text-stone-800 inline-flex items-center gap-1.5 font-semibold transition cursor-pointer"
+                    >
+                      <Upload className="w-3.5 h-3.5 text-[#FF6B1A]" />
+                      <span>{fileScanning ? "Reading Photo..." : "Or scan from QR image / photo"}</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                /* Camera Scanner Viewport */
+                <div className="relative rounded-2xl overflow-hidden bg-slate-50 border border-slate-200 min-h-[340px] flex flex-col items-center justify-center p-4">
+                  {/* Global Scanner CSS for html5-qrcode video framing */}
+                  <style dangerouslySetInnerHTML={{ __html: `
+                    #${scannerDivId} {
+                      position: relative !important;
+                      width: 100% !important;
+                      max-width: 440px !important;
+                      margin: 0 auto !important;
+                      border-radius: 1rem !important;
+                      overflow: hidden !important;
+                    }
+                    #${scannerDivId} video {
+                      object-fit: cover !important;
+                      width: 100% !important;
+                      max-height: 320px !important;
+                      border-radius: 1rem !important;
+                      display: block !important;
+                    }
+                    #${scannerDivId} img {
+                      display: none !important;
+                    }
+                    #${scannerDivId} #qr-shaded-region {
+                      border-radius: 1rem !important;
+                    }
+                  `}} />
+
+                  {/* Camera Controls Bar: Switch Camera & Stop Camera */}
+                  {cameraActive && (
+                    <div className="flex items-center justify-end gap-2 w-full max-w-md mx-auto mb-3 px-1">
+                      {availableCameras.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={switchScannerCamera}
+                          className="tap-target px-2.5 py-1.5 rounded-xl bg-white border border-slate-300 text-[11px] font-bold text-slate-700 hover:text-slate-900 hover:bg-slate-50 flex items-center gap-1 shadow-2xs cursor-pointer transition"
+                        >
+                          <RefreshCw className="w-3 h-3 text-[#FF6B1A]" />
+                          <span>Switch Camera ({availableCameras.length})</span>
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={stopScanner}
+                        className="tap-target px-2.5 py-1.5 rounded-xl bg-white border border-rose-300 text-[11px] font-bold text-rose-600 hover:bg-rose-50 flex items-center gap-1 shadow-2xs cursor-pointer transition"
+                      >
+                        <CameraOff className="w-3.5 h-3.5 text-rose-600" />
+                        <span>Stop Camera</span>
+                      </button>
+                    </div>
+                  )}
+
+                  {/* HTML5 QR Code Container */}
+                  <div
+                    id={scannerDivId}
+                    className={`w-full max-w-md mx-auto overflow-hidden rounded-2xl border-2 border-amber-500 shadow-md bg-black ${
+                      cameraActive || cameraStarting ? "block" : "hidden"
+                    }`}
+                  />
+
+                  {/* Camera Starting Spinner Overlay */}
+                  {cameraStarting && (
+                    <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-white/90 backdrop-blur-xs text-center space-y-3 p-8">
+                      <span className="w-10 h-10 border-3 border-orange-500 border-t-transparent rounded-full animate-spin" />
+                      <span className="text-sm text-slate-800 font-bold">Connecting to camera hardware...</span>
+                      <span className="text-xs text-slate-500">Please allow camera permissions if requested</span>
+                    </div>
+                  )}
+
+                  {/* Diagnostic Error State */}
+                  {!cameraActive && !cameraStarting && cameraError && (
+                    <div className="w-full max-w-md p-5 rounded-2xl bg-white border border-amber-300 shadow-sm text-center space-y-4">
+                      <div className="w-12 h-12 mx-auto rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600">
+                        <AlertTriangle className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-sm text-slate-900">{cameraError.title}</h4>
+                        <p className="text-xs text-slate-600 mt-1">{cameraError.message}</p>
+                      </div>
+
+                      {cameraError.steps && cameraError.steps.length > 0 && (
+                        <div className="text-left bg-slate-50 rounded-xl p-3.5 border border-slate-200 space-y-1.5">
+                          <p className="text-[10px] font-bold text-amber-800 uppercase tracking-wider">How to resolve:</p>
+                          <ol className="text-xs text-slate-600 space-y-1.5 list-decimal list-inside">
+                            {cameraError.steps.map((step, idx) => (
+                              <li key={idx} className="leading-relaxed">
+                                <span className="text-slate-800">{step}</span>
+                              </li>
+                            ))}
+                          </ol>
+                        </div>
+                      )}
+
+                      <div className="flex flex-col sm:flex-row items-center justify-center gap-2 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => startScanner()}
+                          className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition cursor-pointer"
+                        >
+                          <RefreshCw className="w-3.5 h-3.5" />
+                          <span>Retry Camera</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={fileScanning}
+                          className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition cursor-pointer"
+                        >
+                          <Upload className="w-3.5 h-3.5" />
+                          <span>{fileScanning ? "Reading..." : "Upload QR / Snap"}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCameraError(null);
+                            setScanMode("manual");
+                          }}
+                          className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition cursor-pointer"
+                        >
+                          Manual Lookup
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Inactive initial state */}
+                  {!cameraActive && !cameraStarting && !cameraError && (
+                    <div className="flex flex-col items-center justify-center p-6 sm:p-8 text-center space-y-4">
+                      <div className="w-16 h-16 rounded-2xl bg-orange-50 border border-orange-200 flex items-center justify-center text-orange-600 shadow-xs">
+                        <Camera className="w-8 h-8" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-base text-slate-900">Camera Scanner Ready</h3>
+                        <p className="text-xs text-slate-500 max-w-xs mt-1">
+                          Turn on your camera for hands-free QR verification, or upload a photo of the participant pass.
+                        </p>
+                      </div>
+                      <div className="flex flex-col sm:flex-row items-center justify-center gap-3 w-full sm:w-auto">
+                        <button
+                          onClick={() => startScanner()}
+                          className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white font-bold text-sm shadow-sm active:scale-98 transition cursor-pointer"
+                        >
+                          <Camera className="w-4 h-4" />
+                          Start Camera Scanner
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={fileScanning}
+                          className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 font-semibold text-sm border border-slate-300 shadow-xs transition cursor-pointer"
+                        >
+                          <Upload className="w-4 h-4 text-emerald-600" />
+                          <span>{fileScanning ? "Reading..." : "Upload QR / Photo"}</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+
+
+                  {cameraActive && (
+                    <p className="text-xs text-slate-600 mt-3 text-center font-medium">
+                      Hold delegate badge or Food Token QR code squarely in front of camera
+                    </p>
+                  )}
+
+                  {/* Processing Overlay */}
+                  {processing && (
+                    <div className="absolute inset-0 bg-white/85 backdrop-blur-xs flex flex-col items-center justify-center z-20 space-y-2">
+                      <div className="w-10 h-10 border-3 border-orange-500/20 border-t-orange-600 rounded-full animate-spin" />
+                      <span className="text-xs font-bold text-slate-800">Verifying & Claiming Meal...</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Card Footer Matching Screenshot Bottom Bar */}
+            <div className="mt-5 pt-4 border-t border-stone-100 flex items-center justify-between text-xs text-stone-500">
+              <div className="flex items-center gap-1.5 text-amber-700 font-medium">
+                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                <span>Accepts both Event QR & Food QR codes</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowCheckInModal(true)}
+                className="tap-target text-xs font-bold text-[#FF6B1A] hover:underline flex items-center gap-1 cursor-pointer"
+              >
+                <span>Full Modal View</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
             </div>
           </div>
 
-          {/* Right Column: Active Scan Result / Pop-up Card + Recent Activity (5 Cols) */}
+          {/* Right Column: Active Scan Result / Pop-up Card + Recent Feed (5 Cols) */}
           <div className="lg:col-span-5 space-y-6">
-            {/* Pop-up result card requested by user */}
+            {/* Pop-up result card */}
             {popup ? (
               <div
-                className={`rounded-3xl p-6 border shadow-2xl transition-all animate-in fade-in zoom-in-95 duration-200 relative ${
+                className={`dash-card p-5 sm:p-6 border-2 relative animate-in fade-in zoom-in-95 duration-200 shadow-md ${
                   popup.status === "success"
-                    ? "bg-gradient-to-b from-emerald-950/40 via-slate-900 to-slate-950 border-emerald-500/40"
+                    ? "bg-emerald-50/70 border-emerald-300"
+                    : popup.status === "eligible"
+                    ? "bg-amber-50/90 border-amber-400 ring-2 ring-amber-400/20"
                     : popup.status === "already_claimed"
-                    ? "bg-gradient-to-b from-amber-950/40 via-slate-900 to-slate-950 border-amber-500/40"
-                    : "bg-gradient-to-b from-red-950/40 via-slate-900 to-slate-950 border-red-500/40"
+                    ? "bg-amber-50/70 border-amber-300"
+                    : "bg-rose-50/70 border-rose-300"
                 }`}
               >
                 <button
                   onClick={() => setPopup(null)}
-                  className="absolute top-4 right-4 p-1.5 rounded-full bg-slate-800/80 text-slate-400 hover:text-white"
+                  className="absolute top-4 right-4 p-1.5 rounded-full bg-white/80 border border-slate-200 text-slate-400 hover:text-slate-700 hover:bg-white transition cursor-pointer"
                 >
                   <X className="w-4 h-4" />
                 </button>
 
                 {/* Status Header */}
-                <div className="flex items-center gap-3 mb-4">
+                <div className="flex items-center gap-3 mb-4 pr-6">
                   {popup.status === "success" && (
-                    <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
                       <CheckCircle2 className="w-6 h-6" />
                     </div>
                   )}
+                  {popup.status === "eligible" && (
+                    <div className="w-10 h-10 rounded-2xl bg-amber-500/20 text-[#FF6B1A] flex items-center justify-center shrink-0">
+                      <AlertCircle className="w-6 h-6" />
+                    </div>
+                  )}
                   {popup.status === "already_claimed" && (
-                    <div className="w-10 h-10 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
                       <AlertTriangle className="w-6 h-6" />
                     </div>
                   )}
                   {(popup.status === "unpaid" || popup.status === "not_found" || popup.status === "error") && (
-                    <div className="w-10 h-10 rounded-2xl bg-red-500/20 text-red-400 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-2xl bg-rose-100 text-rose-700 flex items-center justify-center shrink-0">
                       <XCircle className="w-6 h-6" />
                     </div>
                   )}
                   <div>
-                    <h2 className="text-base font-bold text-white">{popup.title}</h2>
-                    <p className="text-xs text-slate-400">{popup.message}</p>
+                    <h2 className="text-base font-bold text-slate-900">{popup.title}</h2>
+                    <p className="text-xs text-slate-600 mt-0.5">{popup.message}</p>
                   </div>
                 </div>
 
@@ -1175,57 +1411,106 @@ export default function FoodCoordinatorPage() {
                 {popup.foodPreference && (
                   <div className="my-4">
                     <div
-                      className={`p-4 rounded-2xl border flex items-center justify-between shadow-lg ${
+                      className={`p-4 rounded-2xl border flex items-center justify-between shadow-sm ${
                         popup.foodPreference === "VEG"
-                          ? "bg-gradient-to-r from-emerald-600 to-teal-600 border-emerald-400 text-white"
-                          : "bg-gradient-to-r from-amber-600 to-orange-600 border-amber-400 text-white"
+                          ? "bg-gradient-to-r from-emerald-600 to-teal-600 border-emerald-500 text-white"
+                          : "bg-gradient-to-r from-orange-600 to-amber-600 border-orange-500 text-white"
                       }`}
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-black/20 flex items-center justify-center text-2xl">
+                        <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-2xl backdrop-blur-xs">
                           {popup.foodPreference === "VEG" ? "🥗" : "🍗"}
                         </div>
                         <div>
-                          <span className="text-xs uppercase font-bold tracking-wider opacity-90">
+                          <span className="text-[11px] uppercase font-bold tracking-wider opacity-90 block">
                             Serve Meal Choice
                           </span>
-                          <p className="text-xl font-black tracking-wide">
+                          <p className="text-xl font-black tracking-tight">
                             {popup.foodPreference === "VEG" ? "VEGETARIAN" : "NON-VEGETARIAN"}
                           </p>
                         </div>
                       </div>
-                      <span className="px-2.5 py-1 rounded-full bg-white/20 text-xs font-bold uppercase tracking-wider backdrop-blur-sm">
+                      <span className="px-2.5 py-1 rounded-full bg-white/25 text-xs font-bold uppercase tracking-wider backdrop-blur-xs">
                         {popup.foodPreference === "VEG" ? "Pure Veg" : "Non-Veg"}
                       </span>
                     </div>
                   </div>
                 )}
 
+                {/* Manual Approve or Reject Decision Prompt */}
+                {popup.status === "eligible" && (
+                  <div className="my-4 bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-400 rounded-2xl p-4 sm:p-5 shadow-sm animate-in fade-in space-y-3">
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-[#FF6B1A] flex items-center justify-center shrink-0 mt-0.5">
+                        <AlertCircle className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-black uppercase tracking-wider text-amber-900">
+                            Decision Required
+                          </span>
+                          <span className="text-[10px] bg-amber-200/80 text-amber-950 px-2 py-0.5 rounded font-black border border-amber-300">
+                            Auto-Claim OFF
+                          </span>
+                        </div>
+                        <h3 className="text-sm sm:text-base font-black text-stone-900 mt-1">
+                          Approve 1x {popup.foodPreference === "NON_VEG" ? "🍗 Non-Veg" : "🥗 Veg"} meal for {popup.name}?
+                        </h3>
+                        <p className="text-xs text-stone-600 mt-0.5">
+                          Auto-Claim is turned off. Please verify participant and choose to Approve or Reject below.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => handleManualClaim(popup.tokenCode!)}
+                        disabled={actionLoading}
+                        className="tap-target px-5 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md shadow-emerald-600/20 cursor-pointer transition transform active:scale-95 disabled:opacity-50"
+                      >
+                        <CheckCircle2 className="w-4 h-4" />
+                        <span>✓ Approve &amp; Issue Meal</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleRejectClaim(popup.name || "Participant")}
+                        disabled={actionLoading}
+                        className="tap-target px-5 py-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border-2 border-rose-300 hover:border-rose-400 font-black text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer transition transform active:scale-95 disabled:opacity-50"
+                      >
+                        <XCircle className="w-4 h-4" />
+                        <span>✕ Reject / Decline</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {/* Delegate Details */}
                 {popup.name && (
-                  <div className="bg-slate-950/60 rounded-2xl p-4 border border-slate-800 space-y-2 text-xs">
+                  <div className="bg-white rounded-xl p-4 border border-slate-200/80 space-y-2 text-xs">
                     <div className="flex items-center justify-between">
-                      <span className="text-slate-400">Delegate Name:</span>
-                      <span className="font-bold text-white text-sm">{popup.name}</span>
+                      <span className="text-slate-500">Delegate Name:</span>
+                      <span className="font-bold text-slate-900 text-sm">{popup.name}</span>
                     </div>
                     {popup.college && (
                       <div className="flex items-center justify-between">
-                        <span className="text-slate-400">Institution:</span>
-                        <span className="font-medium text-slate-300 text-right truncate max-w-[200px]">
+                        <span className="text-slate-500">Institution:</span>
+                        <span className="font-medium text-slate-700 text-right truncate max-w-[200px]">
                           {popup.college}
                         </span>
                       </div>
                     )}
                     {popup.tokenCode && (
                       <div className="flex items-center justify-between font-mono text-[11px]">
-                        <span className="text-slate-400">Food Token:</span>
-                        <span className="text-amber-400 font-semibold">{popup.tokenCode}</span>
+                        <span className="text-slate-500">Food Token:</span>
+                        <span className="text-orange-600 font-bold">{popup.tokenCode}</span>
                       </div>
                     )}
                     {popup.claimedAt && (
                       <div className="flex items-center justify-between text-[11px]">
-                        <span className="text-slate-400">Prior Claim Time:</span>
-                        <span className="text-amber-300 font-semibold">
+                        <span className="text-slate-500">Prior Claim Time:</span>
+                        <span className="text-amber-800 font-bold">
                           {new Date(popup.claimedAt).toLocaleTimeString("en-IN", {
                             hour: "2-digit",
                             minute: "2-digit",
@@ -1237,9 +1522,32 @@ export default function FoodCoordinatorPage() {
                 )}
 
                 {/* Quick In-Popup Actions */}
-                <div className="mt-4 pt-4 border-t border-slate-800 flex flex-wrap items-center justify-between gap-2">
+                <div className="mt-4 pt-4 border-t border-slate-200/60 flex flex-wrap items-center justify-between gap-2">
                   {popup.tokenCode && (
                     <div className="flex items-center gap-2">
+                      {popup.status === "eligible" && (
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleManualClaim(popup.tokenCode!)}
+                            disabled={actionLoading}
+                            className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition cursor-pointer"
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            <span>Approve</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleRejectClaim(popup.name || "Participant")}
+                            disabled={actionLoading}
+                            className="px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
+                          >
+                            <XCircle className="w-3.5 h-3.5" />
+                            <span>Reject</span>
+                          </button>
+                        </div>
+                      )}
+
                       {popup.foodPreference && (
                         <button
                           onClick={() =>
@@ -1249,7 +1557,7 @@ export default function FoodCoordinatorPage() {
                             )
                           }
                           disabled={actionLoading}
-                          className="px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800 text-xs font-semibold text-slate-200 hover:text-white hover:bg-slate-700 transition"
+                          className="px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-xs font-bold text-slate-700 hover:bg-slate-50 transition cursor-pointer shadow-xs"
                         >
                           Switch to {popup.foodPreference === "VEG" ? "🍗 Non-Veg" : "🥗 Veg"}
                         </button>
@@ -1259,7 +1567,7 @@ export default function FoodCoordinatorPage() {
                         <button
                           onClick={() => handleUndoClaim(popup.tokenCode!)}
                           disabled={actionLoading}
-                          className="px-3 py-1.5 rounded-lg border border-red-500/30 bg-red-500/10 text-xs font-semibold text-red-400 hover:bg-red-500/20 transition flex items-center gap-1"
+                          className="px-3 py-1.5 rounded-lg border border-rose-300 bg-rose-50 text-xs font-bold text-rose-700 hover:bg-rose-100 transition flex items-center gap-1 cursor-pointer"
                         >
                           <RotateCcw className="w-3 h-3" />
                           Undo Claim
@@ -1270,43 +1578,44 @@ export default function FoodCoordinatorPage() {
 
                   <button
                     onClick={() => setPopup(null)}
-                    className="ml-auto px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 transition"
+                    className="ml-auto px-4 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700 transition cursor-pointer"
                   >
                     Dismiss
                   </button>
                 </div>
               </div>
             ) : (
-              <div className="rounded-3xl p-6 bg-slate-900 border border-slate-800 text-center space-y-3">
-                <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-400 flex items-center justify-center mx-auto">
+              <div className="dash-card p-6 text-center space-y-3">
+                <div className="w-12 h-12 rounded-2xl bg-orange-50 border border-orange-200 text-orange-600 flex items-center justify-center mx-auto">
                   <Sparkles className="w-6 h-6" />
                 </div>
-                <h3 className="font-bold text-white text-base">Ready for Next Attendee</h3>
-                <p className="text-xs text-slate-400 max-w-sm mx-auto">
-                  Point camera at student&apos;s food token QR code. The system will auto-approve in{" "}
-                  <span className="text-amber-400 font-semibold">1 second</span> and flash their dietary meal badge!
+                <h3 className="font-bold text-slate-900 text-base">Ready for Next Delegate</h3>
+                <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                  Aim camera at the delegate&apos;s food token QR code. The system will auto-approve and display their dietary preference!
                 </p>
               </div>
             )}
 
             {/* Recent Claims Stream */}
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5">
-              <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-800">
+            <div className="dash-card p-5 sm:p-6">
+              <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
                 <div className="flex items-center gap-2">
-                  <History className="w-4 h-4 text-slate-400" />
-                  <h3 className="font-bold text-sm text-white">Recent Claims Feed</h3>
+                  <History className="w-4 h-4 text-slate-500" />
+                  <h3 className="font-bold text-sm text-slate-900">Recent Claims Activity</h3>
                 </div>
-                <span className="text-xs text-slate-500">Latest {recentClaims.length} meals</span>
+                <span className="text-xs font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
+                  Latest {recentClaims.length}
+                </span>
               </div>
 
               {recentClaims.length === 0 ? (
-                <p className="text-xs text-slate-500 text-center py-6">No meals served yet today.</p>
+                <p className="text-xs text-slate-400 text-center py-8">No meals recorded yet today.</p>
               ) : (
                 <div className="space-y-2.5 max-h-[380px] overflow-y-auto pr-1">
                   {recentClaims.map((claim) => (
                     <div
                       key={claim.id}
-                      className="p-3 rounded-xl bg-slate-950 border border-slate-800/80 flex items-center justify-between hover:border-slate-700 transition"
+                      className="p-3 rounded-xl bg-slate-50/80 border border-slate-200/80 flex items-center justify-between hover:border-slate-300 hover:bg-white transition"
                     >
                       <div className="flex items-center gap-3">
                         <span className="text-xl">
@@ -1314,18 +1623,18 @@ export default function FoodCoordinatorPage() {
                         </span>
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="font-bold text-xs text-white">{claim.name}</span>
+                            <span className="font-bold text-xs text-slate-900">{claim.name}</span>
                             <span
                               className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
                                 claim.foodPreference === "VEG"
-                                  ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                                  : "bg-amber-500/10 text-amber-400 border border-amber-500/20"
+                                  ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                  : "bg-orange-50 text-orange-700 border border-orange-200"
                               }`}
                             >
-                              {claim.foodPreference}
+                              {claim.foodPreference === "VEG" ? "Veg" : "Non-Veg"}
                             </span>
                           </div>
-                          <p className="text-[11px] text-slate-400 truncate max-w-[180px]">
+                          <p className="text-[11px] text-slate-500 truncate max-w-[170px] sm:max-w-[200px]">
                             {claim.collegeName}
                           </p>
                         </div>
@@ -1343,7 +1652,7 @@ export default function FoodCoordinatorPage() {
                         <button
                           onClick={() => handleUndoClaim(claim.foodTokenCode)}
                           title="Undo claim"
-                          className="p-1 rounded text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition"
+                          className="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
                         >
                           <RotateCcw className="w-3.5 h-3.5" />
                         </button>
@@ -1354,8 +1663,143 @@ export default function FoodCoordinatorPage() {
               )}
             </div>
           </div>
-        </section>
-      </main>
-    </div>
+        </div>
+      </div>
+
+      {/* Centered Decision Modal when Auto-Claim is OFF and delegate is scanned */}
+      {popup && popup.status === "eligible" && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl border-2 border-amber-400 overflow-hidden transform animate-in zoom-in-95 duration-200">
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-4 text-white flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center">
+                  <AlertCircle className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-sm sm:text-base font-black tracking-tight">Action Required: Approve or Reject?</h3>
+                  <p className="text-[11px] text-white/90">Auto-Claim is turned OFF • Verify participant credentials</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPopup(null)}
+                className="w-8 h-8 rounded-full bg-black/20 hover:bg-black/30 flex items-center justify-center text-white cursor-pointer transition"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 space-y-4">
+              <div className="text-center space-y-1">
+                <span className="text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-950 px-2.5 py-0.5 rounded-full border border-amber-300">
+                  Manual Verification Mode
+                </span>
+                <h2 className="text-xl sm:text-2xl font-black text-stone-900 pt-1">
+                  {popup.name}
+                </h2>
+                {popup.college && (
+                  <p className="text-xs sm:text-sm font-medium text-stone-600">
+                    {popup.college}
+                  </p>
+                )}
+                {popup.tokenCode && (
+                  <p className="text-xs font-mono font-bold text-[#FF6B1A] pt-0.5">
+                    Token: {popup.tokenCode}
+                  </p>
+                )}
+              </div>
+
+              {/* Big Dietary Choice Badge */}
+              <div
+                className={`p-4 rounded-2xl border flex items-center justify-between shadow-sm ${
+                  popup.foodPreference === "NON_VEG"
+                    ? "bg-gradient-to-r from-orange-600 to-amber-600 border-orange-500 text-white"
+                    : "bg-gradient-to-r from-emerald-600 to-teal-600 border-emerald-500 text-white"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center text-2xl">
+                    {popup.foodPreference === "NON_VEG" ? "🍗" : "🥗"}
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider opacity-90 block">
+                      Assigned Meal Choice
+                    </span>
+                    <span className="text-lg sm:text-xl font-black">
+                      {popup.foodPreference === "NON_VEG" ? "NON-VEGETARIAN" : "PURE VEGETARIAN"}
+                    </span>
+                  </div>
+                </div>
+                <span className="text-xs font-extrabold uppercase px-3 py-1 rounded-full bg-white/25">
+                  1x Meal
+                </span>
+              </div>
+
+              {/* Big Binary Decision Buttons */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => handleManualClaim(popup.tokenCode!)}
+                  disabled={actionLoading}
+                  className="tap-target py-3.5 px-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 cursor-pointer transition transform active:scale-95 disabled:opacity-50"
+                >
+                  <CheckCircle2 className="w-5 h-5" />
+                  <span>✓ Approve &amp; Issue Meal</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleRejectClaim(popup.name || "Participant")}
+                  disabled={actionLoading}
+                  className="tap-target py-3.5 px-4 rounded-2xl bg-rose-50 hover:bg-rose-100 text-rose-700 border-2 border-rose-300 hover:border-rose-400 font-black text-sm flex items-center justify-center gap-2 cursor-pointer transition transform active:scale-95 disabled:opacity-50"
+                >
+                  <XCircle className="w-5 h-5" />
+                  <span>✕ Reject / Decline</span>
+                </button>
+              </div>
+
+              {/* Dietary switch & dismiss */}
+              <div className="flex items-center justify-between pt-2 border-t border-stone-200 text-xs">
+                {popup.foodPreference && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleSwitchPreference(
+                        popup.tokenCode!,
+                        popup.foodPreference === "VEG" ? "NON_VEG" : "VEG"
+                      )
+                    }
+                    disabled={actionLoading}
+                    className="text-stone-600 hover:text-stone-900 font-semibold underline cursor-pointer"
+                  >
+                    Switch to {popup.foodPreference === "VEG" ? "🍗 Non-Veg" : "🥗 Veg"}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setPopup(null)}
+                  className="text-stone-400 hover:text-stone-700 font-semibold cursor-pointer ml-auto"
+                >
+                  Dismiss / Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Footer */}
+      <Footer />
+
+      {/* QR Check-In & Food Claim Modal Matching Hub UI */}
+      <CheckInModal
+        isOpen={showCheckInModal}
+        onClose={() => setShowCheckInModal(false)}
+        onCheckInComplete={fetchStats}
+        mode="all"
+      />
+    </main>
   );
 }

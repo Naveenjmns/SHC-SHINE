@@ -1502,6 +1502,7 @@ export default function CoordinatorEventDetailPage({
         isOpen={showCheckInModal}
         onClose={() => setShowCheckInModal(false)}
         activeEventId={eventId}
+        activeEventName={event?.name}
         onCheckInComplete={loadEventData}
         mode="event_only"
       />

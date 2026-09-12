@@ -10,7 +10,8 @@
     "lint": "eslint",
     "postinstall": "prisma generate",
     "seed": "tsx prisma/seed.ts",
-    "create-admin": "tsx scripts/create-admin.ts"
+    "create-admin": "tsx scripts/create-admin.ts",
+    "create-credentials": "tsx scripts/create-demo-credentials.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
