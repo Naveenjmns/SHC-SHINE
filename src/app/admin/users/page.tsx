@@ -7,6 +7,7 @@ import Link from "next/link";
 import { X, History, Pencil, Trash2, KeyRound, AlertTriangle } from "lucide-react";
 import { useToast } from "@/components/ToastProvider";
 import { safeJson } from "@/lib/safeFetch";
+import { isValidEmail, isValidPhone } from "@/lib/validators";
 import Footer from "@/components/Footer";
 
 interface UserItem {
@@ -109,6 +110,17 @@ export default function AdminUsersPage() {
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg("");
+
+    if (!isValidEmail(email)) {
+      setErrorMsg("Please enter a valid email address (e.g. user@college.edu).");
+      return;
+    }
+
+    if (phone.trim() && !isValidPhone(phone)) {
+      setErrorMsg("Please enter a valid 10-digit mobile number.");
+      return;
+    }
+
     setSubmitting(true);
 
     try {
@@ -187,6 +199,17 @@ export default function AdminUsersPage() {
     e.preventDefault();
     if (!editingUser) return;
     setEditErrorMsg("");
+
+    if (!isValidEmail(editEmail)) {
+      setEditErrorMsg("Please enter a valid email address.");
+      return;
+    }
+
+    if (editPhone.trim() && !isValidPhone(editPhone)) {
+      setEditErrorMsg("Please enter a valid 10-digit mobile number.");
+      return;
+    }
+
     setEditSubmitting(true);
 
     try {

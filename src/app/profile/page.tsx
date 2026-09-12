@@ -30,6 +30,7 @@ import {
   CheckCircle2,
   Lock,
 } from "lucide-react";
+import { isValidPhone } from "@/lib/validators";
 
 interface UserProfile {
   id: string;
@@ -140,6 +141,11 @@ export default function ProfilePage() {
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (phone.trim() && !isValidPhone(phone)) {
+      toast.warning("Please provide a valid 10-digit mobile number.", "Validation Error");
+      return;
+    }
+
     try {
       setSaving(true);
       const res = await fetch("/api/profile", {
@@ -567,16 +573,36 @@ export default function ProfilePage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">
-                    Mobile / Phone Number
-                  </label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                      Mobile / Phone Number
+                    </label>
+                    {phone.trim() && (
+                      <span className="text-[11px] font-semibold">
+                        {isValidPhone(phone) ? (
+                          <span className="text-emerald-600">✓ Valid Mobile</span>
+                        ) : (
+                          <span className="text-rose-500">10-digit number required</span>
+                        )}
+                      </span>
+                    )}
+                  </div>
                   <input
                     type="tel"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="+91 9876543210"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-[var(--dash-border)] text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[var(--fest-ember)] focus:border-transparent bg-slate-50/50 font-mono"
+                    className={`w-full px-3.5 py-2.5 rounded-xl border text-sm font-medium focus:outline-none focus:ring-2 bg-slate-50/50 font-mono transition-colors ${
+                      phone.trim() && !isValidPhone(phone)
+                        ? "border-rose-300 focus:ring-rose-400"
+                        : "border-[var(--dash-border)] focus:ring-[var(--fest-ember)] focus:border-transparent"
+                    }`}
                   />
+                  {phone.trim() && !isValidPhone(phone) && (
+                    <p className="text-[11px] text-rose-500 mt-1">
+                      Must be a valid 10-digit mobile number (e.g. 9876543210 or +91 9876543210).
+                    </p>
+                  )}
                 </div>
 
                 <div>

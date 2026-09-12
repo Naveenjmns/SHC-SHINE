@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import bcrypt from "bcryptjs";
 import { logActivity } from "@/lib/activityLogger";
+import { isValidPhone } from "@/lib/validators";
 
 export async function GET() {
   try {
@@ -230,7 +231,18 @@ export async function PATCH(req: Request) {
       updateData.name = name.trim();
     }
     if (phone !== undefined) {
-      updateData.phone = typeof phone === "string" ? phone.trim() : null;
+      const trimmedPhone = typeof phone === "string" ? phone.trim() : "";
+      if (trimmedPhone) {
+        if (!isValidPhone(trimmedPhone)) {
+          return NextResponse.json(
+            { success: false, message: "Please provide a valid 10-digit mobile number." },
+            { status: 400 }
+          );
+        }
+        updateData.phone = trimmedPhone;
+      } else {
+        updateData.phone = null;
+      }
     }
     if (college !== undefined) {
       updateData.college = typeof college === "string" ? college.trim() : null;

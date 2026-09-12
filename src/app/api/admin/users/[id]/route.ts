@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/auth";
 import bcrypt from "bcryptjs";
 import { Role } from "@prisma/client";
 import { logActivity } from "@/lib/activityLogger";
+import { isValidEmail, isValidPhone } from "@/lib/validators";
 
 export async function DELETE(
   req: Request,
@@ -79,6 +80,12 @@ export async function PUT(
     if (name) updateData.name = name.trim();
     if (email) {
       const normalizedEmail = email.toLowerCase().trim();
+      if (!isValidEmail(normalizedEmail)) {
+        return NextResponse.json(
+          { success: false, message: "Please provide a valid email address." },
+          { status: 400 }
+        );
+      }
       const duplicate = await prisma.user.findFirst({
         where: {
           email: normalizedEmail,
@@ -93,7 +100,20 @@ export async function PUT(
       }
       updateData.email = normalizedEmail;
     }
-    if (phone !== undefined) updateData.phone = phone ? phone.trim() : null;
+    if (phone !== undefined) {
+      const trimmedPhone = phone ? phone.trim() : "";
+      if (trimmedPhone) {
+        if (!isValidPhone(trimmedPhone)) {
+          return NextResponse.json(
+            { success: false, message: "Please provide a valid 10-digit mobile number." },
+            { status: 400 }
+          );
+        }
+        updateData.phone = trimmedPhone;
+      } else {
+        updateData.phone = null;
+      }
+    }
     if (college !== undefined) updateData.college = college ? college.trim() : null;
     if (role && Object.values(Role).includes(role as Role)) updateData.role = role as Role;
     if (password && password.trim()) {

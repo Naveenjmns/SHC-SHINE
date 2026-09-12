@@ -32,6 +32,7 @@ import {
   Target,
 } from "lucide-react";
 import { safeJson } from "@/lib/safeFetch";
+import { isValidEmail, isValidPhone } from "@/lib/validators";
 
 interface EventItem {
   id: string;
@@ -302,9 +303,27 @@ function RegisterForm() {
       setErrorMessage("Please provide the College Team Lead's name, email, and phone number.");
       return false;
     }
-    if (hasFacultyIncharge && !facultyName.trim()) {
-      setErrorMessage("Please enter the accompanying Faculty Incharge's name or uncheck the faculty option.");
+    if (!isValidEmail(teamLeadEmail)) {
+      setErrorMessage("Please enter a valid email address for Team Lead (e.g. lead@college.edu).");
       return false;
+    }
+    if (!isValidPhone(teamLeadPhone)) {
+      setErrorMessage("Please enter a valid 10-digit mobile number for Team Lead (e.g. 9876543210 or +91 9876543210).");
+      return false;
+    }
+    if (hasFacultyIncharge) {
+      if (!facultyName.trim()) {
+        setErrorMessage("Please enter the accompanying Faculty Incharge's name or uncheck the faculty option.");
+        return false;
+      }
+      if (facultyEmail.trim() && !isValidEmail(facultyEmail)) {
+        setErrorMessage("Please enter a valid email address for the Faculty Incharge.");
+        return false;
+      }
+      if (facultyPhone.trim() && !isValidPhone(facultyPhone)) {
+        setErrorMessage("Please enter a valid 10-digit mobile number for the Faculty Incharge.");
+        return false;
+      }
     }
     return true;
   };
@@ -319,6 +338,14 @@ function RegisterForm() {
       const m = members[i];
       if (!m.name.trim() || !m.email.trim() || !m.phone.trim()) {
         setErrorMessage(`Please fill in full name, email, and mobile for Participant #${i + 1}.`);
+        return false;
+      }
+      if (!isValidEmail(m.email)) {
+        setErrorMessage(`Please enter a valid email address for Participant #${i + 1} (${m.name || "Student"}).`);
+        return false;
+      }
+      if (!isValidPhone(m.phone)) {
+        setErrorMessage(`Please enter a valid 10-digit mobile number for Participant #${i + 1} (${m.name || "Student"}).`);
         return false;
       }
       if (m.eventIds.length === 0) {
@@ -820,30 +847,60 @@ function RegisterForm() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-[#1C1917] mb-1.5">
-                      Team Lead Email *
-                    </label>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="block text-xs font-bold text-[#1C1917]">
+                        Team Lead Email *
+                      </label>
+                      {teamLeadEmail.trim() && (
+                        <span className="text-[10px] font-bold">
+                          {isValidEmail(teamLeadEmail) ? (
+                            <span className="text-emerald-600">✓ Valid</span>
+                          ) : (
+                            <span className="text-rose-500">Invalid email</span>
+                          )}
+                        </span>
+                      )}
+                    </div>
                     <input
                       type="email"
                       required
                       placeholder="e.g. priya@college.ac.in"
                       value={teamLeadEmail}
                       onChange={(e) => handleTeamLeadEmailChange(e.target.value)}
-                      className="w-full h-11 bg-white border border-[#1C1917]/15 rounded-xl px-3.5 text-sm text-[#1C1917] placeholder-[#78716C] focus:outline-none focus:border-[#FF6B1A] transition-colors shadow-2xs"
+                      className={`w-full h-11 bg-white border rounded-xl px-3.5 text-sm text-[#1C1917] placeholder-[#78716C] focus:outline-none transition-colors shadow-2xs ${
+                        teamLeadEmail.trim() && !isValidEmail(teamLeadEmail)
+                          ? "border-rose-400 focus:border-rose-500"
+                          : "border-[#1C1917]/15 focus:border-[#FF6B1A]"
+                      }`}
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-[#1C1917] mb-1.5">
-                      WhatsApp / Mobile *
-                    </label>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="block text-xs font-bold text-[#1C1917]">
+                        WhatsApp / Mobile *
+                      </label>
+                      {teamLeadPhone.trim() && (
+                        <span className="text-[10px] font-bold">
+                          {isValidPhone(teamLeadPhone) ? (
+                            <span className="text-emerald-600">✓ Valid</span>
+                          ) : (
+                            <span className="text-rose-500">10 digits</span>
+                          )}
+                        </span>
+                      )}
+                    </div>
                     <input
                       type="tel"
                       required
                       placeholder="e.g. +91 9840123456"
                       value={teamLeadPhone}
                       onChange={(e) => handleTeamLeadPhoneChange(e.target.value)}
-                      className="w-full h-11 bg-white border border-[#1C1917]/15 rounded-xl px-3.5 text-sm text-[#1C1917] placeholder-[#78716C] focus:outline-none focus:border-[#FF6B1A] transition-colors shadow-2xs"
+                      className={`w-full h-11 bg-white border rounded-xl px-3.5 text-sm text-[#1C1917] placeholder-[#78716C] focus:outline-none transition-colors shadow-2xs ${
+                        teamLeadPhone.trim() && !isValidPhone(teamLeadPhone)
+                          ? "border-rose-400 focus:border-rose-500"
+                          : "border-[#1C1917]/15 focus:border-[#FF6B1A]"
+                      }`}
                     />
                   </div>
                 </div>
@@ -882,28 +939,58 @@ function RegisterForm() {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-[#1C1917] mb-1.5">
-                        Faculty Mobile Phone
-                      </label>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="block text-xs font-bold text-[#1C1917]">
+                          Faculty Mobile Phone
+                        </label>
+                        {facultyPhone.trim() && (
+                          <span className="text-[10px] font-bold">
+                            {isValidPhone(facultyPhone) ? (
+                              <span className="text-emerald-600">✓ Valid</span>
+                            ) : (
+                              <span className="text-rose-500">10 digits</span>
+                            )}
+                          </span>
+                        )}
+                      </div>
                       <input
                         type="tel"
                         placeholder="e.g. +91 9443123456"
                         value={facultyPhone}
                         onChange={(e) => setFacultyPhone(e.target.value)}
-                        className="w-full h-11 bg-white border border-[#1C1917]/15 rounded-xl px-3.5 text-sm text-[#1C1917] placeholder-[#78716C] focus:outline-none focus:border-[#FF6B1A] transition-colors shadow-2xs"
+                        className={`w-full h-11 bg-white border rounded-xl px-3.5 text-sm text-[#1C1917] placeholder-[#78716C] focus:outline-none transition-colors shadow-2xs ${
+                          facultyPhone.trim() && !isValidPhone(facultyPhone)
+                            ? "border-rose-400 focus:border-rose-500"
+                            : "border-[#1C1917]/15 focus:border-[#FF6B1A]"
+                        }`}
                       />
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-[#1C1917] mb-1.5">
-                        Faculty Email
-                      </label>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="block text-xs font-bold text-[#1C1917]">
+                          Faculty Email
+                        </label>
+                        {facultyEmail.trim() && (
+                          <span className="text-[10px] font-bold">
+                            {isValidEmail(facultyEmail) ? (
+                              <span className="text-emerald-600">✓ Valid</span>
+                            ) : (
+                              <span className="text-rose-500">Invalid</span>
+                            )}
+                          </span>
+                        )}
+                      </div>
                       <input
                         type="email"
                         placeholder="e.g. ramesh@college.edu"
                         value={facultyEmail}
                         onChange={(e) => setFacultyEmail(e.target.value)}
-                        className="w-full h-11 bg-white border border-[#1C1917]/15 rounded-xl px-3.5 text-sm text-[#1C1917] placeholder-[#78716C] focus:outline-none focus:border-[#FF6B1A] transition-colors shadow-2xs"
+                        className={`w-full h-11 bg-white border rounded-xl px-3.5 text-sm text-[#1C1917] placeholder-[#78716C] focus:outline-none transition-colors shadow-2xs ${
+                          facultyEmail.trim() && !isValidEmail(facultyEmail)
+                            ? "border-rose-400 focus:border-rose-500"
+                            : "border-[#1C1917]/15 focus:border-[#FF6B1A]"
+                        }`}
                       />
                     </div>
                   </div>
@@ -998,30 +1085,60 @@ function RegisterForm() {
                         </div>
 
                         <div>
-                          <label className="block text-[11px] font-bold text-[#1C1917] mb-1">
-                            Email (For Pass & Schedule) *
-                          </label>
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="block text-[11px] font-bold text-[#1C1917]">
+                              Email (For Pass & Schedule) *
+                            </label>
+                            {member.email.trim() && (
+                              <span className="text-[10px] font-bold">
+                                {isValidEmail(member.email) ? (
+                                  <span className="text-emerald-600">✓</span>
+                                ) : (
+                                  <span className="text-rose-500">Invalid</span>
+                                )}
+                              </span>
+                            )}
+                          </div>
                           <input
                             type="email"
                             required
                             placeholder="student@mail.com"
                             value={member.email}
                             onChange={(e) => updateMember(mIdx, "email", e.target.value)}
-                            className="w-full h-10 bg-white border border-[#1C1917]/15 rounded-xl px-3 text-xs text-[#1C1917] placeholder-[#78716C] focus:outline-none focus:border-[#FF6B1A] transition-colors"
+                            className={`w-full h-10 bg-white border rounded-xl px-3 text-xs text-[#1C1917] placeholder-[#78716C] focus:outline-none transition-colors ${
+                              member.email.trim() && !isValidEmail(member.email)
+                                ? "border-rose-400 focus:border-rose-500"
+                                : "border-[#1C1917]/15 focus:border-[#FF6B1A]"
+                            }`}
                           />
                         </div>
 
                         <div>
-                          <label className="block text-[11px] font-bold text-[#1C1917] mb-1">
-                            WhatsApp / Mobile *
-                          </label>
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="block text-[11px] font-bold text-[#1C1917]">
+                              WhatsApp / Mobile *
+                            </label>
+                            {member.phone.trim() && (
+                              <span className="text-[10px] font-bold">
+                                {isValidPhone(member.phone) ? (
+                                  <span className="text-emerald-600">✓</span>
+                                ) : (
+                                  <span className="text-rose-500">10 digits</span>
+                                )}
+                              </span>
+                            )}
+                          </div>
                           <input
                             type="tel"
                             required
                             placeholder="+91 9840123456"
                             value={member.phone}
                             onChange={(e) => updateMember(mIdx, "phone", e.target.value)}
-                            className="w-full h-10 bg-white border border-[#1C1917]/15 rounded-xl px-3 text-xs text-[#1C1917] placeholder-[#78716C] focus:outline-none focus:border-[#FF6B1A] transition-colors"
+                            className={`w-full h-10 bg-white border rounded-xl px-3 text-xs text-[#1C1917] placeholder-[#78716C] focus:outline-none transition-colors ${
+                              member.phone.trim() && !isValidPhone(member.phone)
+                                ? "border-rose-400 focus:border-rose-500"
+                                : "border-[#1C1917]/15 focus:border-[#FF6B1A]"
+                            }`}
                           />
                         </div>
                       </div>
