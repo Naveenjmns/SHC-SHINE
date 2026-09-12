@@ -921,3 +921,224 @@ export async function sendTeamLeadConsolidatedPassEmail(payload: TeamLeadConsoli
   }
 }
 
+export interface EventReminderEmailPayload {
+  toEmail: string;
+  studentName: string;
+  collegeName: string;
+  eventName: string;
+  category: "ON_STAGE" | "OFF_STAGE" | string;
+  isPrelims?: boolean;
+  venue?: string | null;
+  startTime: string;
+  minutesUntilStart?: number;
+  badgeCode: string;
+  badgeUrl: string;
+  portalUrl?: string;
+  rules?: string | null;
+  staffCoordinator?: { name: string; phone?: string | null } | null;
+  studentCoordinator?: { name: string; phone?: string | null } | null;
+}
+
+/**
+ * Sends an urgent competition start reminder email to registered student delegates 10 minutes prior to event start.
+ * Includes venue, start time, digital badge pass QR link, and coordinator hotline numbers.
+ */
+export async function sendEventReminderEmail(payload: EventReminderEmailPayload): Promise<boolean> {
+  try {
+    const config = await getSmtpSettings();
+    if (!config) {
+      console.log(`[SMTP Not Configured] Event reminder email skipped for ${payload.toEmail}`);
+      return false;
+    }
+
+    const transporter = nodemailer.createTransport({
+      host: config.host,
+      port: config.port,
+      secure: config.secure,
+      auth: {
+        user: config.user,
+        pass: config.password || "",
+      },
+    });
+
+    const activeEdition = await prisma.eventEdition.findFirst({ where: { isActive: true } });
+    const eventName = activeEdition?.name || "SHINE";
+    const editionYear = activeEdition?.edition || "2027";
+    const institutionName = activeEdition?.institutionName || "Sacred Heart College (Autonomous)";
+
+    const minutesStr = payload.minutesUntilStart ? `${payload.minutesUntilStart}` : "10";
+    const roundTitle = payload.isPrelims ? "Preliminary Screening Round" : "Final / Main Arena";
+    const venueDisplay = payload.venue || "Designated Competition Arena";
+
+    const subject = `${payload.isPrelims ? "⚡ [Prelims Alert]" : "⏰ [Starting in 10 Mins]"} ${payload.eventName} — Venue: ${venueDisplay} (${payload.startTime})`;
+
+    const html = `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background-color: #FAF8F5; padding: 32px 20px;">
+        <div style="background-color: #ffffff; border-radius: 20px; border: 1px solid #E7E5E4; overflow: hidden; box-shadow: 0 6px 24px rgba(0,0,0,0.08);">
+          <!-- Header with Amber/Orange Fest Theme -->
+          <div style="background: linear-gradient(135deg, #1C1917 0%, #292524 100%); padding: 26px 32px; border-bottom: 3px solid #FF6B1A;">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <span style="font-size: 11px; font-weight: 800; letter-spacing: 0.15em; color: #D9A441; text-transform: uppercase;">
+                ${institutionName}
+              </span>
+              <span style="background-color: #FF6B1A; color: #ffffff; font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.08em;">
+                Starts in ~${minutesStr} Mins
+              </span>
+            </div>
+            <h1 style="color: #ffffff; margin: 8px 0 0 0; font-size: 22px; font-weight: 800;">
+              ${payload.eventName} Starting Soon!
+            </h1>
+            <div style="color: #D6D3D1; font-size: 13px; margin-top: 4px;">
+              ${eventName} ${editionYear} • ${roundTitle}
+            </div>
+          </div>
+
+          <!-- Body -->
+          <div style="padding: 30px; color: #292524;">
+            <p style="font-size: 16px; font-weight: 700; color: #1C1917; margin-top: 0;">
+              Hello ${payload.studentName},
+            </p>
+            <p style="font-size: 14px; color: #57534E; line-height: 1.6; margin-bottom: 22px;">
+              This is a timely notification that your registered competition <b>${payload.eventName}</b> is scheduled to commence in approximately <b>${minutesStr} minutes</b>. Please proceed to the arena immediately.
+            </p>
+
+            <!-- Venue & Time Spotlight Card -->
+            <div style="background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); border: 1.5px solid #FCD34D; border-radius: 16px; padding: 20px; margin-bottom: 22px;">
+              <div style="margin-bottom: 14px;">
+                <div style="font-size: 10px; font-weight: 800; color: #92400E; text-transform: uppercase; letter-spacing: 0.1em;">
+                  📍 Competition Venue / Hall
+                </div>
+                <div style="font-size: 19px; font-weight: 900; color: #78350F; margin-top: 3px;">
+                  ${venueDisplay}
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding-top: 12px; border-top: 1px dashed #F59E0B;">
+                <div>
+                  <div style="font-size: 10px; font-weight: 800; color: #92400E; text-transform: uppercase;">Reporting Time</div>
+                  <div style="font-size: 15px; font-weight: 800; color: #1C1917; margin-top: 2px;">${payload.startTime}</div>
+                </div>
+                <div>
+                  <div style="font-size: 10px; font-weight: 800; color: #92400E; text-transform: uppercase;">Track Category</div>
+                  <div style="font-size: 14px; font-weight: 700; color: #1C1917; margin-top: 2px;">
+                    ${payload.category === "ON_STAGE" ? "On-Stage Arena" : "Off-Stage Arena"}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Digital Pass Card for Venue Gate Entry -->
+            <div style="background: linear-gradient(135deg, #1C1917 0%, #292524 100%); border-radius: 16px; padding: 20px 22px; margin-bottom: 24px; color: #ffffff; border: 1px solid #383431;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <div>
+                  <div style="font-size: 10px; font-weight: 800; color: #D9A441; text-transform: uppercase; letter-spacing: 0.1em;">
+                    Your Official Delegate Pass
+                  </div>
+                  <div style="font-size: 18px; font-weight: 900; color: #FFFFFF; font-family: monospace; margin-top: 2px;">
+                    ${payload.badgeCode}
+                  </div>
+                </div>
+                <div style="text-align: right;">
+                  <span style="background-color: rgba(255,107,26,0.25); color: #FF8A4C; border: 1px solid rgba(255,107,26,0.4); font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 6px; text-transform: uppercase;">
+                    Verified Pass
+                  </span>
+                </div>
+              </div>
+              <p style="font-size: 12px; color: #D6D3D1; margin: 0 0 16px 0; line-height: 1.5;">
+                Present your Digital ID Pass QR to the student volunteer at the arena entrance for physical attendance verification.
+              </p>
+              <div style="text-align: center;">
+                <a href="${payload.badgeUrl}" style="background: linear-gradient(135deg, #FF6B1A 0%, #EA580C 100%); color: #ffffff; padding: 13px 26px; font-size: 13.5px; font-weight: 700; text-decoration: none; border-radius: 10px; display: inline-block; box-shadow: 0 4px 14px rgba(255,107,26,0.35);">
+                  Open Digital ID Pass & QR Code →
+                </a>
+              </div>
+            </div>
+
+            <!-- Event Incharge Coordinators Hotline -->
+            ${(payload.staffCoordinator || payload.studentCoordinator) ? `
+              <div style="background-color: #FAF8F5; border: 1px solid #E7E5E4; border-radius: 14px; padding: 16px; margin-bottom: 22px;">
+                <div style="font-size: 11px; font-weight: 800; color: #1C1917; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">
+                  Event Incharge Coordinators
+                </div>
+                <div style="font-size: 12.5px; color: #57534E; line-height: 1.6;">
+                  ${payload.staffCoordinator?.name ? `
+                    <div>Staff Incharge: <b>${payload.staffCoordinator.name}</b> ${payload.staffCoordinator.phone ? `(<a href="tel:${payload.staffCoordinator.phone}" style="color: #FF6B1A; font-weight: 700; text-decoration: none;">${payload.staffCoordinator.phone}</a>)` : ""}</div>
+                  ` : ""}
+                  ${payload.studentCoordinator?.name ? `
+                    <div style="margin-top: 3px;">Student Incharge: <b>${payload.studentCoordinator.name}</b> ${payload.studentCoordinator.phone ? `(<a href="tel:${payload.studentCoordinator.phone}" style="color: #2563EB; font-weight: 700; text-decoration: none;">${payload.studentCoordinator.phone}</a>)` : ""}</div>
+                  ` : ""}
+                </div>
+              </div>
+            ` : ""}
+
+            ${payload.rules ? `
+              <div style="background-color: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 14px; margin-bottom: 22px; font-size: 12px; color: #475569; line-height: 1.5;">
+                <b style="color: #1E293B; display: block; margin-bottom: 4px;">Quick Rules Reminder:</b>
+                <div style="white-space: pre-line;">${payload.rules}</div>
+              </div>
+            ` : ""}
+
+            ${payload.portalUrl ? `
+              <p style="font-size: 12px; text-align: center; color: #78716C; margin: 16px 0 0 0;">
+                Need to view your full fest schedule? <a href="${payload.portalUrl}" style="color: #FF6B1A; font-weight: 700; text-decoration: underline;">Log in to your Student Portal</a>
+              </p>
+            ` : ""}
+
+            <div style="margin-top: 28px; padding-top: 18px; border-top: 1px solid #F5F5F4; font-size: 12px; color: #78716C;">
+              <p style="margin: 0 0 4px 0; font-weight: 700; color: #1C1917;">Fest Operations & Arena Management</p>
+              <p style="margin: 0;">${institutionName}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const textContent = `
+URGENT: ${payload.eventName} Starting in ~${minutesStr} Minutes!
+
+Hello ${payload.studentName},
+
+Your registered event "${payload.eventName}" (${roundTitle}) is scheduled to commence in approximately ${minutesStr} minutes.
+
+============================================================
+EVENT DETAILS
+============================================================
+Competition: ${payload.eventName}
+Venue / Room: ${venueDisplay}
+Start Time: ${payload.startTime}
+Category: ${payload.category === "ON_STAGE" ? "On-Stage Arena" : "Off-Stage Arena"}
+
+============================================================
+YOUR DIGITAL EVENT PASS
+============================================================
+Delegate Badge ID: ${payload.badgeCode}
+Pass QR URL: ${payload.badgeUrl}
+${payload.portalUrl ? `Student Portal: ${payload.portalUrl}\n` : ""}
+
+============================================================
+COORDINATORS HOTLINE
+============================================================
+${payload.staffCoordinator ? `Staff Incharge: ${payload.staffCoordinator.name} (${payload.staffCoordinator.phone || "N/A"})\n` : ""}${payload.studentCoordinator ? `Student Incharge: ${payload.studentCoordinator.name} (${payload.studentCoordinator.phone || "N/A"})\n` : ""}
+Please proceed to the venue immediately with your College ID card and Digital Pass.
+
+---
+Fest Operations & Arena Management
+${institutionName}
+`.trim();
+
+    await transporter.sendMail({
+      from: `"${config.fromName}" <${config.fromEmail}>`,
+      to: payload.toEmail,
+      replyTo: config.replyTo || undefined,
+      subject,
+      text: textContent,
+      html,
+    });
+
+    return true;
+  } catch (err) {
+    console.error(`Failed to send event reminder email to ${payload.toEmail}:`, err);
+    return false;
+  }
+}
+

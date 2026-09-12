@@ -290,6 +290,8 @@ model Registration {
   prelimsStatus      String?            @default("PENDING")
   prelimsScore       Float?
   prelimsNotes       String?
+  reminderSentAt        DateTime?
+  prelimsReminderSentAt DateTime?
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
 
