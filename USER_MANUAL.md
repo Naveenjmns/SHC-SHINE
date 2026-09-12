@@ -17,8 +17,9 @@
    - [3.5 SMTP Gateway & Broadcast Email Dispatcher](#35-smtp-gateway--broadcast-email-dispatcher)
    - [3.6 Registrations Verification & Fee Audits](#36-registrations-verification--fee-audits)
    - [3.7 Activity & Security Audit Logs](#37-activity--security-audit-logs)
-   - [3.8 Events Catalog CRUD](#38-events-catalog-crud)
-   - [3.9 User & Coordinator Account Provisioning](#39-user--coordinator-account-provisioning)
+   - [3.8 Events Catalog CRUD & Prelims Configuration](#38-events-catalog-crud--prelims-configuration)
+   - [3.9 User Management, Password Reset & Coordinator Assignment](#39-user-management-password-reset--coordinator-assignment)
+   - [3.10 Automated 10-Minute Event Reminders & Cron System](#310-automated-10-minute-event-reminders--cron-system)
 4. [Academic Reports & NAAC / IQAC Dossier Guide](#4-academic-reports--naac--iqac-dossier-guide)
    - [4.1 Navigating the Consolidated Report](#41-navigating-the-consolidated-report)
    - [4.2 The 8 Formal Report Sections](#42-the-8-formal-report-sections)
@@ -30,31 +31,49 @@
    - [5.2 On-Site Attendance & Delegate Check-in](#52-on-site-attendance--delegate-check-in)
    - [5.3 Preliminary Rounds Evaluation & Mains Progression](#53-preliminary-rounds-evaluation--mains-progression)
    - [5.4 Final Round Scoring & Podium Publishing](#54-final-round-scoring--podium-publishing)
-6. [Student & Delegate Guide](#6-student--delegate-guide)
-   - [6.1 Exploring the Competitions Directory](#61-exploring-the-competitions-directory)
-   - [6.2 Contingent Team & Individual Registration](#62-contingent-team--individual-registration)
-   - [6.3 Sign-in Experience & Password Visibility Toggle](#63-sign-in-experience--password-visibility-toggle)
-   - [6.4 Accessing Gate Passes, Digital Badges & Food Tokens](#64-accessing-gate-passes-digital-badges--food-tokens)
-   - [6.5 Tracking Results & The Public Leaderboard](#65-tracking-results--the-public-leaderboard)
-7. [Locomotive 3D Perspective Error Suite](#7-locomotive-3d-perspective-error-suite)
-8. [Troubleshooting & Frequently Asked Questions (FAQ)](#8-troubleshooting--frequently-asked-questions-faq)
+6. [Food Coordinator Operations Manual (`/food`)](#6-food-coordinator-operations-manual-food)
+   - [6.1 Dedicated Food Coordinator Role & Portal Access](#61-dedicated-food-coordinator-role--portal-access)
+   - [6.2 Live Dining Telemetry & Diet Preference Tracking](#62-live-dining-telemetry--diet-preference-tracking)
+   - [6.3 Camera QR Scanner Hub & Hardware Controls](#63-camera-qr-scanner-hub--hardware-controls)
+   - [6.4 Manual Food Token Lookup & Redemption](#64-manual-food-token-lookup--redemption)
+   - [6.5 Double Redemption Prevention & Audit Logs](#65-double-redemption-prevention--audit-logs)
+7. [User Profile Center & Account Security (`/profile`)](#7-user-profile-center--account-security-profile)
+   - [7.1 Unified Profile Access Across All Roles](#71-unified-profile-access-across-all-roles)
+   - [7.2 Role-Scoped Telemetry Overview](#72-role-scoped-telemetry-overview)
+   - [7.3 Updating Personal Information & Dietary Preferences](#73-updating-personal-information--dietary-preferences)
+   - [7.4 Self-Service Password Change](#74-self-service-password-change)
+8. [Student & Delegate Guide](#8-student--delegate-guide)
+   - [8.1 Exploring the Competitions Directory & Prelims Rules Preview](#81-exploring-the-competitions-directory--prelims-rules-preview)
+   - [8.2 Contingent Registration & Mandatory Prelims Nominee Validation](#82-contingent-registration--mandatory-prelims-nominee-validation)
+   - [8.3 Automatic Account Provisioning & Direct Login Email Dispatch](#83-automatic-account-provisioning--direct-login-email-dispatch)
+   - [8.4 Sign-in Experience & Password Visibility Toggle](#84-sign-in-experience--password-visibility-toggle)
+   - [8.5 Accessing Gate Passes, Digital Badges & Food Tokens](#85-accessing-gate-passes-digital-badges--food-tokens)
+   - [8.6 Automated 10-Minute Competition Start Reminders](#86-automated-10-minute-competition-start-reminders)
+   - [8.7 Tracking Results & The Public Leaderboard](#87-tracking-results--the-public-leaderboard)
+9. [Locomotive 3D Perspective Error Suite](#9-locomotive-3d-perspective-error-suite)
+10. [Troubleshooting & Frequently Asked Questions (FAQ)](#10-troubleshooting--frequently-asked-questions-faq)
 
 ---
 
 ## 1. Platform Overview & Architecture
 
 **SHINE** is a comprehensive, multi-edition intercollegiate fest management platform engineered for higher education institutions. It streamlines the entire event lifecycle:
-- Public discovery & schedule dissemination
-- Multi-contingent delegate registrations and fee verification
-- Dynamic institution white-labeling and real-time color theme engine
-- Scoped coordinator grading for preliminary and final rounds
+- Public discovery, rules dissemination, and preliminary round schedule previews
+- Multi-contingent delegate registrations with strict email/mobile field validation and mandatory prelim nominee enforcement
+- Automated student account provisioning and instant credential email dispatches
+- Automated 10-minute competition start alert dispatches for preliminary and final rounds
+- Dedicated dining hall management portal (`/food`) with live QR code scanner and dietary preference metrics (Veg vs. Non-Veg)
+- Unified User Profile Center (`/profile`) for account updates, dietary preferences, and self-service password changes
+- Dynamic institution white-labeling and real-time custom color theme engine
+- Scoped coordinator grading for preliminary screening and final rounds
 - Point-based college championship leaderboard calculation
-- Official academic certification dossiers suitable for **NAAC**, **IQAC**, and college annual reports
+- Official academic certification dossiers suitable for **NAAC**, **IQAC**, and college annual department reports
 
 ### Architectural Highlights
 - **Framework**: Next.js 16 (Turbopack, App Router, React Server Components)
 - **Database & ORM**: PostgreSQL with Prisma ORM v6
-- **Authentication**: NextAuth.js credentials provider with role-based JWT sessions
+- **Authentication**: NextAuth.js credentials provider with role-based JWT sessions (`ADMIN`, `COORDINATOR`, `FOOD_COORDINATOR`, `STUDENT`)
+- **Background Tasks**: Next.js `instrumentation.ts` background scheduler running continuous 60-second cron sweeps for 10-minute event reminders
 - **Theme Engine**: Dynamic CSS variable injector supporting SSR and live client switching
 - **Export Engines**: CSS Paged Media (`@media print`, `@page`) for vector PDF generation, client-side RFC 4180 CSV generation
 
@@ -62,14 +81,15 @@
 
 ## 2. User Roles & Access Permissions
 
-The system implements strict Role-Based Access Control (RBAC) enforced via Next.js middleware and API boundaries:
+The system implements strict Role-Based Access Control (RBAC) enforced via Next.js middleware, page layouts, and API boundaries:
 
-| Role | Access Scope | Target Dashboard | Key Capabilities |
+| Role | Access Scope | Primary Dashboard | Key Capabilities |
 |---|---|---|---|
-| **Public Visitor** | Public routes only | `/`, `/events`, `/register` | View fest schedule, browse rules, register contingents. |
-| **Student / Delegate** | Authenticated participant | `/dashboard` | View gate pass badge, check-in status, food tokens, registered events, published scores. |
-| **Event Coordinator** | Scoped event staff | `/coordinator`, `/coordinator/[eventId]` | Check-in attendees, grade prelims, advance finalists, publish 1st/2nd/3rd places, export event CSV. |
-| **Administrator** | Full platform root | `/admin`, `/admin/*` | Complete event CRUD, user provisioning, branding customizer, SMTP broadcasts, academic reports. |
+| **Public Visitor** | Public routes only | `/`, `/events`, `/register` | View fest schedule, browse competition rules & prelims criteria, register college contingents. |
+| **Student / Delegate** | Authenticated participant | `/dashboard`, `/profile` | View gate pass badge, check-in status, food tokens, registered events, published scores, update profile & food preference. |
+| **Event Coordinator** | Scoped event staff | `/coordinator`, `/coordinator/[eventId]`, `/profile` | Check-in attendees, grade prelims, advance finalists, publish 1st/2nd/3rd places, export event CSV. |
+| **Food Coordinator** | Dining hall staff | `/food`, `/profile` | Camera QR scanner, flashlight/torch toggle, camera flip, manual meal token redemption, Veg/Non-Veg tally. |
+| **Administrator** | Full platform root | `/admin`, `/admin/*`, `/profile` | Complete event CRUD, user edit modal, password reset, coordinator assignment, branding customizer, SMTP broadcasts, academic reports, reminder audit. |
 
 ---
 
@@ -137,16 +157,39 @@ Located at `/admin/logs`:
 - Displays tamper-evident logs of administrative actions (event modifications, result publications, role changes, broadcast dispatches).
 - Includes actor identity, timestamp, IP address, and target payload.
 
-### 3.8 Events Catalog CRUD
+### 3.8 Events Catalog CRUD & Prelims Configuration
 Located at `/admin/events`:
 - **Create Event**: Set Title, Category (`ON_STAGE` / `OFF_STAGE`), Venue, Date & Time, Rules, Registration Fee, and Seat Capacity.
-- **Prelims Config**: Toggle `Has Preliminary Round?` to enable preliminary screening venues and timings.
+- **Preliminary Rounds Toggle**: Toggle `Has Preliminary Round?` to reveal:
+  - **Prelims Venue**: Physical location of screening room/lab.
+  - **Prelims Date & Time**: Schedule for the screening round.
+  - **Prelims Rules & Screening Criteria**: Specific instructions regarding preliminary qualifiers.
 - **Assign Coordinators**: Link both a Faculty/Staff In-Charge and a Student Coordinator from provisioned user accounts.
 
-### 3.9 User & Coordinator Account Provisioning
+### 3.9 User Management, Password Reset & Coordinator Assignment
 Located at `/admin/users`:
-- Create new `COORDINATOR` or `ADMIN` accounts with assigned email and temporary password.
-- Reset passwords or deactivate staff access after fest completion.
+- **Create Account**: Provision `ADMIN`, `COORDINATOR`, `FOOD_COORDINATOR`, or `STUDENT` accounts with full email/phone validation.
+- **Edit User Modal**: Click **Edit** on any user row to:
+  - Update Full Name, Email, Phone Number, College, and Role.
+  - **Direct Password Reset**: Enter a new password to immediately update the user's credential without touching the database console.
+  - **Assigned Competitions**: For `COORDINATOR` accounts, select which events this coordinator has authority to manage and score.
+- **Delete / Revoke**: Safely deactivate users after fest completion.
+
+### 3.10 Automated 10-Minute Event Reminders & Cron System
+The platform features an autonomous event reminder engine:
+- **Background Scheduler**: Powered by Next.js `instrumentation.ts` and `reminderScheduler.ts`, running an automated sweep every 60 seconds.
+- **10-Minute Trigger Window**: Detects any active registration whose event starts within the next 10 minutes (between 0 and 10 minutes away):
+  - Sends reminder for **Preliminary Rounds** (`prelimsDateTime`) if not yet sent (`prelimsReminderSentAt`).
+  - Sends reminder for **Main Competition** (`dateTime`) if not yet sent (`reminderSentAt`).
+- **Urgent Notification Payload**: Dispatches high-priority email featuring:
+  - Event title, round designation (Prelims vs. Finals), venue, exact start time.
+  - One-click Digital Gate Pass access link and badge code.
+  - Competition rules preview and screening criteria.
+  - Contact hotline numbers for Faculty and Student Event Coordinators.
+- **Manual Trigger & Webhook Endpoint**: 
+  - `GET /api/cron/reminders` (secured via `CRON_SECRET` header or admin session).
+  - Supports `?dryRun=true` to preview eligible dispatches without sending emails.
+  - Supports `?forceEventId=[id]` to trigger immediate test notifications for any specific competition.
 
 ---
 
@@ -238,40 +281,136 @@ For events with `Has Prelims`:
 
 ---
 
-## 6. Student & Delegate Guide
+## 6. Food Coordinator Operations Manual (`/food`)
 
-### 6.1 Exploring the Competitions Directory
-- Visit `/events` to view the comprehensive event schedule.
+Food coordinators manage lunch distribution and refreshment vouchers in the dining hall directly via `/food`.
+
+### 6.1 Dedicated Food Coordinator Role & Portal Access
+- Sign in with credentials carrying the `FOOD_COORDINATOR` role (e.g., demo account `food@shctpt.edu` / `food123`).
+- Navigating to `/food` provides a clean, mobile-optimized control room for dining operations.
+
+### 6.2 Live Dining Telemetry & Diet Preference Tracking
+The top dashboard displays real-time catering counters:
+- **Total Meals Claimed**: Overall count of redeemed food tokens.
+- **Vegetarian Distribution**: Live count of Vegetarian meals issued.
+- **Non-Vegetarian Distribution**: Live count of Non-Vegetarian meals issued.
+- **Remaining Unclaimed Tokens**: Real-time counter of registered attendees who have not yet claimed their meal.
+
+### 6.3 Camera QR Scanner Hub & Hardware Controls
+Tap **Open QR Scanner** to launch the high-speed camera scanner:
+- **Instant Decoding**: Point camera at the student's digital badge QR code or physical printout.
+- **Camera Flip**: Tap **Flip Lens** to alternate between front and rear cameras (or between ultra-wide and main lenses).
+- **Auditorium Torch / Flashlight**: Tap **Flashlight** to illuminate dimly lit catering areas (supported on compatible mobile rear cameras).
+- **Auto Audio / Visual Feedback**: A green flash and chime confirm a valid claim, while a red warning modal flags an already-redeemed or invalid token.
+
+### 6.4 Manual Food Token Lookup & Redemption
+If a student's phone battery is drained or screen is damaged:
+1. Tap the **Manual Token Entry** tab.
+2. Input the student's 10-character Food Token (e.g., `FT-XXXX-MEAL`) or their Badge Code (e.g., `SHN27-DEL-001`).
+3. View the student's name, college, and dietary preference badge (`VEG` vs. `NON-VEG`).
+4. Click **Confirm Meal Claim** to record the transaction.
+
+### 6.5 Double Redemption Prevention & Audit Logs
+- The system checks `foodClaimedAt` instantaneously.
+- If a token is scanned a second time, an alert modal immediately reveals:
+  - Exact timestamp of the previous meal redemption.
+  - Staff member / scanner terminal that approved the prior claim.
+- Prevents duplicated lunch ticket usage across dining counters.
+
+---
+
+## 7. User Profile Center & Account Security (`/profile`)
+
+The unified **User Profile Center** (`/profile`) is available to all authenticated users across all four roles (`ADMIN`, `COORDINATOR`, `FOOD_COORDINATOR`, `STUDENT`).
+
+### 7.1 Unified Profile Access Across All Roles
+- Click on the user avatar in the navigation bar and select **My Profile**, or navigate directly to `/profile`.
+- The interface adapts dynamically based on the active role while maintaining consistent styling and instant responsiveness.
+
+### 7.2 Role-Scoped Telemetry Overview
+Each role receives personalized telemetry at the top of their profile:
+- **Administrators**: Total platform accounts, total confirmed registrations, and currently active edition tag.
+- **Event Coordinators**: List of assigned events with direct links to `/coordinator/[id]` control rooms.
+- **Food Coordinators**: Today's meal claims tally, Veg/Non-Veg distribution summary, and scanner activity.
+- **Students**: Gate Pass Badge Code, Food Token Code, Dietary Preference tag, and list of registered competitions.
+
+### 7.3 Updating Personal Information & Dietary Preferences
+Users can update their profile information at any time:
+1. **Full Name**: Edit display name.
+2. **Phone Number**: Enforces strict 10–15 digit mobile number validation.
+3. **Institution / College**: Edit college affiliation.
+4. **Food Preference**: Select either **Vegetarian (VEG)** or **Non-Vegetarian (NON_VEG)** to ensure accurate catering preparation.
+5. **Avatar URL**: Enter custom profile image link.
+6. Click **Save Changes** to commit updates.
+
+### 7.4 Self-Service Password Change
+Located in the **Account Security** section:
+1. Enter your **Current Password** (verified securely against hashed password).
+2. Enter your **New Password** (minimum 6 characters).
+3. Re-enter your new password in **Confirm New Password**.
+4. Click **Update Password**. The session password hash is updated instantly with zero disruption.
+
+---
+
+## 8. Student & Delegate Guide
+
+### 8.1 Exploring the Competitions Directory & Prelims Rules Preview
+- Visit `/events` or `/` to view the comprehensive event schedule.
 - Filter competitions by category (**On-Stage** or **Off-Stage**).
-- Expand any card to review team size restrictions, time limits, judging criteria, and venue instructions.
+- **Preliminary Round Indicators**: Competitions with preliminary rounds display a distinct badge and preliminary schedule notice right on their card.
+- **Expandable Modal**: Clicking **View Details** reveals full competition rules alongside a dedicated **Preliminary Round Rules & Format** section outlining screening tests, time limits, and qualifier thresholds.
 
-### 6.2 Contingent Team & Individual Registration
+### 8.2 Contingent Registration & Mandatory Prelims Nominee Validation
 1. Navigate to `/register`.
 2. Enter your Institution / College name and Department.
-3. Enter Contingent Team Lead contact details.
-4. Select all competitions your college contingent wishes to enter.
-5. Review the calculated total delegation fee.
-6. Submit the form to generate your contingent registration ID.
+3. Enter Contingent Team Lead contact details (strict email and 10–15 digit phone validation enforced).
+4. Add all student delegates participating from your college.
+5. Select the competitions your college contingent wishes to enter.
+6. **Mandatory Prelims Nominee Selection**:
+   - If any of your selected competitions has a preliminary round (`hasPrelims: true`), the form requires that you nominate one specific student from your delegate list to represent your institution in the preliminary screening.
+   - **Form Enforcement**: The registration form prevents submission until every prelim-enabled competition has an assigned nominee.
+7. Review the calculated total delegation fee.
+8. Submit the form to generate your contingent registration ID.
 
-### 6.3 Sign-in Experience & Password Visibility Toggle
-1. Visit `/login`.
-2. Enter your registered email or phone number.
-3. Enter your password. Click the **Eye icon** on the right side of the password field to toggle between masked (`••••••••`) and visible text.
-4. If testing on staging, use the **Quick-Fill Demo Credentials** buttons at the bottom of the card.
+### 8.3 Automatic Account Provisioning & Direct Login Email Dispatch
+Upon successful registration:
+1. **Automated Account Creation**: Student delegate accounts are automatically provisioned in the database.
+2. **Initial Temporary Password**: The student's registered mobile number is set as their default password.
+3. **Direct Login Welcome Email**:
+   - An automated registration confirmation email is dispatched immediately to each student.
+   - The email contains a prominent **Direct Portal Access** button (`/login?email=student@example.com`).
+   - Clicking the link opens the login page with the student's email pre-filled.
+   - The email clearly indicates their **User ID** and **Default Password (Mobile Number)**, with instructions to update their password upon sign-in.
 
-### 6.4 Accessing Gate Passes, Digital Badges & Food Tokens
+### 8.4 Sign-in Experience & Password Visibility Toggle
+1. Visit `/login` (or open the direct link from your welcome email).
+2. The email field will automatically pre-fill if accessed via your direct email link.
+3. Enter your password (your mobile number for first-time login).
+4. Click the **Eye icon** on the right side of the password field to toggle between masked (`••••••••`) and visible text.
+5. If testing on staging, use the **Quick-Fill Demo Credentials** buttons at the bottom of the card.
+
+### 8.5 Accessing Gate Passes, Digital Badges & Food Tokens
 In the **Student Portal** (`/dashboard`):
 - **Digital Gate Pass**: Contains your unique alphanumeric Badge Code (e.g., `SHINE-DEL-042`). Present this at the registration desk upon campus arrival.
 - **Physical QR Code**: Click **View Badge** (`/badge/[badgeCode]`) to display a high-resolution QR pass that coordinators can scan.
-- **Food Token Status**: Displays whether lunch/refreshment coupons have been redeemed at the dining hall.
+- **Food Token Status**: Displays your meal code (e.g., `FT-XXXX-MEAL`) and real-time status of lunch redemption.
 
-### 6.5 Tracking Results & The Public Leaderboard
+### 8.6 Automated 10-Minute Competition Start Reminders
+- Exactly 10 minutes prior to your competition (or preliminary round), the system dispatches an urgent reminder email directly to your inbox.
+- The notification contains:
+  - Exact competition title and round (Prelims vs. Finals).
+  - Room/Lab venue location and scheduled start time.
+  - One-click link to open your digital gate pass badge.
+  - Quick reminder of judging criteria and rules.
+  - Direct contact numbers for assigned Faculty and Student Coordinators.
+
+### 8.7 Tracking Results & The Public Leaderboard
 - Your personal results are posted on `/dashboard` as soon as coordinators publish them.
 - Visit `/leaderboard` to view the live college championship standings and total points accumulated by participating colleges.
 
 ---
 
-## 7. Locomotive 3D Perspective Error Suite
+## 9. Locomotive 3D Perspective Error Suite
 
 The platform includes an interactive, dark-mode 3D error suite inspired by Locomotive's perspective stage:
 - **Canvas-based 3D Floor Grid**: Realistic vanishing perspective with walking delegates, authentic humanoid walking gaits, and directional contact shadows.
@@ -286,33 +425,29 @@ The platform includes an interactive, dark-mode 3D error suite inspired by Locom
 
 ---
 
-## 8. Troubleshooting & Frequently Asked Questions (FAQ)
+## 10. Troubleshooting & Frequently Asked Questions (FAQ)
+
+#### Q: How do students receive their login credentials?
+**A**: When a college contingent registers at `/register`, student accounts are automatically provisioned. Each student receives an automated welcome email containing their User ID (email), their temporary password (their registered mobile number), and a one-click login link with their email pre-filled.
+
+#### Q: Why does the registration form block submission when selecting certain events?
+**A**: If any selected competition has a Preliminary Round (`hasPrelims: true`), the system enforces that a student delegate must be assigned as the preliminary round nominee before completing registration. Ensure that a nominee is chosen in the Prelims Nominee dropdown for each applicable event.
+
+#### Q: How do the automated 10-minute competition start reminders work?
+**A**: The platform runs an autonomous background cron scheduler that sweeps event schedules every 60 seconds. When an event or preliminary round is between 0 and 10 minutes from starting, an urgent reminder email with venue, timing, rules, and coordinator hotlines is dispatched to all registered participants.
+
+#### Q: How does the Food Coordinator scan badges or redeem meals?
+**A**: Sign in as a `FOOD_COORDINATOR` (or Admin) and navigate to `/food`. Tap **Open QR Scanner** to activate the camera with torch/flashlight and lens flip capabilities. Alternatively, switch to **Manual Token Entry** to redeem meal tokens by alphanumeric code (`FT-XXXX-MEAL`). The system tracks Vegetarian and Non-Vegetarian counts in real time and flags any attempted double redemptions.
+
+#### Q: How do users update their dietary preferences or change their passwords?
+**A**: Navigate to `/profile` from the top navigation bar. Users can toggle their dietary preference between **VEG** and **NON_VEG**, update their contact phone number, and change their account password via the self-service security form.
 
 #### Q: How do I change the festival logo and main brand color?
 **A**: Sign in as Admin, go to `/admin` → **Branding & Stage** → **Section 5: Overall App Color Identity**. Select any of the 8 presets or pick a custom hex color. Click **Save Institution Theme**.
 
-#### Q: Why did the PDF print table cut off previously, and how is it resolved?
-**A**: Tables previously lacked explicit print layout rules. The platform now includes `print:table-fixed`, proportional percentage column widths, `print:break-inside-avoid` to prevent horizontal word splitting, and an orientation toggle for **Portrait** and **Landscape** modes in `/admin/reports`.
-
 #### Q: How do I export data for IQAC / NAAC file submissions?
 **A**: Navigate to `/admin/reports`, verify the data, and click **Print Official Report (PDF)**. The generated PDF includes the official certification statement and 4 formal signature blocks. You can also download the individual CSV datasets from the **Export CSVs** menu.
 
-#### Q: How does the QR Check-in scanner work on mobile and how do I troubleshoot camera access?
-**A**: The **QR Check-In & Food Claim Hub** modal supports live badge and meal voucher scanning using your device camera:
-- **Lens Flipping**: If your phone has multiple rear/front cameras, tap **Flip Lens** to cycle through available sensors.
-- **Auditorium Flashlight**: Tap **Flashlight** to illuminate dark auditioriums or night stages (supported on rear cameras with torch capability).
-- **Troubleshooting "Camera Unavailable"**:
-  1. Verify camera permissions in browser site settings (padlock icon in address bar → Permissions → Camera: **Allowed**).
-  2. If the camera was held by another app or background tab, tap **Retry Camera** or **Try Next Lens**.
-  3. If hardware access remains blocked, use **Manual Code Lookup** to instantly verify attendees via their alphanumeric badge code (e.g. `SHN27-DEL-XXXX`) or food token code (e.g. `FT-XXXX-MEAL`).
-
-#### Q: How is the Intercollegiate Championship Trophy calculated?
-**A**: Points are tallied automatically across all events:
-- 🥇 1st Place = 10 Points
-- 🥈 2nd Place = 7 Points
-- 🥉 3rd Place = 5 Points  
-The college with the highest aggregate points is crowned *Overall Fest Champion*. In case of a tie, Gold counts serve as the primary tiebreaker.
-
 ---
 
-*Document version: 2.0 • Last Revised: September 2026 • Sacred Heart College (Autonomous), Tirupattur*
+*Document version: 3.0 • Last Revised: September 2026 • Sacred Heart College (Autonomous), Tirupattur*
