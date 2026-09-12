@@ -77,11 +77,26 @@ export async function PUT(
     } = {};
 
     if (name) updateData.name = name.trim();
-    if (email) updateData.email = email.toLowerCase().trim();
+    if (email) {
+      const normalizedEmail = email.toLowerCase().trim();
+      const duplicate = await prisma.user.findFirst({
+        where: {
+          email: normalizedEmail,
+          NOT: { id },
+        },
+      });
+      if (duplicate) {
+        return NextResponse.json(
+          { success: false, message: `An account with email "${normalizedEmail}" already exists.` },
+          { status: 400 }
+        );
+      }
+      updateData.email = normalizedEmail;
+    }
     if (phone !== undefined) updateData.phone = phone ? phone.trim() : null;
     if (college !== undefined) updateData.college = college ? college.trim() : null;
     if (role && Object.values(Role).includes(role as Role)) updateData.role = role as Role;
-    if (password) {
+    if (password && password.trim()) {
       updateData.passwordHash = await bcrypt.hash(password.trim(), 10);
     }
 
@@ -111,8 +126,11 @@ export async function PUT(
     });
 
     return NextResponse.json({ success: true, user: updated });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error updating user:", error);
-    return NextResponse.json({ success: false, message: "Failed to update user." }, { status: 500 });
+    if (error?.code === "P2002") {
+      return NextResponse.json({ success: false, message: "A user with this email or phone already exists." }, { status: 400 });
+    }
+    return NextResponse.json({ success: false, message: "Failed to update user: " + (error?.message || "Internal error") }, { status: 500 });
   }
 }

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { X, History } from "lucide-react";
+import { X, History, Pencil, Trash2, KeyRound, AlertTriangle } from "lucide-react";
 import { useToast } from "@/components/ToastProvider";
 import { safeJson } from "@/lib/safeFetch";
 import Footer from "@/components/Footer";
@@ -49,6 +49,17 @@ export default function AdminUsersPage() {
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+
+  // Edit User Modal
+  const [editingUser, setEditingUser] = useState<UserItem | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editCollege, setEditCollege] = useState("");
+  const [editRole, setEditRole] = useState<"STUDENT" | "COORDINATOR" | "FOOD_COORDINATOR" | "ADMIN">("COORDINATOR");
+  const [editPassword, setEditPassword] = useState("");
+  const [editSubmitting, setEditSubmitting] = useState(false);
+  const [editErrorMsg, setEditErrorMsg] = useState("");
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -109,6 +120,70 @@ export default function AdminUsersPage() {
       setErrorMsg("Network error.");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const openEditModal = (u: UserItem) => {
+    setEditingUser(u);
+    setEditName(u.name || "");
+    setEditEmail(u.email || "");
+    setEditPhone(u.phone || "");
+    setEditCollege(u.college || "Sacred Heart College (Autonomous)");
+    setEditRole(u.role);
+    setEditPassword("");
+    setEditErrorMsg("");
+  };
+
+  const handleUpdateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingUser) return;
+    setEditErrorMsg("");
+    setEditSubmitting(true);
+
+    try {
+      const payload: Record<string, any> = {
+        name: editName.trim(),
+        email: editEmail.trim(),
+        phone: editPhone.trim() || null,
+        college: editCollege.trim() || null,
+        role: editRole,
+      };
+      if (editPassword.trim()) {
+        payload.password = editPassword.trim();
+      }
+
+      const res = await fetch(`/api/admin/users/${editingUser.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await safeJson(res, { success: false, message: "Network error occurred." });
+      if (data.success && data.user) {
+        toast.success(`User "${data.user.name}" updated successfully.`);
+        setUsers((prev) =>
+          prev.map((u) =>
+            u.id === editingUser.id
+              ? {
+                  ...u,
+                  name: data.user.name,
+                  email: data.user.email,
+                  phone: data.user.phone,
+                  college: data.user.college,
+                  role: data.user.role,
+                }
+              : u
+          )
+        );
+        setEditingUser(null);
+      } else {
+        setEditErrorMsg(data.message || "Failed to update user.");
+      }
+    } catch (err) {
+      console.error("User update error:", err);
+      setEditErrorMsg("Network error.");
+    } finally {
+      setEditSubmitting(false);
     }
   };
 
@@ -382,14 +457,26 @@ export default function AdminUsersPage() {
                     </td>
 
                     <td className="p-4 text-right">
-                      {session?.user?.id !== u.id && (
+                      <div className="flex items-center justify-end gap-1.5">
                         <button
-                          onClick={() => handleDeleteUser(u.id, u.name)}
-                          className="tap-target px-3 py-1 text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-lg transition-colors cursor-pointer"
+                          onClick={() => openEditModal(u)}
+                          title={`Edit ${u.name}'s account details`}
+                          className="tap-target px-2.5 py-1 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 hover:text-slate-900 rounded-lg transition-colors cursor-pointer inline-flex items-center gap-1"
                         >
-                          Delete
+                          <Pencil className="w-3 h-3 text-slate-500" />
+                          <span>Edit</span>
                         </button>
-                      )}
+                        {session?.user?.id !== u.id && (
+                          <button
+                            onClick={() => handleDeleteUser(u.id, u.name)}
+                            title={`Delete ${u.name}'s account`}
+                            className="tap-target px-2.5 py-1 text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-lg transition-colors cursor-pointer inline-flex items-center gap-1"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                            <span>Delete</span>
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -508,6 +595,145 @@ export default function AdminUsersPage() {
                     className="tap-target px-6 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors disabled:opacity-50"
                   >
                     {submitting ? "Creating..." : "Create Account"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Modal: Edit User Account */}
+        {editingUser && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="bg-white rounded-2xl max-w-md w-full border border-slate-200 shadow-2xl max-h-[90vh] flex flex-col overflow-hidden my-auto">
+              <div className="flex justify-between items-center p-5 sm:p-6 border-b border-slate-100 bg-slate-50/50 shrink-0">
+                <div className="min-w-0 pr-2">
+                  <h3 className="text-xl font-black text-slate-900 tracking-tight">
+                    Edit User Account
+                  </h3>
+                  <p className="text-xs text-slate-500 truncate mt-0.5">
+                    {editingUser.name} &bull; <span className="font-mono">{editingUser.email}</span>
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEditingUser(null)}
+                  className="tap-target text-slate-400 hover:text-slate-900 cursor-pointer p-1.5 rounded-xl hover:bg-slate-200/60 transition-colors shrink-0"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleUpdateUser} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+                <div className="p-5 sm:p-6 space-y-4 overflow-y-auto flex-1">
+                  {session?.user?.id === editingUser.id && (
+                    <div className="bg-amber-50 border border-amber-200 text-amber-900 text-xs p-3 rounded-xl flex items-start gap-2">
+                      <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                      <div>
+                        <strong>You are editing your own account.</strong> Changing your role away from Admin will revoke your administrative privileges upon your next login.
+                      </div>
+                    </div>
+                  )}
+
+                  {editErrorMsg && (
+                    <div className="bg-rose-50 border border-rose-200 text-rose-700 text-xs p-3 rounded-xl">
+                      {editErrorMsg}
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Account Role *</label>
+                    <select
+                      value={editRole}
+                      onChange={(e) =>
+                        setEditRole(
+                          e.target.value as "STUDENT" | "COORDINATOR" | "FOOD_COORDINATOR" | "ADMIN"
+                        )
+                      }
+                      className="w-full h-11 bg-white border border-slate-300 rounded-xl px-3.5 text-sm text-slate-900 focus:outline-none focus:border-orange-500"
+                    >
+                      <option value="COORDINATOR">Event Coordinator (Competitions & Attendance)</option>
+                      <option value="FOOD_COORDINATOR">Food Committee (Meal Distribution & Counters)</option>
+                      <option value="ADMIN">System Administrator (Full Access)</option>
+                      <option value="STUDENT">Student (Delegate / Participant)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Full Name *</label>
+                    <input
+                      type="text"
+                      required
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      className="w-full h-11 bg-white border border-slate-300 rounded-xl px-3.5 text-sm text-slate-900 focus:outline-none focus:border-orange-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Email Address *</label>
+                    <input
+                      type="email"
+                      required
+                      value={editEmail}
+                      onChange={(e) => setEditEmail(e.target.value)}
+                      className="w-full h-11 bg-white border border-slate-300 rounded-xl px-3.5 text-sm text-slate-900 focus:outline-none focus:border-orange-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Phone Number</label>
+                    <input
+                      type="tel"
+                      placeholder="e.g. +91 9840123456"
+                      value={editPhone}
+                      onChange={(e) => setEditPhone(e.target.value)}
+                      className="w-full h-11 bg-white border border-slate-300 rounded-xl px-3.5 text-sm text-slate-900 focus:outline-none focus:border-orange-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">College / Institution</label>
+                    <input
+                      type="text"
+                      value={editCollege}
+                      onChange={(e) => setEditCollege(e.target.value)}
+                      className="w-full h-11 bg-white border border-slate-300 rounded-xl px-3.5 text-sm text-slate-900 focus:outline-none focus:border-orange-500"
+                    />
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-xs font-bold text-slate-700">Reset Password</label>
+                      <span className="text-[11px] text-slate-400 font-medium">Leave blank to keep current</span>
+                    </div>
+                    <div className="relative">
+                      <input
+                        type="password"
+                        placeholder="Enter new password (optional)"
+                        value={editPassword}
+                        onChange={(e) => setEditPassword(e.target.value)}
+                        className="w-full h-11 bg-white border border-slate-300 rounded-xl pl-9 pr-3.5 text-sm text-slate-900 focus:outline-none focus:border-orange-500"
+                      />
+                      <KeyRound className="w-4 h-4 text-slate-400 absolute left-3 top-3.5" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-3 p-4 sm:p-5 border-t border-slate-100 bg-slate-50 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setEditingUser(null)}
+                    className="tap-target px-4 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 cursor-pointer rounded-xl hover:bg-slate-200/50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={editSubmitting}
+                    className="tap-target px-6 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                  >
+                    {editSubmitting ? "Saving..." : "Save Changes"}
                   </button>
                 </div>
               </form>
