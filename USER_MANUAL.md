@@ -52,6 +52,7 @@
    - [8.7 Tracking Results & The Public Leaderboard](#87-tracking-results--the-public-leaderboard)
 9. [Locomotive 3D Perspective Error Suite](#9-locomotive-3d-perspective-error-suite)
 10. [Troubleshooting & Frequently Asked Questions (FAQ)](#10-troubleshooting--frequently-asked-questions-faq)
+11. [Developers & Technical Support](#11-developers--technical-support)
 
 ---
 
@@ -447,6 +448,15 @@ The platform includes an interactive, dark-mode 3D error suite inspired by Locom
 
 #### Q: How do I export data for IQAC / NAAC file submissions?
 **A**: Navigate to `/admin/reports`, verify the data, and click **Print Official Report (PDF)**. The generated PDF includes the official certification statement and 4 formal signature blocks. You can also download the individual CSV datasets from the **Export CSVs** menu.
+
+---
+
+## 11. Developers & Technical Support
+
+For platform support, deployment assistance, bug reports, or feature enhancements:
+
+- **Sakthi K**: [sakthikaribeeran@gmail.com](mailto:sakthikaribeeran@gmail.com)
+- **Naveen Kumar J**: [naveenkumarjmns@gmail.com](mailto:naveenkumarjmns@gmail.com)
 
 ---
 

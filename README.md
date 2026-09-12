@@ -178,3 +178,8 @@ The platform complies with standard institutional documentation guidelines for:
 
 ---
 
+## 👨‍💻 Developers Contact
+
+- **Sakthi K**: [sakthikaribeeran@gmail.com](mailto:sakthikaribeeran@gmail.com)
+- **Naveen Kumar J**: [naveenkumarjmns@gmail.com](mailto:naveenkumarjmns@gmail.com)
+

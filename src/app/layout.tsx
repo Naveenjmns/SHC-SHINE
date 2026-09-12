@@ -26,26 +26,25 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "SHINE 26 | Department of Computer Applications (PG) — Sacred Heart College",
+  title: "SHINE — Intercollegiate Symposium & Event Management Platform",
   description:
-    "SHINE 26 is the premier intercollegiate fest organized by the Department of Computer Applications (PG), Sacred Heart College (Autonomous), Tirupattur. Register now for exciting on-stage and off-stage events!",
-  applicationName: "SHINE 26",
+    "SHINE is the premier intercollegiate symposium and event management platform. Register delegations, explore competitions, track live podiums, and manage accreditation dossiers.",
+  applicationName: "SHINE",
   manifest: "/manifest.webmanifest",
   keywords: [
-    "SHINE 26",
-    "Sacred Heart College",
-    "Tirupattur",
+    "SHINE",
     "college fest",
-    "MCA",
-    "computer applications",
+    "symposium",
     "intercollegiate",
     "tech fest",
+    "event management",
+    "competitions",
   ],
-  authors: [{ name: "Department of Computer Applications (PG), Sacred Heart College" }],
+  authors: [{ name: "SHINE Engineering Team" }],
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "SHINE 26",
+    title: "SHINE",
   },
   formatDetection: {
     telephone: false,
@@ -60,9 +59,9 @@ export const metadata: Metadata = {
     ],
   },
   openGraph: {
-    title: "SHINE 26 | Sacred Heart College Fest",
+    title: "SHINE | Intercollegiate Symposium & Event Management Platform",
     description:
-      "Join SHINE 26 — the premier intercollegiate fest by the Dept. of Computer Applications (PG), Sacred Heart College. On-stage & off-stage events, prizes, and more!",
+      "Join SHINE — the premier intercollegiate fest. On-stage & off-stage competitions, digital gate passes, live leaderboards, and more!",
     type: "website",
     locale: "en_IN",
   },
