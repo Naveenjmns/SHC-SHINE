@@ -201,6 +201,10 @@ export interface DelegateRegistrationEmailPayload {
   badgeCode: string;
   foodTokenCode: string;
   badgeUrl: string;
+  portalUrl?: string | null;
+  userId?: string | null;
+  password?: string | null;
+  userPhone?: string | null;
   events: Array<{
     name: string;
     category: string;
@@ -213,7 +217,7 @@ export interface DelegateRegistrationEmailPayload {
 
 /**
  * Sends a personalized registration confirmation email to each registered student delegate.
- * Includes badge pass link, scannable food token, and full event schedule.
+ * Includes student portal login credentials, portal access link, badge pass link, scannable food token, and full event schedule.
  */
 export async function sendDelegateRegistrationEmail(payload: DelegateRegistrationEmailPayload): Promise<boolean> {
   try {
@@ -237,6 +241,15 @@ export async function sendDelegateRegistrationEmail(payload: DelegateRegistratio
     const eventName = activeEdition?.name || "SHINE";
     const editionYear = activeEdition?.edition || "2027";
     const institutionName = activeEdition?.institutionName || "Sacred Heart College (Autonomous)";
+
+    // Resolve Student Portal credentials & URL
+    const studentUserId = payload.userId || payload.toEmail;
+    const studentPassword = payload.password || payload.userPhone || "Your registered mobile number";
+    const baseUrl = (process.env.NEXTAUTH_URL || "").replace(/\/$/, "");
+    const basePortalUrl = payload.portalUrl || (baseUrl ? `${baseUrl}/login` : "https://shc-shine.up.railway.app/login");
+    const loginPortalUrl = basePortalUrl.includes("?")
+      ? basePortalUrl
+      : `${basePortalUrl}?email=${encodeURIComponent(studentUserId)}`;
 
     const eventsListHtml = payload.events.length > 0
       ? payload.events.map((ev) => `
@@ -266,8 +279,11 @@ export async function sendDelegateRegistrationEmail(payload: DelegateRegistratio
               ${institutionName}
             </div>
             <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 800;">
-              ${eventName} ${editionYear} — Delegate Pass
+              ${eventName} ${editionYear} — Registration Confirmed
             </h1>
+            <div style="color: #A8A29E; font-size: 13px; margin-top: 4px;">
+              Student Portal Access & Official Pass Details
+            </div>
           </div>
 
           <!-- Body -->
@@ -276,8 +292,66 @@ export async function sendDelegateRegistrationEmail(payload: DelegateRegistratio
               Welcome, ${payload.delegateName}!
             </p>
             <p style="font-size: 14px; color: #57534E; line-height: 1.6;">
-              Your registration as part of the <b>${payload.collegeName}</b> contingent has been received. Please present your Digital ID Card at the registration counter on symposium day.
+              Your registration as part of the <b>${payload.collegeName}</b> contingent has been successfully received. Below are your <b>Student Portal Login Credentials</b> to manage your fest participation, track prelims, and view live results.
             </p>
+
+            <!-- Student Portal Access & Credentials Box -->
+            <div style="background: linear-gradient(135deg, #1C1917 0%, #292524 100%); border-radius: 16px; padding: 22px 24px; margin: 24px 0; color: #ffffff; border: 1px solid #383431; box-shadow: 0 4px 18px rgba(0,0,0,0.12);">
+              <div style="margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.12); padding-bottom: 12px;">
+                <span style="display: inline-block; background-color: #FF6B1A; color: #ffffff; font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.1em;">
+                  Student Portal Access
+                </span>
+                <h2 style="margin: 8px 0 0 0; color: #FAF8F5; font-size: 17px; font-weight: 800; letter-spacing: -0.01em;">
+                  Your Login & Portal Credentials
+                </h2>
+              </div>
+
+              <p style="font-size: 13px; color: #D6D3D1; margin: 0 0 16px 0; line-height: 1.5;">
+                Log in to your Student Portal to access your verified Digital ID Card, Food Voucher QR, prelims screening updates, and arena schedules.
+              </p>
+
+              <div style="background-color: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 14px 16px; margin-bottom: 18px;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                  <tr>
+                    <td style="padding: 6px 0; color: #A8A29E; width: 36%; font-weight: 600;">Portal Link:</td>
+                    <td style="padding: 6px 0;">
+                      <a href="${loginPortalUrl}" style="color: #FF8A4C; font-weight: 700; text-decoration: underline; word-break: break-all;">
+                        ${loginPortalUrl}
+                      </a>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 6px 0; color: #A8A29E; font-weight: 600;">User ID / Login:</td>
+                    <td style="padding: 6px 0; color: #FFFFFF; font-weight: 700; font-family: monospace; font-size: 13.5px;">
+                      ${studentUserId}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 6px 0; color: #A8A29E; font-weight: 600;">Password:</td>
+                    <td style="padding: 6px 0; color: #FCD34D; font-weight: 800; font-family: monospace; font-size: 14.5px; letter-spacing: 0.04em;">
+                      ${studentPassword}
+                    </td>
+                  </tr>
+                  ${payload.userPhone ? `
+                  <tr>
+                    <td style="padding: 6px 0; color: #A8A29E; font-weight: 600;">Registered Mobile:</td>
+                    <td style="padding: 6px 0; color: #E7E5E4; font-family: monospace;">
+                      ${payload.userPhone}
+                    </td>
+                  </tr>
+                  ` : ""}
+                </table>
+              </div>
+
+              <div style="text-align: center;">
+                <a href="${loginPortalUrl}" style="background: linear-gradient(135deg, #FF6B1A 0%, #EA580C 100%); color: #ffffff; padding: 13px 26px; font-size: 13.5px; font-weight: 700; text-decoration: none; border-radius: 10px; display: inline-block; box-shadow: 0 4px 14px rgba(255,107,26,0.35);">
+                  Login to Student Portal →
+                </a>
+              </div>
+              <p style="font-size: 11px; color: #A8A29E; margin: 12px 0 0 0; text-align: center; line-height: 1.4;">
+                Tip: You can log in using either your email address or mobile number. You can update your password anytime under Profile settings.
+              </p>
+            </div>
 
             <!-- Pass & Food Token Card -->
             <div style="background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); border: 1.5px solid #FCD34D; border-radius: 16px; padding: 20px; margin: 24px 0;">
@@ -323,11 +397,43 @@ export async function sendDelegateRegistrationEmail(payload: DelegateRegistratio
       </div>
     `;
 
+    const textContent = `
+Dear ${payload.delegateName},
+
+Welcome! Your registration for ${eventName} ${editionYear} as part of the ${payload.collegeName} contingent has been successfully received.
+
+============================================================
+STUDENT PORTAL LOGIN CREDENTIALS
+============================================================
+Portal Link: ${loginPortalUrl}
+User ID / Login: ${studentUserId}
+Password: ${studentPassword}
+${payload.userPhone ? `Registered Mobile: ${payload.userPhone}\n` : ""}
+(You can log in using either your email address or mobile number.)
+
+============================================================
+YOUR DELEGATE PASS & FOOD TOKEN
+============================================================
+Delegate Badge ID: ${payload.badgeCode}
+Food & Lunch Token: ${payload.foodTokenCode}
+Digital ID Pass & QR URL: ${payload.badgeUrl}
+
+============================================================
+REGISTERED COMPETITIONS & SCHEDULE
+============================================================
+${payload.events.length > 0 ? payload.events.map(ev => `• ${ev.name} (${ev.category === "ON_STAGE" ? "On-Stage" : "Off-Stage"})${ev.venue ? ` | Venue: ${ev.venue}` : ""}${ev.time ? ` | Time: ${ev.time}` : ""}${ev.staffCoordinator ? ` | Staff: ${ev.staffCoordinator}` : ""}${ev.studentCoordinator ? ` | Student: ${ev.studentCoordinator}` : ""}`).join("\n") : "General Fest Attendee"}
+
+---
+Symposium Executive Committee
+${institutionName}
+`.trim();
+
     await transporter.sendMail({
       from: `"${config.fromName}" <${config.fromEmail}>`,
       to: payload.toEmail,
       replyTo: config.replyTo || undefined,
-      subject: `Registration Confirmed: ${payload.delegateName} — ${eventName} ${editionYear} Badge Pass`,
+      subject: `Registration Confirmed: ${payload.delegateName} — Student Portal Login & Pass (${eventName} ${editionYear})`,
+      text: textContent,
       html,
     });
 
@@ -503,6 +609,15 @@ export async function sendApprovedDelegatePassEmail(payload: DelegateRegistratio
     const editionYear = activeEdition?.edition || "2027";
     const institutionName = activeEdition?.institutionName || "Sacred Heart College (Autonomous)";
 
+    // Resolve Student Portal credentials & URL
+    const studentUserId = payload.userId || payload.toEmail;
+    const studentPassword = payload.password || payload.userPhone || "Your registered mobile number";
+    const baseUrl = (process.env.NEXTAUTH_URL || "").replace(/\/$/, "");
+    const basePortalUrl = payload.portalUrl || (baseUrl ? `${baseUrl}/login` : "https://shc-shine.up.railway.app/login");
+    const loginPortalUrl = basePortalUrl.includes("?")
+      ? basePortalUrl
+      : `${basePortalUrl}?email=${encodeURIComponent(studentUserId)}`;
+
     const eventsListHtml = payload.events.length > 0
       ? payload.events.map((ev) => `
           <div style="background-color: #FAF8F5; border: 1px solid #E7E5E4; border-radius: 12px; padding: 12px 14px; margin-bottom: 8px;">
@@ -536,8 +651,51 @@ export async function sendApprovedDelegatePassEmail(payload: DelegateRegistratio
               Congratulations, ${payload.delegateName}!
             </p>
             <p style="font-size: 14px; color: #57534E; line-height: 1.6;">
-              Your spot registration fee has been collected and verified by the Registration Desk. Your <b>Official Digital ID Pass (with Event Check-In QR and Food Token QR)</b> is now officially activated.
+              Your registration fee has been verified by the Registration Desk. Your <b>Official Digital ID Pass (with Event Check-In QR and Food Token QR)</b> and <b>Student Portal</b> are now officially active.
             </p>
+
+            <!-- Student Portal Access & Credentials Box -->
+            <div style="background: linear-gradient(135deg, #1C1917 0%, #292524 100%); border-radius: 16px; padding: 20px 22px; margin: 20px 0; color: #ffffff; border: 1px solid #383431; box-shadow: 0 4px 18px rgba(0,0,0,0.12);">
+              <div style="margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.12); padding-bottom: 10px;">
+                <span style="display: inline-block; background-color: #10B981; color: #ffffff; font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.1em;">
+                  Active Portal Account
+                </span>
+                <h3 style="margin: 6px 0 0 0; color: #FAF8F5; font-size: 16px; font-weight: 800;">
+                  Your Student Portal Credentials
+                </h3>
+              </div>
+
+              <div style="background-color: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 12px 16px; margin: 14px 0;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                  <tr>
+                    <td style="padding: 5px 0; color: #A8A29E; width: 36%; font-weight: 600;">Portal Link:</td>
+                    <td style="padding: 5px 0;">
+                      <a href="${loginPortalUrl}" style="color: #34D399; font-weight: 700; text-decoration: underline; word-break: break-all;">
+                        ${loginPortalUrl}
+                      </a>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 5px 0; color: #A8A29E; font-weight: 600;">User ID / Login:</td>
+                    <td style="padding: 5px 0; color: #FFFFFF; font-weight: 700; font-family: monospace; font-size: 13.5px;">
+                      ${studentUserId}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 5px 0; color: #A8A29E; font-weight: 600;">Password:</td>
+                    <td style="padding: 5px 0; color: #FCD34D; font-weight: 800; font-family: monospace; font-size: 14px; letter-spacing: 0.04em;">
+                      ${studentPassword}
+                    </td>
+                  </tr>
+                </table>
+              </div>
+
+              <div style="text-align: center;">
+                <a href="${loginPortalUrl}" style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: #ffffff; padding: 11px 22px; font-size: 13px; font-weight: 700; text-decoration: none; border-radius: 10px; display: inline-block;">
+                  Open Student Dashboard →
+                </a>
+              </div>
+            </div>
 
             <!-- Dual Pass Summary -->
             <div style="background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); border: 1.5px solid #FCD34D; border-radius: 16px; padding: 18px; margin: 20px 0;">
@@ -582,11 +740,42 @@ export async function sendApprovedDelegatePassEmail(payload: DelegateRegistratio
       </div>
     `;
 
+    const textContent = `
+Dear ${payload.delegateName},
+
+Congratulations! Your registration for ${eventName} ${editionYear} has been approved by the Registration Desk.
+
+============================================================
+STUDENT PORTAL LOGIN CREDENTIALS
+============================================================
+Portal Link: ${loginPortalUrl}
+User ID / Login: ${studentUserId}
+Password: ${studentPassword}
+${payload.userPhone ? `Registered Mobile: ${payload.userPhone}\n` : ""}
+
+============================================================
+APPROVED DIGITAL PASS & FOOD TOKEN
+============================================================
+Event Gate Pass Code: ${payload.badgeCode}
+Meal & Refreshment Token: ${payload.foodTokenCode}
+Digital Pass URL: ${payload.badgeUrl}
+
+============================================================
+REGISTERED COMPETITIONS
+============================================================
+${payload.events.length > 0 ? payload.events.map(ev => `• ${ev.name} (${ev.category === "ON_STAGE" ? "On-Stage" : "Off-Stage"})${ev.venue ? ` | Venue: ${ev.venue}` : ""}${ev.time ? ` | Time: ${ev.time}` : ""}`).join("\n") : "General Fest Attendee"}
+
+---
+Symposium Executive Committee
+${institutionName}
+`.trim();
+
     await transporter.sendMail({
       from: `"${config.fromName}" <${config.fromEmail}>`,
       to: payload.toEmail,
       replyTo: config.replyTo || undefined,
-      subject: `Approved ID Pass: ${payload.delegateName} — ${eventName} ${editionYear}`,
+      subject: `Approved ID Pass: ${payload.delegateName} — Portal Login & Pass (${eventName} ${editionYear})`,
+      text: textContent,
       html,
     });
 

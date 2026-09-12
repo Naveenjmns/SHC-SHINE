@@ -226,7 +226,7 @@ export async function PATCH(req: Request) {
           events: memberEvents,
         });
 
-        // Send individual approved pass email
+        // Send individual approved pass email with portal credentials
         sendApprovedDelegatePassEmail({
           toEmail: member.email,
           delegateName: member.name,
@@ -235,6 +235,10 @@ export async function PATCH(req: Request) {
           badgeCode: member.badgeCode,
           foodTokenCode: member.foodTokenCode,
           badgeUrl,
+          portalUrl: `${origin}/login`,
+          userId: member.email,
+          password: member.phone || "Your registered mobile number",
+          userPhone: member.phone,
           events: memberEvents,
         }).catch((err) => console.error(`Failed to send approved pass to ${member.email}:`, err));
       }
@@ -303,7 +307,7 @@ export async function PATCH(req: Request) {
       },
     });
 
-    // If marked CONFIRMED individually, send approved pass email
+    // If marked CONFIRMED individually, send approved pass email with portal credentials
     if (status === "CONFIRMED" && updated.delegationMember) {
       const { sendApprovedDelegatePassEmail } = await import("@/lib/emailService");
       sendApprovedDelegatePassEmail({
@@ -314,6 +318,10 @@ export async function PATCH(req: Request) {
         badgeCode: updated.delegationMember.badgeCode,
         foodTokenCode: updated.delegationMember.foodTokenCode,
         badgeUrl: `${origin}/badge/${updated.delegationMember.badgeCode}`,
+        portalUrl: `${origin}/login`,
+        userId: updated.user.email,
+        password: updated.user.phone || "Your registered mobile number",
+        userPhone: updated.user.phone,
         events: [
           {
             name: updated.event.name,
