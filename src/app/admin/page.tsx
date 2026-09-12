@@ -15,6 +15,7 @@ import {
   Theater,
   Laptop,
   Check,
+  UserCheck,
   X,
   Plus,
   Upload,
@@ -67,6 +68,8 @@ interface StatsData {
   totalEvents: number;
   totalRevenue: number;
   pendingRevenue?: number;
+  totalApprovedStudents?: number;
+  totalPendingStudents?: number;
 }
 
 interface EventBreakdown {
@@ -996,9 +999,13 @@ export default function AdminOverviewPage() {
   };
 
   const collectPaymentAndApproveDelegation = async (delegationId: string, teamLeadName: string, totalFee?: number) => {
-    if (!confirm(`Collect spot registration fee of ₹${totalFee || 0} for ${teamLeadName}'s team and activate official passes?\n\nThis will mark payment as PAID, confirm all team member registrations, and send official passes (2 QR badges) to each student and a full dossier to the team lead.`)) {
-      return;
-    }
+    const ok = await confirmAction({
+      title: `Collect Spot Fee & Activate Passes?`,
+      message: `Collect spot registration fee of ₹${totalFee || 0} for ${teamLeadName}'s team and activate official passes?\n\nThis will mark payment as PAID, confirm all team member registrations, activate official QR passes for event scanning, and send official passes (QR badges) to each student.`,
+      confirmText: `Collect ₹${totalFee || 0} & Approve Passes`,
+      cancelText: "Cancel",
+    });
+    if (!ok) return;
     try {
       const res = await fetch("/api/admin/registrations", {
         method: "PATCH",
@@ -1590,56 +1597,71 @@ export default function AdminOverviewPage() {
             </div>
 
             {/* Stat Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-              <div className="dash-card p-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+              <div className="dash-card p-4 sm:p-5 border-l-4 border-emerald-500">
                 <div className="flex items-center justify-between text-[#64748B] mb-2">
-                  <span className="text-xs font-bold uppercase tracking-wider">Total Revenue</span>
-                  <Trophy className="w-4 h-4 text-[#D9A441]" />
+                  <span className="text-xs font-bold uppercase tracking-wider">Revenue Collected</span>
+                  <Trophy className="w-4 h-4 text-emerald-600" />
                 </div>
-                <div className="text-3xl font-black text-[#0F172A] tabular-nums">
+                <div className="text-2xl sm:text-3xl font-black text-emerald-700 tabular-nums">
                   ₹{displayRevenue.toLocaleString()}
                 </div>
-                <p className="text-xs text-[#94A3B8] mt-1 font-medium">
+                <p className="text-[11px] text-[#64748B] mt-1 font-medium">
                   {stats?.pendingRevenue && stats.pendingRevenue > 0
-                    ? `From verified registrations (Pending: ₹${stats.pendingRevenue.toLocaleString()})`
-                    : "From verified registrations"}
+                    ? `Paid & Verified (Pending: ₹${stats.pendingRevenue.toLocaleString()})`
+                    : "From approved & paid registrations"}
                 </p>
               </div>
 
-              <div className="dash-card p-5">
+              <div className="dash-card p-4 sm:p-5 border-l-4 border-indigo-500">
+                <div className="flex items-center justify-between text-[#64748B] mb-2">
+                  <span className="text-xs font-bold uppercase tracking-wider">Approved Students</span>
+                  <UserCheck className="w-4 h-4 text-indigo-600" />
+                </div>
+                <div className="text-2xl sm:text-3xl font-black text-indigo-700 tabular-nums">
+                  {stats.totalApprovedStudents ?? stats.confirmedRegistrations}
+                </div>
+                <p className="text-[11px] text-[#64748B] mt-1 font-medium">
+                  Official QR passes activated
+                </p>
+              </div>
+
+              <div className="dash-card p-4 sm:p-5 border-l-4 border-amber-500">
+                <div className="flex items-center justify-between text-[#64748B] mb-2">
+                  <span className="text-xs font-bold uppercase tracking-wider">Pending Approvals</span>
+                  <Clock className="w-4 h-4 text-amber-600" />
+                </div>
+                <div className="text-2xl sm:text-3xl font-black text-amber-700 tabular-nums">
+                  {stats.totalPendingStudents ?? stats.pendingRegistrations}
+                </div>
+                <p className="text-[11px] text-[#64748B] mt-1 font-medium">
+                  Awaiting desk fee / verification
+                </p>
+              </div>
+
+              <div className="dash-card p-4 sm:p-5 border-l-4 border-[#FF6B1A]">
                 <div className="flex items-center justify-between text-[#64748B] mb-2">
                   <span className="text-xs font-bold uppercase tracking-wider">Total Registrations</span>
                   <Users className="w-4 h-4 text-[#FF6B1A]" />
                 </div>
-                <div className="text-3xl font-black text-[#0F172A] tabular-nums">
+                <div className="text-2xl sm:text-3xl font-black text-[#0F172A] tabular-nums">
                   {stats.totalRegistrations}
                 </div>
-                <p className="text-xs text-[#94A3B8] mt-1 font-medium">
+                <p className="text-[11px] text-[#64748B] mt-1 font-medium">
                   Confirmed: {stats.confirmedRegistrations} | Pending: {stats.pendingRegistrations}
                 </p>
               </div>
 
-              <div className="dash-card p-5">
+              <div className="dash-card p-4 sm:p-5 border-l-4 border-slate-400">
                 <div className="flex items-center justify-between text-[#64748B] mb-2">
-                  <span className="text-xs font-bold uppercase tracking-wider">Active Competitions</span>
-                  <Theater className="w-4 h-4 text-[#10B981]" />
+                  <span className="text-xs font-bold uppercase tracking-wider">Competitions</span>
+                  <Theater className="w-4 h-4 text-purple-600" />
                 </div>
-                <div className="text-3xl font-black text-[#0F172A] tabular-nums">
+                <div className="text-2xl sm:text-3xl font-black text-[#0F172A] tabular-nums">
                   {stats.totalEvents}
                 </div>
-                <p className="text-xs text-[#94A3B8] mt-1 font-medium">Across On-Stage & Off-Stage</p>
-              </div>
-
-              <div className="dash-card p-5">
-                <div className="flex items-center justify-between text-[#64748B] mb-2">
-                  <span className="text-xs font-bold uppercase tracking-wider">Platform Accounts</span>
-                  <Users className="w-4 h-4 text-[#3B82F6]" />
-                </div>
-                <div className="text-3xl font-black text-[#0F172A] tabular-nums">
-                  {stats.totalUsers}
-                </div>
-                <p className="text-xs text-[#94A3B8] mt-1 font-medium">
-                  {stats.totalStudents} Students | {stats.totalCoordinators} Coordinators
+                <p className="text-[11px] text-[#64748B] mt-1 font-medium">
+                  On-Stage & Off-Stage events
                 </p>
               </div>
             </div>

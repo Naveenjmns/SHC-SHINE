@@ -5,6 +5,7 @@ import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Footer from "@/components/Footer";
+import { useToast } from "@/components/ToastProvider";
 import { safeJson } from "@/lib/safeFetch";
 import {
   Trophy,
@@ -93,6 +94,7 @@ export default function StudentDashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
+  const { toast } = useToast();
   const [registrations, setRegistrations] = useState<RegistrationItem[]>([]);
   const [isApproved, setIsApproved] = useState(false);
   const [showStageMode, setShowStageMode] = useState(false);
@@ -132,11 +134,12 @@ export default function StudentDashboard() {
       const data = await safeJson(res, { success: false });
       if (data.success) {
         setPass((prev) => (prev ? { ...prev, foodPreference: nextPref as "VEG" | "NON_VEG" } : null));
+        toast.success(`Dietary preference updated to ${nextPref === "VEG" ? "Vegetarian" : "Non-Vegetarian"}`);
       } else {
-        alert(data.message || "Failed to update dietary preference.");
+        toast.error(data.message || "Failed to update dietary preference.");
       }
     } catch {
-      alert("Network error while updating dietary preference.");
+      toast.error("Network error while updating dietary preference.");
     } finally {
       setUpdatingFoodPref(false);
     }

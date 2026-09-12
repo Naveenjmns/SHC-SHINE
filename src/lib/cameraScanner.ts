@@ -222,6 +222,9 @@ export function extractLookupCode(rawInput: string): { code: string; typeHint?: 
   if (upper.startsWith("FT-")) {
     return { code: upper, typeHint: "FOOD" };
   }
+  if (upper.startsWith("SHN") || upper.includes("-DEL-")) {
+    return { code: upper, typeHint: "EVENT" };
+  }
 
   return { code: upper };
 }

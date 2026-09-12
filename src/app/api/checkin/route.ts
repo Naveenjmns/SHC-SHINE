@@ -28,6 +28,7 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const rawCode = searchParams.get("code");
+    const requiredType = searchParams.get("type"); // "EVENT" or "FOOD"
     if (!rawCode) {
       return NextResponse.json(
         { success: false, message: "Please scan a QR code or enter a badge/token code." },
@@ -36,6 +37,14 @@ export async function GET(req: NextRequest) {
     }
 
     const { code, typeHint } = extractLookupCode(rawCode);
+
+    const isFoodCoordinator = session.user.role === "FOOD_COORDINATOR";
+    const isEventCoordinator = session.user.role === "COORDINATOR" || Boolean((session.user as any).isEventCoordinator);
+    const isAdmin = session.user.role === "ADMIN";
+
+    // Strict pass type enforcement based on role or explicit requiredType
+    const enforceFood = requiredType === "FOOD" || (isFoodCoordinator && !isAdmin);
+    const enforceEvent = requiredType === "EVENT" || (isEventCoordinator && !isAdmin && !isFoodCoordinator);
 
     // Search by badgeCode or foodTokenCode
     const member = await prisma.delegationMember.findFirst({
@@ -73,8 +82,34 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    const isCodeBadge = member.badgeCode.toUpperCase() === code.toUpperCase();
+    const isCodeFood = member.foodTokenCode.toUpperCase() === code.toUpperCase();
+
+    // Reject Event QR at Food Counter
+    if (enforceFood && isCodeBadge && !isCodeFood) {
+      return NextResponse.json(
+        {
+          success: false,
+          isWrongType: true,
+          message: `Wrong Pass Scanned: You scanned an Event Registration Pass (${code}). Food distribution requires the student's Food Token QR (FT-...). Event passes cannot be used for meals.`,
+        },
+        { status: 400 }
+      );
+    }
+
+    // Reject Food QR at Event Check-In
+    if (enforceEvent && isCodeFood && !isCodeBadge) {
+      return NextResponse.json(
+        {
+          success: false,
+          isWrongType: true,
+          message: `Wrong Pass Scanned: You scanned a Food Token QR (${code}). Competition event check-ins require the student's Event Registration Pass QR (${member.badgeCode}). Food tokens cannot be used for event entry.`,
+        },
+        { status: 400 }
+      );
+    }
+
     // Get assigned event IDs for the logged in coordinator/staff
-    const isAdmin = session.user.role === "ADMIN";
     const userAssignedEvents = await prisma.event.findMany({
       where: isAdmin
         ? {}
@@ -91,12 +126,27 @@ export async function GET(req: NextRequest) {
     });
     const assignedEventIds = new Set(userAssignedEvents.map((e) => e.id));
 
+    const isApproved =
+      member.delegation.paymentStatus === "PAID" ||
+      member.delegation.paymentStatus === "VERIFIED" ||
+      member.registrations.some((r) => r.status === "CONFIRMED");
+
     const allEventsAttended = member.registrations.length > 0 && member.registrations.every((r) => r.attended);
 
     return NextResponse.json({
       success: true,
       typeHint,
       isAdmin,
+      isApproved,
+      notApproved: !isApproved,
+      notApprovedMessage: !isApproved
+        ? `QR code is valid, but registration is NOT APPROVED yet. Please direct ${member.name} (${member.delegation.collegeName}) to the Registration Desk to complete spot payment and approval.`
+        : null,
+      allEventsAttended,
+      isExpired: allEventsAttended,
+      expiredMessage: allEventsAttended
+        ? `QR Code Expired: All registered event check-ins have already been completed for ${member.name} (${member.delegation.collegeName}).`
+        : null,
       assignedEvents: userAssignedEvents,
       member: {
         id: member.id,
@@ -109,6 +159,7 @@ export async function GET(req: NextRequest) {
         eventCheckedInAt: member.eventCheckedInAt,
         eventCheckedInBy: member.eventCheckedInBy,
         allEventsAttended,
+        isApproved,
         foodTokenClaimed: member.foodTokenClaimed,
         foodClaimedAt: member.foodClaimedAt,
         foodClaimedBy: member.foodClaimedBy,
@@ -122,7 +173,7 @@ export async function GET(req: NextRequest) {
         staffInchargePhone: member.delegation.staffInchargePhone,
         totalFee: member.delegation.totalFee,
         paymentStatus: member.delegation.paymentStatus,
-        isPaid: member.delegation.paymentStatus === "PAID",
+        isPaid: isApproved,
         registrations: member.registrations.map((r) => ({
           registrationId: r.id,
           eventId: r.event.id,
@@ -216,13 +267,31 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      // Payment Guard: Must be PAID at registration desk
-      if (member.delegation.paymentStatus !== "PAID") {
+      // Pass Type Guard: Must be an Event Registration Pass QR
+      if (member.foodTokenCode.toUpperCase() === code.toUpperCase() && member.badgeCode.toUpperCase() !== code.toUpperCase()) {
         return NextResponse.json(
           {
             success: false,
+            isWrongType: true,
+            message: `Wrong Pass Scanned: Scanned code "${code}" is a Food Token QR. Competition event check-ins require the student's Event Registration Pass QR (${member.badgeCode}). Food tokens cannot be used for event entry.`,
+          },
+          { status: 400 }
+        );
+      }
+
+      // Approval & Payment Guard: Must be approved and paid at registration desk
+      const isApproved =
+        member.delegation.paymentStatus === "PAID" ||
+        member.delegation.paymentStatus === "VERIFIED" ||
+        member.registrations.some((r) => r.status === "CONFIRMED");
+
+      if (!isApproved) {
+        return NextResponse.json(
+          {
+            success: false,
+            notApproved: true,
             paymentPending: true,
-            message: `Registration Desk Payment Required: ${member.name}'s contingent fee is currently UNPAID (${member.delegation.paymentStatus}). Please direct student to Registration Desk to pay ₹${member.delegation.totalFee} and collect approval before venue entry.`,
+            message: `QR code is valid, but NOT APPROVED: ${member.name}'s registration (${member.delegation.collegeName}) has not been approved at the Registration Desk yet. Please approve the registration and collect the fee (₹${member.delegation.totalFee || 0}) before entry.`,
           },
           { status: 403 }
         );
@@ -302,11 +371,12 @@ export async function POST(req: NextRequest) {
           {
             success: false,
             alreadyCheckedIn: true,
-            message: `${member.name} is already checked in for "${targetEvent.name}" on ${
+            isExpired: true,
+            message: `QR Code Expired / Already Scanned: ${member.name} (${member.delegation.collegeName}) was already checked in for "${targetEvent.name}" on ${
               reg.checkedInAt
                 ? new Date(reg.checkedInAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })
                 : "earlier today"
-            } by ${reg.checkedInBy || "Coordinator"}.`,
+            } by ${reg.checkedInBy || "Coordinator"}. This single-use QR pass has expired.`,
           },
           { status: 409 }
         );
@@ -376,6 +446,15 @@ export async function POST(req: NextRequest) {
 
     // 2. EVENT UNCHECK ACTION
     if (action === "EVENT_UNCHECK") {
+      if (session.user.role === "FOOD_COORDINATOR") {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Unauthorized: Food Committee coordinators cannot alter competition event attendance.",
+          },
+          { status: 403 }
+        );
+      }
       if (eventId) {
         await prisma.registration.updateMany({
           where: { delegationMemberId: member.id, eventId },
@@ -422,19 +501,37 @@ export async function POST(req: NextRequest) {
         return NextResponse.json(
           {
             success: false,
-            message: "Unauthorized: Food token distribution is restricted to the Food Committee and Administrators. Please direct delegates to the Food Counter.",
+            message: "Unauthorized: Event Coordinators cannot scan or approve food tokens. Food distribution is strictly restricted to the Food Committee.",
           },
           { status: 403 }
         );
       }
 
-      if (member.delegation.paymentStatus !== "PAID") {
+      // Pass Type Guard: Must be a Food Token QR
+      if (member.badgeCode.toUpperCase() === code.toUpperCase() && member.foodTokenCode.toUpperCase() !== code.toUpperCase()) {
         return NextResponse.json(
           {
             success: false,
+            isWrongType: true,
+            message: `Wrong Pass Scanned: Scanned code "${code}" is an Event Registration Pass QR. Food distribution requires the participant's Food Token QR (${member.foodTokenCode}). Event passes cannot be scanned for meals.`,
+          },
+          { status: 400 }
+        );
+      }
+
+      const isApproved =
+        member.delegation.paymentStatus === "PAID" ||
+        member.delegation.paymentStatus === "VERIFIED" ||
+        member.registrations.some((r) => r.status === "CONFIRMED");
+
+      if (!isApproved) {
+        return NextResponse.json(
+          {
+            success: false,
+            notApproved: true,
             paymentPending: true,
             foodPreference: (member as any).foodPreference || "VEG",
-            message: `Payment Desk Approval Required: ${member.name}'s contingent fee is UNPAID (${member.delegation.paymentStatus}). Food tokens cannot be issued until payment is verified at the Registration Desk.`,
+            message: `QR code is valid, but NOT APPROVED: Meal token cannot be issued because ${member.name}'s registration (${member.delegation.collegeName}) has not been approved at the Registration Desk.`,
           },
           { status: 403 }
         );
@@ -445,15 +542,16 @@ export async function POST(req: NextRequest) {
           {
             success: false,
             alreadyClaimed: true,
+            isExpired: true,
             foodPreference: (member as any).foodPreference || "VEG",
-            message: `Already Claimed: Food token was already redeemed by ${member.name} on ${
+            message: `QR Token Expired / Already Redeemed: Food token was ALREADY claimed by ${member.name} (${member.delegation.collegeName}) on ${
               member.foodClaimedAt
                 ? new Date(member.foodClaimedAt).toLocaleTimeString("en-IN", {
                     hour: "2-digit",
                     minute: "2-digit",
                   })
                 : "earlier today"
-            } (Verified by ${member.foodClaimedBy || "staff"}).`,
+            } (Verified by ${member.foodClaimedBy || "staff"}). Tokens are single-use.`,
             member: {
               ...member,
               foodPreference: (member as any).foodPreference || "VEG",

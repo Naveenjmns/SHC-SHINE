@@ -75,6 +75,10 @@ interface MemberLookupData {
   totalFee: number;
   paymentStatus: string;
   isPaid: boolean;
+  isApproved?: boolean;
+  notApprovedMessage?: string | null;
+  isExpired?: boolean;
+  expiredMessage?: string | null;
   registrations: RegistrationDetail[];
 }
 
@@ -464,15 +468,48 @@ export default function CheckInModal({
     setLoading(true);
     setMessage(null);
     try {
-      const res = await fetch(`/api/checkin?code=${encodeURIComponent(code)}`);
+      const typeParam = mode === "event_only" ? "&type=EVENT" : mode === "food_only" ? "&type=FOOD" : "";
+      const res = await fetch(`/api/checkin?code=${encodeURIComponent(code)}${typeParam}`);
       const data = await safeJson(res, { success: false });
 
-      if (data.success && data.member) {
-        setDelegate(data.member);
+      if (data.isWrongType) {
+        setDelegate(null);
         setMessage({
-          type: "success",
-          text: `Found participant: ${data.member.name} (${data.member.collegeName})`,
+          type: "error",
+          text: data.message || "Wrong pass type scanned.",
         });
+        return;
+      }
+
+      if (data.success && data.member) {
+        const m = data.member;
+        const memberApproved = data.isApproved ?? m.isApproved ?? m.isPaid;
+        const memberExpired = data.isExpired ?? m.isExpired ?? m.allEventsAttended;
+
+        setDelegate({
+          ...m,
+          isApproved: memberApproved,
+          isExpired: memberExpired,
+          notApprovedMessage: data.notApprovedMessage,
+          expiredMessage: data.expiredMessage,
+        });
+
+        if (!memberApproved) {
+          setMessage({
+            type: "warning",
+            text: data.notApprovedMessage || `QR code is valid, but registration is NOT APPROVED yet. Please direct ${m.name} (${m.collegeName}) to Registration Desk.`,
+          });
+        } else if (memberExpired) {
+          setMessage({
+            type: "warning",
+            text: data.expiredMessage || `QR Code Expired / Already Checked In: All event check-ins have already been recorded for ${m.name}.`,
+          });
+        } else {
+          setMessage({
+            type: "success",
+            text: `Valid & Active Delegate: ${m.name} (${m.collegeName}) - Ready for Check-In`,
+          });
+        }
       } else {
         setDelegate(null);
         setMessage({
@@ -876,17 +913,40 @@ export default function CheckInModal({
           {/* Delegate Verification Card */}
           {delegate && (
             <div className="bg-stone-50 border-2 border-stone-200 rounded-2xl p-5 space-y-5 animate-in fade-in duration-200">
-              {/* Desk Payment Warning Banner */}
-              {!delegate.isPaid && (
-                <div className="bg-rose-50 border border-rose-300 rounded-xl p-3.5 flex items-start gap-3 text-rose-900">
-                  <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
-                  <div>
-                    <h4 className="text-xs font-black uppercase tracking-wider text-rose-800">
-                      Payment & Approval Pending at Registration Desk
+              {/* Desk Payment & Approval Warning Banner */}
+              {(!delegate.isApproved || !delegate.isPaid) ? (
+                <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-4 flex items-start gap-3.5 text-amber-950 shadow-xs">
+                  <div className="w-9 h-9 rounded-xl bg-amber-200/80 flex items-center justify-center shrink-0 text-amber-800 mt-0.5">
+                    <AlertTriangle className="w-5 h-5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-xs font-black uppercase tracking-wider text-amber-900 flex items-center gap-1.5">
+                      <span>QR Code is Valid, but NOT APPROVED</span>
                     </h4>
-                    <p className="text-xs text-rose-700 mt-0.5">
-                      Fee: <strong>₹{delegate.totalFee}</strong> (Status: {delegate.paymentStatus}). The delegate must pay the amount at the Registration Desk and be marked Approved before venue check-in or food distribution.
+                    <p className="text-xs text-amber-800 mt-1 leading-relaxed">
+                      This QR pass exists in the system, but has <strong>NOT been approved</strong> by the Registration Desk yet. Fee: <strong>₹{delegate.totalFee}</strong> ({delegate.paymentStatus}). Please direct <strong>{delegate.name}</strong> to the Registration Desk to collect payment and activate official passes before venue entry.
                     </p>
+                  </div>
+                </div>
+              ) : delegate.allEventsAttended ? (
+                <div className="bg-stone-100 border border-stone-300 rounded-2xl p-4 flex items-start gap-3.5 text-stone-900 shadow-xs">
+                  <div className="w-9 h-9 rounded-xl bg-stone-200 flex items-center justify-center shrink-0 text-stone-700 mt-0.5">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-xs font-black uppercase tracking-wider text-stone-900">
+                      QR Pass Expired / Completed
+                    </h4>
+                    <p className="text-xs text-stone-600 mt-1 leading-relaxed">
+                      All competition events have already been checked in for <strong>{delegate.name}</strong>. Passes are single-use and cannot be used for additional event entries.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-3.5 flex items-center gap-3 text-emerald-900">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                  <div className="text-xs">
+                    <strong className="font-bold">Pass Active & Verified:</strong> {delegate.name} is approved. Ready for competition check-in below.
                   </div>
                 </div>
               )}
@@ -894,16 +954,31 @@ export default function CheckInModal({
               {/* Header profile info */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-stone-200 pb-4">
                 <div>
-                  <h3 className="text-base font-black text-stone-900 flex items-center gap-2">
-                    <span>{delegate.name}</span>
+                  <div className="flex items-center gap-2 flex-wrap mb-1">
+                    <h3 className="text-base font-black text-stone-900">
+                      {delegate.name}
+                    </h3>
                     <span className="text-xs font-mono font-bold bg-[#FF6B1A]/10 text-[#FF6B1A] px-2 py-0.5 rounded-lg border border-[#FF6B1A]/20">
                       {delegate.badgeCode}
                     </span>
-                  </h3>
-                  <p className="text-xs text-stone-600 mt-0.5 flex items-center gap-1.5">
+                    {(!delegate.isApproved || !delegate.isPaid) ? (
+                      <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-300">
+                        PENDING APPROVAL
+                      </span>
+                    ) : delegate.allEventsAttended ? (
+                      <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-stone-200 text-stone-800 border border-stone-300">
+                        PASS EXPIRED
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 border border-emerald-300">
+                        APPROVED & ACTIVE
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-stone-700 font-semibold flex items-center gap-1.5">
                     <Building2 className="w-3.5 h-3.5 text-stone-400" />
                     <span>{delegate.collegeName}</span>
-                    {delegate.department && <span>• {delegate.department}</span>}
+                    {delegate.department && <span className="text-stone-500 font-normal">• {delegate.department}</span>}
                   </p>
                   <p className="text-[11px] text-stone-500 mt-0.5">
                     Team: {delegate.teamName || "Individual"} • Lead: {delegate.teamLeadName} ({delegate.teamLeadPhone})
@@ -991,19 +1066,19 @@ export default function CheckInModal({
                                 </button>
                               )}
                             </div>
-                          ) : !delegate.isPaid ? (
-                            <span className="text-[10px] font-bold text-rose-700 bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200">
-                              Payment Required
+                          ) : (!delegate.isPaid || !delegate.isApproved) ? (
+                            <span className="text-[10px] font-bold text-amber-900 bg-amber-100/80 px-2.5 py-1 rounded-lg border border-amber-300">
+                              Approval Required at Desk
                             </span>
                           ) : reg.canCheckIn ? (
                             <button
                               type="button"
                               onClick={() => handleCheckInEvent(true, reg.eventId)}
                               disabled={actionLoading}
-                              className="tap-target px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition flex items-center gap-1.5 shadow-xs cursor-pointer"
+                              className="tap-target px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition flex items-center gap-1.5 shadow-sm hover:shadow-emerald-600/20 cursor-pointer"
                             >
                               <UserCheck className="w-3.5 h-3.5" />
-                              <span>Mark Present</span>
+                              <span>Confirm Check-In</span>
                             </button>
                           ) : (
                             <span

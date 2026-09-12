@@ -156,9 +156,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 <h3 className="text-lg font-extrabold text-[#0F172A] leading-tight">
                   {confirmModal.options.title}
                 </h3>
-                <p className="text-xs text-[#64748B] mt-1.5 leading-relaxed">
+                <div className="text-xs text-[#64748B] mt-1.5 leading-relaxed whitespace-pre-line space-y-1">
                   {confirmModal.options.message}
-                </p>
+                </div>
               </div>
             </div>
 
@@ -166,17 +166,17 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               <button
                 type="button"
                 onClick={() => handleConfirmClose(false)}
-                className="px-4 py-2.5 rounded-xl text-xs font-bold text-[#475569] hover:bg-stone-100 transition"
+                className="tap-target px-4 py-2.5 rounded-xl text-xs font-bold text-[#475569] hover:bg-stone-100 transition cursor-pointer"
               >
                 {confirmModal.options.cancelText || "Cancel"}
               </button>
               <button
                 type="button"
                 onClick={() => handleConfirmClose(true)}
-                className={`px-5 py-2.5 rounded-xl text-xs font-bold text-white transition shadow-sm ${
+                className={`tap-target px-5 py-2.5 rounded-xl text-xs font-bold text-white transition shadow-sm cursor-pointer ${
                   confirmModal.options.isDestructive
                     ? "bg-rose-600 hover:bg-rose-700 shadow-rose-600/20"
-                    : "bg-[#0F172A] hover:bg-slate-800 shadow-slate-900/20"
+                    : "bg-[#FF6B1A] hover:bg-[#E8551F] text-white shadow-[#FF6B1A]/20"
                 }`}
               >
                 {confirmModal.options.confirmText || "Confirm"}

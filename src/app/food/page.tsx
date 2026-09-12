@@ -533,6 +533,14 @@ export default function FoodCoordinatorPage() {
             tokenCode: code,
             message: data.message || "Contingent has not paid registration fee. Direct to Registration Desk.",
           });
+        } else if (data.isWrongType) {
+          playSound("error");
+          setPopup({
+            status: "error",
+            title: "Wrong Pass Type (Event Pass)",
+            tokenCode: code,
+            message: data.message || "You scanned an Event Registration Pass. Food distribution requires the participant's Food Token QR (FT-...).",
+          });
         } else if (res.status === 404) {
           playSound("error");
           setPopup({
@@ -552,10 +560,18 @@ export default function FoodCoordinatorPage() {
         }
       } else {
         // Manual Inspection Mode: Lookup first, then let coordinator click confirm
-        const res = await fetch(`/api/checkin?code=${encodeURIComponent(code)}`);
+        const res = await fetch(`/api/checkin?code=${encodeURIComponent(code)}&type=FOOD`);
         const data = await safeJson(res);
 
-        if (res.ok && data.success && data.member) {
+        if (data.isWrongType) {
+          playSound("error");
+          setPopup({
+            status: "error",
+            title: "Wrong Pass Type (Event Pass)",
+            tokenCode: code,
+            message: data.message || "You scanned an Event Registration Pass. Food distribution requires the participant's Food Token QR (FT-...).",
+          });
+        } else if (res.ok && data.success && data.member) {
           const m = data.member;
           if (m.foodTokenClaimed) {
             playSound("warning");
@@ -639,10 +655,18 @@ export default function FoodCoordinatorPage() {
         });
         fetchStats();
       } else {
-        alert(data.message || "Failed to reset claim.");
+        setPopup({
+          status: "error",
+          title: "Reset Failed",
+          message: data.message || "Failed to reset claim.",
+        });
       }
-    } catch (err) {
-      alert("Network error while resetting claim.");
+    } catch {
+      setPopup({
+        status: "error",
+        title: "Network Error",
+        message: "Network error while resetting claim.",
+      });
     } finally {
       setActionLoading(false);
     }
@@ -675,10 +699,18 @@ export default function FoodCoordinatorPage() {
         );
         fetchStats();
       } else {
-        alert(data.message || "Failed to update dietary preference.");
+        setPopup({
+          status: "error",
+          title: "Update Failed",
+          message: data.message || "Failed to update dietary preference.",
+        });
       }
-    } catch (err) {
-      alert("Network error while updating preference.");
+    } catch {
+      setPopup({
+        status: "error",
+        title: "Network Error",
+        message: "Network error while updating preference.",
+      });
     } finally {
       setActionLoading(false);
     }

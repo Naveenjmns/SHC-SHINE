@@ -138,6 +138,60 @@ export async function GET() {
       registrationsCount: e._count.registrations,
     }));
 
+    // Calculate unique approved and pending students
+    const [approvedDelegationMembers, confirmedIndividualRegistrations, pendingRegistrationsList] = await Promise.all([
+      prisma.delegationMember.findMany({
+        where: {
+          OR: [
+            {
+              delegation: {
+                OR: [{ paymentStatus: "PAID" }, { paymentStatus: "VERIFIED" }],
+              },
+            },
+            {
+              registrations: {
+                some: { status: "CONFIRMED" },
+              },
+            },
+          ],
+        },
+        select: { id: true, email: true },
+      }),
+      prisma.registration.findMany({
+        where: { status: "CONFIRMED" },
+        select: { userId: true, user: { select: { email: true } } },
+      }),
+      prisma.registration.findMany({
+        where: {
+          status: "PENDING",
+          delegation: {
+            paymentStatus: { notIn: ["PAID", "VERIFIED"] },
+          },
+        },
+        select: { userId: true, user: { select: { email: true } } },
+      }),
+    ]);
+
+    const approvedEmailSet = new Set<string>();
+    approvedDelegationMembers.forEach((m) => {
+      if (m.email) approvedEmailSet.add(m.email.toLowerCase());
+      else approvedEmailSet.add(m.id);
+    });
+    confirmedIndividualRegistrations.forEach((r) => {
+      if (r.user?.email) approvedEmailSet.add(r.user.email.toLowerCase());
+      else approvedEmailSet.add(r.userId);
+    });
+    const totalApprovedStudents = approvedEmailSet.size;
+
+    const pendingEmailSet = new Set<string>();
+    pendingRegistrationsList.forEach((r) => {
+      const email = r.user?.email?.toLowerCase();
+      if (!email || !approvedEmailSet.has(email)) {
+        pendingEmailSet.add(email || r.userId);
+      }
+    });
+    const totalPendingStudents = pendingEmailSet.size;
+
     return NextResponse.json({
       success: true,
       stats: {
@@ -148,6 +202,8 @@ export async function GET() {
         pendingRegistrations,
         confirmedRegistrations,
         rejectedRegistrations,
+        totalApprovedStudents,
+        totalPendingStudents,
         totalEvents: events.length,
         totalRevenue,
         pendingRevenue,
