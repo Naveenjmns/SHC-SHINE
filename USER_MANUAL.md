@@ -107,9 +107,9 @@ Upon opening the **Analytics Overview** tab, administrators are presented with r
 
 ### 3.2 Institution & Department Configuration
 Navigate to the **Institution & Dept** tab:
-1. **Institution Name**: Enter the legal name of the college/university (e.g., *Sacred Heart College (Autonomous)*).
-2. **Accreditation Text**: Enter accreditation details (e.g., *Affiliated to Thiruvalluvar University • Accredited by NAAC (4th Cycle) with 'A++' Grade*).
-3. **Host Department**: Enter the hosting department (e.g., *Department of Computer Applications (PG)*).
+1. **Institution Name**: Enter the legal name of the college/university (e.g., *St. Xavier's Institute (Autonomous)*).
+2. **Accreditation Text**: Enter accreditation details (e.g., *Affiliated to State University • Accredited by NAAC (4th Cycle) with 'A++' Grade*).
+3. **Host Department**: Enter the hosting department (e.g., *Department of Computer Science & Engineering*).
 4. **Campus Venue & Contacts**: Update physical address, official inquiry email, and emergency contact phones.
 5. Click **Save Institution Profile** to propagate changes across letterheads and report templates.
 
@@ -450,4 +450,4 @@ The platform includes an interactive, dark-mode 3D error suite inspired by Locom
 
 ---
 
-*Document version: 3.0 • Last Revised: September 2026 • Sacred Heart College (Autonomous), Tirupattur*
+*Document version: 3.0 • Last Revised: September 2026 • Enterprise Platform Edition*

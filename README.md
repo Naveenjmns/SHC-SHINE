@@ -8,7 +8,7 @@
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC?logo=tailwind-css)](https://tailwindcss.com/)
 
 > **Flagship Intercollegiate Event Platform & Academic Reporting System**  
-> Developed for the **Department of Computer Applications (PG), Sacred Heart College (Autonomous), Tirupattur**.
+> A modern, multi-edition symposium and event management platform with real-time analytics, RBAC, and NAAC/IQAC accreditation reporting.
 
 ---
 
@@ -177,6 +177,4 @@ The platform complies with standard institutional documentation guidelines for:
 - **Department Annual Reviews**: Formal student participation tallies and revenue reconciliation.
 
 ---
-
-*Engineered with precision for Sacred Heart College (Autonomous), Tirupattur.*
 
