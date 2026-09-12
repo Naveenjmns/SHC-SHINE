@@ -39,6 +39,10 @@ interface EventWithCoord {
   venue: string | null;
   dateTime: Date;
   rules?: string | null;
+  hasPrelims?: boolean;
+  prelimsDateTime?: Date | string | null;
+  prelimsVenue?: string | null;
+  prelimsRules?: string | null;
   imageUrl?: string | null;
   logoUrl?: string | null;
   staffCoordinatorName?: string | null;
@@ -379,6 +383,10 @@ export default async function Home() {
                   venue={ev.venue || ""}
                   dateTime={ev.dateTime}
                   rules={ev.rules}
+                  hasPrelims={ev.hasPrelims}
+                  prelimsDateTime={ev.prelimsDateTime}
+                  prelimsVenue={ev.prelimsVenue}
+                  prelimsRules={ev.prelimsRules}
                   imageUrl={ev.imageUrl}
                   logoUrl={ev.logoUrl}
                   staffCoordinator={ev.staffCoordinator}
@@ -416,6 +424,10 @@ export default async function Home() {
                   venue={ev.venue || ""}
                   dateTime={ev.dateTime}
                   rules={ev.rules}
+                  hasPrelims={ev.hasPrelims}
+                  prelimsDateTime={ev.prelimsDateTime}
+                  prelimsVenue={ev.prelimsVenue}
+                  prelimsRules={ev.prelimsRules}
                   imageUrl={ev.imageUrl}
                   logoUrl={ev.logoUrl}
                   staffCoordinator={ev.staffCoordinator}
