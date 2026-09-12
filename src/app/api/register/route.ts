@@ -192,6 +192,31 @@ export async function POST(req: Request) {
     });
     const eventMap = new Map(eventsInDb.map((e) => [e.id, e]));
 
+    // Enforce that every event with Prelims round has an assigned delegate
+    for (const ev of eventsInDb) {
+      if (ev.hasPrelims) {
+        const nominatedCount = prelimsNominationCountMap.get(ev.id) || 0;
+        if (nominatedCount === 0) {
+          return NextResponse.json(
+            {
+              success: false,
+              message: `Competition "${ev.name}" has a Prelims round. Please assign a student delegate to attend the prelims before completing registration.`,
+            },
+            { status: 400 }
+          );
+        }
+        if (nominatedCount > 1) {
+          return NextResponse.json(
+            {
+              success: false,
+              message: `Only 1 student per college delegation can be nominated for the Prelims of "${ev.name}".`,
+            },
+            { status: 400 }
+          );
+        }
+      }
+    }
+
     // Host domain / origin for QR verification URLs
     const hostHeader = req.headers.get("host") || "localhost:3000";
     const protocol = hostHeader.includes("localhost") ? "http" : "https";
