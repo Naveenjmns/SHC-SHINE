@@ -29,12 +29,19 @@ interface UserItem {
   };
 }
 
+interface FestEventItem {
+  id: string;
+  name: string;
+  category: "ON_STAGE" | "OFF_STAGE";
+}
+
 export default function AdminUsersPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const { toast, confirmAction } = useToast();
 
   const [users, setUsers] = useState<UserItem[]>([]);
+  const [availableEvents, setAvailableEvents] = useState<FestEventItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [roleFilter, setRoleFilter] = useState("ALL");
   const [search, setSearch] = useState("");
@@ -58,6 +65,7 @@ export default function AdminUsersPage() {
   const [editCollege, setEditCollege] = useState("");
   const [editRole, setEditRole] = useState<"STUDENT" | "COORDINATOR" | "FOOD_COORDINATOR" | "ADMIN">("COORDINATOR");
   const [editPassword, setEditPassword] = useState("");
+  const [editAssignedEventIds, setEditAssignedEventIds] = useState<string[]>([]);
   const [editSubmitting, setEditSubmitting] = useState(false);
   const [editErrorMsg, setEditErrorMsg] = useState("");
 
@@ -79,10 +87,17 @@ export default function AdminUsersPage() {
 
   const loadUsers = async () => {
     try {
-      const res = await fetch("/api/admin/users");
-      const data = await safeJson(res, { success: false, users: [] });
+      const [usersRes, eventsRes] = await Promise.all([
+        fetch("/api/admin/users"),
+        fetch("/api/events"),
+      ]);
+      const data = await safeJson(usersRes, { success: false, users: [] });
       if (data.success && data.users) {
         setUsers(data.users);
+      }
+      const evData = await safeJson(eventsRes, { success: false, events: [] });
+      if (evData.success && evData.events) {
+        setAvailableEvents(evData.events);
       }
     } catch (err) {
       console.error("Error loading users:", err);
@@ -131,7 +146,41 @@ export default function AdminUsersPage() {
     setEditCollege(u.college || "Sacred Heart College (Autonomous)");
     setEditRole(u.role);
     setEditPassword("");
+    setEditAssignedEventIds(u.assignedEvents ? u.assignedEvents.map((ev) => ev.id) : []);
     setEditErrorMsg("");
+  };
+
+  const handleQuickRoleChange = async (u: UserItem, newRole: UserItem["role"]) => {
+    if (u.role === newRole) return;
+    if (session?.user?.id === u.id && newRole !== "ADMIN") {
+      const confirmed = await confirmAction({
+        title: "Demote Active Admin Account?",
+        message:
+          "You are changing your own role away from System Administrator. You will lose admin privileges immediately upon saving. Are you sure?",
+        confirmText: "Change Role",
+        cancelText: "Cancel",
+        isDestructive: true,
+      });
+      if (!confirmed) return;
+    }
+
+    try {
+      const res = await fetch(`/api/admin/users/${u.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role: newRole }),
+      });
+      const data = await safeJson(res, { success: false, message: "Network error occurred." });
+      if (data.success && data.user) {
+        toast.success(`Role for "${u.name}" changed to ${newRole}.`);
+        setUsers((prev) => prev.map((item) => (item.id === u.id ? { ...item, ...data.user } : item)));
+      } else {
+        toast.error(data.message || "Failed to change role.");
+      }
+    } catch (err) {
+      console.error("Quick role change error:", err);
+      toast.error("Network error while updating role.");
+    }
   };
 
   const handleUpdateUser = async (e: React.FormEvent) => {
@@ -147,6 +196,7 @@ export default function AdminUsersPage() {
         phone: editPhone.trim() || null,
         college: editCollege.trim() || null,
         role: editRole,
+        assignedEventIds: editRole === "COORDINATOR" ? editAssignedEventIds : [],
       };
       if (editPassword.trim()) {
         payload.password = editPassword.trim();
@@ -166,11 +216,7 @@ export default function AdminUsersPage() {
             u.id === editingUser.id
               ? {
                   ...u,
-                  name: data.user.name,
-                  email: data.user.email,
-                  phone: data.user.phone,
-                  college: data.user.college,
-                  role: data.user.role,
+                  ...data.user,
                 }
               : u
           )
@@ -392,23 +438,34 @@ export default function AdminUsersPage() {
                     </td>
 
                     <td className="p-4">
-                      {u.role === "ADMIN" ? (
-                        <span className="text-[11px] font-bold uppercase px-2.5 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-200">
-                          Admin
-                        </span>
-                      ) : (u.role as string) === "FOOD_COORDINATOR" ? (
-                        <span className="text-[11px] font-bold uppercase px-2.5 py-0.5 rounded bg-orange-100 text-orange-950 border border-orange-300">
-                          Food Committee
-                        </span>
-                      ) : u.role === "COORDINATOR" ? (
-                        <span className="text-[11px] font-bold uppercase px-2.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200">
-                          Coordinator
-                        </span>
-                      ) : (
-                        <span className="text-[11px] font-bold uppercase px-2.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
-                          Student
-                        </span>
-                      )}
+                      <div className="relative inline-block">
+                        <select
+                          value={u.role}
+                          onChange={(e) =>
+                            handleQuickRoleChange(u, e.target.value as UserItem["role"])
+                          }
+                          title="Click to change account role directly"
+                          className={`text-[11px] font-bold uppercase py-1 pl-2.5 pr-6 rounded-lg border appearance-none transition-all cursor-pointer outline-none focus:ring-2 focus:ring-orange-500/20 shadow-2xs ${
+                            u.role === "ADMIN"
+                              ? "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100"
+                              : (u.role as string) === "FOOD_COORDINATOR"
+                              ? "bg-orange-100 text-orange-950 border-orange-300 hover:bg-orange-200/80"
+                              : u.role === "COORDINATOR"
+                              ? "bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100"
+                              : "bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200/70"
+                          }`}
+                        >
+                          <option value="COORDINATOR">Coordinator</option>
+                          <option value="FOOD_COORDINATOR">Food Committee</option>
+                          <option value="ADMIN">Admin</option>
+                          <option value="STUDENT">Student</option>
+                        </select>
+                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-1.5 text-slate-500">
+                          <svg className="w-2.5 h-2.5 fill-current" viewBox="0 0 20 20">
+                            <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
+                          </svg>
+                        </div>
+                      </div>
                     </td>
 
                     <td className="p-4 text-slate-700 font-medium max-w-[200px] truncate">
@@ -650,7 +707,7 @@ export default function AdminUsersPage() {
                           e.target.value as "STUDENT" | "COORDINATOR" | "FOOD_COORDINATOR" | "ADMIN"
                         )
                       }
-                      className="w-full h-11 bg-white border border-slate-300 rounded-xl px-3.5 text-sm text-slate-900 focus:outline-none focus:border-orange-500"
+                      className="w-full h-11 bg-white border border-slate-300 rounded-xl px-3.5 text-sm text-slate-900 focus:outline-none focus:border-orange-500 font-medium"
                     >
                       <option value="COORDINATOR">Event Coordinator (Competitions & Attendance)</option>
                       <option value="FOOD_COORDINATOR">Food Committee (Meal Distribution & Counters)</option>
@@ -658,6 +715,60 @@ export default function AdminUsersPage() {
                       <option value="STUDENT">Student (Delegate / Participant)</option>
                     </select>
                   </div>
+
+                  {editRole === "COORDINATOR" && (
+                    <div className="bg-amber-50/70 border border-amber-200 rounded-xl p-3.5 space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <label className="block text-xs font-bold text-amber-950">
+                          Assigned Competition(s) &bull; Coordinator Role
+                        </label>
+                        <span className="text-[10px] font-bold text-amber-800 bg-amber-200/60 px-2 py-0.5 rounded-full">
+                          {editAssignedEventIds.length} selected
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-amber-800/90 leading-tight">
+                        Check the competition(s) this coordinator manages. They will gain verification & attendance permissions for these events.
+                      </p>
+                      <div className="max-h-40 overflow-y-auto space-y-1.5 pr-1 border border-amber-200/60 rounded-lg p-2 bg-white/60">
+                        {availableEvents.length === 0 ? (
+                          <div className="text-xs text-slate-400 py-2 text-center">No competitions available</div>
+                        ) : (
+                          availableEvents.map((ev) => {
+                            const isChecked = editAssignedEventIds.includes(ev.id);
+                            return (
+                              <label
+                                key={ev.id}
+                                className={`flex items-center justify-between p-2 rounded-lg text-xs cursor-pointer border transition-all ${
+                                  isChecked
+                                    ? "bg-amber-100/60 border-amber-400 font-bold text-amber-950 shadow-2xs"
+                                    : "bg-white border-slate-200 hover:bg-slate-50 text-slate-700 font-medium"
+                                }`}
+                              >
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <input
+                                    type="checkbox"
+                                    checked={isChecked}
+                                    onChange={() => {
+                                      setEditAssignedEventIds((prev) =>
+                                        prev.includes(ev.id)
+                                          ? prev.filter((x) => x !== ev.id)
+                                          : [...prev, ev.id]
+                                      );
+                                    }}
+                                    className="w-4 h-4 text-orange-600 rounded border-slate-300 focus:ring-orange-500 accent-orange-600"
+                                  />
+                                  <span className="truncate">{ev.name}</span>
+                                </div>
+                                <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 shrink-0 ml-2">
+                                  {ev.category === "ON_STAGE" ? "On-Stage" : "Off-Stage"}
+                                </span>
+                              </label>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+                  )}
 
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">Full Name *</label>
