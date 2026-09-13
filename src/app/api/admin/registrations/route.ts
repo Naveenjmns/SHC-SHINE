@@ -338,3 +338,88 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ success: false, message: "Failed to update registration." }, { status: 500 });
   }
 }
+
+// DELETE /api/admin/registrations - Admin reset button: Clear all registrations and revenue alone, preserving events, editions, coordinators, and configs
+export async function DELETE(req: Request) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session || session.user.role !== "ADMIN") {
+      return NextResponse.json({ success: false, message: "Unauthorized. Admin access required." }, { status: 403 });
+    }
+
+    let clearStudentAccounts = true;
+    try {
+      const body = await req.json();
+      if (body && typeof body.clearStudentAccounts === "boolean") {
+        clearStudentAccounts = body.clearStudentAccounts;
+      }
+    } catch {
+      // Body may be empty or not provided
+    }
+
+    // Execute in a transaction to guarantee atomic wipe
+    const [deletedRegs, deletedMembers, deletedDelegations, deletedStudents] = await prisma.$transaction(
+      async (tx) => {
+        // 1. Delete all event registrations (scores, attendance, prelims status)
+        const regs = await tx.registration.deleteMany({});
+
+        // 2. Delete all delegation members (badge codes, meal tokens, check-ins)
+        const members = await tx.delegationMember.deleteMany({});
+
+        // 3. Delete all delegations (resets all fee collection, totalFee, and paymentStatus to zero)
+        const delegations = await tx.delegation.deleteMany({});
+
+        // 4. Delete attendee student accounts (only pure students who are not assigned as coordinators)
+        let students = { count: 0 };
+        if (clearStudentAccounts) {
+          students = await tx.user.deleteMany({
+            where: {
+              role: "STUDENT",
+              coordEvents: { none: {} },
+              staffCoordEvents: { none: {} },
+              studentCoordEvents: { none: {} },
+            },
+          });
+        }
+
+        return [regs, members, delegations, students];
+      }
+    );
+
+    // Audit log this administrative reset
+    const { logActivity } = await import("@/lib/activityLogger");
+    await logActivity({
+      action: "RESET_REGISTRATIONS_AND_REVENUE",
+      actorId: session.user.id,
+      actorName: session.user.name || "System Admin",
+      actorEmail: session.user.email,
+      actorRole: session.user.role,
+      targetType: "Registration",
+      targetTitle: "Admin Reset: Purged Registrations & Reset Revenue to ₹0",
+      details: {
+        deletedRegistrations: deletedRegs.count,
+        deletedDelegationMembers: deletedMembers.count,
+        deletedDelegations: deletedDelegations.count,
+        deletedStudentUsers: deletedStudents.count,
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: `Cleared ${deletedRegs.count} registrations, ${deletedDelegations.count} delegations, and reset revenue to ₹0. All events, editions, coordinators, and settings remain untouched.`,
+      stats: {
+        deletedRegistrations: deletedRegs.count,
+        deletedDelegationMembers: deletedMembers.count,
+        deletedDelegations: deletedDelegations.count,
+        deletedStudentUsers: deletedStudents.count,
+      },
+    });
+  } catch (error) {
+    console.error("Error resetting registrations and revenue:", error);
+    return NextResponse.json(
+      { success: false, message: "Failed to reset registrations and revenue." },
+      { status: 500 }
+    );
+  }
+}
+
