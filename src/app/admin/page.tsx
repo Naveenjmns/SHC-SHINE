@@ -54,6 +54,9 @@ import {
   ListFilter,
   XCircle,
   Target,
+  RotateCcw,
+  ShieldAlert,
+  Trash2,
 } from "lucide-react";
 import CheckInModal from "@/components/CheckInModal";
 import { INSTITUTION_THEME_PRESETS, hexToRgba, type ThemePreset } from "@/lib/colorUtils";
@@ -245,6 +248,10 @@ export default function AdminOverviewPage() {
   // New Edition Modal Form State
   const [showNewEditionModal, setShowNewEditionModal] = useState(false);
   const [showCheckInModal, setShowCheckInModal] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [resetConfirmText, setResetConfirmText] = useState("");
+  const [resetting, setResetting] = useState(false);
+  const [clearStudentAccounts, setClearStudentAccounts] = useState(true);
   const [newEditionData, setNewEditionData] = useState({
     name: "SHINE",
     edition: "2027",
@@ -693,6 +700,44 @@ export default function AdminOverviewPage() {
       toast.error("Error: " + err.message);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleResetRegistrations = async () => {
+    if (resetConfirmText.trim().toUpperCase() !== "RESET") {
+      toast.error("Please type RESET to confirm data purge.", "Confirmation Required");
+      return;
+    }
+
+    setResetting(true);
+    try {
+      const res = await fetch("/api/admin/registrations", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clearStudentAccounts }),
+      });
+      const data = await safeJson(res, { success: false, message: "Reset failed." });
+
+      if (res.ok && data.success) {
+        toast.success(
+          data.message || "All registrations and revenue cleared successfully!",
+          "Purge Complete"
+        );
+        setShowResetModal(false);
+        setResetConfirmText("");
+        // Reload fresh admin data and reports
+        await loadAdminData();
+        if (activeTab === "reports") {
+          await loadReports();
+        }
+      } else {
+        toast.error(data.message || "Failed to reset registrations.", "Error");
+      }
+    } catch (err: any) {
+      console.error("Reset error:", err);
+      toast.error(err.message || "Network error while resetting registrations.", "Error");
+    } finally {
+      setResetting(false);
     }
   };
 
@@ -1608,6 +1653,16 @@ export default function AdminOverviewPage() {
                     <QrCode className="w-4 h-4" />
                     <span>QR Check-In Hub</span>
                   </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowResetModal(true)}
+                    className="tap-target px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                    title="Clear registrations & reset revenue to ₹0"
+                  >
+                    <RotateCcw className="w-4 h-4 text-rose-600" />
+                    <span>Reset Data</span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -1617,7 +1672,17 @@ export default function AdminOverviewPage() {
               <div className="dash-card p-4 sm:p-5 border-l-4 border-emerald-500">
                 <div className="flex items-center justify-between text-[#64748B] mb-2">
                   <span className="text-xs font-bold uppercase tracking-wider">Revenue Collected</span>
-                  <Trophy className="w-4 h-4 text-emerald-600" />
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setShowResetModal(true)}
+                      title="Reset registrations & revenue to ₹0"
+                      className="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                    </button>
+                    <Trophy className="w-4 h-4 text-emerald-600" />
+                  </div>
                 </div>
                 <div className="text-2xl sm:text-3xl font-black text-emerald-700 tabular-nums">
                   ₹{displayRevenue.toLocaleString()}
@@ -3957,6 +4022,16 @@ export default function AdminOverviewPage() {
                   <QrCode className="w-3.5 h-3.5" />
                   <span>Scan & Check-In</span>
                 </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowResetModal(true)}
+                  className="px-3.5 py-1.5 text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-300 rounded-xl transition flex items-center gap-1.5 shadow-2xs shrink-0 cursor-pointer"
+                  title="Clear all registrations and reset revenue to ₹0"
+                >
+                  <RotateCcw className="w-3.5 h-3.5 text-rose-600" />
+                  <span>Reset Registrations & Revenue</span>
+                </button>
               </div>
             </div>
 
@@ -4911,6 +4986,136 @@ export default function AdminOverviewPage() {
         onClose={() => setShowCheckInModal(false)}
         onCheckInComplete={loadAdminData}
       />
+
+      {/* RESET REGISTRATIONS & REVENUE CONFIRMATION MODAL */}
+      {showResetModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl border border-rose-100 relative space-y-5 animate-scale-up">
+            {/* Top Close Button */}
+            <button
+              type="button"
+              onClick={() => {
+                if (!resetting) {
+                  setShowResetModal(false);
+                  setResetConfirmText("");
+                }
+              }}
+              className="absolute top-5 right-5 p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            {/* Header Icon + Title */}
+            <div className="flex items-start gap-3.5">
+              <div className="w-12 h-12 rounded-2xl bg-rose-100 border border-rose-200 flex items-center justify-center shrink-0">
+                <ShieldAlert className="w-6 h-6 text-rose-600" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-lg font-black text-slate-900 tracking-tight">
+                  Reset Registrations & Revenue
+                </h3>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  Permanently wipe attendee registrations and reset fest revenue to ₹0.
+                </p>
+              </div>
+            </div>
+
+            {/* Warning Scope Cards */}
+            <div className="space-y-2.5 text-xs">
+              <div className="bg-rose-50/80 border border-rose-200 rounded-2xl p-3.5 space-y-1.5 text-rose-900">
+                <p className="font-bold flex items-center gap-1.5 text-rose-800">
+                  <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                  <span>What will be cleared (purged to 0):</span>
+                </p>
+                <ul className="list-disc list-inside space-y-1 text-rose-700/90 text-[11px] ml-1">
+                  <li>All student registrations across all competitions (Total Registrations &rarr; 0)</li>
+                  <li>All college delegations, fee tracking, and payment statuses (Revenue &rarr; ₹0)</li>
+                  <li>All delegate QR ID passes, food meal tokens, and check-in statuses</li>
+                  <li>Attendee student accounts created from festival registrations</li>
+                </ul>
+              </div>
+
+              <div className="bg-emerald-50/70 border border-emerald-200 rounded-2xl p-3.5 space-y-1.5 text-emerald-900">
+                <p className="font-bold flex items-center gap-1.5 text-emerald-800">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>What is strictly preserved (untouched):</span>
+                </p>
+                <ul className="list-disc list-inside space-y-1 text-emerald-700/90 text-[11px] ml-1">
+                  <li>All event & competition listings, rules, venues, and timings</li>
+                  <li>Event editions, symposium branding, colors, and banner assets</li>
+                  <li>Admin, staff coordinator, and committee coordinator accounts</li>
+                  <li>SMTP email gateway credentials, activity logs, and website content</li>
+                </ul>
+              </div>
+            </div>
+
+            {/* Optional student accounts toggle */}
+            <label className="flex items-center gap-2.5 text-xs text-slate-700 cursor-pointer select-none bg-slate-50 p-3 rounded-xl border border-slate-200 hover:bg-slate-100 transition">
+              <input
+                type="checkbox"
+                checked={clearStudentAccounts}
+                onChange={(e) => setClearStudentAccounts(e.target.checked)}
+                className="w-4 h-4 rounded text-rose-600 border-slate-300 focus:ring-rose-500 cursor-pointer"
+              />
+              <span className="font-semibold">
+                Purge attendee student accounts (Resets Student Count to 0)
+              </span>
+            </label>
+
+            {/* Confirmation input */}
+            <div className="space-y-1.5 pt-1">
+              <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block">
+                Type <span className="font-mono text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200">RESET</span> to confirm:
+              </label>
+              <input
+                type="text"
+                placeholder="RESET"
+                value={resetConfirmText}
+                onChange={(e) => setResetConfirmText(e.target.value)}
+                disabled={resetting}
+                className="w-full px-3.5 py-2 text-sm border-2 border-slate-200 rounded-xl outline-none font-mono font-bold tracking-widest text-rose-700 focus:border-rose-500 transition-colors uppercase placeholder:text-slate-300"
+              />
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowResetModal(false);
+                  setResetConfirmText("");
+                }}
+                disabled={resetting}
+                className="px-4 py-2 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleResetRegistrations}
+                disabled={resetConfirmText.trim().toUpperCase() !== "RESET" || resetting}
+                className={`px-5 py-2 text-xs font-bold rounded-xl transition flex items-center gap-2 shadow-sm cursor-pointer ${
+                  resetConfirmText.trim().toUpperCase() === "RESET" && !resetting
+                    ? "bg-rose-600 hover:bg-rose-700 text-white"
+                    : "bg-rose-200 text-rose-400 cursor-not-allowed"
+                }`}
+              >
+                {resetting ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Resetting Data...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Confirm Reset</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
