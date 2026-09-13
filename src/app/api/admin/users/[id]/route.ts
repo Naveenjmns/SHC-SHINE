@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/auth";
 import bcrypt from "bcryptjs";
 import { Role } from "@prisma/client";
 import { logActivity } from "@/lib/activityLogger";
+import { isValidEmail, isValidPhone } from "@/lib/validators";
 
 export async function DELETE(
   req: Request,
@@ -65,7 +66,7 @@ export async function PUT(
 
     const { id } = await params;
     const body = await req.json();
-    const { name, email, phone, college, role, password } = body;
+    const { name, email, phone, college, role, password, assignedEventIds } = body;
 
     const updateData: {
       name?: string;
@@ -77,17 +78,96 @@ export async function PUT(
     } = {};
 
     if (name) updateData.name = name.trim();
-    if (email) updateData.email = email.toLowerCase().trim();
-    if (phone !== undefined) updateData.phone = phone ? phone.trim() : null;
+    if (email) {
+      const normalizedEmail = email.toLowerCase().trim();
+      if (!isValidEmail(normalizedEmail)) {
+        return NextResponse.json(
+          { success: false, message: "Please provide a valid email address." },
+          { status: 400 }
+        );
+      }
+      const duplicate = await prisma.user.findFirst({
+        where: {
+          email: normalizedEmail,
+          NOT: { id },
+        },
+      });
+      if (duplicate) {
+        return NextResponse.json(
+          { success: false, message: `An account with email "${normalizedEmail}" already exists.` },
+          { status: 400 }
+        );
+      }
+      updateData.email = normalizedEmail;
+    }
+    if (phone !== undefined) {
+      const trimmedPhone = phone ? phone.trim() : "";
+      if (trimmedPhone) {
+        if (!isValidPhone(trimmedPhone)) {
+          return NextResponse.json(
+            { success: false, message: "Please provide a valid 10-digit mobile number." },
+            { status: 400 }
+          );
+        }
+        updateData.phone = trimmedPhone;
+      } else {
+        updateData.phone = null;
+      }
+    }
     if (college !== undefined) updateData.college = college ? college.trim() : null;
     if (role && Object.values(Role).includes(role as Role)) updateData.role = role as Role;
-    if (password) {
+    if (password && password.trim()) {
       updateData.passwordHash = await bcrypt.hash(password.trim(), 10);
     }
 
     const updated = await prisma.user.update({
       where: { id },
       data: updateData,
+    });
+
+    const targetRole = updateData.role || updated.role;
+
+    // Manage coordinator event assignments if assignedEventIds is provided or if role changed away from COORDINATOR
+    if (targetRole !== "COORDINATOR") {
+      // If no longer a coordinator, clear event coordinator links
+      await prisma.event.updateMany({
+        where: {
+          OR: [{ coordinatorId: id }, { staffCoordinatorId: id }, { studentCoordinatorId: id }],
+        },
+        data: {
+          coordinatorId: null,
+          staffCoordinatorId: null,
+          studentCoordinatorId: null,
+        },
+      });
+    } else if (assignedEventIds !== undefined && Array.isArray(assignedEventIds)) {
+      // Unlink events not in the selected list
+      await prisma.event.updateMany({
+        where: {
+          OR: [{ coordinatorId: id }, { staffCoordinatorId: id }, { studentCoordinatorId: id }],
+          NOT: { id: { in: assignedEventIds } },
+        },
+        data: {
+          coordinatorId: null,
+          staffCoordinatorId: null,
+          studentCoordinatorId: null,
+        },
+      });
+
+      // Link newly selected events
+      if (assignedEventIds.length > 0) {
+        await prisma.event.updateMany({
+          where: { id: { in: assignedEventIds } },
+          data: {
+            coordinatorId: id,
+          },
+        });
+      }
+    }
+
+    // Fetch refreshed user with assigned competitions
+    const refreshed = await prisma.user.findUnique({
+      where: { id },
       select: {
         id: true,
         name: true,
@@ -95,8 +175,48 @@ export async function PUT(
         phone: true,
         college: true,
         role: true,
+        avatarUrl: true,
+        createdAt: true,
+        _count: {
+          select: { registrations: true },
+        },
+        coordEvents: {
+          select: { id: true, name: true, category: true },
+        },
+        staffCoordEvents: {
+          select: { id: true, name: true, category: true },
+        },
+        studentCoordEvents: {
+          select: { id: true, name: true, category: true },
+        },
       },
     });
+
+    const eventMap = new Map<string, { id: string; name: string; category?: string }>();
+    [
+      ...(refreshed?.coordEvents || []),
+      ...(refreshed?.staffCoordEvents || []),
+      ...(refreshed?.studentCoordEvents || []),
+    ].forEach((ev) => {
+      eventMap.set(ev.id, ev);
+    });
+    const assignedEvents = Array.from(eventMap.values());
+
+    const formattedUser = {
+      id: refreshed!.id,
+      name: refreshed!.name,
+      email: refreshed!.email,
+      phone: refreshed!.phone,
+      college: refreshed!.college,
+      role: refreshed!.role,
+      avatarUrl: refreshed!.avatarUrl,
+      createdAt: refreshed!.createdAt,
+      assignedEvents,
+      _count: {
+        registrations: refreshed!._count.registrations,
+        coordEvents: assignedEvents.length,
+      },
+    };
 
     await logActivity({
       action: "USER_UPDATED",
@@ -107,12 +227,15 @@ export async function PUT(
       targetType: "User",
       targetId: updated.id,
       targetTitle: `User Updated: ${updated.name}`,
-      details: { role: updated.role, email: updated.email },
+      details: { role: updated.role, email: updated.email, assignedEvents: assignedEvents.map((e) => e.name) },
     });
 
-    return NextResponse.json({ success: true, user: updated });
-  } catch (error) {
+    return NextResponse.json({ success: true, user: formattedUser });
+  } catch (error: any) {
     console.error("Error updating user:", error);
-    return NextResponse.json({ success: false, message: "Failed to update user." }, { status: 500 });
+    if (error?.code === "P2002") {
+      return NextResponse.json({ success: false, message: "A user with this email or phone already exists." }, { status: 400 });
+    }
+    return NextResponse.json({ success: false, message: "Failed to update user: " + (error?.message || "Internal error") }, { status: 500 });
   }
 }

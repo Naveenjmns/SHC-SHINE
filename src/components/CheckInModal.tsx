@@ -21,6 +21,7 @@ import {
   SwitchCamera,
   Zap,
   ZapOff,
+  XCircle,
 } from "lucide-react";
 import { safeJson } from "@/lib/safeFetch";
 import {
@@ -28,6 +29,7 @@ import {
   getAvailableCameras,
   getCameraPermissionStatus,
   isSecureCameraContext,
+  extractLookupCode,
   CameraErrorInfo,
   CameraDeviceInfo,
 } from "@/lib/cameraScanner";
@@ -74,6 +76,10 @@ interface MemberLookupData {
   totalFee: number;
   paymentStatus: string;
   isPaid: boolean;
+  isApproved?: boolean;
+  notApprovedMessage?: string | null;
+  isExpired?: boolean;
+  expiredMessage?: string | null;
   registrations: RegistrationDetail[];
 }
 
@@ -107,6 +113,59 @@ export default function CheckInModal({
   const [selectedCameraId, setSelectedCameraId] = useState<string | null>(null);
   const [torchSupported, setTorchSupported] = useState(false);
   const [torchOn, setTorchOn] = useState(false);
+
+  // Auto Check-In / Auto Claim Mode:
+  // When ON (true): scanning QR automatically executes check-in / food claim immediately without extra confirmation
+  // When OFF (false): scanning QR looks up delegate and prompts to Approve or Reject before recording
+  const storageKey = mode === "food_only" ? "shine_auto_claim" : "shine_auto_checkin";
+
+  const [autoCheckIn, setAutoCheckIn] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem(storageKey);
+      if (saved !== null) return saved === "true";
+    }
+    return true;
+  });
+  const autoCheckInRef = useRef(autoCheckIn);
+  autoCheckInRef.current = autoCheckIn;
+
+  // Track whether the last searched code was for food or event
+  const [targetActionType, setTargetActionType] = useState<"food" | "event" | null>(null);
+
+  // Synchronize state whenever modal opens or storageKey changes
+  useEffect(() => {
+    if (isOpen && typeof window !== "undefined") {
+      const saved = localStorage.getItem(storageKey);
+      if (saved !== null) {
+        const val = saved === "true";
+        setAutoCheckIn(val);
+        autoCheckInRef.current = val;
+      }
+    }
+  }, [isOpen, storageKey]);
+
+  const toggleAutoCheckIn = () => {
+    setAutoCheckIn((prev) => {
+      const next = !prev;
+      autoCheckInRef.current = next;
+      if (typeof window !== "undefined") {
+        localStorage.setItem(storageKey, String(next));
+      }
+      return next;
+    });
+  };
+
+  const handleRejectCheckIn = (delegateName: string) => {
+    setMessage({
+      type: "warning",
+      text: `Check-in / claim for ${delegateName} was declined/rejected by staff. No attendance or meal token was recorded.`,
+    });
+    setDelegate(null);
+    setTargetActionType(null);
+  };
+
+  const lastScannedCodeRef = useRef<string>("");
+  const lastScannedTimeRef = useRef<number>(0);
 
   const scannerRef = useRef<any>(null);
   const scannerDivId = "reader-camera-stream";
@@ -216,6 +275,15 @@ export default function CheckInModal({
       setMessage(null);
       setInputCode("");
       setCameraError(null);
+      setScanMode("manual");
+    } else {
+      // Whenever modal opens, guarantee Manual Code Lookup is the default selected mode
+      stopCameraScanner();
+      setScanMode("manual");
+      setDelegate(null);
+      setMessage(null);
+      setInputCode("");
+      setCameraError(null);
     }
   }, [isOpen]);
 
@@ -242,7 +310,7 @@ export default function CheckInModal({
         console.log("QR decoded from photo:", decodedText);
         playBeep();
         triggerVibrate();
-        handleLookup(decodedText);
+        handleLookup(decodedText, true);
       }
     } catch (err: any) {
       console.warn("QR file scan error:", err);
@@ -314,50 +382,73 @@ export default function CheckInModal({
       const html5QrCode = new Html5Qrcode(scannerDivId, false);
       scannerRef.current = html5QrCode;
 
-      // Dynamic qrbox calculation: 70% of viewport width up to 250px
-      const containerWidth = scannerEl.clientWidth || 300;
-      const boxSize = Math.min(250, Math.max(180, Math.floor(containerWidth * 0.7)));
-
-      const config = {
-        fps: 12,
-        qrbox: { width: boxSize, height: boxSize },
-        aspectRatio: 1.0,
+      // Dynamic qrbox calculation based on real viewfinder dimensions without hardcoded aspectRatio
+      const config: any = {
+        fps: 15,
+        qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
+          const edge = Math.min(viewfinderWidth, viewfinderHeight);
+          const size = Math.max(160, Math.min(250, Math.floor(edge * 0.72)));
+          return { width: size, height: size };
+        },
       };
 
       const onScanSuccess = (decodedText: string) => {
         console.log("QR Decoded successfully:", decodedText);
         playBeep();
         triggerVibrate();
-        handleLookup(decodedText);
+        handleLookup(decodedText, true);
         stopCameraScanner();
       };
 
-      // Determine camera target: specificCameraId -> selectedCameraId -> environment (rear camera)
-      let targetConfig: any;
+      let started = false;
+
+      // 1. Specific camera if explicitly provided
       if (specificCameraId) {
-        targetConfig = specificCameraId;
-      } else if (selectedCameraId && availableCameras.some((c) => c.id === selectedCameraId)) {
-        targetConfig = selectedCameraId;
-      } else {
-        targetConfig = { facingMode: "environment" };
+        try {
+          await html5QrCode.start(specificCameraId, config, onScanSuccess, () => {});
+          started = true;
+          setSelectedCameraId(specificCameraId);
+        } catch (specErr) {
+          console.warn("Specific camera failed:", specErr);
+        }
       }
 
-      // Start stream: invokes getUserMedia which triggers browser permission prompt if needed
-      try {
-        await html5QrCode.start(targetConfig, config, onScanSuccess, () => {});
-      } catch (primaryErr: any) {
-        const errText = typeof primaryErr === "string" ? primaryErr : String(primaryErr?.message || primaryErr || "");
-        const isPermDenied = /notallowederror|permission denied|not allowed/i.test(errText);
+      // 2. Pre-selected camera if available
+      if (!started && selectedCameraId) {
+        try {
+          await html5QrCode.start(selectedCameraId, config, onScanSuccess, () => {});
+          started = true;
+        } catch (selErr) {
+          console.warn("Selected camera failed:", selErr);
+        }
+      }
 
-        // If rear camera failed for constraint reasons (not permission denied), fallback to user/front facing camera
-        if (!isPermDenied && typeof targetConfig === "object" && targetConfig.facingMode === "environment") {
+      // 3. Fallback hierarchy: environment -> user -> enumerated devices
+      if (!started) {
+        try {
+          await html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess, () => {});
+          started = true;
+        } catch (primaryErr: any) {
+          const errText = typeof primaryErr === "string" ? primaryErr : String(primaryErr?.message || primaryErr || "");
+          const isPermDenied = /notallowederror|permission denied|not allowed/i.test(errText);
+          if (isPermDenied) throw primaryErr;
+
           try {
             await html5QrCode.start({ facingMode: "user" }, config, onScanSuccess, () => {});
+            started = true;
           } catch (fallbackErr: any) {
-            throw fallbackErr;
+            const fbText = String(fallbackErr?.message || fallbackErr || "");
+            if (/notallowederror|permission denied|not allowed/i.test(fbText)) throw fallbackErr;
+
+            const devices = await getAvailableCameras(Html5Qrcode);
+            if (devices.length > 0) {
+              await html5QrCode.start(devices[0].id, config, onScanSuccess, () => {});
+              started = true;
+              setSelectedCameraId(devices[0].id);
+            } else {
+              throw fallbackErr;
+            }
           }
-        } else {
-          throw primaryErr;
         }
       }
 
@@ -368,6 +459,8 @@ export default function CheckInModal({
           vids[i].setAttribute("playsinline", "true");
           vids[i].setAttribute("webkit-playsinline", "true");
           vids[i].setAttribute("muted", "true");
+          vids[i].setAttribute("autoplay", "true");
+          vids[i].play().catch(() => {});
         }
       }
       setCameraActive(true);
@@ -417,25 +510,234 @@ export default function CheckInModal({
     }
   };
 
-  const handleLookup = async (codeToSearch?: string) => {
-    const code = (codeToSearch || inputCode).trim();
+  const executeAutoFoodClaim = async (m: MemberLookupData) => {
+    setActionLoading(true);
+    try {
+      const res = await fetch("/api/checkin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code: m.foodTokenCode,
+          action: "FOOD_CLAIM",
+        }),
+      });
+      const data = await safeJson(res, { success: false });
+
+      if (data.success) {
+        playBeep();
+        triggerVibrate();
+        setMessage({
+          type: "success",
+          text: `⚡ Auto-Claim Complete: 1x ${m.foodPreference === "NON_VEG" ? "🍗 Non-Veg" : "🥗 Veg"} meal issued to ${m.name} (${m.collegeName})!`,
+        });
+        setDelegate((prev) =>
+          prev
+            ? {
+                ...prev,
+                foodTokenClaimed: true,
+                foodClaimedAt: new Date().toISOString(),
+                foodClaimedBy: "Staff",
+              }
+            : null
+        );
+        if (onCheckInComplete) onCheckInComplete();
+      } else {
+        setMessage({
+          type: data.alreadyClaimed || data.paymentPending ? "warning" : "error",
+          text: data.message || "Failed to auto-claim food token.",
+        });
+      }
+    } catch (err: any) {
+      setMessage({ type: "error", text: "Auto-claim error: " + err.message });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const executeAutoEventCheckIn = async (m: MemberLookupData, targetReg: RegistrationDetail) => {
+    setActionLoading(true);
+    try {
+      const res = await fetch("/api/checkin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code: m.badgeCode,
+          action: "EVENT_CHECKIN",
+          eventId: targetReg.eventId,
+        }),
+      });
+      const data = await safeJson(res, { success: false });
+
+      if (data.success) {
+        playBeep();
+        triggerVibrate();
+        setMessage({
+          type: "success",
+          text: `⚡ Auto Check-In Complete: ${m.name} (${m.collegeName}) marked Present for ${targetReg.eventName}!`,
+        });
+        setDelegate((prev) =>
+          prev
+            ? {
+                ...prev,
+                eventCheckedIn: true,
+                registrations: prev.registrations.map((r) =>
+                  r.eventId === targetReg.eventId
+                    ? { ...r, attended: true, checkedInAt: new Date().toISOString() }
+                    : r
+                ),
+              }
+            : null
+        );
+        if (onCheckInComplete) onCheckInComplete();
+      } else {
+        setMessage({
+          type: data.alreadyCheckedIn || data.paymentPending ? "warning" : "error",
+          text: data.message || "Failed to auto-checkin event.",
+        });
+      }
+    } catch (err: any) {
+      setMessage({ type: "error", text: "Auto-checkin error: " + err.message });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleLookup = async (codeToSearch?: string, isFromScan = false) => {
+    const raw = (codeToSearch || inputCode).trim();
+    const { code: normalized } = extractLookupCode(raw);
+    const code = normalized || raw;
     if (!code) {
       setMessage({ type: "warning", text: "Please enter or scan a code." });
       return;
     }
 
+    // Cooldown check for rapid duplicate scans (prevents duplicate requests in 3s)
+    if (isFromScan) {
+      const now = Date.now();
+      if (
+        lastScannedCodeRef.current.toUpperCase() === code.toUpperCase() &&
+        now - lastScannedTimeRef.current < 3000
+      ) {
+        return;
+      }
+      lastScannedCodeRef.current = code;
+      lastScannedTimeRef.current = now;
+    }
+
     setLoading(true);
     setMessage(null);
     try {
-      const res = await fetch(`/api/checkin?code=${encodeURIComponent(code)}`);
+      const typeParam = mode === "event_only" ? "&type=EVENT" : mode === "food_only" ? "&type=FOOD" : "";
+      const res = await fetch(`/api/checkin?code=${encodeURIComponent(code)}${typeParam}`);
       const data = await safeJson(res, { success: false });
 
-      if (data.success && data.member) {
-        setDelegate(data.member);
+      if (data.isWrongType) {
+        setDelegate(null);
         setMessage({
-          type: "success",
-          text: `Found participant: ${data.member.name} (${data.member.collegeName})`,
+          type: "error",
+          text: data.message || "Wrong pass type scanned.",
         });
+        return;
+      }
+
+      if (data.success && data.member) {
+        const m = data.member;
+        const memberApproved = data.isApproved ?? m.isApproved ?? m.isPaid;
+        const memberExpired = data.isExpired ?? m.isExpired ?? m.allEventsAttended;
+
+        const updatedDelegate: MemberLookupData = {
+          ...m,
+          isApproved: memberApproved,
+          isExpired: memberExpired,
+          notApprovedMessage: data.notApprovedMessage,
+          expiredMessage: data.expiredMessage,
+        };
+        setDelegate(updatedDelegate);
+
+        if (!memberApproved) {
+          setMessage({
+            type: "warning",
+            text: data.notApprovedMessage || `QR code is valid, but registration is NOT APPROVED yet. Please direct ${m.name} (${m.collegeName}) to Registration Desk.`,
+          });
+          return;
+        }
+
+        // Determine if scanned code is a food token or badge code
+        const isCodeFood =
+          (m.foodTokenCode && m.foodTokenCode.toUpperCase() === code.toUpperCase()) ||
+          code.toUpperCase().startsWith("FT-");
+        const isFoodAction = mode === "food_only" || (mode === "all" && isCodeFood);
+        setTargetActionType(isFoodAction ? "food" : "event");
+
+        if (!isFoodAction && memberExpired) {
+          setMessage({
+            type: "warning",
+            text: data.expiredMessage || `QR Code Expired / Already Checked In: All event check-ins have already been recorded for ${m.name}.`,
+          });
+          return;
+        }
+
+        const isAuto = autoCheckInRef.current;
+        if (isFromScan && isAuto) {
+          // AUTO CLAIM / AUTO CHECK-IN IS ENABLED AND QR WAS SCANNED
+          if (isFoodAction) {
+            if (m.foodTokenClaimed) {
+              setMessage({
+                type: "warning",
+                text: `Meal Already Claimed: Food token for ${m.name} was already redeemed at ${
+                  m.foodClaimedAt ? formatTimeSafe(m.foodClaimedAt) : "earlier"
+                } by ${m.foodClaimedBy || "staff"}.`,
+              });
+            } else {
+              await executeAutoFoodClaim(m);
+            }
+          } else {
+            // Event check-in: Find target registration
+            const targetReg = activeEventId
+              ? m.registrations?.find((r: RegistrationDetail) => r.eventId === activeEventId)
+              : m.registrations?.length === 1
+              ? m.registrations[0]
+              : null;
+
+            if (!targetReg) {
+              if (activeEventId) {
+                setMessage({
+                  type: "warning",
+                  text: `${m.name} (${m.collegeName}) is not registered for ${activeEventName || "this event"}.`,
+                });
+              } else {
+                setMessage({
+                  type: "warning",
+                  text: `Auto Check-In Notice: ${m.name} has ${m.registrations?.length || 0} registered events. Please select which competition below.`,
+                });
+              }
+            } else if (targetReg.attended) {
+              setMessage({
+                type: "warning",
+                text: `Already Checked In: ${m.name} is already marked Present for ${targetReg.eventName} at ${
+                  targetReg.checkedInAt ? formatTimeSafe(targetReg.checkedInAt) : "earlier"
+                }.`,
+              });
+            } else if (!targetReg.canCheckIn) {
+              setMessage({
+                type: "warning",
+                text: `Authorization Notice: You are not assigned to check in attendees for ${targetReg.eventName}.`,
+              });
+            } else {
+              await executeAutoEventCheckIn(m, targetReg);
+            }
+          }
+        } else {
+          // AUTO CHECK-IN IS TURNED OFF OR MANUAL LOOKUP: Ask to Approve or Reject
+          setMessage({
+            type: "success",
+            text: isFoodAction
+              ? `Delegate Verified: ${m.name} (${m.collegeName}) • Food: ${
+                  m.foodPreference === "NON_VEG" ? "🍗 Non-Veg" : "🥗 Veg"
+                } • Please choose to Approve or Reject below.`
+              : `Delegate Verified: ${m.name} (${m.collegeName}) • Please choose to Approve or Reject check-in below.`,
+          });
+        }
       } else {
         setDelegate(null);
         setMessage({
@@ -472,12 +774,30 @@ export default function CheckInModal({
       const data = await safeJson(res, { success: false });
 
       if (data.success) {
+        playBeep();
+        triggerVibrate();
         setMessage({
           type: "success",
           text: data.message || (shouldCheckIn ? `${delegate.name} marked Present!` : `Check-in reverted.`),
         });
-        // Refresh delegate data
-        await handleLookup(delegate.badgeCode);
+        // Update local delegate data
+        setDelegate((prev) =>
+          prev
+            ? {
+                ...prev,
+                eventCheckedIn: shouldCheckIn,
+                registrations: prev.registrations.map((r) =>
+                  r.eventId === evId
+                    ? {
+                        ...r,
+                        attended: shouldCheckIn,
+                        checkedInAt: shouldCheckIn ? new Date().toISOString() : null,
+                      }
+                    : r
+                ),
+              }
+            : null
+        );
         if (onCheckInComplete) onCheckInComplete();
       } else {
         setMessage({
@@ -507,13 +827,24 @@ export default function CheckInModal({
       const data = await safeJson(res, { success: false });
 
       if (data.success) {
+        playBeep();
+        triggerVibrate();
         setMessage({
           type: "success",
           text: shouldClaim
-            ? `Food Token verified! 1x Meal issued to ${delegate.name}.`
+            ? `Food Token verified! 1x ${delegate.foodPreference === "NON_VEG" ? "🍗 Non-Veg" : "🥗 Veg"} meal issued to ${delegate.name}.`
             : `Food token status reset to Unclaimed.`,
         });
-        await handleLookup(delegate.badgeCode);
+        setDelegate((prev) =>
+          prev
+            ? {
+                ...prev,
+                foodTokenClaimed: shouldClaim,
+                foodClaimedAt: shouldClaim ? new Date().toISOString() : null,
+                foodClaimedBy: shouldClaim ? "Staff" : null,
+              }
+            : null
+        );
         if (onCheckInComplete) onCheckInComplete();
       } else {
         setMessage({
@@ -532,6 +863,9 @@ export default function CheckInModal({
     setDelegate(null);
     setInputCode("");
     setMessage(null);
+    setTargetActionType(null);
+    lastScannedCodeRef.current = "";
+    lastScannedTimeRef.current = 0;
     if (scanMode === "camera") {
       startCameraScanner();
     }
@@ -550,13 +884,23 @@ export default function CheckInModal({
             </div>
             <div>
               <h2 className="text-lg font-black text-stone-900 tracking-tight flex items-center gap-2">
-                <span>QR Check-In & Food Claim Hub</span>
+                <span>
+                  {mode === "event_only"
+                    ? "QR Check-In Hub"
+                    : mode === "food_only"
+                    ? "Food Token Claim Hub"
+                    : "QR Check-In & Food Claim Hub"}
+                </span>
                 <span className="text-[10px] bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-full font-bold">
                   LIVE VERIFIER
                 </span>
               </h2>
               <p className="text-xs text-stone-500">
-                Scan or enter student delegate badge / meal QR codes to confirm attendance and issue food
+                {mode === "event_only"
+                  ? "Scan or enter student delegate badge codes to verify competition attendance"
+                  : mode === "food_only"
+                  ? "Scan or enter food token QR codes to issue meal tokens"
+                  : "Scan or enter student delegate badge / meal QR codes to confirm attendance and issue food"}
               </p>
             </div>
           </div>
@@ -593,6 +937,53 @@ export default function CheckInModal({
             onChange={handleFileScan}
             className="hidden"
           />
+
+          {/* Auto Check-In / Auto Claim Mode Switcher Bar */}
+          <button
+            type="button"
+            onClick={toggleAutoCheckIn}
+            className="w-full flex flex-col sm:flex-row items-center justify-between gap-3 bg-stone-50 hover:bg-stone-100/90 active:scale-[0.98] border border-stone-200 rounded-2xl p-3 px-4 max-w-md mx-auto shadow-2xs transition text-left cursor-pointer select-none"
+            title={autoCheckIn ? "Click to turn OFF (ask to approve or reject)" : "Click to turn ON (fast auto check-in)"}
+          >
+            <div className="flex items-center gap-2.5">
+              <div
+                className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${
+                  autoCheckIn ? "bg-[#FF6B1A]/15 text-[#FF6B1A]" : "bg-stone-200 text-stone-500"
+                }`}
+              >
+                {autoCheckIn ? <Zap className="w-4 h-4 fill-current" /> : <ZapOff className="w-4 h-4" />}
+              </div>
+              <div>
+                <span className="text-xs font-bold text-stone-900 block leading-tight flex items-center gap-1.5">
+                  <span>{mode === "food_only" ? "Auto-Claim Mode" : "Auto Check-In Mode"}</span>
+                  <span
+                    className={`text-[9px] uppercase tracking-wider font-extrabold px-1.5 py-0.5 rounded ${
+                      autoCheckIn ? "bg-amber-100 text-amber-900 border border-amber-300" : "bg-stone-200 text-stone-600"
+                    }`}
+                  >
+                    {autoCheckIn ? "ON" : "OFF"}
+                  </span>
+                </span>
+                <span className="text-[10px] text-stone-500 block leading-tight mt-0.5">
+                  {autoCheckIn
+                    ? "⚡ Scans automatically complete check-in immediately"
+                    : "🛡️ Scans ask to Approve or Reject"}
+                </span>
+              </div>
+            </div>
+
+            <div
+              className={`relative inline-flex h-5 w-10 items-center rounded-full transition-colors shrink-0 pointer-events-none ${
+                autoCheckIn ? "bg-[#FF6B1A]" : "bg-stone-300"
+              }`}
+            >
+              <span
+                className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-xs transition-transform ${
+                  autoCheckIn ? "translate-x-5.5" : "translate-x-1"
+                }`}
+              />
+            </div>
+          </button>
 
           {/* Mode Switcher */}
           <div className="flex items-center justify-center gap-2 p-1 bg-stone-100 rounded-2xl max-w-md mx-auto">
@@ -701,7 +1092,7 @@ export default function CheckInModal({
                     <div
                       id={scannerDivId}
                       className={`w-full max-w-xs mx-auto overflow-hidden rounded-xl border-2 border-amber-400 shadow-lg ${
-                        cameraActive ? "block" : "hidden"
+                        cameraActive || cameraStarting ? "block" : "hidden"
                       }`}
                     />
                   </div>
@@ -829,17 +1220,40 @@ export default function CheckInModal({
           {/* Delegate Verification Card */}
           {delegate && (
             <div className="bg-stone-50 border-2 border-stone-200 rounded-2xl p-5 space-y-5 animate-in fade-in duration-200">
-              {/* Desk Payment Warning Banner */}
-              {!delegate.isPaid && (
-                <div className="bg-rose-50 border border-rose-300 rounded-xl p-3.5 flex items-start gap-3 text-rose-900">
-                  <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
-                  <div>
-                    <h4 className="text-xs font-black uppercase tracking-wider text-rose-800">
-                      Payment & Approval Pending at Registration Desk
+              {/* Desk Payment & Approval Warning Banner */}
+              {(!delegate.isApproved || !delegate.isPaid) ? (
+                <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-4 flex items-start gap-3.5 text-amber-950 shadow-xs">
+                  <div className="w-9 h-9 rounded-xl bg-amber-200/80 flex items-center justify-center shrink-0 text-amber-800 mt-0.5">
+                    <AlertTriangle className="w-5 h-5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-xs font-black uppercase tracking-wider text-amber-900 flex items-center gap-1.5">
+                      <span>QR Code is Valid, but NOT APPROVED</span>
                     </h4>
-                    <p className="text-xs text-rose-700 mt-0.5">
-                      Fee: <strong>₹{delegate.totalFee}</strong> (Status: {delegate.paymentStatus}). The delegate must pay the amount at the Registration Desk and be marked Approved before venue check-in or food distribution.
+                    <p className="text-xs text-amber-800 mt-1 leading-relaxed">
+                      This QR pass exists in the system, but has <strong>NOT been approved</strong> by the Registration Desk yet. Fee: <strong>₹{delegate.totalFee}</strong> ({delegate.paymentStatus}). Please direct <strong>{delegate.name}</strong> to the Registration Desk to collect payment and activate official passes before venue entry.
                     </p>
+                  </div>
+                </div>
+              ) : delegate.allEventsAttended ? (
+                <div className="bg-stone-100 border border-stone-300 rounded-2xl p-4 flex items-start gap-3.5 text-stone-900 shadow-xs">
+                  <div className="w-9 h-9 rounded-xl bg-stone-200 flex items-center justify-center shrink-0 text-stone-700 mt-0.5">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-xs font-black uppercase tracking-wider text-stone-900">
+                      QR Pass Expired / Completed
+                    </h4>
+                    <p className="text-xs text-stone-600 mt-1 leading-relaxed">
+                      All competition events have already been checked in for <strong>{delegate.name}</strong>. Passes are single-use and cannot be used for additional event entries.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-3.5 flex items-center gap-3 text-emerald-900">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                  <div className="text-xs">
+                    <strong className="font-bold">Pass Active & Verified:</strong> {delegate.name} is approved. Ready for competition check-in below.
                   </div>
                 </div>
               )}
@@ -847,16 +1261,31 @@ export default function CheckInModal({
               {/* Header profile info */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-stone-200 pb-4">
                 <div>
-                  <h3 className="text-base font-black text-stone-900 flex items-center gap-2">
-                    <span>{delegate.name}</span>
+                  <div className="flex items-center gap-2 flex-wrap mb-1">
+                    <h3 className="text-base font-black text-stone-900">
+                      {delegate.name}
+                    </h3>
                     <span className="text-xs font-mono font-bold bg-[#FF6B1A]/10 text-[#FF6B1A] px-2 py-0.5 rounded-lg border border-[#FF6B1A]/20">
                       {delegate.badgeCode}
                     </span>
-                  </h3>
-                  <p className="text-xs text-stone-600 mt-0.5 flex items-center gap-1.5">
+                    {(!delegate.isApproved || !delegate.isPaid) ? (
+                      <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-300">
+                        PENDING APPROVAL
+                      </span>
+                    ) : delegate.allEventsAttended ? (
+                      <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-stone-200 text-stone-800 border border-stone-300">
+                        PASS EXPIRED
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 border border-emerald-300">
+                        APPROVED & ACTIVE
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-stone-700 font-semibold flex items-center gap-1.5">
                     <Building2 className="w-3.5 h-3.5 text-stone-400" />
                     <span>{delegate.collegeName}</span>
-                    {delegate.department && <span>• {delegate.department}</span>}
+                    {delegate.department && <span className="text-stone-500 font-normal">• {delegate.department}</span>}
                   </p>
                   <p className="text-[11px] text-stone-500 mt-0.5">
                     Team: {delegate.teamName || "Individual"} • Lead: {delegate.teamLeadName} ({delegate.teamLeadPhone})
@@ -872,6 +1301,210 @@ export default function CheckInModal({
                   <span>Scan Next</span>
                 </button>
               </div>
+
+              {/* Manual Confirmation Prompt when Auto Check-In is OFF */}
+              {!autoCheckIn && (() => {
+                const isFoodDecision =
+                  mode === "food_only" ||
+                  targetActionType === "food" ||
+                  (delegate.foodTokenCode && lastScannedCodeRef.current.toUpperCase() === delegate.foodTokenCode.toUpperCase()) ||
+                  lastScannedCodeRef.current.toUpperCase().startsWith("FT-");
+
+                const isApprovedOrPaid = Boolean(delegate.isApproved || delegate.isPaid);
+
+                return (
+                  <div className="bg-gradient-to-r from-amber-50 via-orange-50/70 to-amber-50 border-2 border-amber-400/80 rounded-2xl p-4 sm:p-5 flex flex-col gap-4 shadow-sm animate-in fade-in">
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-[#FF6B1A] flex items-center justify-center shrink-0 mt-0.5">
+                        <AlertCircle className="w-5 h-5" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-xs font-black uppercase tracking-wider text-amber-900">
+                            Action Required: Approve or Reject Check-In
+                          </span>
+                          <span className="text-[10px] bg-amber-200/80 text-amber-950 px-2 py-0.5 rounded font-black border border-amber-300">
+                            Auto Check-In OFF
+                          </span>
+                        </div>
+                        <p className="text-sm sm:text-base font-black text-stone-900 mt-1">
+                          {isFoodDecision
+                            ? `Approve 1x ${delegate.foodPreference === "NON_VEG" ? "🍗 Non-Veg" : "🥗 Veg"} meal for ${delegate.name}?`
+                            : activeEventName
+                            ? `Approve check-in for ${delegate.name} in ${activeEventName}?`
+                            : `Approve check-in for ${delegate.name} (${delegate.collegeName})?`}
+                        </p>
+                        <p className="text-xs text-stone-600 mt-0.5">
+                          Auto Check-In is disabled. Please verify delegate identity and credentials, then click Approve or Reject below.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2.5 pt-2 border-t border-amber-200/70 flex-wrap">
+                      {!isApprovedOrPaid ? (
+                        <>
+                          <span className="text-xs font-bold text-amber-900 bg-amber-100/80 px-3 py-1.5 rounded-xl border border-amber-300 self-center">
+                            Approval / Payment Pending at Desk
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleRejectCheckIn(delegate.name)}
+                            disabled={actionLoading}
+                            className="tap-target px-4 py-2.5 rounded-xl text-xs font-black bg-rose-50 hover:bg-rose-100 text-rose-700 border-2 border-rose-300 hover:border-rose-400 transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                          >
+                            <XCircle className="w-4 h-4" />
+                            <span>✕ Reject / Decline</span>
+                          </button>
+                        </>
+                      ) : isFoodDecision ? (
+                        !delegate.foodTokenClaimed ? (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => handleClaimFood(true)}
+                              disabled={actionLoading}
+                              className="tap-target px-5 py-2.5 rounded-xl text-xs font-black bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white transition flex items-center justify-center gap-2 shadow-md shadow-emerald-600/20 cursor-pointer disabled:opacity-50"
+                            >
+                              <CheckCircle2 className="w-4 h-4" />
+                              <span>✓ Approve &amp; Issue Meal</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleRejectCheckIn(delegate.name)}
+                              disabled={actionLoading}
+                              className="tap-target px-4 py-2.5 rounded-xl text-xs font-black bg-rose-50 hover:bg-rose-100 text-rose-700 border-2 border-rose-300 hover:border-rose-400 transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                            >
+                              <XCircle className="w-4 h-4" />
+                              <span>✕ Reject / Decline</span>
+                            </button>
+                          </>
+                        ) : (
+                          <span className="text-xs font-bold text-stone-600 bg-stone-200 px-3 py-1.5 rounded-xl text-center">
+                            Meal Already Claimed
+                          </span>
+                        )
+                      ) : activeEventId ? (
+                        (() => {
+                          const reg = delegate.registrations?.find((r) => r.eventId === activeEventId);
+                          if (reg?.attended) {
+                            return (
+                              <span className="text-xs font-bold text-emerald-800 bg-emerald-100 px-3 py-1.5 rounded-xl border border-emerald-300 flex items-center justify-center gap-1.5">
+                                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                                <span>Already Marked Present</span>
+                              </span>
+                            );
+                          }
+                          if (reg && reg.canCheckIn) {
+                            return (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => handleCheckInEvent(true, activeEventId)}
+                                  disabled={actionLoading}
+                                  className="tap-target px-5 py-2.5 rounded-xl text-xs font-black bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white transition flex items-center justify-center gap-2 shadow-md shadow-emerald-600/20 cursor-pointer disabled:opacity-50"
+                                >
+                                  <CheckCircle2 className="w-4 h-4" />
+                                  <span>✓ Approve Check-In</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRejectCheckIn(delegate.name)}
+                                  disabled={actionLoading}
+                                  className="tap-target px-4 py-2.5 rounded-xl text-xs font-black bg-rose-50 hover:bg-rose-100 text-rose-700 border-2 border-rose-300 hover:border-rose-400 transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                                >
+                                  <XCircle className="w-4 h-4" />
+                                  <span>✕ Reject / Decline</span>
+                                </button>
+                              </>
+                            );
+                          }
+                          return (
+                            <button
+                              type="button"
+                              onClick={() => handleRejectCheckIn(delegate.name)}
+                              disabled={actionLoading}
+                              className="tap-target px-4 py-2.5 rounded-xl text-xs font-black bg-rose-50 hover:bg-rose-100 text-rose-700 border-2 border-rose-300 hover:border-rose-400 transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                            >
+                              <XCircle className="w-4 h-4" />
+                              <span>✕ Reject / Decline</span>
+                            </button>
+                          );
+                        })()
+                      ) : delegate.registrations?.length === 1 && delegate.registrations[0].canCheckIn && !delegate.registrations[0].attended ? (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => handleCheckInEvent(true, delegate.registrations[0].eventId)}
+                            disabled={actionLoading}
+                            className="tap-target px-5 py-2.5 rounded-xl text-xs font-black bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white transition flex items-center justify-center gap-2 shadow-md shadow-emerald-600/20 cursor-pointer disabled:opacity-50"
+                          >
+                            <CheckCircle2 className="w-4 h-4" />
+                            <span>✓ Approve for {delegate.registrations[0].eventName}</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleRejectCheckIn(delegate.name)}
+                            disabled={actionLoading}
+                            className="tap-target px-4 py-2.5 rounded-xl text-xs font-black bg-rose-50 hover:bg-rose-100 text-rose-700 border-2 border-rose-300 hover:border-rose-400 transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                          >
+                            <XCircle className="w-4 h-4" />
+                            <span>✕ Reject / Decline</span>
+                          </button>
+                        </>
+                      ) : delegate.registrations && delegate.registrations.some((r) => !r.attended && r.canCheckIn) ? (
+                        <>
+                          <div className="flex flex-wrap gap-2 items-center">
+                            {delegate.registrations.filter((r) => !r.attended && r.canCheckIn).map((r) => (
+                              <button
+                                key={r.registrationId}
+                                type="button"
+                                onClick={() => handleCheckInEvent(true, r.eventId)}
+                                disabled={actionLoading}
+                                className="tap-target px-4 py-2.5 rounded-xl text-xs font-black bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white transition flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/20 cursor-pointer disabled:opacity-50"
+                              >
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                <span>✓ Approve: {r.eventName}</span>
+                              </button>
+                            ))}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleRejectCheckIn(delegate.name)}
+                            disabled={actionLoading}
+                            className="tap-target px-4 py-2.5 rounded-xl text-xs font-black bg-rose-50 hover:bg-rose-100 text-rose-700 border-2 border-rose-300 hover:border-rose-400 transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                          >
+                            <XCircle className="w-4 h-4" />
+                            <span>✕ Reject / Decline</span>
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-xs font-medium text-stone-500 italic self-center">
+                            No pending event check-ins available
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleRejectCheckIn(delegate.name)}
+                            disabled={actionLoading}
+                            className="tap-target px-4 py-2.5 rounded-xl text-xs font-black bg-rose-50 hover:bg-rose-100 text-rose-700 border-2 border-rose-300 hover:border-rose-400 transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                          >
+                            <XCircle className="w-4 h-4" />
+                            <span>✕ Reject / Decline</span>
+                          </button>
+                        </>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={resetForNext}
+                        className="tap-target px-3.5 py-2.5 rounded-xl text-xs font-semibold text-stone-600 hover:text-stone-900 bg-stone-200/80 hover:bg-stone-200 transition cursor-pointer text-center"
+                      >
+                        Skip / Next
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* 1. Event Registrations & Specific Venue Check-Ins */}
               <div className="space-y-3">
@@ -944,19 +1577,19 @@ export default function CheckInModal({
                                 </button>
                               )}
                             </div>
-                          ) : !delegate.isPaid ? (
-                            <span className="text-[10px] font-bold text-rose-700 bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200">
-                              Payment Required
+                          ) : (!delegate.isPaid || !delegate.isApproved) ? (
+                            <span className="text-[10px] font-bold text-amber-900 bg-amber-100/80 px-2.5 py-1 rounded-lg border border-amber-300">
+                              Approval Required at Desk
                             </span>
                           ) : reg.canCheckIn ? (
                             <button
                               type="button"
                               onClick={() => handleCheckInEvent(true, reg.eventId)}
                               disabled={actionLoading}
-                              className="tap-target px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition flex items-center gap-1.5 shadow-xs cursor-pointer"
+                              className="tap-target px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition flex items-center gap-1.5 shadow-sm hover:shadow-emerald-600/20 cursor-pointer"
                             >
                               <UserCheck className="w-3.5 h-3.5" />
-                              <span>Mark Present</span>
+                              <span>Confirm Check-In</span>
                             </button>
                           ) : (
                             <span
@@ -998,6 +1631,15 @@ export default function CheckInModal({
                           READY (1x MEAL)
                         </span>
                       )}
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          (delegate.foodPreference || "VEG") === "VEG"
+                            ? "bg-emerald-600 text-white"
+                            : "bg-amber-600 text-white"
+                        }`}
+                      >
+                        {(delegate.foodPreference || "VEG") === "VEG" ? "🥗 Pure Veg" : "🍗 Non-Veg"}
+                      </span>
                     </div>
 
                     <p className="text-xs text-stone-600">
@@ -1048,7 +1690,13 @@ export default function CheckInModal({
         <div className="bg-stone-50 border-t border-stone-200 p-4 px-6 flex items-center justify-between text-xs text-stone-500">
           <div className="flex items-center gap-1">
             <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-            <span>Accepts both Event QR & Food QR codes</span>
+            <span>
+              {mode === "event_only"
+                ? "Accepts Event Badge QR codes & Manual Code Entry"
+                : mode === "food_only"
+                ? "Accepts Food Token QR codes"
+                : "Accepts both Event QR & Food QR codes"}
+            </span>
           </div>
           <button
             type="button"

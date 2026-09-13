@@ -5,6 +5,7 @@ const Role = {
   STUDENT: "STUDENT",
   COORDINATOR: "COORDINATOR",
   ADMIN: "ADMIN",
+  FOOD_COORDINATOR: "FOOD_COORDINATOR",
 } as const;
 
 const EventCategory = {
@@ -69,9 +70,10 @@ async function main() {
   }
   console.log(`✅ Navigation items created (${navItems.length}).`);
 
-  // 3. Create Users (Admin, Coordinators, Student)
+  // 3. Create Users (Admin, Coordinators, Food Committee, Student)
   const adminPasswordHash = await bcrypt.hash("admin123", 10);
   const coordPasswordHash = await bcrypt.hash("coord123", 10);
+  const foodCoordPasswordHash = await bcrypt.hash("food123", 10);
   const studentPasswordHash = await bcrypt.hash("student123", 10);
 
   const railwayAdminPasswordHash = await bcrypt.hash("RailwayAdmin2026!", 10);
@@ -120,6 +122,17 @@ async function main() {
     },
   });
 
+  const foodCoord = await prisma.user.create({
+    data: {
+      name: "SHINE Food Committee",
+      email: "food@shctpt.edu",
+      phone: "+91 9840112233",
+      passwordHash: foodCoordPasswordHash,
+      role: Role.FOOD_COORDINATOR,
+      college: "Sacred Heart College (Autonomous), Tirupattur",
+    },
+  });
+
   const studentRahul = await prisma.user.create({
     data: {
       name: "Rahul Sharma",
@@ -131,7 +144,7 @@ async function main() {
     },
   });
 
-  console.log(`✅ Admin, Coordinators, and Student created.`);
+  console.log(`✅ Admin, Coordinators, Food Committee, and Student created.`);
 
   // 4. Create Events linked to Active Edition
   const baseDate = new Date("2026-10-15T09:30:00Z");

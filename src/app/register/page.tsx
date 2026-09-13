@@ -32,6 +32,7 @@ import {
   Target,
 } from "lucide-react";
 import { safeJson } from "@/lib/safeFetch";
+import { isValidEmail, isValidPhone } from "@/lib/validators";
 
 interface EventItem {
   id: string;
@@ -236,8 +237,23 @@ function RegisterForm() {
       if (isChecked) {
         // Unselect event
         newEventIds = member.eventIds.filter((id) => id !== eventId);
+        const wasNominated = (member.prelimsEventIds || []).includes(eventId);
         const newPrelimsIds = (member.prelimsEventIds || []).filter((id) => id !== eventId);
         copy[memberIndex] = { ...member, eventIds: newEventIds, prelimsEventIds: newPrelimsIds };
+
+        // If this student was nominated for prelims and another student in the delegation is still registered for it,
+        // automatically transfer the prelims nomination to that remaining registered student
+        if (wasNominated) {
+          const remainingIdx = copy.findIndex(
+            (m, i) => i !== memberIndex && m.eventIds.includes(eventId)
+          );
+          if (remainingIdx !== -1) {
+            copy[remainingIdx] = {
+              ...copy[remainingIdx],
+              prelimsEventIds: [...(copy[remainingIdx].prelimsEventIds || []), eventId],
+            };
+          }
+        }
         return copy;
       } else {
         // Check capacity limit for this event in current college delegation
@@ -255,39 +271,46 @@ function RegisterForm() {
           return ev && ev.category !== targetEvent.category;
         });
         newEventIds = [...otherCategoryEvents, eventId];
-      }
 
-      copy[memberIndex] = { ...member, eventIds: newEventIds };
-      return copy;
+        // If this event has prelims and NO OTHER student in the delegation is nominated for it yet,
+        // automatically assign this student to attend prelims
+        const otherNomineeExists = prev.some(
+          (m, i) => i !== memberIndex && (m.prelimsEventIds || []).includes(eventId)
+        );
+        const newPrelimsIds = targetEvent.hasPrelims && !otherNomineeExists
+          ? [...(member.prelimsEventIds || []), eventId]
+          : (member.prelimsEventIds || []);
+
+        copy[memberIndex] = { ...member, eventIds: newEventIds, prelimsEventIds: newPrelimsIds };
+        return copy;
+      }
     });
   };
 
   const toggleMemberPrelims = (memberIndex: number, eventId: string) => {
     setMembers((prev) => {
-      const copy = [...prev];
-      const member = copy[memberIndex];
-      const currentPrelims = member.prelimsEventIds || [];
-      const isChecked = currentPrelims.includes(eventId);
+      const targetMember = prev[memberIndex];
+      if (!targetMember || !targetMember.eventIds.includes(eventId)) return prev;
 
-      if (isChecked) {
-        copy[memberIndex] = {
-          ...member,
-          prelimsEventIds: currentPrelims.filter((id) => id !== eventId),
-        };
-      } else {
-        // Ensure student is registered for event
-        if (!member.eventIds.includes(eventId)) return prev;
+      const isCurrentlyNominated = (targetMember.prelimsEventIds || []).includes(eventId);
 
-        // Ensure no other team member in this delegation has selected prelims for this event
-        const existingNominee = prev.find((m, i) => i !== memberIndex && (m.prelimsEventIds || []).includes(eventId));
-        if (existingNominee) return prev;
-
-        copy[memberIndex] = {
-          ...member,
-          prelimsEventIds: [...currentPrelims, eventId],
-        };
-      }
-      return copy;
+      return prev.map((m, idx) => {
+        const currentPrelims = m.prelimsEventIds || [];
+        if (idx === memberIndex) {
+          return {
+            ...m,
+            prelimsEventIds: isCurrentlyNominated
+              ? currentPrelims.filter((id) => id !== eventId)
+              : [...currentPrelims, eventId],
+          };
+        } else {
+          // Exactly 1 student per delegation can attend prelims for this competition
+          return {
+            ...m,
+            prelimsEventIds: currentPrelims.filter((id) => id !== eventId),
+          };
+        }
+      });
     });
   };
 
@@ -302,9 +325,27 @@ function RegisterForm() {
       setErrorMessage("Please provide the College Team Lead's name, email, and phone number.");
       return false;
     }
-    if (hasFacultyIncharge && !facultyName.trim()) {
-      setErrorMessage("Please enter the accompanying Faculty Incharge's name or uncheck the faculty option.");
+    if (!isValidEmail(teamLeadEmail)) {
+      setErrorMessage("Please enter a valid email address for Team Lead (e.g. lead@college.edu).");
       return false;
+    }
+    if (!isValidPhone(teamLeadPhone)) {
+      setErrorMessage("Please enter a valid 10-digit mobile number for Team Lead (e.g. 9876543210 or +91 9876543210).");
+      return false;
+    }
+    if (hasFacultyIncharge) {
+      if (!facultyName.trim()) {
+        setErrorMessage("Please enter the accompanying Faculty Incharge's name or uncheck the faculty option.");
+        return false;
+      }
+      if (facultyEmail.trim() && !isValidEmail(facultyEmail)) {
+        setErrorMessage("Please enter a valid email address for the Faculty Incharge.");
+        return false;
+      }
+      if (facultyPhone.trim() && !isValidPhone(facultyPhone)) {
+        setErrorMessage("Please enter a valid 10-digit mobile number for the Faculty Incharge.");
+        return false;
+      }
     }
     return true;
   };
@@ -321,6 +362,14 @@ function RegisterForm() {
         setErrorMessage(`Please fill in full name, email, and mobile for Participant #${i + 1}.`);
         return false;
       }
+      if (!isValidEmail(m.email)) {
+        setErrorMessage(`Please enter a valid email address for Participant #${i + 1} (${m.name || "Student"}).`);
+        return false;
+      }
+      if (!isValidPhone(m.phone)) {
+        setErrorMessage(`Please enter a valid 10-digit mobile number for Participant #${i + 1} (${m.name || "Student"}).`);
+        return false;
+      }
       if (m.eventIds.length === 0) {
         setErrorMessage(`Please select at least one competition for Participant #${i + 1} (${m.name || "Student"}).`);
         return false;
@@ -332,6 +381,30 @@ function RegisterForm() {
         return false;
       }
     }
+
+    // Enforce Prelims assignment: For EVERY event with Prelims selected by any student,
+    // a student delegate MUST be nominated/assigned to attend the screening round before advancing.
+    const prelimsEventsInDelegation = new Set<string>();
+    for (const m of members) {
+      for (const evId of m.eventIds) {
+        const ev = events.find((e) => e.id === evId);
+        if (ev?.hasPrelims) {
+          prelimsEventsInDelegation.add(evId);
+        }
+      }
+    }
+
+    for (const pEvId of prelimsEventsInDelegation) {
+      const assigned = members.some((m) => (m.prelimsEventIds || []).includes(pEvId));
+      if (!assigned) {
+        const evName = events.find((e) => e.id === pEvId)?.name || "Competition";
+        setErrorMessage(
+          `"${evName}" has a Prelims round. Please assign which student delegate will attend the prelims before proceeding.`
+        );
+        return false;
+      }
+    }
+
     return true;
   };
 
@@ -380,6 +453,7 @@ function RegisterForm() {
           phone: m.phone.trim(),
           eventIds: m.eventIds,
           prelimsEventIds: m.prelimsEventIds || [],
+          foodPreference: m.foodPreference || "VEG",
         })),
       };
 
@@ -819,30 +893,60 @@ function RegisterForm() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-[#1C1917] mb-1.5">
-                      Team Lead Email *
-                    </label>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="block text-xs font-bold text-[#1C1917]">
+                        Team Lead Email *
+                      </label>
+                      {teamLeadEmail.trim() && (
+                        <span className="text-[10px] font-bold">
+                          {isValidEmail(teamLeadEmail) ? (
+                            <span className="text-emerald-600">✓ Valid</span>
+                          ) : (
+                            <span className="text-rose-500">Invalid email</span>
+                          )}
+                        </span>
+                      )}
+                    </div>
                     <input
                       type="email"
                       required
                       placeholder="e.g. priya@college.ac.in"
                       value={teamLeadEmail}
                       onChange={(e) => handleTeamLeadEmailChange(e.target.value)}
-                      className="w-full h-11 bg-white border border-[#1C1917]/15 rounded-xl px-3.5 text-sm text-[#1C1917] placeholder-[#78716C] focus:outline-none focus:border-[#FF6B1A] transition-colors shadow-2xs"
+                      className={`w-full h-11 bg-white border rounded-xl px-3.5 text-sm text-[#1C1917] placeholder-[#78716C] focus:outline-none transition-colors shadow-2xs ${
+                        teamLeadEmail.trim() && !isValidEmail(teamLeadEmail)
+                          ? "border-rose-400 focus:border-rose-500"
+                          : "border-[#1C1917]/15 focus:border-[#FF6B1A]"
+                      }`}
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-[#1C1917] mb-1.5">
-                      WhatsApp / Mobile *
-                    </label>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="block text-xs font-bold text-[#1C1917]">
+                        WhatsApp / Mobile *
+                      </label>
+                      {teamLeadPhone.trim() && (
+                        <span className="text-[10px] font-bold">
+                          {isValidPhone(teamLeadPhone) ? (
+                            <span className="text-emerald-600">✓ Valid</span>
+                          ) : (
+                            <span className="text-rose-500">10 digits</span>
+                          )}
+                        </span>
+                      )}
+                    </div>
                     <input
                       type="tel"
                       required
                       placeholder="e.g. +91 9840123456"
                       value={teamLeadPhone}
                       onChange={(e) => handleTeamLeadPhoneChange(e.target.value)}
-                      className="w-full h-11 bg-white border border-[#1C1917]/15 rounded-xl px-3.5 text-sm text-[#1C1917] placeholder-[#78716C] focus:outline-none focus:border-[#FF6B1A] transition-colors shadow-2xs"
+                      className={`w-full h-11 bg-white border rounded-xl px-3.5 text-sm text-[#1C1917] placeholder-[#78716C] focus:outline-none transition-colors shadow-2xs ${
+                        teamLeadPhone.trim() && !isValidPhone(teamLeadPhone)
+                          ? "border-rose-400 focus:border-rose-500"
+                          : "border-[#1C1917]/15 focus:border-[#FF6B1A]"
+                      }`}
                     />
                   </div>
                 </div>
@@ -881,28 +985,58 @@ function RegisterForm() {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-[#1C1917] mb-1.5">
-                        Faculty Mobile Phone
-                      </label>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="block text-xs font-bold text-[#1C1917]">
+                          Faculty Mobile Phone
+                        </label>
+                        {facultyPhone.trim() && (
+                          <span className="text-[10px] font-bold">
+                            {isValidPhone(facultyPhone) ? (
+                              <span className="text-emerald-600">✓ Valid</span>
+                            ) : (
+                              <span className="text-rose-500">10 digits</span>
+                            )}
+                          </span>
+                        )}
+                      </div>
                       <input
                         type="tel"
                         placeholder="e.g. +91 9443123456"
                         value={facultyPhone}
                         onChange={(e) => setFacultyPhone(e.target.value)}
-                        className="w-full h-11 bg-white border border-[#1C1917]/15 rounded-xl px-3.5 text-sm text-[#1C1917] placeholder-[#78716C] focus:outline-none focus:border-[#FF6B1A] transition-colors shadow-2xs"
+                        className={`w-full h-11 bg-white border rounded-xl px-3.5 text-sm text-[#1C1917] placeholder-[#78716C] focus:outline-none transition-colors shadow-2xs ${
+                          facultyPhone.trim() && !isValidPhone(facultyPhone)
+                            ? "border-rose-400 focus:border-rose-500"
+                            : "border-[#1C1917]/15 focus:border-[#FF6B1A]"
+                        }`}
                       />
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-[#1C1917] mb-1.5">
-                        Faculty Email
-                      </label>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="block text-xs font-bold text-[#1C1917]">
+                          Faculty Email
+                        </label>
+                        {facultyEmail.trim() && (
+                          <span className="text-[10px] font-bold">
+                            {isValidEmail(facultyEmail) ? (
+                              <span className="text-emerald-600">✓ Valid</span>
+                            ) : (
+                              <span className="text-rose-500">Invalid</span>
+                            )}
+                          </span>
+                        )}
+                      </div>
                       <input
                         type="email"
                         placeholder="e.g. ramesh@college.edu"
                         value={facultyEmail}
                         onChange={(e) => setFacultyEmail(e.target.value)}
-                        className="w-full h-11 bg-white border border-[#1C1917]/15 rounded-xl px-3.5 text-sm text-[#1C1917] placeholder-[#78716C] focus:outline-none focus:border-[#FF6B1A] transition-colors shadow-2xs"
+                        className={`w-full h-11 bg-white border rounded-xl px-3.5 text-sm text-[#1C1917] placeholder-[#78716C] focus:outline-none transition-colors shadow-2xs ${
+                          facultyEmail.trim() && !isValidEmail(facultyEmail)
+                            ? "border-rose-400 focus:border-rose-500"
+                            : "border-[#1C1917]/15 focus:border-[#FF6B1A]"
+                        }`}
                       />
                     </div>
                   </div>
@@ -997,30 +1131,60 @@ function RegisterForm() {
                         </div>
 
                         <div>
-                          <label className="block text-[11px] font-bold text-[#1C1917] mb-1">
-                            Email (For Pass & Schedule) *
-                          </label>
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="block text-[11px] font-bold text-[#1C1917]">
+                              Email (For Pass & Schedule) *
+                            </label>
+                            {member.email.trim() && (
+                              <span className="text-[10px] font-bold">
+                                {isValidEmail(member.email) ? (
+                                  <span className="text-emerald-600">✓</span>
+                                ) : (
+                                  <span className="text-rose-500">Invalid</span>
+                                )}
+                              </span>
+                            )}
+                          </div>
                           <input
                             type="email"
                             required
                             placeholder="student@mail.com"
                             value={member.email}
                             onChange={(e) => updateMember(mIdx, "email", e.target.value)}
-                            className="w-full h-10 bg-white border border-[#1C1917]/15 rounded-xl px-3 text-xs text-[#1C1917] placeholder-[#78716C] focus:outline-none focus:border-[#FF6B1A] transition-colors"
+                            className={`w-full h-10 bg-white border rounded-xl px-3 text-xs text-[#1C1917] placeholder-[#78716C] focus:outline-none transition-colors ${
+                              member.email.trim() && !isValidEmail(member.email)
+                                ? "border-rose-400 focus:border-rose-500"
+                                : "border-[#1C1917]/15 focus:border-[#FF6B1A]"
+                            }`}
                           />
                         </div>
 
                         <div>
-                          <label className="block text-[11px] font-bold text-[#1C1917] mb-1">
-                            WhatsApp / Mobile *
-                          </label>
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="block text-[11px] font-bold text-[#1C1917]">
+                              WhatsApp / Mobile *
+                            </label>
+                            {member.phone.trim() && (
+                              <span className="text-[10px] font-bold">
+                                {isValidPhone(member.phone) ? (
+                                  <span className="text-emerald-600">✓</span>
+                                ) : (
+                                  <span className="text-rose-500">10 digits</span>
+                                )}
+                              </span>
+                            )}
+                          </div>
                           <input
                             type="tel"
                             required
                             placeholder="+91 9840123456"
                             value={member.phone}
                             onChange={(e) => updateMember(mIdx, "phone", e.target.value)}
-                            className="w-full h-10 bg-white border border-[#1C1917]/15 rounded-xl px-3 text-xs text-[#1C1917] placeholder-[#78716C] focus:outline-none focus:border-[#FF6B1A] transition-colors"
+                            className={`w-full h-10 bg-white border rounded-xl px-3 text-xs text-[#1C1917] placeholder-[#78716C] focus:outline-none transition-colors ${
+                              member.phone.trim() && !isValidPhone(member.phone)
+                                ? "border-rose-400 focus:border-rose-500"
+                                : "border-[#1C1917]/15 focus:border-[#FF6B1A]"
+                            }`}
                           />
                         </div>
                       </div>
@@ -1148,36 +1312,50 @@ function RegisterForm() {
                                         const otherNominee = members.find(
                                           (m, idx) => idx !== mIdx && (m.prelimsEventIds || []).includes(ev.id)
                                         );
-                                        const isPrelimsDisabled = !isPrelimsNominated && !!otherNominee;
 
                                         return (
-                                          <label
-                                            onClick={(e) => e.stopPropagation()}
-                                            className={`flex items-center gap-1.5 text-[10px] font-bold ${
-                                              isPrelimsDisabled
-                                                ? "text-stone-400 cursor-not-allowed"
-                                                : isPrelimsNominated
-                                                ? "text-amber-900 font-extrabold"
-                                                : "text-stone-700 cursor-pointer"
-                                            }`}
-                                          >
-                                            <input
-                                              type="checkbox"
-                                              checked={isPrelimsNominated}
-                                              disabled={isPrelimsDisabled}
-                                              onChange={() => toggleMemberPrelims(mIdx, ev.id)}
-                                              className="accent-amber-600 rounded cursor-pointer disabled:opacity-40"
-                                            />
-                                            <span className="inline-flex items-center gap-1">
-                                              <Target className="w-3 h-3 text-amber-800 shrink-0" />
-                                              <span>Nominate for Prelims</span>
-                                            </span>
-                                            {isPrelimsDisabled && (
-                                              <span className="text-[9px] text-rose-600 font-semibold block ml-1">
-                                                (1 student from college already nominated)
+                                          <div className="flex flex-wrap items-center justify-between gap-1.5">
+                                            <label
+                                              onClick={(e) => e.stopPropagation()}
+                                              className={`flex items-center gap-1.5 text-[10px] font-bold cursor-pointer select-none ${
+                                                isPrelimsNominated
+                                                  ? "text-amber-900 font-extrabold"
+                                                  : "text-stone-700 hover:text-amber-800"
+                                              }`}
+                                            >
+                                              <input
+                                                type="checkbox"
+                                                checked={isPrelimsNominated}
+                                                onChange={() => toggleMemberPrelims(mIdx, ev.id)}
+                                                className="accent-amber-600 rounded cursor-pointer"
+                                              />
+                                              <span className="inline-flex items-center gap-1">
+                                                <Target className="w-3 h-3 text-amber-800 shrink-0" />
+                                                <span>Attending Prelims Round</span>
+                                              </span>
+                                            </label>
+
+                                            {isPrelimsNominated ? (
+                                              <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300">
+                                                ✓ Assigned Attendee
+                                              </span>
+                                            ) : otherNominee ? (
+                                              <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  toggleMemberPrelims(mIdx, ev.id);
+                                                }}
+                                                className="text-[9px] text-amber-700 font-semibold hover:underline cursor-pointer"
+                                              >
+                                                Assigned to {otherNominee.name || "another student"} (Click to reassign)
+                                              </button>
+                                            ) : (
+                                              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-rose-100 text-rose-800 border border-rose-200 animate-pulse">
+                                                ⚠️ Prelims attendee required
                                               </span>
                                             )}
-                                          </label>
+                                          </div>
                                         );
                                       })()}
                                     </div>
@@ -1263,36 +1441,50 @@ function RegisterForm() {
                                         const otherNominee = members.find(
                                           (m, idx) => idx !== mIdx && (m.prelimsEventIds || []).includes(ev.id)
                                         );
-                                        const isPrelimsDisabled = !isPrelimsNominated && !!otherNominee;
 
                                         return (
-                                          <label
-                                            onClick={(e) => e.stopPropagation()}
-                                            className={`flex items-center gap-1.5 text-[10px] font-bold ${
-                                              isPrelimsDisabled
-                                                ? "text-stone-400 cursor-not-allowed"
-                                                : isPrelimsNominated
-                                                ? "text-amber-900 font-extrabold"
-                                                : "text-stone-700 cursor-pointer"
-                                            }`}
-                                          >
-                                            <input
-                                              type="checkbox"
-                                              checked={isPrelimsNominated}
-                                              disabled={isPrelimsDisabled}
-                                              onChange={() => toggleMemberPrelims(mIdx, ev.id)}
-                                              className="accent-amber-600 rounded cursor-pointer disabled:opacity-40"
-                                            />
-                                            <span className="inline-flex items-center gap-1">
-                                              <Target className="w-3 h-3 text-amber-800 shrink-0" />
-                                              <span>Nominate for Prelims</span>
-                                            </span>
-                                            {isPrelimsDisabled && (
-                                              <span className="text-[9px] text-rose-600 font-semibold block ml-1">
-                                                (1 student from college already nominated)
+                                          <div className="flex flex-wrap items-center justify-between gap-1.5">
+                                            <label
+                                              onClick={(e) => e.stopPropagation()}
+                                              className={`flex items-center gap-1.5 text-[10px] font-bold cursor-pointer select-none ${
+                                                isPrelimsNominated
+                                                  ? "text-amber-900 font-extrabold"
+                                                  : "text-stone-700 hover:text-amber-800"
+                                              }`}
+                                            >
+                                              <input
+                                                type="checkbox"
+                                                checked={isPrelimsNominated}
+                                                onChange={() => toggleMemberPrelims(mIdx, ev.id)}
+                                                className="accent-amber-600 rounded cursor-pointer"
+                                              />
+                                              <span className="inline-flex items-center gap-1">
+                                                <Target className="w-3 h-3 text-amber-800 shrink-0" />
+                                                <span>Attending Prelims Round</span>
+                                              </span>
+                                            </label>
+
+                                            {isPrelimsNominated ? (
+                                              <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300">
+                                                ✓ Assigned Attendee
+                                              </span>
+                                            ) : otherNominee ? (
+                                              <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  toggleMemberPrelims(mIdx, ev.id);
+                                                }}
+                                                className="text-[9px] text-amber-700 font-semibold hover:underline cursor-pointer"
+                                              >
+                                                Assigned to {otherNominee.name || "another student"} (Click to reassign)
+                                              </button>
+                                            ) : (
+                                              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-rose-100 text-rose-800 border border-rose-200 animate-pulse">
+                                                ⚠️ Prelims attendee required
                                               </span>
                                             )}
-                                          </label>
+                                          </div>
                                         );
                                       })()}
                                     </div>
@@ -1430,6 +1622,11 @@ function RegisterForm() {
                         >
                           {(m.foodPreference || "VEG") === "VEG" ? "🥗 Veg" : "🍗 Non-Veg"}
                         </span>
+                        {m.prelimsEventIds && m.prelimsEventIds.length > 0 && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-orange-100 text-orange-900 border border-orange-200">
+                            🎯 {m.prelimsEventIds.length} Prelims Assigned
+                          </span>
+                        )}
                         <span className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded shrink-0">
                           {m.eventIds.length} Event(s)
                         </span>

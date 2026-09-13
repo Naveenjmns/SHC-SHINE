@@ -19,15 +19,19 @@ import {
   ArrowLeft,
   ChevronLeft,
   ChevronRight,
+  User,
+  Users,
 } from "lucide-react";
 
-interface ResultEntry {
-  id: string;
+interface PodiumTeam {
+  rank: 1 | 2 | 3;
+  positionTitle: string;
+  collegeName: string;
+  teamName: string | null;
+  participants: string[];
+  score: number | null;
   result: string;
-  user: {
-    name: string;
-    college: string | null;
-  };
+  award?: string;
 }
 
 interface EventWithResults {
@@ -35,7 +39,25 @@ interface EventWithResults {
   name: string;
   category: string;
   venue: string | null;
-  results: ResultEntry[];
+  awards?: {
+    first: string;
+    second: string;
+    third: string;
+  };
+  podium: {
+    first: PodiumTeam | null;
+    second: PodiumTeam | null;
+    third: PodiumTeam | null;
+  };
+  teams?: PodiumTeam[];
+  results?: Array<{
+    id: string;
+    result: string;
+    user: {
+      name: string;
+      college: string | null;
+    };
+  }>;
 }
 
 export default function StageLeaderboardPage() {
@@ -105,6 +127,64 @@ export default function StageLeaderboardPage() {
   };
 
   const currentEvent = events[activeEventIndex];
+
+  // Derive podium winners safely from structured podium or fallback to results
+  const first =
+    currentEvent?.podium?.first ||
+    (() => {
+      const match = currentEvent?.results?.find((r) =>
+        r.result?.toLowerCase().includes("1")
+      );
+      if (!match) return null;
+      return {
+        rank: 1 as const,
+        positionTitle: "1st Place • Champion",
+        collegeName: match.user.college || "Delegation College",
+        teamName: null,
+        participants: [match.user.name],
+        score: null,
+        result: match.result,
+        award: currentEvent?.awards?.first || "Cash Prize + Trophy + Certificate",
+      };
+    })();
+
+  const second =
+    currentEvent?.podium?.second ||
+    (() => {
+      const match = currentEvent?.results?.find((r) =>
+        r.result?.toLowerCase().includes("2")
+      );
+      if (!match) return null;
+      return {
+        rank: 2 as const,
+        positionTitle: "2nd Place • Runner-Up",
+        collegeName: match.user.college || "Delegation College",
+        teamName: null,
+        participants: [match.user.name],
+        score: null,
+        result: match.result,
+        award: currentEvent?.awards?.second || "Cash Prize + Merit Certificate",
+      };
+    })();
+
+  const third =
+    currentEvent?.podium?.third ||
+    (() => {
+      const match = currentEvent?.results?.find((r) =>
+        r.result?.toLowerCase().includes("3")
+      );
+      if (!match) return null;
+      return {
+        rank: 3 as const,
+        positionTitle: "3rd Place • Finalist",
+        collegeName: match.user.college || "Delegation College",
+        teamName: null,
+        participants: [match.user.name],
+        score: null,
+        result: match.result,
+        award: currentEvent?.awards?.third || "Distinction Certificate",
+      };
+    })();
 
   return (
     <main className="min-h-screen flex flex-col justify-between bg-[#FAF8F5] text-[#1C1917] select-none font-sans">
@@ -242,96 +322,248 @@ export default function StageLeaderboardPage() {
               <span>{currentEvent.venue || "Sacred Heart College Campus"}</span>
             </p>
 
-            {/* Podium Cards Grid (Soft Cream Design System) */}
+            {/* Podium Cards Grid (Auditorium Projector Optimized) */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left items-stretch">
               
-              {/* 1st Place Champion */}
-              <div className="fest-card p-8 border-2 border-[#D9A441] bg-white shadow-xl shadow-amber-500/10 order-1 md:order-2 flex flex-col justify-between transform md:-translate-y-2">
+              {/* 1st Place Champion (Elevated & Prominent) */}
+              <div className="fest-card p-7 sm:p-8 border-2 border-[#D9A441] bg-white shadow-xl shadow-amber-500/10 order-1 md:order-2 flex flex-col justify-between transform md:-translate-y-3 rounded-3xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-amber-400/10 to-transparent pointer-events-none rounded-bl-full" />
+                
                 <div>
                   <div className="flex justify-between items-center mb-5">
-                    <div className="w-14 h-14 rounded-2xl bg-[#D9A441]/15 border border-[#D9A441]/30 flex items-center justify-center text-[#D9A441]">
+                    <div className="w-14 h-14 rounded-2xl bg-[#D9A441]/15 border border-[#D9A441]/30 flex items-center justify-center text-[#D9A441] shadow-2xs">
                       <Crown className="w-8 h-8" />
                     </div>
-                    <span className="text-xs font-extrabold text-[#B45309] uppercase tracking-widest bg-amber-100 px-3 py-1 rounded-full border border-amber-300">
+                    <span className="text-xs font-black text-[#B45309] uppercase tracking-widest bg-amber-100 px-3.5 py-1 rounded-full border border-amber-300 shadow-2xs">
                       1st Place • Champion
                     </span>
                   </div>
 
-                  <h3
-                    className="text-2xl sm:text-3xl font-black text-[#1C1917] mb-2 leading-tight"
-                    style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
-                  >
-                    {currentEvent.results[0]?.user.name || "Awaiting Final Verdict"}
-                  </h3>
+                  {first ? (
+                    <>
+                      {/* College Name: BIG & PROMINENT */}
+                      <h3
+                        className="text-2xl sm:text-3xl lg:text-4xl font-black text-[#1C1917] mb-1.5 leading-tight tracking-tight uppercase"
+                        style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
+                      >
+                        {first.collegeName}
+                      </h3>
 
-                  <p className="text-sm font-extrabold text-[#B45309] mb-4">
-                    {currentEvent.results[0]?.user.college || "Judges Evaluation in Progress"}
-                  </p>
+                      {first.teamName && (
+                        <div className="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 text-xs font-extrabold uppercase tracking-wide mb-3">
+                          <span>Team:</span>
+                          <span className="text-[#B45309]">{first.teamName}</span>
+                        </div>
+                      )}
+
+                      {/* Participants Displayed Cleanly Below */}
+                      <div className="mt-4 mb-5 pt-3 border-t border-amber-100/80">
+                        <div className="text-[11px] font-extrabold uppercase tracking-widest text-[#B45309] flex items-center gap-1.5 mb-2">
+                          <Users className="w-3.5 h-3.5 text-[#D9A441]" />
+                          <span>
+                            {first.participants.length > 1 ? "Winning Team Members" : "Champion Participant"}
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {first.participants.map((name) => (
+                            <span
+                              key={name}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50/90 border border-amber-200/90 text-slate-900 font-bold text-xs sm:text-sm shadow-2xs"
+                            >
+                              <User className="w-3.5 h-3.5 text-[#D9A441] shrink-0" />
+                              <span>{name}</span>
+                            </span>
+                          ))}
+                        </div>
+                        {first.score !== null && first.score !== undefined && (
+                          <div className="mt-3 text-xs font-semibold text-stone-500">
+                            Evaluated Mark:{" "}
+                            <strong className="text-[#B45309] font-black text-sm tabular-nums">
+                              {first.score}
+                            </strong>{" "}
+                            / 100
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="py-6">
+                      <h3
+                        className="text-2xl font-black text-stone-400 mb-2 leading-tight"
+                        style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
+                      >
+                        Awaiting Champion Verdict
+                      </h3>
+                      <p className="text-sm font-semibold text-stone-400">
+                        Judges evaluation and marks tabulation in progress
+                      </p>
+                    </div>
+                  )}
                 </div>
 
-                <div className="border-t border-[#1C1917]/10 pt-4 text-xs font-bold text-[#57534E] flex items-center gap-2">
-                  <Trophy className="w-4 h-4 text-[#D9A441]" />
-                  <span>Award: Cash Prize + Trophy + Certificate</span>
+                <div className="border-t border-[#1C1917]/10 pt-4 text-xs font-bold text-[#57534E] flex items-center gap-2 mt-2">
+                  <Trophy className="w-4 h-4 text-[#D9A441] shrink-0" />
+                  <span>Award: {first?.award || currentEvent.awards?.first || "Cash Prize + Trophy + Certificate"}</span>
                 </div>
               </div>
 
               {/* 2nd Place Runner-Up */}
-              <div className="fest-card p-8 border-2 border-stone-300 bg-white shadow-md order-2 md:order-1 flex flex-col justify-between">
+              <div className="fest-card p-7 sm:p-8 border-2 border-stone-300 bg-white shadow-md order-2 md:order-1 flex flex-col justify-between rounded-3xl relative overflow-hidden">
                 <div>
                   <div className="flex justify-between items-center mb-5">
-                    <div className="w-12 h-12 rounded-2xl bg-stone-100 border border-stone-300 flex items-center justify-center text-stone-700">
+                    <div className="w-12 h-12 rounded-2xl bg-stone-100 border border-stone-300 flex items-center justify-center text-stone-700 shadow-2xs">
                       <Medal className="w-7 h-7" />
                     </div>
-                    <span className="text-xs font-extrabold text-stone-800 uppercase tracking-widest bg-stone-100 px-3 py-1 rounded-full border border-stone-300">
+                    <span className="text-xs font-black text-stone-800 uppercase tracking-widest bg-stone-100 px-3 py-1 rounded-full border border-stone-300">
                       2nd Place • Runner-Up
                     </span>
                   </div>
 
-                  <h3
-                    className="text-xl sm:text-2xl font-black text-[#1C1917] mb-2 leading-tight"
-                    style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
-                  >
-                    {currentEvent.results[1]?.user.name || "Awaiting Score"}
-                  </h3>
+                  {second ? (
+                    <>
+                      {/* College Name: BIG & PROMINENT */}
+                      <h3
+                        className="text-xl sm:text-2xl lg:text-3xl font-black text-[#1C1917] mb-1.5 leading-tight tracking-tight uppercase"
+                        style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
+                      >
+                        {second.collegeName}
+                      </h3>
 
-                  <p className="text-sm font-semibold text-[#57534E] mb-4">
-                    {currentEvent.results[1]?.user.college || "Panel Review"}
-                  </p>
+                      {second.teamName && (
+                        <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-stone-100 border border-stone-200 text-stone-800 text-xs font-bold uppercase tracking-wide mb-3">
+                          <span>Team:</span>
+                          <span className="text-stone-900">{second.teamName}</span>
+                        </div>
+                      )}
+
+                      {/* Participants Displayed Cleanly Below */}
+                      <div className="mt-4 mb-5 pt-3 border-t border-stone-100">
+                        <div className="text-[11px] font-extrabold uppercase tracking-widest text-stone-500 flex items-center gap-1.5 mb-2">
+                          <Users className="w-3.5 h-3.5 text-stone-500" />
+                          <span>
+                            {second.participants.length > 1 ? "Team Members" : "Runner-Up Participant"}
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {second.participants.map((name) => (
+                            <span
+                              key={name}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-stone-100 border border-stone-200 text-slate-900 font-bold text-xs sm:text-sm shadow-2xs"
+                            >
+                              <User className="w-3.5 h-3.5 text-stone-500 shrink-0" />
+                              <span>{name}</span>
+                            </span>
+                          ))}
+                        </div>
+                        {second.score !== null && second.score !== undefined && (
+                          <div className="mt-3 text-xs font-semibold text-stone-500">
+                            Evaluated Mark:{" "}
+                            <strong className="text-stone-800 font-black text-sm tabular-nums">
+                              {second.score}
+                            </strong>{" "}
+                            / 100
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="py-6">
+                      <h3
+                        className="text-xl font-black text-stone-400 mb-2 leading-tight"
+                        style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
+                      >
+                        Awaiting Score
+                      </h3>
+                      <p className="text-sm font-semibold text-stone-400">
+                        Panel review and evaluation pending
+                      </p>
+                    </div>
+                  )}
                 </div>
 
-                <div className="border-t border-[#1C1917]/10 pt-4 text-xs font-bold text-[#57534E] flex items-center gap-2">
-                  <Medal className="w-4 h-4 text-stone-500" />
-                  <span>Award: Cash Prize + Merit Certificate</span>
+                <div className="border-t border-[#1C1917]/10 pt-4 text-xs font-bold text-[#57534E] flex items-center gap-2 mt-2">
+                  <Medal className="w-4 h-4 text-stone-500 shrink-0" />
+                  <span>Award: {second?.award || currentEvent.awards?.second || "Cash Prize + Merit Certificate"}</span>
                 </div>
               </div>
 
               {/* 3rd Place Finalist */}
-              <div className="fest-card p-8 border-2 border-[#FF6B1A]/30 bg-white shadow-md order-3 flex flex-col justify-between">
+              <div className="fest-card p-7 sm:p-8 border-2 border-[#FF6B1A]/30 bg-white shadow-md order-3 flex flex-col justify-between rounded-3xl relative overflow-hidden">
                 <div>
                   <div className="flex justify-between items-center mb-5">
-                    <div className="w-12 h-12 rounded-2xl bg-[#FF6B1A]/10 border border-[#FF6B1A]/20 flex items-center justify-center text-[#FF6B1A]">
+                    <div className="w-12 h-12 rounded-2xl bg-[#FF6B1A]/10 border border-[#FF6B1A]/20 flex items-center justify-center text-[#FF6B1A] shadow-2xs">
                       <Medal className="w-7 h-7" />
                     </div>
-                    <span className="text-xs font-extrabold text-[#C2410C] uppercase tracking-widest bg-orange-100 px-3 py-1 rounded-full border border-orange-300">
+                    <span className="text-xs font-black text-[#C2410C] uppercase tracking-widest bg-orange-100 px-3 py-1 rounded-full border border-orange-300">
                       3rd Place • Finalist
                     </span>
                   </div>
 
-                  <h3
-                    className="text-xl sm:text-2xl font-black text-[#1C1917] mb-2 leading-tight"
-                    style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
-                  >
-                    {currentEvent.results[2]?.user.name || "Awaiting Score"}
-                  </h3>
+                  {third ? (
+                    <>
+                      {/* College Name: BIG & PROMINENT */}
+                      <h3
+                        className="text-xl sm:text-2xl lg:text-3xl font-black text-[#1C1917] mb-1.5 leading-tight tracking-tight uppercase"
+                        style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
+                      >
+                        {third.collegeName}
+                      </h3>
 
-                  <p className="text-sm font-semibold text-[#57534E] mb-4">
-                    {currentEvent.results[2]?.user.college || "Panel Review"}
-                  </p>
+                      {third.teamName && (
+                        <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-orange-50 border border-orange-200 text-orange-900 text-xs font-bold uppercase tracking-wide mb-3">
+                          <span>Team:</span>
+                          <span className="text-orange-950">{third.teamName}</span>
+                        </div>
+                      )}
+
+                      {/* Participants Displayed Cleanly Below */}
+                      <div className="mt-4 mb-5 pt-3 border-t border-orange-100">
+                        <div className="text-[11px] font-extrabold uppercase tracking-widest text-[#C2410C] flex items-center gap-1.5 mb-2">
+                          <Users className="w-3.5 h-3.5 text-[#FF6B1A]" />
+                          <span>
+                            {third.participants.length > 1 ? "Team Members" : "Finalist Participant"}
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {third.participants.map((name) => (
+                            <span
+                              key={name}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-orange-50/80 border border-orange-200 text-slate-900 font-bold text-xs sm:text-sm shadow-2xs"
+                            >
+                              <User className="w-3.5 h-3.5 text-[#FF6B1A] shrink-0" />
+                              <span>{name}</span>
+                            </span>
+                          ))}
+                        </div>
+                        {third.score !== null && third.score !== undefined && (
+                          <div className="mt-3 text-xs font-semibold text-stone-500">
+                            Evaluated Mark:{" "}
+                            <strong className="text-[#C2410C] font-black text-sm tabular-nums">
+                              {third.score}
+                            </strong>{" "}
+                            / 100
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="py-6">
+                      <h3
+                        className="text-xl font-black text-stone-400 mb-2 leading-tight"
+                        style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
+                      >
+                        Awaiting Score
+                      </h3>
+                      <p className="text-sm font-semibold text-stone-400">
+                        Panel review and evaluation pending
+                      </p>
+                    </div>
+                  )}
                 </div>
 
-                <div className="border-t border-[#1C1917]/10 pt-4 text-xs font-bold text-[#57534E] flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-[#FF6B1A]" />
-                  <span>Award: Distinction Certificate</span>
+                <div className="border-t border-[#1C1917]/10 pt-4 text-xs font-bold text-[#57534E] flex items-center gap-2 mt-2">
+                  <Sparkles className="w-4 h-4 text-[#FF6B1A] shrink-0" />
+                  <span>Award: {third?.award || currentEvent.awards?.third || "Distinction Certificate"}</span>
                 </div>
               </div>
 

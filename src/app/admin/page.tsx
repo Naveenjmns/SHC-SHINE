@@ -9,12 +9,14 @@ import { safeJson } from "@/lib/safeFetch";
 import {
   Settings,
   Users,
+  User,
   Trophy,
   CheckCircle2,
   Clock,
   Theater,
   Laptop,
   Check,
+  UserCheck,
   X,
   Plus,
   Upload,
@@ -67,6 +69,8 @@ interface StatsData {
   totalEvents: number;
   totalRevenue: number;
   pendingRevenue?: number;
+  totalApprovedStudents?: number;
+  totalPendingStudents?: number;
 }
 
 interface EventBreakdown {
@@ -159,6 +163,18 @@ interface EventEditionItem {
   participantFee?: number;
   isRegistrationOpen?: boolean;
   registrationClosedNotice?: string | null;
+  prizePool?: string | null;
+  expectedDelegates?: string | null;
+  rulesEligibilityTitle?: string | null;
+  rulesEligibilityText?: string | null;
+  rulesTimingsTitle?: string | null;
+  rulesTimingsText?: string | null;
+  rulesChampionshipTitle?: string | null;
+  rulesChampionshipText?: string | null;
+  defaultFirstPrize?: string | null;
+  defaultSecondPrize?: string | null;
+  defaultThirdPrize?: string | null;
+  showStageModeInStudentPortal?: boolean;
 
   navItems: { id: string; label: string; url: string; order: number; isEnabled: boolean }[];
   scheduleItems?: { id: string; time: string; title: string; venue?: string | null; description?: string | null; tag?: string | null; order: number }[];
@@ -275,6 +291,25 @@ export default function AdminOverviewPage() {
     participantFee: 0,
     isRegistrationOpen: true,
     registrationClosedNotice: "Registrations for this edition are currently closed. Please contact the event coordinators for queries.",
+    prizePool: "₹25K+",
+    expectedDelegates: "500+",
+    rulesEligibilityTitle: "Eligibility & Registration",
+    rulesEligibilityText:
+      "Open to all bona fide UG and PG students of Computer Science, Applications, IT, and related engineering disciplines with valid college ID cards.",
+    rulesTimingsTitle: "Reporting & Timings",
+    rulesTimingsText:
+      "Participants must report at the registration desk by 09:00 AM sharp on Sep 17, 2026. Spot registrations close at 10:30 AM.",
+    rulesChampionshipTitle: "Overall Championship",
+    rulesChampionshipText:
+      "The institution securing maximum cumulative points across both On-Stage and Off-Stage events will be crowned the SHINE Overall Champions.",
+
+    // Centralized Default Competition Awards (Stage Leaderboard)
+    defaultFirstPrize: "Cash Prize + Trophy + Certificate",
+    defaultSecondPrize: "Cash Prize + Merit Certificate",
+    defaultThirdPrize: "Distinction Certificate",
+
+    // Student Portal Stage Mode Toggle
+    showStageModeInStudentPortal: false,
   });
 
   // SMTP Settings State
@@ -413,6 +448,30 @@ export default function AdminOverviewPage() {
             registrationClosedNotice:
               currentActive.registrationClosedNotice ||
               "Registrations for this edition are currently closed. Please contact the event coordinators for queries.",
+            prizePool: currentActive.prizePool || "₹25K+",
+            expectedDelegates: currentActive.expectedDelegates || "500+",
+            rulesEligibilityTitle:
+              currentActive.rulesEligibilityTitle || "Eligibility & Registration",
+            rulesEligibilityText:
+              currentActive.rulesEligibilityText ||
+              "Open to all bona fide UG and PG students of Computer Science, Applications, IT, and related engineering disciplines with valid college ID cards.",
+            rulesTimingsTitle:
+              currentActive.rulesTimingsTitle || "Reporting & Timings",
+            rulesTimingsText:
+              currentActive.rulesTimingsText ||
+              "Participants must report at the registration desk by 09:00 AM sharp on Sep 17, 2026. Spot registrations close at 10:30 AM.",
+            rulesChampionshipTitle:
+              currentActive.rulesChampionshipTitle || "Overall Championship",
+            rulesChampionshipText:
+              currentActive.rulesChampionshipText ||
+              "The institution securing maximum cumulative points across both On-Stage and Off-Stage events will be crowned the SHINE Overall Champions.",
+            defaultFirstPrize:
+              currentActive.defaultFirstPrize || "Cash Prize + Trophy + Certificate",
+            defaultSecondPrize:
+              currentActive.defaultSecondPrize || "Cash Prize + Merit Certificate",
+            defaultThirdPrize:
+              currentActive.defaultThirdPrize || "Distinction Certificate",
+            showStageModeInStudentPortal: Boolean(currentActive.showStageModeInStudentPortal),
           });
         }
       }
@@ -585,6 +644,50 @@ export default function AdminOverviewPage() {
         await loadAdminData();
       } else {
         toast.error("Failed to update registration status: " + (data.error || "Unknown error"));
+      }
+    } catch (err: any) {
+      toast.error("Error: " + err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleToggleStageMode = async (nextState?: boolean) => {
+    if (!activeEdition) return;
+    const targetState = nextState !== undefined ? nextState : !brandingForm.showStageModeInStudentPortal;
+
+    const ok = await confirmAction({
+      title: targetState ? "Enable Stage Mode for Students?" : "Hide Stage Mode from Students?",
+      message: targetState
+        ? "This will make the Stage Results (Event Winners & Podium) visible to all participants in the Student Portal. Proceed?"
+        : "This will hide the Stage Results and winner leaderboard from the Student Portal. Proceed?",
+      confirmText: targetState ? "Yes, Enable Live Stage" : "Yes, Hide from Students",
+      cancelText: "Cancel",
+      isDestructive: !targetState,
+    });
+    if (!ok) return;
+
+    setSaving(true);
+    try {
+      const res = await fetch("/api/admin/edition", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: activeEdition.id,
+          showStageModeInStudentPortal: targetState,
+        }),
+      });
+      const data = await safeJson(res, { success: false, error: "Server error" });
+      if (data.success) {
+        toast.success(
+          targetState
+            ? "Stage Mode is now LIVE in the Student Portal!"
+            : "Stage Mode is now HIDDEN from students."
+        );
+        setBrandingForm((prev) => ({ ...prev, showStageModeInStudentPortal: targetState }));
+        await loadAdminData();
+      } else {
+        toast.error("Failed to update stage mode visibility: " + (data.error || "Unknown error"));
       }
     } catch (err: any) {
       toast.error("Error: " + err.message);
@@ -897,9 +1000,13 @@ export default function AdminOverviewPage() {
   };
 
   const collectPaymentAndApproveDelegation = async (delegationId: string, teamLeadName: string, totalFee?: number) => {
-    if (!confirm(`Collect spot registration fee of ₹${totalFee || 0} for ${teamLeadName}'s team and activate official passes?\n\nThis will mark payment as PAID, confirm all team member registrations, and send official passes (2 QR badges) to each student and a full dossier to the team lead.`)) {
-      return;
-    }
+    const ok = await confirmAction({
+      title: `Collect Spot Fee & Activate Passes?`,
+      message: `Collect spot registration fee of ₹${totalFee || 0} for ${teamLeadName}'s team and activate official passes?\n\nThis will mark payment as PAID, confirm all team member registrations, activate official QR passes for event scanning, and send official passes (QR badges) to each student.`,
+      confirmText: `Collect ₹${totalFee || 0} & Approve Passes`,
+      cancelText: "Cancel",
+    });
+    if (!ok) return;
     try {
       const res = await fetch("/api/admin/registrations", {
         method: "PATCH",
@@ -1160,6 +1267,29 @@ export default function AdminOverviewPage() {
                 </button>
               )}
 
+              {activeEdition && (
+                <button
+                  type="button"
+                  onClick={() => handleToggleStageMode()}
+                  disabled={saving}
+                  title={
+                    brandingForm.showStageModeInStudentPortal
+                      ? "Stage Mode is LIVE in Student Portal — Click to Hide"
+                      : "Stage Mode is HIDDEN from Students — Click to Publish"
+                  }
+                  className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition border cursor-pointer ${
+                    brandingForm.showStageModeInStudentPortal
+                      ? "bg-amber-50 text-amber-900 border-amber-300 hover:bg-rose-50 hover:text-rose-800"
+                      : "bg-stone-50 text-stone-600 border-stone-200 hover:bg-amber-50 hover:text-amber-900"
+                  }`}
+                >
+                  <Trophy className="w-3.5 h-3.5 text-amber-600" />
+                  <span className="font-bold text-[11px] sm:text-xs">
+                    Stage: {brandingForm.showStageModeInStudentPortal ? "LIVE" : "HIDDEN"}
+                  </span>
+                </button>
+              )}
+
               {/* Desktop quick actions */}
               <div className="hidden md:flex items-center gap-1.5">
                 <Link
@@ -1169,6 +1299,13 @@ export default function AdminOverviewPage() {
                 >
                   <Eye className="w-3.5 h-3.5 text-slate-600" />
                   <span>Preview</span>
+                </Link>
+                <Link
+                  href="/profile"
+                  className="flex items-center gap-1.5 text-xs font-semibold text-[#0F172A] bg-stone-100 hover:bg-stone-200 px-3 py-1.5 rounded-xl transition"
+                >
+                  <User className="w-3.5 h-3.5 text-purple-600" />
+                  <span>My Profile</span>
                 </Link>
                 <button
                   onClick={() => signOut({ callbackUrl: "/" })}
@@ -1225,6 +1362,14 @@ export default function AdminOverviewPage() {
                 >
                   <History className="w-4 h-4 text-slate-600 shrink-0" />
                   <span>Activity Logs</span>
+                </Link>
+                <Link
+                  href="/profile"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 flex items-center gap-2 hover:bg-orange-50 hover:text-orange-700 transition col-span-2"
+                >
+                  <User className="w-4 h-4 text-purple-600 shrink-0" />
+                  <span>My Admin Profile & Security</span>
                 </Link>
               </div>
 
@@ -1468,56 +1613,71 @@ export default function AdminOverviewPage() {
             </div>
 
             {/* Stat Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-              <div className="dash-card p-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+              <div className="dash-card p-4 sm:p-5 border-l-4 border-emerald-500">
                 <div className="flex items-center justify-between text-[#64748B] mb-2">
-                  <span className="text-xs font-bold uppercase tracking-wider">Total Revenue</span>
-                  <Trophy className="w-4 h-4 text-[#D9A441]" />
+                  <span className="text-xs font-bold uppercase tracking-wider">Revenue Collected</span>
+                  <Trophy className="w-4 h-4 text-emerald-600" />
                 </div>
-                <div className="text-3xl font-black text-[#0F172A] tabular-nums">
+                <div className="text-2xl sm:text-3xl font-black text-emerald-700 tabular-nums">
                   ₹{displayRevenue.toLocaleString()}
                 </div>
-                <p className="text-xs text-[#94A3B8] mt-1 font-medium">
+                <p className="text-[11px] text-[#64748B] mt-1 font-medium">
                   {stats?.pendingRevenue && stats.pendingRevenue > 0
-                    ? `From verified registrations (Pending: ₹${stats.pendingRevenue.toLocaleString()})`
-                    : "From verified registrations"}
+                    ? `Paid & Verified (Pending: ₹${stats.pendingRevenue.toLocaleString()})`
+                    : "From approved & paid registrations"}
                 </p>
               </div>
 
-              <div className="dash-card p-5">
+              <div className="dash-card p-4 sm:p-5 border-l-4 border-indigo-500">
+                <div className="flex items-center justify-between text-[#64748B] mb-2">
+                  <span className="text-xs font-bold uppercase tracking-wider">Approved Students</span>
+                  <UserCheck className="w-4 h-4 text-indigo-600" />
+                </div>
+                <div className="text-2xl sm:text-3xl font-black text-indigo-700 tabular-nums">
+                  {stats.totalApprovedStudents ?? stats.confirmedRegistrations}
+                </div>
+                <p className="text-[11px] text-[#64748B] mt-1 font-medium">
+                  Official QR passes activated
+                </p>
+              </div>
+
+              <div className="dash-card p-4 sm:p-5 border-l-4 border-amber-500">
+                <div className="flex items-center justify-between text-[#64748B] mb-2">
+                  <span className="text-xs font-bold uppercase tracking-wider">Pending Approvals</span>
+                  <Clock className="w-4 h-4 text-amber-600" />
+                </div>
+                <div className="text-2xl sm:text-3xl font-black text-amber-700 tabular-nums">
+                  {stats.totalPendingStudents ?? stats.pendingRegistrations}
+                </div>
+                <p className="text-[11px] text-[#64748B] mt-1 font-medium">
+                  Awaiting desk fee / verification
+                </p>
+              </div>
+
+              <div className="dash-card p-4 sm:p-5 border-l-4 border-[#FF6B1A]">
                 <div className="flex items-center justify-between text-[#64748B] mb-2">
                   <span className="text-xs font-bold uppercase tracking-wider">Total Registrations</span>
                   <Users className="w-4 h-4 text-[#FF6B1A]" />
                 </div>
-                <div className="text-3xl font-black text-[#0F172A] tabular-nums">
+                <div className="text-2xl sm:text-3xl font-black text-[#0F172A] tabular-nums">
                   {stats.totalRegistrations}
                 </div>
-                <p className="text-xs text-[#94A3B8] mt-1 font-medium">
+                <p className="text-[11px] text-[#64748B] mt-1 font-medium">
                   Confirmed: {stats.confirmedRegistrations} | Pending: {stats.pendingRegistrations}
                 </p>
               </div>
 
-              <div className="dash-card p-5">
+              <div className="dash-card p-4 sm:p-5 border-l-4 border-slate-400">
                 <div className="flex items-center justify-between text-[#64748B] mb-2">
-                  <span className="text-xs font-bold uppercase tracking-wider">Active Competitions</span>
-                  <Theater className="w-4 h-4 text-[#10B981]" />
+                  <span className="text-xs font-bold uppercase tracking-wider">Competitions</span>
+                  <Theater className="w-4 h-4 text-purple-600" />
                 </div>
-                <div className="text-3xl font-black text-[#0F172A] tabular-nums">
+                <div className="text-2xl sm:text-3xl font-black text-[#0F172A] tabular-nums">
                   {stats.totalEvents}
                 </div>
-                <p className="text-xs text-[#94A3B8] mt-1 font-medium">Across On-Stage & Off-Stage</p>
-              </div>
-
-              <div className="dash-card p-5">
-                <div className="flex items-center justify-between text-[#64748B] mb-2">
-                  <span className="text-xs font-bold uppercase tracking-wider">Platform Accounts</span>
-                  <Users className="w-4 h-4 text-[#3B82F6]" />
-                </div>
-                <div className="text-3xl font-black text-[#0F172A] tabular-nums">
-                  {stats.totalUsers}
-                </div>
-                <p className="text-xs text-[#94A3B8] mt-1 font-medium">
-                  {stats.totalStudents} Students | {stats.totalCoordinators} Coordinators
+                <p className="text-[11px] text-[#64748B] mt-1 font-medium">
+                  On-Stage & Off-Stage events
                 </p>
               </div>
             </div>
@@ -2038,6 +2198,30 @@ export default function AdminOverviewPage() {
                           registrationClosedNotice:
                             ed.registrationClosedNotice ||
                             "Registrations for this edition are currently closed. Please contact the event coordinators for queries.",
+                          prizePool: ed.prizePool || "₹25K+",
+                          expectedDelegates: ed.expectedDelegates || "500+",
+                          rulesEligibilityTitle:
+                            ed.rulesEligibilityTitle || "Eligibility & Registration",
+                          rulesEligibilityText:
+                            ed.rulesEligibilityText ||
+                            "Open to all bona fide UG and PG students of Computer Science, Applications, IT, and related engineering disciplines with valid college ID cards.",
+                          rulesTimingsTitle:
+                            ed.rulesTimingsTitle || "Reporting & Timings",
+                          rulesTimingsText:
+                            ed.rulesTimingsText ||
+                            "Participants must report at the registration desk by 09:00 AM sharp on Sep 17, 2026. Spot registrations close at 10:30 AM.",
+                          rulesChampionshipTitle:
+                            ed.rulesChampionshipTitle || "Overall Championship",
+                          rulesChampionshipText:
+                            ed.rulesChampionshipText ||
+                            "The institution securing maximum cumulative points across both On-Stage and Off-Stage events will be crowned the SHINE Overall Champions.",
+                          defaultFirstPrize:
+                            ed.defaultFirstPrize || "Cash Prize + Trophy + Certificate",
+                          defaultSecondPrize:
+                            ed.defaultSecondPrize || "Cash Prize + Merit Certificate",
+                          defaultThirdPrize:
+                            ed.defaultThirdPrize || "Distinction Certificate",
+                          showStageModeInStudentPortal: Boolean(ed.showStageModeInStudentPortal),
                         });
                         setActiveTab("branding");
                       }}
@@ -2183,6 +2367,65 @@ export default function AdminOverviewPage() {
                     </p>
                   </div>
 
+                  {/* Dynamic Homepage Key Metrics: Cash Prize Pool & Expected Delegates */}
+                  <div className="pt-2 border-t border-stone-200/80">
+                    <div className="mb-2">
+                      <span className="text-xs font-bold uppercase tracking-wider text-[#0F172A] flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-[#FF6B1A]" />
+                        Homepage Key Metrics Strip
+                      </span>
+                      <p className="text-[11px] text-[#64748B]">
+                        Configure the values displayed prominently in the Key Metrics Strip on the public homepage.
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-[#64748B] mb-1 flex items-center gap-1.5">
+                          <Trophy className="w-3.5 h-3.5 text-[#D9A441]" />
+                          <span>Cash Prize Pool Display</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={brandingForm.prizePool}
+                          onChange={(e) =>
+                            setBrandingForm({
+                              ...brandingForm,
+                              prizePool: e.target.value,
+                            })
+                          }
+                          placeholder="e.g. ₹25K+ or ₹50,000"
+                          className="w-full px-3 py-2 text-sm border border-[#CBD5E1] rounded-xl focus:ring-2 focus:ring-[#FF6B1A] outline-none font-semibold text-[#1C1917]"
+                        />
+                        <p className="text-[11px] text-[#64748B] mt-1">
+                          Shown above &quot;Cash Prize Pool&quot; on the landing page.
+                        </p>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-[#64748B] mb-1 flex items-center gap-1.5">
+                          <Users className="w-3.5 h-3.5 text-[#FF6B1A]" />
+                          <span>Expected Delegates Display</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={brandingForm.expectedDelegates}
+                          onChange={(e) =>
+                            setBrandingForm({
+                              ...brandingForm,
+                              expectedDelegates: e.target.value,
+                            })
+                          }
+                          placeholder="e.g. 500+ or 1,000+"
+                          className="w-full px-3 py-2 text-sm border border-[#CBD5E1] rounded-xl focus:ring-2 focus:ring-[#FF6B1A] outline-none font-semibold text-[#1C1917]"
+                        />
+                        <p className="text-[11px] text-[#64748B] mt-1">
+                          Shown above &quot;Expected Delegates&quot; on the landing page.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Public Registration Gateway Status Toggle */}
                   <div className="pt-4 border-t border-stone-200">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl border bg-stone-50/80">
@@ -2291,10 +2534,265 @@ export default function AdminOverviewPage() {
                   </div>
                 </div>
 
+                {/* Symposium Rules & Guidelines Management */}
+                <div className="dash-card p-6 space-y-6">
+                  <div className="flex items-center justify-between border-b pb-2">
+                    <h4 className="text-sm font-bold uppercase tracking-wider text-[#0F172A] flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-[#FF6B1A]" />
+                      <span>3. Symposium Rules & Guidelines</span>
+                    </h4>
+                    <span className="text-[10px] font-bold uppercase tracking-widest bg-orange-50 text-orange-700 border border-orange-200 px-2 py-0.5 rounded-md">
+                      Homepage #rules Section
+                    </span>
+                  </div>
+                  <p className="text-xs text-[#64748B]">
+                    Customize the three cards displayed in the &quot;Symposium Rules & Guidelines&quot; section on the public homepage.
+                  </p>
+
+                  <div className="space-y-5">
+                    {/* Card 1: Eligibility & Registration */}
+                    <div className="p-4 rounded-xl border border-stone-200 bg-stone-50/60 space-y-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-lg bg-[#FF6B1A]/10 border border-[#FF6B1A]/20 flex items-center justify-center text-[#FF6B1A]">
+                          <Ticket className="w-4 h-4" />
+                        </div>
+                        <span className="text-xs font-bold text-[#0F172A]">Card 1: Eligibility & Registration</span>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-[#64748B] mb-1">Card Title</label>
+                        <input
+                          type="text"
+                          value={brandingForm.rulesEligibilityTitle}
+                          onChange={(e) =>
+                            setBrandingForm({ ...brandingForm, rulesEligibilityTitle: e.target.value })
+                          }
+                          placeholder="Eligibility & Registration"
+                          className="w-full px-3 py-2 text-sm border border-[#CBD5E1] rounded-xl focus:ring-2 focus:ring-[#FF6B1A] outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-[#64748B] mb-1">Description / Rules</label>
+                        <textarea
+                          rows={2}
+                          value={brandingForm.rulesEligibilityText}
+                          onChange={(e) =>
+                            setBrandingForm({ ...brandingForm, rulesEligibilityText: e.target.value })
+                          }
+                          placeholder="Open to all bona fide UG and PG students..."
+                          className="w-full px-3 py-2 text-sm border border-[#CBD5E1] rounded-xl focus:ring-2 focus:ring-[#FF6B1A] outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Card 2: Reporting & Timings */}
+                    <div className="p-4 rounded-xl border border-stone-200 bg-stone-50/60 space-y-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-lg bg-[#D9A441]/10 border border-[#D9A441]/20 flex items-center justify-center text-[#D9A441]">
+                          <Clock className="w-4 h-4" />
+                        </div>
+                        <span className="text-xs font-bold text-[#0F172A]">Card 2: Reporting & Timings</span>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-[#64748B] mb-1">Card Title</label>
+                        <input
+                          type="text"
+                          value={brandingForm.rulesTimingsTitle}
+                          onChange={(e) =>
+                            setBrandingForm({ ...brandingForm, rulesTimingsTitle: e.target.value })
+                          }
+                          placeholder="Reporting & Timings"
+                          className="w-full px-3 py-2 text-sm border border-[#CBD5E1] rounded-xl focus:ring-2 focus:ring-[#FF6B1A] outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-[#64748B] mb-1">Description / Timings</label>
+                        <textarea
+                          rows={2}
+                          value={brandingForm.rulesTimingsText}
+                          onChange={(e) =>
+                            setBrandingForm({ ...brandingForm, rulesTimingsText: e.target.value })
+                          }
+                          placeholder="Participants must report at the registration desk by..."
+                          className="w-full px-3 py-2 text-sm border border-[#CBD5E1] rounded-xl focus:ring-2 focus:ring-[#FF6B1A] outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Card 3: Overall Championship */}
+                    <div className="p-4 rounded-xl border border-stone-200 bg-stone-50/60 space-y-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-lg bg-[#FF6B1A]/10 border border-[#FF6B1A]/20 flex items-center justify-center text-[#FF6B1A]">
+                          <Trophy className="w-4 h-4" />
+                        </div>
+                        <span className="text-xs font-bold text-[#0F172A]">Card 3: Overall Championship</span>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-[#64748B] mb-1">Card Title</label>
+                        <input
+                          type="text"
+                          value={brandingForm.rulesChampionshipTitle}
+                          onChange={(e) =>
+                            setBrandingForm({ ...brandingForm, rulesChampionshipTitle: e.target.value })
+                          }
+                          placeholder="Overall Championship"
+                          className="w-full px-3 py-2 text-sm border border-[#CBD5E1] rounded-xl focus:ring-2 focus:ring-[#FF6B1A] outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-[#64748B] mb-1">Description / Trophy Criteria</label>
+                        <textarea
+                          rows={2}
+                          value={brandingForm.rulesChampionshipText}
+                          onChange={(e) =>
+                            setBrandingForm({ ...brandingForm, rulesChampionshipText: e.target.value })
+                          }
+                          placeholder="The institution securing maximum cumulative points..."
+                          className="w-full px-3 py-2 text-sm border border-[#CBD5E1] rounded-xl focus:ring-2 focus:ring-[#FF6B1A] outline-none"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Student Portal Stage Mode (Event Winners Display) Visibility Toggle */}
+                <div className={`dash-card p-6 space-y-4 border-l-4 transition-all ${
+                  brandingForm.showStageModeInStudentPortal
+                    ? "border-emerald-500 bg-gradient-to-br from-white via-emerald-50/20 to-emerald-100/30"
+                    : "border-slate-300 bg-gradient-to-br from-white to-slate-50/50"
+                }`}>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-white shadow-sm ${
+                        brandingForm.showStageModeInStudentPortal ? "bg-emerald-600" : "bg-slate-500"
+                      }`}>
+                        <Trophy className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold uppercase tracking-wider text-[#0F172A] flex items-center gap-2">
+                          <span>Student Portal Stage Mode (Event Winners Display)</span>
+                        </h4>
+                        <p className="text-xs text-[#64748B] mt-0.5">
+                          Controls whether participants see the Stage Mode (Event Winners &amp; Podium) inside their Student Portal.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[11px] font-extrabold uppercase px-2.5 py-1 rounded-full border ${
+                        brandingForm.showStageModeInStudentPortal
+                          ? "bg-emerald-100 text-emerald-900 border-emerald-300"
+                          : "bg-slate-100 text-slate-700 border-slate-300"
+                      }`}>
+                        {brandingForm.showStageModeInStudentPortal
+                          ? "● Live in Student Portal"
+                          : "○ Hidden from Students"}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-1">
+                    <div className="text-xs text-[#475569] max-w-xl leading-relaxed">
+                      {brandingForm.showStageModeInStudentPortal ? (
+                        <span className="text-emerald-900 font-medium">
+                          <strong>Active &amp; Published:</strong> Students currently see the &ldquo;Stage Results&rdquo; button and live announcement banner in their portal to view all symposium winners and podium standings.
+                        </span>
+                      ) : (
+                        <span className="text-slate-600">
+                          <strong>Hidden Mode:</strong> Stage Mode and results are hidden from the Student Portal. Coordinators can evaluate and finalize awards privately before revealing them to participants.
+                        </span>
+                      )}
+                    </div>
+
+                    <button
+                      type="button"
+                      disabled={saving}
+                      onClick={() => handleToggleStageMode(!brandingForm.showStageModeInStudentPortal)}
+                      className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-2 shrink-0 cursor-pointer ${
+                        brandingForm.showStageModeInStudentPortal
+                          ? "bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-300"
+                          : "bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-600/20"
+                      }`}
+                    >
+                      <Trophy className="w-3.5 h-3.5" />
+                      <span>
+                        {brandingForm.showStageModeInStudentPortal
+                          ? "Hide Stage Mode from Students"
+                          : "Publish Stage Mode to Students"}
+                      </span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Centralized Stage Awards & Podium Prizes */}
+                <div className="dash-card p-6 space-y-5 border-l-4 border-[#D9A441] bg-gradient-to-br from-white to-amber-50/30">
+                  <div className="flex items-center justify-between border-b pb-2">
+                    <h4 className="text-sm font-bold uppercase tracking-wider text-[#0F172A] flex items-center gap-2">
+                      <Trophy className="w-4 h-4 text-[#D9A441]" />
+                      <span>Centralized Competition Awards (Stage Leaderboard Default)</span>
+                    </h4>
+                    <span className="text-[10px] font-bold uppercase tracking-widest bg-amber-100 text-amber-900 border border-amber-300 px-2 py-0.5 rounded-md">
+                      Default For All Events
+                    </span>
+                  </div>
+                  <p className="text-xs text-[#64748B]">
+                    Decide the common 1st, 2nd, and 3rd place awards for all events. When creating or configuring an event, these awards will automatically pre-populate. Any event with custom awards can still override them manually.
+                  </p>
+
+                  <div className="space-y-4">
+                    {/* 1st Prize */}
+                    <div className="p-3.5 rounded-xl border border-amber-200 bg-amber-50/60">
+                      <label className="block text-xs font-bold text-amber-950 mb-1 flex items-center gap-1.5">
+                        <span>🥇 Centralized 1st Place Award (Champion)</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={brandingForm.defaultFirstPrize}
+                        onChange={(e) =>
+                          setBrandingForm({ ...brandingForm, defaultFirstPrize: e.target.value })
+                        }
+                        placeholder="e.g. Cash Prize + Trophy + Certificate"
+                        className="w-full px-3 py-2 text-sm border border-amber-300 bg-white rounded-xl focus:ring-2 focus:ring-amber-500 font-semibold outline-none"
+                      />
+                    </div>
+
+                    {/* 2nd Prize */}
+                    <div className="p-3.5 rounded-xl border border-stone-200 bg-stone-50/60">
+                      <label className="block text-xs font-bold text-stone-800 mb-1 flex items-center gap-1.5">
+                        <span>🥈 Centralized 2nd Place Award (Runner-Up)</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={brandingForm.defaultSecondPrize}
+                        onChange={(e) =>
+                          setBrandingForm({ ...brandingForm, defaultSecondPrize: e.target.value })
+                        }
+                        placeholder="e.g. Cash Prize + Merit Certificate"
+                        className="w-full px-3 py-2 text-sm border border-stone-300 bg-white rounded-xl focus:ring-2 focus:ring-stone-500 font-semibold outline-none"
+                      />
+                    </div>
+
+                    {/* 3rd Prize */}
+                    <div className="p-3.5 rounded-xl border border-orange-200 bg-orange-50/60">
+                      <label className="block text-xs font-bold text-[#C2410C] mb-1 flex items-center gap-1.5">
+                        <span>🥉 Centralized 3rd Place Award (Finalist)</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={brandingForm.defaultThirdPrize}
+                        onChange={(e) =>
+                          setBrandingForm({ ...brandingForm, defaultThirdPrize: e.target.value })
+                        }
+                        placeholder="e.g. Distinction Certificate"
+                        className="w-full px-3 py-2 text-sm border border-orange-300 bg-white rounded-xl focus:ring-2 focus:ring-orange-500 font-semibold outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 {/* Event Logo Management */}
                 <div className="dash-card p-6 space-y-4">
                   <h4 className="text-sm font-bold uppercase tracking-wider text-[#0F172A] border-b pb-2">
-                    3. Dynamic Event Logo Upload
+                    4. Dynamic Event Logo Upload
                   </h4>
 
                   <div>

@@ -134,7 +134,7 @@ export async function PATCH(req: Request) {
         });
         await prisma.registration.updateMany({
           where: { delegationId },
-          data: { status: RegistrationStatus.REJECTED },
+          data: { status: RegistrationStatus.REJECTED, prelimsStatus: null, result: null },
         });
       } else if (collegeName) {
         const users = await prisma.user.findMany({
@@ -144,7 +144,7 @@ export async function PATCH(req: Request) {
         const userIds = users.map((u) => u.id);
         await prisma.registration.updateMany({
           where: { userId: { in: userIds } },
-          data: { status: RegistrationStatus.REJECTED },
+          data: { status: RegistrationStatus.REJECTED, prelimsStatus: null, result: null },
         });
       }
       return NextResponse.json({ success: true, message: `Registrations for ${collegeName || "this college"} have been REJECTED.` });
@@ -226,7 +226,7 @@ export async function PATCH(req: Request) {
           events: memberEvents,
         });
 
-        // Send individual approved pass email
+        // Send individual approved pass email with portal credentials
         sendApprovedDelegatePassEmail({
           toEmail: member.email,
           delegateName: member.name,
@@ -235,6 +235,10 @@ export async function PATCH(req: Request) {
           badgeCode: member.badgeCode,
           foodTokenCode: member.foodTokenCode,
           badgeUrl,
+          portalUrl: `${origin}/login`,
+          userId: member.email,
+          password: member.phone || "Your registered mobile number",
+          userPhone: member.phone,
           events: memberEvents,
         }).catch((err) => console.error(`Failed to send approved pass to ${member.email}:`, err));
       }
@@ -277,9 +281,13 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ success: false, message: "Registration ID is required." }, { status: 400 });
     }
 
-    const updateData: { status?: RegistrationStatus; result?: string | null; score?: number | null } = {};
+    const updateData: { status?: RegistrationStatus; result?: string | null; score?: number | null; prelimsStatus?: string | null } = {};
     if (status && Object.values(RegistrationStatus).includes(status)) {
       updateData.status = status as RegistrationStatus;
+      if (status === "REJECTED") {
+        updateData.prelimsStatus = null;
+        updateData.result = null;
+      }
     }
     if (result !== undefined) {
       updateData.result = result ? result.trim() : null;
@@ -299,7 +307,7 @@ export async function PATCH(req: Request) {
       },
     });
 
-    // If marked CONFIRMED individually, send approved pass email
+    // If marked CONFIRMED individually, send approved pass email with portal credentials
     if (status === "CONFIRMED" && updated.delegationMember) {
       const { sendApprovedDelegatePassEmail } = await import("@/lib/emailService");
       sendApprovedDelegatePassEmail({
@@ -310,6 +318,10 @@ export async function PATCH(req: Request) {
         badgeCode: updated.delegationMember.badgeCode,
         foodTokenCode: updated.delegationMember.foodTokenCode,
         badgeUrl: `${origin}/badge/${updated.delegationMember.badgeCode}`,
+        portalUrl: `${origin}/login`,
+        userId: updated.user.email,
+        password: updated.user.phone || "Your registered mobile number",
+        userPhone: updated.user.phone,
         events: [
           {
             name: updated.event.name,

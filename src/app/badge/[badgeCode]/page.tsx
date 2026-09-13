@@ -268,44 +268,82 @@ export default function BadgeDetailPage() {
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
             {/* QR Code */}
             <div className="shrink-0 flex flex-col items-center">
-              <div className="p-2.5 bg-white border-2 border-stone-900 rounded-2xl shadow-xs">
-                {badge.qrData ? (
-                  /* eslint-disable-next-line @next/next/no-img-element */
-                  <img
-                    src={badge.qrData}
-                    alt={`QR Pass for ${badge.badgeCode}`}
-                    className="w-36 h-36 object-contain rounded-lg"
-                  />
-                ) : (
-                  <div className="w-36 h-36 bg-stone-100 flex items-center justify-center text-xs text-stone-400">
-                    QR Unavailable
-                  </div>
-                )}
-              </div>
-              <span className="mt-1.5 font-mono text-[11px] font-black text-stone-900 tracking-wider">
-                {badge.badgeCode}
-              </span>
-              <span className="text-[9px] text-stone-500 uppercase tracking-wider font-semibold mt-0.5">
-                1. Event Registration Pass
-              </span>
-              {badge.eventCheckedIn ? (
-                <span className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-300 text-[10px] font-bold">
-                  <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                  <span>Checked In</span>
-                </span>
-              ) : (
-                <span className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-300 text-[10px] font-bold">
-                  <Clock className="w-3 h-3 text-amber-600" />
-                  <span>Gate Check-In</span>
-                </span>
-              )}
+              {(() => {
+                const isApproved =
+                  badge.delegation.paymentStatus === "PAID" ||
+                  badge.delegation.paymentStatus === "VERIFIED" ||
+                  badge.events.some((e) => e.status === "CONFIRMED");
+
+                return (
+                  <>
+                    <div className={`p-2.5 bg-white border-2 rounded-2xl shadow-xs relative ${
+                      !isApproved ? "border-amber-400" : "border-stone-900"
+                    }`}>
+                      {badge.qrData ? (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img
+                          src={badge.qrData}
+                          alt={`QR Pass for ${badge.badgeCode}`}
+                          className={`w-36 h-36 object-contain rounded-lg ${!isApproved ? "opacity-75" : ""}`}
+                        />
+                      ) : (
+                        <div className="w-36 h-36 bg-stone-100 flex items-center justify-center text-xs text-stone-400">
+                          QR Unavailable
+                        </div>
+                      )}
+                      {!isApproved && (
+                        <div className="absolute inset-2.5 bg-amber-500/10 rounded-lg flex items-center justify-center pointer-events-none">
+                          <span className="bg-amber-900/90 text-white font-black text-[9px] px-2 py-0.5 rounded shadow">
+                            AWAITING APPROVAL
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    <span className="mt-1.5 font-mono text-[11px] font-black text-stone-900 tracking-wider">
+                      {badge.badgeCode}
+                    </span>
+                    <span className="text-[9px] text-stone-500 uppercase tracking-wider font-semibold mt-0.5">
+                      1. Event Registration Pass
+                    </span>
+                    {badge.eventCheckedIn ? (
+                      <span className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-stone-200 text-stone-800 border border-stone-300 text-[10px] font-bold">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                        <span>Pass Checked In (Used)</span>
+                      </span>
+                    ) : !isApproved ? (
+                      <span className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-bold">
+                        <Clock className="w-3 h-3 text-amber-600" />
+                        <span>Inactive (Desk Approval Req.)</span>
+                      </span>
+                    ) : (
+                      <span className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-300 text-[10px] font-bold">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                        <span>Pass Active & Ready</span>
+                      </span>
+                    )}
+                  </>
+                );
+              })()}
             </div>
 
             {/* Delegate Details */}
             <div className="flex-1 text-center sm:text-left min-w-0">
-              <span className="inline-block px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold tracking-wider uppercase mb-1.5">
-                Verified Delegate
-              </span>
+              {(() => {
+                const isApproved =
+                  badge.delegation.paymentStatus === "PAID" ||
+                  badge.delegation.paymentStatus === "VERIFIED" ||
+                  badge.events.some((e) => e.status === "CONFIRMED");
+
+                return isApproved ? (
+                  <span className="inline-block px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold tracking-wider uppercase mb-1.5">
+                    Verified & Approved Delegate
+                  </span>
+                ) : (
+                  <span className="inline-block px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-300 text-[10px] font-bold tracking-wider uppercase mb-1.5">
+                    Pending Desk Approval
+                  </span>
+                );
+              })()}
 
               <h2
                 className="text-xl sm:text-2xl font-black text-stone-900 tracking-tight leading-tight truncate"

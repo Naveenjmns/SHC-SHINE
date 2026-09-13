@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/auth";
 import bcrypt from "bcryptjs";
 import { Role } from "@prisma/client";
 import { logActivity } from "@/lib/activityLogger";
+import { isValidEmail, isValidPhone } from "@/lib/validators";
 
 // GET /api/admin/users - List users with filters
 export async function GET(req: Request) {
@@ -106,6 +107,20 @@ export async function POST(req: Request) {
     }
 
     const normalizedEmail = email.toLowerCase().trim();
+
+    if (!isValidEmail(normalizedEmail)) {
+      return NextResponse.json(
+        { success: false, message: "Please provide a valid email address (e.g. coord@college.edu)." },
+        { status: 400 }
+      );
+    }
+
+    if (phone && phone.trim() && !isValidPhone(phone.trim())) {
+      return NextResponse.json(
+        { success: false, message: "Please provide a valid 10-digit mobile number." },
+        { status: 400 }
+      );
+    }
 
     const existing = await prisma.user.findUnique({
       where: { email: normalizedEmail },

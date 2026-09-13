@@ -29,6 +29,10 @@ interface EventItem {
   venue: string | null;
   dateTime: string;
   rules: string | null;
+  hasPrelims?: boolean;
+  prelimsDateTime?: string | null;
+  prelimsVenue?: string | null;
+  prelimsRules?: string | null;
   imageUrl?: string | null;
   logoUrl?: string | null;
   staffCoordinatorName?: string | null;
@@ -185,6 +189,10 @@ export default function EventsPage() {
                 venue={ev.venue}
                 dateTime={ev.dateTime}
                 rules={ev.rules}
+                hasPrelims={ev.hasPrelims}
+                prelimsDateTime={ev.prelimsDateTime}
+                prelimsVenue={ev.prelimsVenue}
+                prelimsRules={ev.prelimsRules}
                 imageUrl={ev.imageUrl}
                 logoUrl={ev.logoUrl}
                 staffCoordinator={ev.staffCoordinator}

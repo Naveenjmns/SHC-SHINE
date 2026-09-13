@@ -43,6 +43,7 @@ export default function Navbar({ edition }: NavbarProps) {
     if (!session) return "/login";
     if (session.user.role === "ADMIN") return "/admin";
     if (session.user.role === "COORDINATOR") return "/coordinator";
+    if (session.user.role === "FOOD_COORDINATOR") return "/food";
     return "/dashboard";
   };
 
@@ -50,6 +51,7 @@ export default function Navbar({ edition }: NavbarProps) {
     if (!session) return "Sign In";
     if (session.user.role === "ADMIN") return "Admin Console";
     if (session.user.role === "COORDINATOR") return "Coordinator Console";
+    if (session.user.role === "FOOD_COORDINATOR") return "Food Committee";
     return "Student Portal";
   };
 
@@ -153,6 +155,13 @@ export default function Navbar({ edition }: NavbarProps) {
                 <LayoutDashboard className="w-3.5 h-3.5" />
                 <span>{getDashboardLabel()}</span>
               </Link>
+              <Link
+                href="/profile"
+                className="p-2 text-[#57534E] hover:text-[#FF6B1A] bg-white border border-[#1C1917]/10 rounded-xl transition shadow-2xs"
+                title="My Profile"
+              >
+                <User className="w-4 h-4" />
+              </Link>
               <button
                 onClick={() => signOut({ callbackUrl: "/" })}
                 className="p-2 text-[#57534E] hover:text-red-600 rounded-xl hover:bg-stone-100 transition tap-target"
@@ -248,6 +257,14 @@ export default function Navbar({ edition }: NavbarProps) {
                 >
                   <LayoutDashboard className="w-4 h-4" />
                   <span>{getDashboardLabel()}</span>
+                </Link>
+                <Link
+                  href="/profile"
+                  onClick={() => setMobileOpen(false)}
+                  className="tap-target w-full text-center py-2.5 text-xs font-bold text-stone-700 bg-stone-100 hover:bg-stone-200 rounded-xl transition flex items-center justify-center gap-2"
+                >
+                  <User className="w-4 h-4" />
+                  <span>My Profile & Settings</span>
                 </Link>
                 <button
                   onClick={() => {

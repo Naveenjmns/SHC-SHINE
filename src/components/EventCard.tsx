@@ -38,6 +38,10 @@ export interface EventCardProps {
   venue?: string | null;
   dateTime?: string | Date;
   rules?: string | null;
+  hasPrelims?: boolean;
+  prelimsDateTime?: string | Date | null;
+  prelimsVenue?: string | null;
+  prelimsRules?: string | null;
   imageUrl?: string | null;
   logoUrl?: string | null;
   staffCoordinator?: CoordinatorInfo | null;
@@ -64,6 +68,10 @@ export default function EventCard({
   venue,
   dateTime,
   rules,
+  hasPrelims,
+  prelimsDateTime,
+  prelimsVenue,
+  prelimsRules,
   imageUrl,
   logoUrl,
   staffCoordinator,
@@ -98,6 +106,21 @@ export default function EventCard({
 
   const formattedDate = dateTime
     ? formatDateSafe(dateTime, {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      })
+    : null;
+
+  const formattedPrelimsTime = prelimsDateTime
+    ? formatTimeSafe(prelimsDateTime, {
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : null;
+
+  const formattedPrelimsDate = prelimsDateTime
+    ? formatDateSafe(prelimsDateTime, {
         day: "numeric",
         month: "short",
         year: "numeric",
@@ -154,18 +177,27 @@ export default function EventCard({
             </div>
           )}
 
-          {/* Category & Capacity header */}
+          {/* Category, Prelims & Capacity header */}
           <div className="flex items-center justify-between gap-2 mb-3">
-            <span
-              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${
-                isOnStage
-                  ? "bg-[#FF6B1A]/10 text-[#EA580C] border border-[#FF6B1A]/20"
-                  : "bg-[#D9A441]/12 text-[#B45309] border border-[#D9A441]/30"
-              }`}
-            >
-              {isOnStage ? <Theater className="w-3.5 h-3.5" /> : <Laptop className="w-3.5 h-3.5" />}
-              {isOnStage ? "On-Stage" : "Off-Stage"}
-            </span>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span
+                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${
+                  isOnStage
+                    ? "bg-[#FF6B1A]/10 text-[#EA580C] border border-[#FF6B1A]/20"
+                    : "bg-[#D9A441]/12 text-[#B45309] border border-[#D9A441]/30"
+                }`}
+              >
+                {isOnStage ? <Theater className="w-3.5 h-3.5" /> : <Laptop className="w-3.5 h-3.5" />}
+                {isOnStage ? "On-Stage" : "Off-Stage"}
+              </span>
+
+              {hasPrelims && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-amber-500/15 text-amber-800 border border-amber-500/30">
+                  <Sparkles className="w-3 h-3 text-amber-600" />
+                  Prelims
+                </span>
+              )}
+            </div>
 
             {capacity ? (
               <span className="text-[11px] font-semibold text-[#57534E] bg-[#FAF8F5] px-2.5 py-0.5 rounded-lg border border-[#1C1917]/10 tabular-nums">
@@ -194,9 +226,41 @@ export default function EventCard({
           </div>
 
           {/* Description */}
-          <p className="text-sm text-[#57534E] leading-relaxed mb-4 line-clamp-3">
+          <p className="text-sm text-[#57534E] leading-relaxed mb-3 line-clamp-3">
             {description || "Compete against peer colleges in this signature fest competition."}
           </p>
+
+          {/* Prelims Notice / Rules Highlight Box on Card */}
+          {hasPrelims && (
+            <div className="mb-4 p-3 rounded-2xl bg-amber-50/90 border border-amber-300/80 text-xs shadow-2xs">
+              <div className="flex items-center justify-between gap-2 font-bold text-amber-900 mb-1">
+                <span className="flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                  <span>Prelims Screening Round</span>
+                </span>
+                {(formattedPrelimsTime || formattedPrelimsDate) && (
+                  <span className="text-[10px] text-amber-800 font-semibold flex items-center gap-1 shrink-0 bg-amber-100/70 px-2 py-0.5 rounded-md border border-amber-200">
+                    <Clock className="w-3 h-3 text-amber-600" />
+                    {formattedPrelimsTime}
+                  </span>
+                )}
+              </div>
+              {prelimsVenue && (
+                <div className="text-[11px] text-amber-800 flex items-center gap-1 mb-1">
+                  <MapPin className="w-3 h-3 text-amber-600 shrink-0" />
+                  <span>Prelims Venue: {prelimsVenue}</span>
+                </div>
+              )}
+              {prelimsRules && (
+                <div className="mt-1.5 text-[11px] text-amber-950 leading-relaxed bg-white/80 p-2 rounded-xl border border-amber-200/80">
+                  <span className="text-amber-900 font-bold block text-[10px] uppercase tracking-wider mb-0.5">
+                    Prelims Rules:
+                  </span>
+                  <p className="line-clamp-2">{prelimsRules}</p>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Metadata & Dual Coordinators */}
           <div className="space-y-2 text-xs text-[#57534E] pt-3 border-t border-[#1C1917]/10 mb-5">
@@ -301,6 +365,13 @@ export default function EventCard({
                     </span>
                   )}
 
+                  {hasPrelims && (
+                    <span className="text-[10px] font-bold text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded border border-amber-300 flex items-center gap-1">
+                      <Sparkles className="w-3 h-3 text-amber-600" />
+                      Prelims Round
+                    </span>
+                  )}
+
                   <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
                     Included in Delegate Pass
                   </span>
@@ -345,6 +416,33 @@ export default function EventCard({
               </strong>
               {description || "Join this competition track and showcase your innovation, technical prowess, and creative expertise."}
             </div>
+
+            {/* Prelims Venue & Timing (if hasPrelims) */}
+            {hasPrelims && (prelimsVenue || formattedPrelimsTime || formattedPrelimsDate) && (
+              <div className="mb-4 p-3.5 rounded-2xl border border-amber-300 bg-amber-50/80 flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-amber-200 text-amber-800 flex items-center justify-center shrink-0">
+                  <Sparkles className="w-5 h-5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-[10px] font-bold text-amber-700 uppercase tracking-wider">
+                    Preliminary Screening Round Schedule
+                  </div>
+                  <div className="text-xs font-bold text-stone-900 flex flex-wrap items-center gap-x-3 gap-y-1 mt-0.5">
+                    {prelimsVenue && (
+                      <span className="flex items-center gap-1">
+                        <MapPin className="w-3.5 h-3.5 text-amber-600" /> {prelimsVenue}
+                      </span>
+                    )}
+                    {(formattedPrelimsTime || formattedPrelimsDate) && (
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3.5 h-3.5 text-amber-600" />
+                        {formattedPrelimsDate ? `${formattedPrelimsDate} • ` : ""}{formattedPrelimsTime}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Venue & Schedule Strip */}
             <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -479,11 +577,24 @@ export default function EventCard({
               </div>
             </div>
 
+            {/* Preliminary Round Rules & Guidelines */}
+            {hasPrelims && (
+              <div className="mb-6">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-amber-800 mb-2 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                  <span>Preliminary Round Rules & Format</span>
+                </h4>
+                <div className="p-4 rounded-2xl bg-amber-50 border border-amber-300 text-xs sm:text-sm text-stone-900 leading-relaxed whitespace-pre-line font-medium shadow-2xs">
+                  {prelimsRules || "A preliminary screening round will be conducted to shortlist qualifying teams for the finals. All designated prelims attendees must be present on schedule."}
+                </div>
+              </div>
+            )}
+
             {/* Rules & Regulations Detailed Content */}
             <div className="mb-6">
               <h4 className="text-xs font-bold uppercase tracking-wider text-[#FF6B1A] mb-2 flex items-center gap-1.5">
                 <BookOpen className="w-3.5 h-3.5" />
-                <span>Rules & Guidelines</span>
+                <span>{hasPrelims ? "Main Event / Finals Rules & Guidelines" : "Rules & Guidelines"}</span>
               </h4>
               <div className="p-4 rounded-2xl bg-[#FAF8F5] border border-stone-200 text-xs sm:text-sm text-stone-800 leading-relaxed whitespace-pre-line font-normal">
                 {rules || "1. Participants must bring valid college ID cards for physical verification.\n2. Decision of the jury & event incharge is final.\n3. General symposium code of conduct applies to all contestants."}

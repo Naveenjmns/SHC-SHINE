@@ -83,23 +83,7 @@ export function sanitizeString(
     .slice(0, maxLength);
 }
 
-/**
- * Validate email format (basic RFC 5322 subset).
- */
-export function isValidEmail(email: string): boolean {
-  if (!email || email.length > 254) return false;
-  const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/;
-  return emailRegex.test(email);
-}
-
-/**
- * Validate phone number (digits, spaces, dashes, parentheses, plus sign).
- */
-export function isValidPhone(phone: string): boolean {
-  if (!phone || phone.length > 20) return false;
-  const phoneRegex = /^[+]?[\d\s()-]{7,20}$/;
-  return phoneRegex.test(phone);
-}
+export { isValidEmail, isValidPhone } from "./validators";
 
 // ─── Secure Error Handling ──────────────────────────────────────────────────
 

@@ -192,10 +192,38 @@ export async function POST(req: Request) {
     });
     const eventMap = new Map(eventsInDb.map((e) => [e.id, e]));
 
-    // Host domain / origin for QR verification URLs
+    // Enforce that every event with Prelims round has an assigned delegate
+    for (const ev of eventsInDb) {
+      if (ev.hasPrelims) {
+        const nominatedCount = prelimsNominationCountMap.get(ev.id) || 0;
+        if (nominatedCount === 0) {
+          return NextResponse.json(
+            {
+              success: false,
+              message: `Competition "${ev.name}" has a Prelims round. Please assign a student delegate to attend the prelims before completing registration.`,
+            },
+            { status: 400 }
+          );
+        }
+        if (nominatedCount > 1) {
+          return NextResponse.json(
+            {
+              success: false,
+              message: `Only 1 student per college delegation can be nominated for the Prelims of "${ev.name}".`,
+            },
+            { status: 400 }
+          );
+        }
+      }
+    }
+
+    // Host domain / origin for QR verification URLs & Student Portal links
     const hostHeader = req.headers.get("host") || "localhost:3000";
-    const protocol = hostHeader.includes("localhost") ? "http" : "https";
-    const origin = `${protocol}://${hostHeader}`;
+    const forwardedProto = req.headers.get("x-forwarded-proto");
+    const protocol = forwardedProto || (hostHeader.includes("localhost") ? "http" : "https");
+    const origin = process.env.NEXTAUTH_URL
+      ? process.env.NEXTAUTH_URL.replace(/\/$/, "")
+      : `${protocol}://${hostHeader}`;
 
     // Create Delegation in Database
     const delegation = await prisma.delegation.create({
@@ -226,13 +254,14 @@ export async function POST(req: Request) {
 
       const foodPref = (m.foodPreference || "VEG").toUpperCase() === "NON_VEG" ? "NON_VEG" : "VEG";
 
+      const defaultPassword = m.phone.trim() || "shine2027";
+
       // Find or create User account for this student
       let user = await prisma.user.findUnique({
         where: { email: normalizedEmail },
       });
 
       if (!user) {
-        const defaultPassword = m.phone.trim() || "shine2027";
         const passwordHash = await bcrypt.hash(defaultPassword, 10);
 
         user = await prisma.user.create({
@@ -247,9 +276,19 @@ export async function POST(req: Request) {
           },
         });
       } else {
+        const updateData: any = { foodPreference: foodPref };
+        if (!user.phone && m.phone) {
+          updateData.phone = m.phone.trim();
+        }
+        if (!user.college && collegeName) {
+          updateData.college = collegeName.trim();
+        }
+        if (!user.passwordHash) {
+          updateData.passwordHash = await bcrypt.hash(defaultPassword, 10);
+        }
         await prisma.user.update({
           where: { id: user.id },
-          data: { foodPreference: foodPref },
+          data: updateData,
         }).catch(() => {});
       }
 
@@ -362,6 +401,7 @@ export async function POST(req: Request) {
         isTeamLead: memberRecord.isTeamLead,
         badgeCode: memberRecord.badgeCode,
         foodTokenCode: memberRecord.foodTokenCode,
+        foodPreference: memberRecord.foodPreference,
         qrData: memberRecord.qrData,
         foodQrData: memberRecord.foodQrData,
         eventCheckedIn: memberRecord.eventCheckedIn,
@@ -370,7 +410,7 @@ export async function POST(req: Request) {
         events: memberEvents,
       });
 
-      // Trigger background confirmation email to this delegate
+      // Trigger background confirmation email to this delegate with portal credentials & pass link
       sendDelegateRegistrationEmail({
         toEmail: normalizedEmail,
         delegateName: m.name.trim(),
@@ -379,6 +419,10 @@ export async function POST(req: Request) {
         badgeCode,
         foodTokenCode,
         badgeUrl: verifyUrl,
+        portalUrl: `${origin}/login`,
+        userId: normalizedEmail,
+        password: defaultPassword,
+        userPhone: m.phone.trim(),
         events: memberEvents,
       }).catch((e) => console.error("Delegate email error:", e));
     }
