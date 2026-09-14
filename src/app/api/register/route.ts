@@ -6,7 +6,7 @@ import { logActivity } from "@/lib/activityLogger";
 import { generateBadgeCode, generateFoodTokenCode, generateEventPassQr, generateFoodTokenQr } from "@/lib/badgeService";
 import { sendDelegateRegistrationEmail, sendCoordinatorRegistrationAlert } from "@/lib/emailService";
 import { getActiveEdition } from "@/lib/eventService";
-import { checkRateLimit, sanitizeString, isValidEmail, isValidPhone, getClientIp, buildSecureErrorResponse } from "@/lib/security";
+import { checkRateLimit, sanitizeString, isValidEmail, isValidPhone, sanitizeToTenDigitPhone, getClientIp, buildSecureErrorResponse } from "@/lib/security";
 
 interface MemberInput {
   name: string;
@@ -109,6 +109,12 @@ export async function POST(req: Request) {
         email: members[0].email,
         phone: members[0].phone,
       };
+    } else {
+      teamLead.phone = sanitizeToTenDigitPhone(teamLead.phone);
+    }
+
+    if (staffIncharge && staffIncharge.phone) {
+      staffIncharge.phone = sanitizeToTenDigitPhone(staffIncharge.phone);
     }
 
     // Validate members & prelims nomination rules
@@ -119,7 +125,7 @@ export async function POST(req: Request) {
       // SECURITY: Sanitize member inputs
       m.name = sanitizeString(m.name, 100);
       m.email = sanitizeString(m.email, 254);
-      m.phone = sanitizeString(m.phone, 20);
+      m.phone = sanitizeToTenDigitPhone(m.phone);
 
       if (!m.name || !m.email || !m.phone) {
         return NextResponse.json(
@@ -133,9 +139,9 @@ export async function POST(req: Request) {
           { status: 400 }
         );
       }
-      if (!isValidPhone(m.phone)) {
+      if (m.phone.length < 10 || !/^[6-9]\d{9}$/.test(m.phone)) {
         return NextResponse.json(
-          { success: false, message: `Invalid phone number for delegate "${m.name}".` },
+          { success: false, message: `Invalid mobile number for delegate "${m.name}". Must be a valid 10-digit mobile number starting with 6, 7, 8, or 9.` },
           { status: 400 }
         );
       }

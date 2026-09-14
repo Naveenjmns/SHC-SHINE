@@ -83,7 +83,7 @@ export function sanitizeString(
     .slice(0, maxLength);
 }
 
-export { isValidEmail, isValidPhone } from "./validators";
+export { isValidEmail, isValidPhone, sanitizeToTenDigitPhone } from "./validators";
 
 // ─── Secure Error Handling ──────────────────────────────────────────────────
 

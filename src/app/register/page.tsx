@@ -32,7 +32,7 @@ import {
   Target,
 } from "lucide-react";
 import { safeJson } from "@/lib/safeFetch";
-import { isValidEmail, isValidPhone } from "@/lib/validators";
+import { isValidEmail, isValidPhone, sanitizeToTenDigitPhone, getPhoneBadgeInfo } from "@/lib/validators";
 
 interface EventItem {
   id: string;
@@ -198,10 +198,11 @@ function RegisterForm() {
   };
 
   const handleTeamLeadPhoneChange = (val: string) => {
-    setTeamLeadPhone(val);
+    const cleaned = sanitizeToTenDigitPhone(val);
+    setTeamLeadPhone(cleaned);
     setMembers((prev) => {
       if (prev.length === 1 && (!prev[0].phone || prev[0].phone === teamLeadPhone)) {
-        return [{ ...prev[0], phone: val }];
+        return [{ ...prev[0], phone: cleaned }];
       }
       return prev;
     });
@@ -333,8 +334,16 @@ function RegisterForm() {
       setErrorMessage("Please enter a valid email address for Team Lead (e.g. lead@college.edu).");
       return false;
     }
-    if (!isValidPhone(teamLeadPhone)) {
-      setErrorMessage("Please enter a valid 10-digit mobile number for Team Lead (e.g. 9876543210 or +91 9876543210).");
+    if (!teamLeadPhone.trim()) {
+      setErrorMessage("Please enter WhatsApp / Mobile number for Team Lead.");
+      return false;
+    }
+    if (teamLeadPhone.length < 10) {
+      setErrorMessage(`Team Lead mobile number must be 10 digits (${teamLeadPhone.length}/10 entered).`);
+      return false;
+    }
+    if (!/^[6-9]\d{9}$/.test(teamLeadPhone)) {
+      setErrorMessage("Team Lead mobile number must be a valid 10-digit number starting with 6, 7, 8, or 9 (e.g. 9840123456).");
       return false;
     }
     if (hasFacultyIncharge) {
@@ -346,9 +355,15 @@ function RegisterForm() {
         setErrorMessage("Please enter a valid email address for the Faculty Incharge.");
         return false;
       }
-      if (facultyPhone.trim() && !isValidPhone(facultyPhone)) {
-        setErrorMessage("Please enter a valid 10-digit mobile number for the Faculty Incharge.");
-        return false;
+      if (facultyPhone.trim()) {
+        if (facultyPhone.length < 10) {
+          setErrorMessage(`Faculty Incharge mobile number must be 10 digits (${facultyPhone.length}/10 entered).`);
+          return false;
+        }
+        if (!/^[6-9]\d{9}$/.test(facultyPhone)) {
+          setErrorMessage("Faculty Incharge mobile number must start with 6, 7, 8, or 9 (e.g. 9443123456).");
+          return false;
+        }
       }
     }
     return true;
@@ -370,8 +385,12 @@ function RegisterForm() {
         setErrorMessage(`Please enter a valid email address for Participant #${i + 1} (${m.name || "Student"}).`);
         return false;
       }
-      if (!isValidPhone(m.phone)) {
-        setErrorMessage(`Please enter a valid 10-digit mobile number for Participant #${i + 1} (${m.name || "Student"}).`);
+      if (m.phone.length < 10) {
+        setErrorMessage(`Mobile number for Participant #${i + 1} (${m.name || "Student"}) must be 10 digits (${m.phone.length}/10 entered).`);
+        return false;
+      }
+      if (!/^[6-9]\d{9}$/.test(m.phone)) {
+        setErrorMessage(`Mobile number for Participant #${i + 1} (${m.name || "Student"}) must be a valid 10-digit number starting with 6, 7, 8, or 9.`);
         return false;
       }
       if (m.eventIds.length === 0) {
@@ -930,20 +949,21 @@ function RegisterForm() {
                       <label className="block text-xs font-bold text-[#1C1917]">
                         WhatsApp / Mobile *
                       </label>
-                      {teamLeadPhone.trim() && (
-                        <span className="text-[10px] font-bold">
-                          {isValidPhone(teamLeadPhone) ? (
-                            <span className="text-emerald-600">✓ Valid</span>
-                          ) : (
-                            <span className="text-rose-500">10 digits</span>
-                          )}
-                        </span>
-                      )}
+                      {(() => {
+                        const badge = getPhoneBadgeInfo(teamLeadPhone);
+                        return badge ? (
+                          <span className={`text-[10px] font-bold ${badge.className}`}>
+                            {badge.text}
+                          </span>
+                        ) : null;
+                      })()}
                     </div>
                     <input
                       type="tel"
+                      inputMode="numeric"
+                      maxLength={10}
                       required
-                      placeholder="e.g. +91 9840123456"
+                      placeholder="10-digit mobile number (e.g. 9840123456)"
                       value={teamLeadPhone}
                       onChange={(e) => handleTeamLeadPhoneChange(e.target.value)}
                       className={`w-full h-11 bg-white border rounded-xl px-3.5 text-sm text-[#1C1917] placeholder-[#78716C] focus:outline-none transition-colors shadow-2xs ${
@@ -993,21 +1013,22 @@ function RegisterForm() {
                         <label className="block text-xs font-bold text-[#1C1917]">
                           Faculty Mobile Phone
                         </label>
-                        {facultyPhone.trim() && (
-                          <span className="text-[10px] font-bold">
-                            {isValidPhone(facultyPhone) ? (
-                              <span className="text-emerald-600">✓ Valid</span>
-                            ) : (
-                              <span className="text-rose-500">10 digits</span>
-                            )}
-                          </span>
-                        )}
+                        {(() => {
+                          const badge = getPhoneBadgeInfo(facultyPhone);
+                          return badge ? (
+                            <span className={`text-[10px] font-bold ${badge.className}`}>
+                              {badge.text}
+                            </span>
+                          ) : null;
+                        })()}
                       </div>
                       <input
                         type="tel"
-                        placeholder="e.g. +91 9443123456"
+                        inputMode="numeric"
+                        maxLength={10}
+                        placeholder="10-digit mobile number (e.g. 9443123456)"
                         value={facultyPhone}
-                        onChange={(e) => setFacultyPhone(e.target.value)}
+                        onChange={(e) => setFacultyPhone(sanitizeToTenDigitPhone(e.target.value))}
                         className={`w-full h-11 bg-white border rounded-xl px-3.5 text-sm text-[#1C1917] placeholder-[#78716C] focus:outline-none transition-colors shadow-2xs ${
                           facultyPhone.trim() && !isValidPhone(facultyPhone)
                             ? "border-rose-400 focus:border-rose-500"
@@ -1168,22 +1189,23 @@ function RegisterForm() {
                             <label className="block text-[11px] font-bold text-[#1C1917]">
                               WhatsApp / Mobile *
                             </label>
-                            {member.phone.trim() && (
-                              <span className="text-[10px] font-bold">
-                                {isValidPhone(member.phone) ? (
-                                  <span className="text-emerald-600">✓</span>
-                                ) : (
-                                  <span className="text-rose-500">10 digits</span>
-                                )}
-                              </span>
-                            )}
+                            {(() => {
+                              const badge = getPhoneBadgeInfo(member.phone);
+                              return badge ? (
+                                <span className={`text-[10px] font-bold ${badge.className}`}>
+                                  {badge.text}
+                                </span>
+                              ) : null;
+                            })()}
                           </div>
                           <input
                             type="tel"
+                            inputMode="numeric"
+                            maxLength={10}
                             required
-                            placeholder="+91 9840123456"
+                            placeholder="10-digit mobile (e.g. 9840123456)"
                             value={member.phone}
-                            onChange={(e) => updateMember(mIdx, "phone", e.target.value)}
+                            onChange={(e) => updateMember(mIdx, "phone", sanitizeToTenDigitPhone(e.target.value))}
                             className={`w-full h-10 bg-white border rounded-xl px-3 text-xs text-[#1C1917] placeholder-[#78716C] focus:outline-none transition-colors ${
                               member.phone.trim() && !isValidPhone(member.phone)
                                 ? "border-rose-400 focus:border-rose-500"

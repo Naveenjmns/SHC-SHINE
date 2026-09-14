@@ -71,14 +71,80 @@ export function isValidPhone(phone: string): boolean {
 }
 
 /**
+ * Clean and sanitize a phone number string to strictly up to 10 numeric digits.
+ * Automatically strips country code prefixes (+91 or 91) and leading 0 if pasted.
+ */
+export function sanitizeToTenDigitPhone(raw: string): string {
+  if (!raw || typeof raw !== "string") return "";
+  let digits = raw.replace(/\D/g, "");
+  // If user pasted with +91 or 91 country code and has 12 digits:
+  if (digits.length === 12 && digits.startsWith("91")) {
+    digits = digits.slice(2);
+  }
+  // If user entered leading 0 and has 11 digits:
+  else if (digits.length === 11 && digits.startsWith("0")) {
+    digits = digits.slice(1);
+  }
+  // Keep strictly up to 10 digits
+  return digits.slice(0, 10);
+}
+
+export interface PhoneBadgeInfo {
+  isValid: boolean;
+  text: string;
+  className: string;
+}
+
+/**
+ * Returns badge state for inline phone input indicators.
+ * Avoids showing confusing '10 digits' when 10 digits have already been typed (e.g. 0000000101).
+ */
+export function getPhoneBadgeInfo(phone: string): PhoneBadgeInfo | null {
+  if (!phone || !phone.trim()) return null;
+  const digits = phone.replace(/\D/g, "");
+  if (digits.length === 0) return null;
+
+  if (digits.length < 10) {
+    return {
+      isValid: false,
+      text: `${digits.length}/10 digits`,
+      className: "text-amber-700 bg-amber-50/80 border border-amber-200 px-1.5 py-0.5 rounded",
+    };
+  }
+
+  // Exactly 10 digits: must start with 6, 7, 8, or 9
+  if (/^[6-9]\d{9}$/.test(digits)) {
+    return {
+      isValid: true,
+      text: "✓ Valid",
+      className: "text-emerald-700 bg-emerald-50/80 border border-emerald-200 px-1.5 py-0.5 rounded",
+    };
+  }
+
+  // 10 digits but starts with 0-5 (e.g. 0000000101)
+  return {
+    isValid: false,
+    text: "Must start with 6-9",
+    className: "text-rose-600 bg-rose-50/80 border border-rose-200 px-1.5 py-0.5 rounded",
+  };
+}
+
+/**
  * Returns a human-friendly error message if mobile number is invalid, or null if valid.
  */
 export function getPhoneError(phone: string, fieldName = "Mobile number"): string | null {
   if (!phone || !phone.trim()) {
     return `${fieldName} is required.`;
   }
+  const digits = phone.replace(/\D/g, "");
+  if (digits.length < 10) {
+    return `${fieldName} must be a 10-digit number.`;
+  }
+  if (digits.length === 10 && !/^[6-9]\d{9}$/.test(digits)) {
+    return `${fieldName} must start with 6, 7, 8, or 9 (e.g., 9876543210).`;
+  }
   if (!isValidPhone(phone)) {
-    return `Please enter a valid 10-digit mobile number (e.g., 9876543210 or +91 9876543210).`;
+    return `Please enter a valid 10-digit mobile number (e.g., 9876543210).`;
   }
   return null;
 }
