@@ -24,8 +24,8 @@ export async function GET() {
         success: true,
         smtp: {
           host: process.env.SMTP_HOST || "",
-          port: parseInt(process.env.SMTP_PORT || "587", 10),
-          secure: process.env.SMTP_SECURE === "true",
+          port: 465,
+          secure: true,
           user: process.env.SMTP_USER || "",
           hasPassword: !!process.env.SMTP_PASSWORD,
           fromEmail: process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER || "",
@@ -39,8 +39,8 @@ export async function GET() {
       success: true,
       smtp: {
         host: setting.host,
-        port: setting.port,
-        secure: setting.secure,
+        port: 465,
+        secure: true,
         user: setting.user,
         hasPassword: !!setting.password,
         fromEmail: setting.fromEmail,
@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { host, port, secure, user, password, fromEmail, fromName, replyTo } = body;
+    const { host, user, password, fromEmail, fromName, replyTo } = body;
 
     const existing = await prisma.smtpSetting.findUnique({
       where: { id: "default" },
@@ -71,8 +71,8 @@ export async function POST(req: NextRequest) {
 
     const dataToSave: any = {
       host: host || "",
-      port: parseInt(port || "587", 10),
-      secure: !!secure,
+      port: 465,
+      secure: true,
       user: user || "",
       fromEmail: fromEmail || user || "",
       fromName: fromName || "Event Coordination Team",

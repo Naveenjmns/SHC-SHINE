@@ -22,8 +22,8 @@ export async function getSmtpSettings(): Promise<SmtpConfig | null> {
     if (setting && setting.host && setting.user) {
       return {
         host: setting.host,
-        port: setting.port || 587,
-        secure: setting.secure,
+        port: 465,
+        secure: true,
         user: setting.user,
         password: setting.password ? decryptSecret(setting.password) : undefined,
         fromEmail: setting.fromEmail || setting.user,
@@ -36,8 +36,8 @@ export async function getSmtpSettings(): Promise<SmtpConfig | null> {
     if (process.env.SMTP_HOST && process.env.SMTP_USER) {
       return {
         host: process.env.SMTP_HOST,
-        port: parseInt(process.env.SMTP_PORT || "587", 10),
-        secure: process.env.SMTP_SECURE === "true",
+        port: 465,
+        secure: true,
         user: process.env.SMTP_USER,
         password: process.env.SMTP_PASSWORD,
         fromEmail: process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER,
@@ -53,6 +53,36 @@ export async function getSmtpSettings(): Promise<SmtpConfig | null> {
   }
 }
 
+/**
+ * Build a robust nodemailer transporter configured for cloud environments (Railway, Docker, etc.)
+ * - Standardized to Port 465 (Direct SSL/TLS)
+ * - Forces IPv4 socket connection to prevent IPv6 DNS resolution timeouts
+ * - Adds connection/greeting/socket timeouts so requests don't hang
+ */
+export function buildNodemailerTransport(config: SmtpConfig) {
+  return nodemailer.createTransport({
+    host: config.host,
+    port: 465,
+    secure: true,
+    auth: {
+      user: config.user,
+      pass: config.password || "",
+    },
+    // CRITICAL FOR RAILWAY & CLOUD:
+    // Force IPv4 in socket. Cloud containers often lack outbound IPv6 routing,
+    // which causes nodemailer to attempt IPv6 first and hang until TCP timeout.
+    family: 4,
+    // Timeouts to prevent cloud requests from hanging indefinitely
+    connectionTimeout: 15000, // 15 seconds
+    greetingTimeout: 15000,   // 15 seconds
+    socketTimeout: 20000,     // 20 seconds
+    tls: {
+      // Allow cloud container outbound TLS without strict rejection on intermediate certs
+      rejectUnauthorized: false,
+    },
+  } as any);
+}
+
 export async function createTransporter() {
   const config = await getSmtpSettings();
   if (!config) {
@@ -61,16 +91,7 @@ export async function createTransporter() {
     );
   }
 
-  const transporter = nodemailer.createTransport({
-    host: config.host,
-    port: config.port,
-    secure: config.secure, // true for 465, false for 587/other
-    auth: {
-      user: config.user,
-      pass: config.password,
-    },
-  });
-
+  const transporter = buildNodemailerTransport(config);
   return { transporter, config };
 }
 
@@ -94,7 +115,8 @@ export async function testSmtpConnection(testRecipient: string): Promise<{ succe
             Your email dispatch server is active and verified to send announcements and updates to registered delegates.
           </p>
           <div style="background: #f8fafc; padding: 12px 16px; border-radius: 8px; font-size: 13px; color: #64748b; margin: 20px 0;">
-            <p style="margin: 4px 0;"><strong>Host:</strong> ${config.host}:${config.port}</p>
+            <p style="margin: 4px 0;"><strong>Host:</strong> ${config.host}:465</p>
+            <p style="margin: 4px 0;"><strong>SSL/TLS:</strong> Enabled (Direct SSL Port 465)</p>
             <p style="margin: 4px 0;"><strong>Sender:</strong> ${config.fromName} (${config.fromEmail})</p>
             <p style="margin: 4px 0;"><strong>Timestamp:</strong> ${new Date().toLocaleString()}</p>
           </div>
@@ -108,7 +130,12 @@ export async function testSmtpConnection(testRecipient: string): Promise<{ succe
     return { success: true, message: `SMTP connection verified and test email sent to ${testRecipient}` };
   } catch (error: any) {
     console.error("SMTP Test Error:", error);
-    return { success: false, message: error.message || "Failed to connect to SMTP server" };
+    let errorMsg = error.message || "Failed to connect to SMTP server";
+    const lower = errorMsg.toLowerCase();
+    if (lower.includes("timeout") || lower.includes("etimeout") || lower.includes("etimedout") || lower.includes("greeting")) {
+      errorMsg += ". Tip: Verify your host address and credentials (for Gmail, ensure you are using a 16-character Google App Password).";
+    }
+    return { success: false, message: errorMsg };
   }
 }
 
@@ -227,15 +254,7 @@ export async function sendDelegateRegistrationEmail(payload: DelegateRegistratio
       return false;
     }
 
-    const transporter = nodemailer.createTransport({
-      host: config.host,
-      port: config.port,
-      secure: config.secure,
-      auth: {
-        user: config.user,
-        pass: config.password || "",
-      },
-    });
+    const transporter = buildNodemailerTransport(config);
 
     const activeEdition = await prisma.eventEdition.findFirst({ where: { isActive: true } });
     const eventName = activeEdition?.name || "SHINE";
@@ -477,15 +496,7 @@ export async function sendCoordinatorRegistrationAlert(payload: CoordinatorAlert
       return false;
     }
 
-    const transporter = nodemailer.createTransport({
-      host: config.host,
-      port: config.port,
-      secure: config.secure,
-      auth: {
-        user: config.user,
-        pass: config.password || "",
-      },
-    });
+    const transporter = buildNodemailerTransport(config);
 
     const activeEdition = await prisma.eventEdition.findFirst({ where: { isActive: true } });
     const eventName = activeEdition?.name || "SHINE";
@@ -594,15 +605,7 @@ export async function sendApprovedDelegatePassEmail(payload: DelegateRegistratio
       return false;
     }
 
-    const transporter = nodemailer.createTransport({
-      host: config.host,
-      port: config.port,
-      secure: config.secure,
-      auth: {
-        user: config.user,
-        pass: config.password || "",
-      },
-    });
+    const transporter = buildNodemailerTransport(config);
 
     const activeEdition = await prisma.eventEdition.findFirst({ where: { isActive: true } });
     const eventName = activeEdition?.name || "SHINE";
@@ -818,15 +821,7 @@ export async function sendTeamLeadConsolidatedPassEmail(payload: TeamLeadConsoli
       return false;
     }
 
-    const transporter = nodemailer.createTransport({
-      host: config.host,
-      port: config.port,
-      secure: config.secure,
-      auth: {
-        user: config.user,
-        pass: config.password || "",
-      },
-    });
+    const transporter = buildNodemailerTransport(config);
 
     const activeEdition = await prisma.eventEdition.findFirst({ where: { isActive: true } });
     const eventName = activeEdition?.name || "SHINE";
@@ -951,15 +946,7 @@ export async function sendEventReminderEmail(payload: EventReminderEmailPayload)
       return false;
     }
 
-    const transporter = nodemailer.createTransport({
-      host: config.host,
-      port: config.port,
-      secure: config.secure,
-      auth: {
-        user: config.user,
-        pass: config.password || "",
-      },
-    });
+    const transporter = buildNodemailerTransport(config);
 
     const activeEdition = await prisma.eventEdition.findFirst({ where: { isActive: true } });
     const eventName = activeEdition?.name || "SHINE";

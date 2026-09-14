@@ -113,30 +113,29 @@ export async function GET() {
 
     const totalRevenue = Math.round((delegationRevenue + directEventRevenue) * 100) / 100;
 
-    const eventBreakdown = events.map((e) => ({
-      id: e.id,
-      name: e.name,
-      category: e.category,
-      fee: e.fee,
-      capacity: e.capacity,
-      venue: e.venue,
-      dateTime: e.dateTime,
-      coordinatorName:
-        e.staffCoordinator?.name ||
-        e.coordinator?.name ||
-        e.staffCoordinatorName ||
-        e.studentCoordinator?.name ||
-        e.studentCoordinatorName ||
-        "Unassigned",
-      coordinatorEmail:
-        e.staffCoordinator?.email ||
-        e.coordinator?.email ||
-        e.staffCoordinatorEmail ||
-        e.studentCoordinator?.email ||
-        e.studentCoordinatorEmail ||
-        null,
-      registrationsCount: e._count.registrations,
-    }));
+    const eventBreakdown = events.map((e) => {
+      const staffName = e.staffCoordinator?.name || e.staffCoordinatorName || e.coordinator?.name || null;
+      const staffEmail = e.staffCoordinator?.email || e.staffCoordinatorEmail || e.coordinator?.email || null;
+      const studentName = e.studentCoordinator?.name || e.studentCoordinatorName || null;
+      const studentEmail = e.studentCoordinator?.email || e.studentCoordinatorEmail || null;
+
+      return {
+        id: e.id,
+        name: e.name,
+        category: e.category,
+        fee: e.fee,
+        capacity: e.capacity,
+        venue: e.venue,
+        dateTime: e.dateTime,
+        staffCoordinatorName: staffName,
+        staffCoordinatorEmail: staffEmail,
+        studentCoordinatorName: studentName,
+        studentCoordinatorEmail: studentEmail,
+        coordinatorName: staffName || studentName || "Unassigned",
+        coordinatorEmail: staffEmail || studentEmail || null,
+        registrationsCount: e._count.registrations,
+      };
+    });
 
     // Calculate unique approved and pending students
     const [approvedDelegationMembers, confirmedIndividualRegistrations, pendingRegistrationsList] = await Promise.all([

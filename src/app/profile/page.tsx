@@ -600,7 +600,7 @@ export default function ProfilePage() {
                   />
                   {phone.trim() && !isValidPhone(phone) && (
                     <p className="text-[11px] text-rose-500 mt-1">
-                      Must be a valid 10-digit mobile number (e.g. 9876543210 or +91 9876543210).
+                      Must be a valid 10-digit mobile number.
                     </p>
                   )}
                 </div>

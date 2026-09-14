@@ -84,6 +84,8 @@ interface EventBreakdown {
   fee: number;
   venue: string | null;
   coordinatorName: string;
+  staffCoordinatorName?: string | null;
+  studentCoordinatorName?: string | null;
   registrationsCount: number;
 }
 
@@ -332,8 +334,8 @@ export default function AdminOverviewPage() {
   // SMTP Settings State
   const [smtpForm, setSmtpForm] = useState({
     host: "",
-    port: 587,
-    secure: false,
+    port: 465,
+    secure: true,
     user: "",
     password: "",
     hasPassword: false,
@@ -504,8 +506,8 @@ export default function AdminOverviewPage() {
           setSmtpForm((prev) => ({
             ...prev,
             host: smtpData.smtp.host || "",
-            port: smtpData.smtp.port || 587,
-            secure: !!smtpData.smtp.secure,
+            port: 465,
+            secure: true,
             user: smtpData.smtp.user || "",
             hasPassword: !!smtpData.smtp.hasPassword,
             fromEmail: smtpData.smtp.fromEmail || "",
@@ -762,7 +764,7 @@ export default function AdminOverviewPage() {
       const res = await fetch("/api/admin/smtp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(smtpForm),
+        body: JSON.stringify({ ...smtpForm, port: 465, secure: true }),
       });
       const data = await safeJson(res, { success: false });
       if (data.success) {
@@ -771,8 +773,8 @@ export default function AdminOverviewPage() {
           setSmtpForm((prev) => ({
             ...prev,
             host: data.smtp.host,
-            port: data.smtp.port,
-            secure: data.smtp.secure,
+            port: 465,
+            secure: true,
             user: data.smtp.user,
             hasPassword: data.smtp.hasPassword,
             fromEmail: data.smtp.fromEmail,
@@ -1685,17 +1687,7 @@ export default function AdminOverviewPage() {
               <div className="dash-card p-4 sm:p-5 border-l-4 border-emerald-500">
                 <div className="flex items-center justify-between text-[#64748B] mb-2">
                   <span className="text-xs font-bold uppercase tracking-wider">Revenue Collected</span>
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => setShowResetModal(true)}
-                      title="Reset registrations & revenue to ₹0"
-                      className="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
-                    >
-                      <RotateCcw className="w-3.5 h-3.5" />
-                    </button>
-                    <Trophy className="w-4 h-4 text-emerald-600" />
-                  </div>
+                  <Trophy className="w-4 h-4 text-emerald-600" />
                 </div>
                 <div className="text-2xl sm:text-3xl font-black text-emerald-700 tabular-nums">
                   ₹{displayRevenue.toLocaleString()}
@@ -1769,31 +1761,55 @@ export default function AdminOverviewPage() {
                     <tr className="border-b border-[#E2E8F0] text-xs font-bold text-[#64748B] uppercase">
                       <th className="py-3 px-4">Event Name</th>
                       <th className="py-3 px-4">Category</th>
-                      <th className="py-3 px-4">Coordinator</th>
+                      <th className="py-3 px-4">Coordinators</th>
                       <th className="py-3 px-4">Registrations</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#E2E8F0]">
-                    {eventBreakdown.map((ev) => (
-                      <tr key={ev.id} className="hover:bg-stone-50 transition">
-                        <td className="py-3 px-4 font-bold text-[#0F172A]">{ev.name}</td>
-                        <td className="py-3 px-4">
-                          <span
-                            className={`text-xs px-2.5 py-0.5 rounded-full font-semibold ${
-                              ev.category === "ON_STAGE"
-                                ? "bg-amber-100 text-amber-800 border border-amber-300"
-                                : "bg-purple-100 text-purple-800 border border-purple-300"
-                            }`}
-                          >
-                            {ev.category === "ON_STAGE" ? "On-Stage" : "Off-Stage"}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4 text-[#64748B]">{ev.coordinatorName}</td>
-                        <td className="py-3 px-4 font-bold text-[#0F172A] tabular-nums">
-                          {ev.registrationsCount}
-                        </td>
-                      </tr>
-                    ))}
+                    {eventBreakdown.map((ev) => {
+                      const staffName = ev.staffCoordinatorName || ev.coordinatorName;
+                      const studentName = ev.studentCoordinatorName;
+
+                      return (
+                        <tr key={ev.id} className="hover:bg-stone-50 transition">
+                          <td className="py-3 px-4 font-bold text-[#0F172A]">{ev.name}</td>
+                          <td className="py-3 px-4">
+                            <span
+                              className={`text-xs px-2.5 py-0.5 rounded-full font-semibold ${
+                                ev.category === "ON_STAGE"
+                                  ? "bg-amber-100 text-amber-800 border border-amber-300"
+                                  : "bg-purple-100 text-purple-800 border border-purple-300"
+                              }`}
+                            >
+                              {ev.category === "ON_STAGE" ? "On-Stage" : "Off-Stage"}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 text-xs">
+                            <div className="flex flex-col gap-1.5 py-0.5">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[10px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300 shrink-0">
+                                  Staff
+                                </span>
+                                <span className="font-semibold text-[#0F172A] truncate">
+                                  {staffName && staffName !== "Unassigned" ? staffName : "Not Assigned"}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[10px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-blue-100 text-blue-900 border border-blue-300 shrink-0">
+                                  Student
+                                </span>
+                                <span className={studentName ? "font-medium text-[#334155] truncate" : "text-[#94A3B8] italic text-[11px]"}>
+                                  {studentName || "Not Assigned"}
+                                </span>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 font-bold text-[#0F172A] tabular-nums">
+                            {ev.registrationsCount}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -3806,29 +3822,15 @@ export default function AdminOverviewPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-[#64748B] mb-1">Port *</label>
+                      <label className="block text-xs font-bold text-[#64748B] mb-1">Port (SSL/TLS)</label>
                       <input
-                        type="number"
-                        required
-                        value={smtpForm.port}
-                        onChange={(e) => setSmtpForm({ ...smtpForm, port: parseInt(e.target.value, 10) || 587 })}
-                        placeholder="587"
-                        className="w-full px-3 py-2 text-sm border border-[#CBD5E1] rounded-xl focus:ring-2 focus:ring-sky-500 outline-none font-mono"
+                        type="text"
+                        readOnly
+                        disabled
+                        value="465 (SSL)"
+                        className="w-full px-3 py-2 text-sm border border-[#CBD5E1] rounded-xl bg-slate-100 text-slate-600 font-mono font-bold cursor-not-allowed select-none"
                       />
                     </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 pt-1">
-                    <input
-                      type="checkbox"
-                      id="smtpSecure"
-                      checked={smtpForm.secure}
-                      onChange={(e) => setSmtpForm({ ...smtpForm, secure: e.target.checked })}
-                      className="rounded border-gray-300 text-sky-600 focus:ring-sky-500 h-4 w-4"
-                    />
-                    <label htmlFor="smtpSecure" className="text-xs font-semibold text-[#475569]">
-                      Use SSL/TLS (Enable for port 465, disable for port 587 STARTTLS)
-                    </label>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

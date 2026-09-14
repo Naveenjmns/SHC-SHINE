@@ -32,7 +32,7 @@ import {
   Target,
 } from "lucide-react";
 import { safeJson } from "@/lib/safeFetch";
-import { isValidEmail, isValidPhone, sanitizeToTenDigitPhone, getPhoneBadgeInfo } from "@/lib/validators";
+import { isValidEmail, isValidPhone, sanitizeToTenDigitPhone } from "@/lib/validators";
 
 interface EventItem {
   id: string;
@@ -949,21 +949,22 @@ function RegisterForm() {
                       <label className="block text-xs font-bold text-[#1C1917]">
                         WhatsApp / Mobile *
                       </label>
-                      {(() => {
-                        const badge = getPhoneBadgeInfo(teamLeadPhone);
-                        return badge ? (
-                          <span className={`text-[10px] font-bold ${badge.className}`}>
-                            {badge.text}
-                          </span>
-                        ) : null;
-                      })()}
+                      {teamLeadPhone.trim() && (
+                        <span className="text-[10px] font-bold">
+                          {isValidPhone(teamLeadPhone) ? (
+                            <span className="text-emerald-600">✓ Valid</span>
+                          ) : (
+                            <span className="text-rose-500">Invalid</span>
+                          )}
+                        </span>
+                      )}
                     </div>
                     <input
                       type="tel"
                       inputMode="numeric"
                       maxLength={10}
                       required
-                      placeholder="10-digit mobile number (e.g. 9840123456)"
+                      placeholder="10-digit mobile number"
                       value={teamLeadPhone}
                       onChange={(e) => handleTeamLeadPhoneChange(e.target.value)}
                       className={`w-full h-11 bg-white border rounded-xl px-3.5 text-sm text-[#1C1917] placeholder-[#78716C] focus:outline-none transition-colors shadow-2xs ${
@@ -1013,20 +1014,21 @@ function RegisterForm() {
                         <label className="block text-xs font-bold text-[#1C1917]">
                           Faculty Mobile Phone
                         </label>
-                        {(() => {
-                          const badge = getPhoneBadgeInfo(facultyPhone);
-                          return badge ? (
-                            <span className={`text-[10px] font-bold ${badge.className}`}>
-                              {badge.text}
-                            </span>
-                          ) : null;
-                        })()}
+                        {facultyPhone.trim() && (
+                          <span className="text-[10px] font-bold">
+                            {isValidPhone(facultyPhone) ? (
+                              <span className="text-emerald-600">✓ Valid</span>
+                            ) : (
+                              <span className="text-rose-500">Invalid</span>
+                            )}
+                          </span>
+                        )}
                       </div>
                       <input
                         type="tel"
                         inputMode="numeric"
                         maxLength={10}
-                        placeholder="10-digit mobile number (e.g. 9443123456)"
+                        placeholder="10-digit mobile number"
                         value={facultyPhone}
                         onChange={(e) => setFacultyPhone(sanitizeToTenDigitPhone(e.target.value))}
                         className={`w-full h-11 bg-white border rounded-xl px-3.5 text-sm text-[#1C1917] placeholder-[#78716C] focus:outline-none transition-colors shadow-2xs ${
@@ -1189,21 +1191,22 @@ function RegisterForm() {
                             <label className="block text-[11px] font-bold text-[#1C1917]">
                               WhatsApp / Mobile *
                             </label>
-                            {(() => {
-                              const badge = getPhoneBadgeInfo(member.phone);
-                              return badge ? (
-                                <span className={`text-[10px] font-bold ${badge.className}`}>
-                                  {badge.text}
-                                </span>
-                              ) : null;
-                            })()}
+                            {member.phone.trim() && (
+                              <span className="text-[10px] font-bold">
+                                {isValidPhone(member.phone) ? (
+                                  <span className="text-emerald-600">✓ Valid</span>
+                                ) : (
+                                  <span className="text-rose-500">Invalid</span>
+                                )}
+                              </span>
+                            )}
                           </div>
                           <input
                             type="tel"
                             inputMode="numeric"
                             maxLength={10}
                             required
-                            placeholder="10-digit mobile (e.g. 9840123456)"
+                            placeholder="10-digit mobile number"
                             value={member.phone}
                             onChange={(e) => updateMember(mIdx, "phone", sanitizeToTenDigitPhone(e.target.value))}
                             className={`w-full h-10 bg-white border rounded-xl px-3 text-xs text-[#1C1917] placeholder-[#78716C] focus:outline-none transition-colors ${
