@@ -40,6 +40,7 @@ import {
   Unlock,
   QrCode,
   Utensils,
+  Leaf,
   ReceiptIndianRupee,
   ChevronDown,
   ChevronUp,
@@ -163,6 +164,9 @@ interface EventEditionItem {
   contactEmail?: string | null;
   contactPhone?: string | null;
   websiteUrl?: string | null;
+  diningHallVenue?: string | null;
+  diningFacilityInfo?: string | null;
+  mealOptions?: "BOTH" | "VEG_ONLY" | string;
   participantFee?: number;
   isRegistrationOpen?: boolean;
   registrationClosedNotice?: string | null;
@@ -295,6 +299,12 @@ export default function AdminOverviewPage() {
     contactEmail: "shine@shctpt.edu",
     contactPhone: "+91 4175 240464",
     websiteUrl: "",
+
+    // Dining & Catering Setup
+    diningHallVenue: "SGB Quadrangle Dining Hall",
+    diningFacilityInfo: "Sacred Heart College (Autonomous)",
+    mealOptions: "BOTH",
+
     participantFee: 0,
     isRegistrationOpen: true,
     registrationClosedNotice: "Registrations for this edition are currently closed. Please contact the event coordinators for queries.",
@@ -450,6 +460,9 @@ export default function AdminOverviewPage() {
             contactEmail: currentActive.contactEmail || "shine@shctpt.edu",
             contactPhone: currentActive.contactPhone || "+91 4175 240464",
             websiteUrl: currentActive.websiteUrl || "",
+            diningHallVenue: currentActive.diningHallVenue || "SGB Quadrangle Dining Hall",
+            diningFacilityInfo: currentActive.diningFacilityInfo || "Sacred Heart College (Autonomous)",
+            mealOptions: currentActive.mealOptions || "BOTH",
             participantFee: currentActive.participantFee || 0,
             isRegistrationOpen: currentActive.isRegistrationOpen ?? true,
             registrationClosedNotice:
@@ -2072,6 +2085,110 @@ export default function AdminOverviewPage() {
                   </div>
                 </div>
 
+                {/* 4. Dining Facility & Catering Meal Policy */}
+                <div className="dash-card p-6 space-y-5 border-l-4 border-emerald-500">
+                  <div className="flex items-center justify-between border-b pb-3">
+                    <h4 className="text-sm font-bold uppercase tracking-wider text-[#0F172A] flex items-center gap-2">
+                      <Utensils className="w-4 h-4 text-emerald-600" />
+                      <span>4. Dining Facility & Catering Meal Policy</span>
+                    </h4>
+                    <span className="text-[10px] font-bold uppercase tracking-widest bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-md">
+                      Food & Hospitality
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-[#64748B] leading-relaxed">
+                    Configure the dining facility name, campus hall, and choose whether your institution provides vegetarian dining only or both vegetarian and non-vegetarian meals.
+                  </p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-[#64748B] mb-1">
+                        Dining Facility / Hall Name *
+                      </label>
+                      <input
+                        type="text"
+                        value={brandingForm.diningHallVenue}
+                        onChange={(e) => setBrandingForm({ ...brandingForm, diningHallVenue: e.target.value })}
+                        placeholder="e.g. SGB Quadrangle Dining Hall / College Mess"
+                        className="w-full px-3 py-2 text-sm border border-[#CBD5E1] rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-[#64748B] mb-1">
+                        Facility Location / Campus Subtitle
+                      </label>
+                      <input
+                        type="text"
+                        value={brandingForm.diningFacilityInfo}
+                        onChange={(e) => setBrandingForm({ ...brandingForm, diningFacilityInfo: e.target.value })}
+                        placeholder="e.g. Sacred Heart College (Autonomous) / South Wing"
+                        className="w-full px-3 py-2 text-sm border border-[#CBD5E1] rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Meal Options Selector */}
+                  <div className="space-y-2 pt-1">
+                    <label className="block text-xs font-bold text-[#0F172A]">
+                      Institution Catering Policy (Available Meal Options) *
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {/* Option 1: BOTH */}
+                      <button
+                        type="button"
+                        onClick={() => setBrandingForm({ ...brandingForm, mealOptions: "BOTH" })}
+                        className={`p-4 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between gap-2.5 ${
+                          (brandingForm.mealOptions || "BOTH") === "BOTH"
+                            ? "bg-amber-50/80 border-amber-500 ring-2 ring-amber-500/20 shadow-xs"
+                            : "bg-white border-stone-200 hover:border-amber-300"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="text-base">🥗🍗</span>
+                            <span className="text-xs font-bold text-[#0F172A]">
+                              Vegetarian & Non-Vegetarian (Both)
+                            </span>
+                          </div>
+                          {(brandingForm.mealOptions || "BOTH") === "BOTH" && (
+                            <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+                          )}
+                        </div>
+                        <p className="text-[11px] text-[#64748B] leading-relaxed">
+                          Delegates select dietary preference on registration. Food Committee monitors separate Veg vs Non-Veg quota.
+                        </p>
+                      </button>
+
+                      {/* Option 2: VEG_ONLY */}
+                      <button
+                        type="button"
+                        onClick={() => setBrandingForm({ ...brandingForm, mealOptions: "VEG_ONLY" })}
+                        className={`p-4 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between gap-2.5 ${
+                          brandingForm.mealOptions === "VEG_ONLY"
+                            ? "bg-emerald-50/80 border-emerald-500 ring-2 ring-emerald-500/20 shadow-xs"
+                            : "bg-white border-stone-200 hover:border-emerald-300"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Leaf className="w-4 h-4 text-emerald-600" />
+                            <span className="text-xs font-bold text-[#0F172A]">
+                              100% Pure Vegetarian Only
+                            </span>
+                          </div>
+                          {brandingForm.mealOptions === "VEG_ONLY" && (
+                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                          )}
+                        </div>
+                        <p className="text-[11px] text-[#64748B] leading-relaxed">
+                          Symposium strictly provides pure vegetarian catering. Non-Veg options are hidden across registration and food portal.
+                        </p>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="pt-2">
                   <button
                     type="button"
@@ -2258,6 +2375,9 @@ export default function AdminOverviewPage() {
                           contactEmail: ed.contactEmail || "shine@shctpt.edu",
                           contactPhone: ed.contactPhone || "+91 4175 240464",
                           websiteUrl: ed.websiteUrl || "",
+                          diningHallVenue: ed.diningHallVenue || "SGB Quadrangle Dining Hall",
+                          diningFacilityInfo: ed.diningFacilityInfo || "Sacred Heart College (Autonomous)",
+                          mealOptions: ed.mealOptions || "BOTH",
                           participantFee: ed.participantFee || 0,
                           isRegistrationOpen: ed.isRegistrationOpen ?? true,
                           registrationClosedNotice:

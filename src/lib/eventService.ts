@@ -43,6 +43,12 @@ export interface ActiveEditionConfig {
   contactEmail: string | null;
   contactPhone: string | null;
   websiteUrl: string | null;
+
+  // Dining & Catering Configuration
+  diningHallVenue?: string | null;
+  diningFacilityInfo?: string | null;
+  mealOptions?: "BOTH" | "VEG_ONLY" | string;
+
   participantFee: number;
   isRegistrationOpen: boolean;
   registrationClosedNotice: string | null;
@@ -123,6 +129,11 @@ export const DEFAULT_EDITION_CONFIG: ActiveEditionConfig = {
   contactEmail: "shine@shctpt.edu",
   contactPhone: "+91 4175 240464",
   websiteUrl: null,
+
+  diningHallVenue: "SGB Quadrangle Dining Hall",
+  diningFacilityInfo: "Sacred Heart College (Autonomous)",
+  mealOptions: "BOTH",
+
   participantFee: 0,
   isRegistrationOpen: true,
   registrationClosedNotice: "Registrations for this edition are currently closed. Please contact the event coordinators for queries.",
@@ -256,6 +267,11 @@ async function fetchActiveEditionFromDb(): Promise<ActiveEditionConfig> {
       contactEmail: active.contactEmail || DEFAULT_EDITION_CONFIG.contactEmail,
       contactPhone: active.contactPhone || DEFAULT_EDITION_CONFIG.contactPhone,
       websiteUrl: active.websiteUrl || DEFAULT_EDITION_CONFIG.websiteUrl,
+
+      diningHallVenue: (active as any).diningHallVenue || DEFAULT_EDITION_CONFIG.diningHallVenue,
+      diningFacilityInfo: (active as any).diningFacilityInfo || DEFAULT_EDITION_CONFIG.diningFacilityInfo,
+      mealOptions: (active as any).mealOptions || DEFAULT_EDITION_CONFIG.mealOptions || "BOTH",
+
       participantFee: active.participantFee ?? 0,
       isRegistrationOpen: active.isRegistrationOpen ?? true,
       registrationClosedNotice: active.registrationClosedNotice || DEFAULT_EDITION_CONFIG.registrationClosedNotice,

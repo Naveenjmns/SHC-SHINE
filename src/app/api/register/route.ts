@@ -246,13 +246,18 @@ export async function POST(req: Request) {
     const registeredDelegates = [];
     // Map of eventId -> array of participants entering this event
     const eventParticipantsMap = new Map<string, Array<{ name: string; email: string; phone: string; badgeCode: string }>>();
+    const isVegOnlyPolicy = activeEdition?.mealOptions === "VEG_ONLY";
 
     for (let i = 0; i < members.length; i++) {
       const m = members[i];
       const normalizedEmail = m.email.toLowerCase().trim();
       const isLead = i === 0 || normalizedEmail === teamLead.email.toLowerCase().trim();
 
-      const foodPref = (m.foodPreference || "VEG").toUpperCase() === "NON_VEG" ? "NON_VEG" : "VEG";
+      const foodPref = isVegOnlyPolicy
+        ? "VEG"
+        : (m.foodPreference || "VEG").toUpperCase() === "NON_VEG"
+        ? "NON_VEG"
+        : "VEG";
 
       const defaultPassword = m.phone.trim() || "shine2027";
 

@@ -95,6 +95,12 @@ model EventEdition {
   contactEmail         String?  @default("shine@shctpt.edu")
   contactPhone         String?  @default("+91 4175 240464")
   websiteUrl           String?
+
+  // Dining & Catering Configuration
+  diningHallVenue      String?  @default("SGB Quadrangle Dining Hall")
+  diningFacilityInfo   String?  @default("Sacred Heart College (Autonomous)")
+  mealOptions          String   @default("BOTH") // "BOTH" (Veg + Non-Veg) | "VEG_ONLY" (Pure Veg Only)
+
   participantFee            Float    @default(0)
   isRegistrationOpen        Boolean  @default(true)
   registrationClosedNotice  String?  @default("Registrations for this edition are currently closed. Please contact the event coordinators for queries.")

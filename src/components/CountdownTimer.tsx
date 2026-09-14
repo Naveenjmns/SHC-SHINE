@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Clock, Flame, Radio, Sparkles } from "lucide-react";
-import { parseDateSafe } from "@/lib/dateUtils";
+import { parseDateSafe, formatDateSafe, formatTimeSafe } from "@/lib/dateUtils";
 
 interface CountdownTimerProps {
   targetDate?: Date | string | null;
@@ -31,15 +31,9 @@ export default function CountdownTimer({
     try {
       const d = parseDateSafe(targetDate);
       if (!d || isNaN(d.getTime())) return "17-09-2026 09:30 AM";
-      const pad = (n: number) => String(n).padStart(2, "0");
-      const day = pad(d.getDate());
-      const month = pad(d.getMonth() + 1);
-      const year = d.getFullYear();
-      let hours = d.getHours();
-      const ampm = hours >= 12 ? "PM" : "AM";
-      hours = hours % 12 || 12;
-      const mins = pad(d.getMinutes());
-      return `${day}-${month}-${year} ${pad(hours)}:${mins} ${ampm}`;
+      const datePart = formatDateSafe(d, { day: "2-digit", month: "2-digit", year: "numeric" });
+      const timePart = formatTimeSafe(d, { hour: "2-digit", minute: "2-digit", hour12: true });
+      return `${datePart.replace(/\//g, "-")} ${timePart}`;
     } catch {
       return "17-09-2026 09:30 AM";
     }

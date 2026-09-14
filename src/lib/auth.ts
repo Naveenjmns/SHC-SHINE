@@ -36,7 +36,7 @@ export const authOptions: AuthOptions = {
         );
 
         // Support lookup by email, exact phone, or matching phone digits
-        let user = await prisma.user.findFirst({
+        const user = await prisma.user.findFirst({
           where: {
             OR: [
               ...emailVariants.map((e) => ({ email: e })),

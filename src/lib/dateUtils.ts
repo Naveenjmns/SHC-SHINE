@@ -44,7 +44,8 @@ export function formatDateSafe(
   const d = parseDateSafe(input);
   if (!d) return "—";
   try {
-    return d.toLocaleDateString(locale, options);
+    const opts: Intl.DateTimeFormatOptions = { timeZone: "Asia/Kolkata", ...options };
+    return d.toLocaleDateString(locale, opts);
   } catch {
     return "—";
   }
@@ -58,7 +59,9 @@ export function formatTimeSafe(
   const d = parseDateSafe(input);
   if (!d) return "—";
   try {
-    return d.toLocaleTimeString(locale, options);
+    const opts: Intl.DateTimeFormatOptions = { timeZone: "Asia/Kolkata", ...options };
+    const res = d.toLocaleTimeString(locale, opts);
+    return res.replace(/\s?(am|pm)/i, (match) => " " + match.trim().toUpperCase());
   } catch {
     return "—";
   }
@@ -72,7 +75,9 @@ export function formatDateTimeSafe(
   const d = parseDateSafe(input);
   if (!d) return "—";
   try {
-    return d.toLocaleString(locale, options);
+    const opts: Intl.DateTimeFormatOptions = { timeZone: "Asia/Kolkata", ...options };
+    const res = d.toLocaleString(locale, opts);
+    return res.replace(/\s?(am|pm)/i, (match) => " " + match.trim().toUpperCase());
   } catch {
     return "—";
   }

@@ -85,6 +85,19 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    const activeEdition = await prisma.eventEdition.findFirst({
+      where: { isActive: true },
+      select: {
+        id: true,
+        name: true,
+        edition: true,
+        institutionName: true,
+        diningHallVenue: true,
+        diningFacilityInfo: true,
+        mealOptions: true,
+      },
+    });
+
     return NextResponse.json({
       success: true,
       stats: {
@@ -102,6 +115,11 @@ export async function GET(req: NextRequest) {
           claimed: totalNonVegClaimed,
           remaining: Math.max(0, totalNonVegRequested - totalNonVegClaimed),
         },
+      },
+      edition: activeEdition || {
+        diningHallVenue: "SGB Quadrangle Dining Hall",
+        diningFacilityInfo: "Sacred Heart College (Autonomous)",
+        mealOptions: "BOTH",
       },
       recentClaims,
     });

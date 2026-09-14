@@ -200,6 +200,9 @@ export async function PATCH(req: NextRequest) {
       "contactEmail",
       "contactPhone",
       "websiteUrl",
+      "diningHallVenue",
+      "diningFacilityInfo",
+      "mealOptions",
       "participantFee",
       "isRegistrationOpen",
       "registrationClosedNotice",
@@ -229,6 +232,8 @@ export async function PATCH(req: NextRequest) {
           sanitizedData[key] = parseFloat(val) || 0;
         } else if (key === "isRegistrationOpen" || key === "showStageModeInStudentPortal") {
           sanitizedData[key] = Boolean(val);
+        } else if (key === "mealOptions") {
+          sanitizedData[key] = val === "VEG_ONLY" ? "VEG_ONLY" : "BOTH";
         } else {
           sanitizedData[key] = val === "" ? null : val;
         }

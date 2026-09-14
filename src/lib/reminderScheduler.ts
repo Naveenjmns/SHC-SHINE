@@ -1,7 +1,6 @@
 import { checkAndDispatchEventReminders } from "@/lib/eventReminderService";
 
 declare global {
-  // eslint-disable-next-line no-var
   var __shineReminderInterval: NodeJS.Timeout | null | undefined;
 }
 

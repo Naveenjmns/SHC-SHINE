@@ -93,11 +93,19 @@ interface ScanPopup {
   code?: string;
 }
 
+interface FoodEditionInfo {
+  diningHallVenue?: string | null;
+  diningFacilityInfo?: string | null;
+  institutionName?: string | null;
+  mealOptions?: "BOTH" | "VEG_ONLY" | string;
+}
+
 export default function FoodCoordinatorPage() {
   const { data: session, status } = useSession();
 
   // State
   const [stats, setStats] = useState<FoodStats | null>(null);
+  const [edition, setEdition] = useState<FoodEditionInfo | null>(null);
   const [recentClaims, setRecentClaims] = useState<RecentClaim[]>([]);
   const [loadingStats, setLoadingStats] = useState(true);
   const [inputCode, setInputCode] = useState("");
@@ -203,6 +211,9 @@ export default function FoodCoordinatorPage() {
       if (data.success) {
         setStats(data.stats);
         setRecentClaims(data.recentClaims || []);
+        if (data.edition) {
+          setEdition(data.edition);
+        }
       }
     } catch (err) {
       console.error("Failed to load food stats:", err);
@@ -913,11 +924,25 @@ export default function FoodCoordinatorPage() {
             </div>
 
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 text-left sm:text-right w-full sm:w-auto shadow-xs">
-              <div className="text-[11px] font-bold text-amber-900 uppercase tracking-wide">Dining Facility</div>
-              <div className="text-base sm:text-lg font-black text-amber-950">
-                SGB Quadrangle Dining Hall
+              <div className="flex items-center justify-between sm:justify-end gap-2 mb-0.5">
+                <span className="text-[11px] font-bold text-amber-900 uppercase tracking-wide">Dining Facility</span>
+                {edition?.mealOptions === "VEG_ONLY" ? (
+                  <span className="inline-flex items-center gap-1 text-[9px] font-extrabold uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-300 px-1.5 py-0.5 rounded">
+                    <Leaf className="w-2.5 h-2.5 text-emerald-600" />
+                    100% Pure Veg
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 text-[9px] font-extrabold uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-300 px-1.5 py-0.5 rounded">
+                    Veg & Non-Veg
+                  </span>
+                )}
               </div>
-              <div className="text-[11px] text-amber-700 font-medium">Sacred Heart College (Autonomous)</div>
+              <div className="text-base sm:text-lg font-black text-amber-950">
+                {edition?.diningHallVenue || "Dining Hall"}
+              </div>
+              <div className="text-[11px] text-amber-700 font-medium">
+                {edition?.diningFacilityInfo || edition?.institutionName || "College Campus"}
+              </div>
             </div>
           </div>
         </div>
@@ -971,34 +996,54 @@ export default function FoodCoordinatorPage() {
             </div>
           </div>
 
-          {/* 🍗 Non-Vegetarian Counter */}
-          <div className="dash-card p-4 sm:p-5 border-l-4 border-l-orange-500">
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="text-xs font-bold text-orange-800 uppercase tracking-wider flex items-center gap-1">
-                <Flame className="w-3.5 h-3.5 text-orange-600" />
-                Non-Veg
-              </span>
-              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-orange-50 text-orange-700 border border-orange-200">
-                {stats?.nonVeg.remaining ?? 0} left
-              </span>
+          {/* Card 3: Adaptive Policy / Non-Veg Counter */}
+          {edition?.mealOptions === "VEG_ONLY" ? (
+            <div className="dash-card p-4 sm:p-5 border-l-4 border-l-emerald-600 bg-emerald-50/20">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-xs font-bold text-emerald-800 uppercase tracking-wider flex items-center gap-1">
+                  <Leaf className="w-3.5 h-3.5 text-emerald-600" />
+                  Catering Policy
+                </span>
+                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
+                  Pure Veg
+                </span>
+              </div>
+              <div className="text-lg sm:text-xl font-black text-emerald-950 mt-1">
+                100% Vegetarian
+              </div>
+              <p className="text-[11px] text-emerald-700/90 mt-1.5 leading-relaxed">
+                Host institution policy: all delegates provided delicious pure vegetarian meals.
+              </p>
             </div>
-            <div className="flex items-baseline gap-2">
-              <span className="text-2xl sm:text-3xl font-black text-orange-700 tabular-nums">{stats?.nonVeg.claimed ?? 0}</span>
-              <span className="text-xs text-slate-500">of {stats?.nonVeg.requested ?? 0}</span>
+          ) : (
+            <div className="dash-card p-4 sm:p-5 border-l-4 border-l-orange-500">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-xs font-bold text-orange-800 uppercase tracking-wider flex items-center gap-1">
+                  <Flame className="w-3.5 h-3.5 text-orange-600" />
+                  Non-Veg
+                </span>
+                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-orange-50 text-orange-700 border border-orange-200">
+                  {stats?.nonVeg.remaining ?? 0} left
+                </span>
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl sm:text-3xl font-black text-orange-700 tabular-nums">{stats?.nonVeg.claimed ?? 0}</span>
+                <span className="text-xs text-slate-500">of {stats?.nonVeg.requested ?? 0}</span>
+              </div>
+              <div className="mt-3 w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                <div
+                  className="bg-gradient-to-r from-orange-600 to-amber-600 h-full rounded-full transition-all duration-500"
+                  style={{
+                    width: `${
+                      stats?.nonVeg.requested
+                        ? Math.round((stats.nonVeg.claimed / stats.nonVeg.requested) * 100)
+                        : 0
+                    }%`,
+                  }}
+                />
+              </div>
             </div>
-            <div className="mt-3 w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
-              <div
-                className="bg-gradient-to-r from-orange-600 to-amber-600 h-full rounded-full transition-all duration-500"
-                style={{
-                  width: `${
-                    stats?.nonVeg.requested
-                      ? Math.round((stats.nonVeg.claimed / stats.nonVeg.requested) * 100)
-                      : 0
-                  }%`,
-                }}
-              />
-            </div>
-          </div>
+          )}
 
           {/* Queue Remaining */}
           <div className="dash-card p-4 sm:p-5 border-l-4 border-l-purple-500">
@@ -1013,7 +1058,9 @@ export default function FoodCoordinatorPage() {
               <span className="text-xs text-slate-500">delegates left</span>
             </div>
             <p className="text-[11px] text-slate-500 mt-3 truncate font-medium">
-              {stats?.veg.remaining ?? 0} Veg • {stats?.nonVeg.remaining ?? 0} Non-Veg
+              {edition?.mealOptions === "VEG_ONLY"
+                ? `${stats?.totalRemaining ?? 0} Pure Veg Meals Pending`
+                : `${stats?.veg.remaining ?? 0} Veg • ${stats?.nonVeg.remaining ?? 0} Non-Veg`}
             </p>
           </div>
         </div>
@@ -1557,7 +1604,7 @@ export default function FoodCoordinatorPage() {
                         </div>
                       )}
 
-                      {popup.foodPreference && (
+                      {popup.foodPreference && edition?.mealOptions !== "VEG_ONLY" && (
                         <button
                           onClick={() =>
                             handleSwitchPreference(
@@ -1771,7 +1818,7 @@ export default function FoodCoordinatorPage() {
 
               {/* Dietary switch & dismiss */}
               <div className="flex items-center justify-between pt-2 border-t border-stone-200 text-xs">
-                {popup.foodPreference && (
+                {popup.foodPreference && edition?.mealOptions !== "VEG_ONLY" && (
                   <button
                     type="button"
                     onClick={() =>

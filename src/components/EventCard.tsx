@@ -230,37 +230,6 @@ export default function EventCard({
             {description || "Compete against peer colleges in this signature fest competition."}
           </p>
 
-          {/* Prelims Notice / Rules Highlight Box on Card */}
-          {hasPrelims && (
-            <div className="mb-4 p-3 rounded-2xl bg-amber-50/90 border border-amber-300/80 text-xs shadow-2xs">
-              <div className="flex items-center justify-between gap-2 font-bold text-amber-900 mb-1">
-                <span className="flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                  <span>Prelims Screening Round</span>
-                </span>
-                {(formattedPrelimsTime || formattedPrelimsDate) && (
-                  <span className="text-[10px] text-amber-800 font-semibold flex items-center gap-1 shrink-0 bg-amber-100/70 px-2 py-0.5 rounded-md border border-amber-200">
-                    <Clock className="w-3 h-3 text-amber-600" />
-                    {formattedPrelimsTime}
-                  </span>
-                )}
-              </div>
-              {prelimsVenue && (
-                <div className="text-[11px] text-amber-800 flex items-center gap-1 mb-1">
-                  <MapPin className="w-3 h-3 text-amber-600 shrink-0" />
-                  <span>Prelims Venue: {prelimsVenue}</span>
-                </div>
-              )}
-              {prelimsRules && (
-                <div className="mt-1.5 text-[11px] text-amber-950 leading-relaxed bg-white/80 p-2 rounded-xl border border-amber-200/80">
-                  <span className="text-amber-900 font-bold block text-[10px] uppercase tracking-wider mb-0.5">
-                    Prelims Rules:
-                  </span>
-                  <p className="line-clamp-2">{prelimsRules}</p>
-                </div>
-              )}
-            </div>
-          )}
 
           {/* Metadata & Dual Coordinators */}
           <div className="space-y-2 text-xs text-[#57534E] pt-3 border-t border-[#1C1917]/10 mb-5">

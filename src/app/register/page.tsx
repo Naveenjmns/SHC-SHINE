@@ -101,6 +101,8 @@ function RegisterForm() {
   const [registrationClosedNotice, setRegistrationClosedNotice] = useState("");
   const [contactEmail, setContactEmail] = useState("");
   const [contactPhone, setContactPhone] = useState("");
+  const [mealOptions, setMealOptions] = useState("BOTH");
+  const [diningHallVenue, setDiningHallVenue] = useState("SGB Quadrangle Dining Hall");
 
   // Step 1: College Representation
   const [collegeName, setCollegeName] = useState("");
@@ -162,6 +164,8 @@ function RegisterForm() {
           );
           setContactEmail(editionData.edition.contactEmail || "");
           setContactPhone(editionData.edition.contactPhone || "");
+          setMealOptions(editionData.edition.mealOptions || "BOTH");
+          setDiningHallVenue(editionData.edition.diningHallVenue || "SGB Quadrangle Dining Hall");
         }
       } catch (err) {
         console.error("Error loading events & edition data:", err);
@@ -1190,41 +1194,61 @@ function RegisterForm() {
                       </div>
 
                       {/* Participant Dietary Preference for Food Committee */}
-                      <div className="bg-amber-50/40 border border-amber-200/60 rounded-xl p-3">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-2">
-                          <label className="text-[11px] font-black text-amber-950 uppercase tracking-wider flex items-center gap-1.5">
-                            <Utensils className="w-3.5 h-3.5 text-amber-600" />
-                            <span>Lunch Food Preference *</span>
-                          </label>
-                          <span className="text-[10px] text-stone-500">
-                            Pre-allocates lunch counter token
-                          </span>
+                      {mealOptions === "VEG_ONLY" ? (
+                        <div className="bg-emerald-50/60 border border-emerald-200/80 rounded-xl p-3.5">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-2">
+                            <label className="text-[11px] font-black text-emerald-950 uppercase tracking-wider flex items-center gap-1.5">
+                              <Utensils className="w-3.5 h-3.5 text-emerald-600" />
+                              <span>Lunch Catering Policy • 100% Pure Vegetarian</span>
+                            </label>
+                            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-md border border-emerald-200 w-fit">
+                              Campus Policy
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2.5 px-3 py-2 bg-white rounded-xl border border-emerald-200 text-xs font-semibold text-emerald-900 shadow-xs">
+                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                            <span>
+                              🥗 Pure Vegetarian Feast served at <strong>{diningHallVenue}</strong>. Token automatically allocated.
+                            </span>
+                          </div>
                         </div>
-                        <div className="grid grid-cols-2 gap-2">
-                          <button
-                            type="button"
-                            onClick={() => updateMember(mIdx, "foodPreference", "VEG")}
-                            className={`py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
-                              (member.foodPreference || "VEG") === "VEG"
-                                ? "bg-emerald-600 border-emerald-600 text-white shadow-xs"
-                                : "bg-white border-stone-200 text-stone-700 hover:border-emerald-300"
-                            }`}
-                          >
-                            <span>🥗 Vegetarian</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => updateMember(mIdx, "foodPreference", "NON_VEG")}
-                            className={`py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
-                              member.foodPreference === "NON_VEG"
-                                ? "bg-amber-600 border-amber-600 text-white shadow-xs"
-                                : "bg-white border-stone-200 text-stone-700 hover:border-amber-300"
-                            }`}
-                          >
-                            <span>🍗 Non-Vegetarian</span>
-                          </button>
+                      ) : (
+                        <div className="bg-amber-50/40 border border-amber-200/60 rounded-xl p-3">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-2">
+                            <label className="text-[11px] font-black text-amber-950 uppercase tracking-wider flex items-center gap-1.5">
+                              <Utensils className="w-3.5 h-3.5 text-amber-600" />
+                              <span>Lunch Food Preference *</span>
+                            </label>
+                            <span className="text-[10px] text-stone-500">
+                              Pre-allocates lunch counter token at {diningHallVenue}
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <button
+                              type="button"
+                              onClick={() => updateMember(mIdx, "foodPreference", "VEG")}
+                              className={`py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                                (member.foodPreference || "VEG") === "VEG"
+                                  ? "bg-emerald-600 border-emerald-600 text-white shadow-xs"
+                                  : "bg-white border-stone-200 text-stone-700 hover:border-emerald-300"
+                              }`}
+                            >
+                              <span>🥗 Vegetarian</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => updateMember(mIdx, "foodPreference", "NON_VEG")}
+                              className={`py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                                member.foodPreference === "NON_VEG"
+                                  ? "bg-amber-600 border-amber-600 text-white shadow-xs"
+                                  : "bg-white border-stone-200 text-stone-700 hover:border-amber-300"
+                              }`}
+                            >
+                              <span>🍗 Non-Vegetarian</span>
+                            </button>
+                          </div>
                         </div>
-                      </div>
+                      )}
 
                       {/* Event Enrollment for this participant (Categorized into On-Stage & Off-Stage) */}
                       <div className="pt-4 border-t border-stone-200 space-y-4">
@@ -1497,6 +1521,18 @@ function RegisterForm() {
                       </div>
                     </div>
                   ))}
+
+                  {/* Bottom "Add Another Participant" Button */}
+                  <button
+                    type="button"
+                    onClick={addMember}
+                    className="w-full py-3.5 px-4 rounded-2xl border-2 border-dashed border-amber-400/80 bg-amber-50/70 hover:bg-amber-100/90 text-amber-900 text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-2xs hover:border-amber-500 group"
+                  >
+                    <div className="w-6 h-6 rounded-full bg-amber-200 group-hover:bg-amber-300 text-amber-800 flex items-center justify-center transition-colors">
+                      <UserPlus className="w-3.5 h-3.5" />
+                    </div>
+                    <span>Add Another Participant (Participant #{members.length + 1})</span>
+                  </button>
                 </div>
               )}
 
@@ -1577,7 +1613,13 @@ function RegisterForm() {
                   <div className="flex justify-between pb-2 border-b border-stone-200">
                     <span className="text-stone-500">Catering Food Breakdown:</span>
                     <span className="font-semibold text-stone-800">
-                      🥗 {members.filter((m) => (m.foodPreference || "VEG") === "VEG").length} Veg • 🍗 {members.filter((m) => m.foodPreference === "NON_VEG").length} Non-Veg
+                      {mealOptions === "VEG_ONLY" ? (
+                        <span className="text-emerald-700 font-bold flex items-center gap-1.5">
+                          🥗 100% Pure Vegetarian ({members.length} Delegates)
+                        </span>
+                      ) : (
+                        <>🥗 {members.filter((m) => (m.foodPreference || "VEG") === "VEG").length} Veg • 🍗 {members.filter((m) => m.foodPreference === "NON_VEG").length} Non-Veg</>
+                      )}
                     </span>
                   </div>
 
@@ -1613,15 +1655,21 @@ function RegisterForm() {
                         <span className="text-stone-400 text-[11px] ml-2">({m.phone})</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span
-                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                            (m.foodPreference || "VEG") === "VEG"
-                              ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
-                              : "bg-amber-100 text-amber-900 border border-amber-200"
-                          }`}
-                        >
-                          {(m.foodPreference || "VEG") === "VEG" ? "🥗 Veg" : "🍗 Non-Veg"}
-                        </span>
+                        {mealOptions === "VEG_ONLY" ? (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                            🥗 Pure Veg
+                          </span>
+                        ) : (
+                          <span
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                              (m.foodPreference || "VEG") === "VEG"
+                                ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
+                                : "bg-amber-100 text-amber-900 border border-amber-200"
+                            }`}
+                          >
+                            {(m.foodPreference || "VEG") === "VEG" ? "🥗 Veg" : "🍗 Non-Veg"}
+                          </span>
+                        )}
                         {m.prelimsEventIds && m.prelimsEventIds.length > 0 && (
                           <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-orange-100 text-orange-900 border border-orange-200">
                             🎯 {m.prelimsEventIds.length} Prelims Assigned
