@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { logActivity } from "@/lib/activityLogger";
 import { encryptSecret, decryptSecret, buildSecureErrorResponse } from "@/lib/security";
+import { isGmailApiConfigured } from "@/lib/emailService";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +16,9 @@ export async function GET() {
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
 
+    const gmailConfigured = isGmailApiConfigured();
+    const gmailUser = process.env.GMAIL_USER || null;
+
     const setting = await prisma.smtpSetting.findUnique({
       where: { id: "default" },
     });
@@ -22,13 +26,15 @@ export async function GET() {
     if (!setting) {
       return NextResponse.json({
         success: true,
+        isGmailApiConfigured: gmailConfigured,
+        gmailUser,
         smtp: {
-          host: process.env.SMTP_HOST || "",
+          host: process.env.SMTP_HOST || (gmailConfigured ? "gmail.googleapis.com (REST API)" : ""),
           port: 465,
           secure: true,
-          user: process.env.SMTP_USER || "",
+          user: process.env.SMTP_USER || gmailUser || "",
           hasPassword: !!process.env.SMTP_PASSWORD,
-          fromEmail: process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER || "",
+          fromEmail: process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER || gmailUser || "",
           fromName: process.env.SMTP_FROM_NAME || "Event Coordination Team",
           replyTo: process.env.SMTP_REPLY_TO || "",
         },
@@ -37,6 +43,8 @@ export async function GET() {
 
     return NextResponse.json({
       success: true,
+      isGmailApiConfigured: gmailConfigured,
+      gmailUser,
       smtp: {
         host: setting.host,
         port: 465,

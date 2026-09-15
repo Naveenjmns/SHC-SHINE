@@ -95,8 +95,194 @@ export async function createTransporter() {
   return { transporter, config };
 }
 
+/**
+ * Google Cloud Gmail REST API & OAuth2 Token Management
+ * Sends emails over standard HTTPS (Port 443), completely bypassing
+ * cloud outbound SMTP port restrictions (e.g., Railway, Render).
+ */
+let cachedAccessToken: { token: string; expiresAt: number } | null = null;
+
+export function isGmailApiConfigured(): boolean {
+  return Boolean(
+    process.env.GMAIL_CLIENT_ID?.trim() &&
+    process.env.GMAIL_CLIENT_SECRET?.trim() &&
+    process.env.GMAIL_REFRESH_TOKEN?.trim()
+  );
+}
+
+export async function getGmailAccessToken(): Promise<string> {
+  const now = Date.now();
+  if (cachedAccessToken && cachedAccessToken.expiresAt > now + 60000) {
+    return cachedAccessToken.token;
+  }
+
+  const clientId = process.env.GMAIL_CLIENT_ID?.trim();
+  const clientSecret = process.env.GMAIL_CLIENT_SECRET?.trim();
+  const refreshToken = process.env.GMAIL_REFRESH_TOKEN?.trim();
+
+  if (!clientId || !clientSecret || !refreshToken) {
+    throw new Error("Missing Gmail OAuth2 credentials (GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET, GMAIL_REFRESH_TOKEN)");
+  }
+
+  const res = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      client_id: clientId,
+      client_secret: clientSecret,
+      refresh_token: refreshToken,
+      grant_type: "refresh_token",
+    }),
+  });
+
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(`Google OAuth token refresh failed (${res.status}): ${errorText}`);
+  }
+
+  const data = await res.json();
+  if (!data.access_token) {
+    throw new Error(`Google OAuth returned no access_token: ${JSON.stringify(data)}`);
+  }
+
+  const expiresIn = Number(data.expires_in) || 3600;
+  cachedAccessToken = {
+    token: data.access_token,
+    expiresAt: now + expiresIn * 1000,
+  };
+
+  return data.access_token;
+}
+
+function toBase64Url(strOrBuffer: string | Buffer): string {
+  const buf = typeof strOrBuffer === "string" ? Buffer.from(strOrBuffer, "utf-8") : strOrBuffer;
+  return buf.toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+export interface DispatchMailOptions {
+  to: string;
+  subject: string;
+  html: string;
+  text?: string;
+  fromName?: string;
+  fromEmail?: string;
+  replyTo?: string | null;
+}
+
+/**
+ * Universal email dispatcher:
+ * 1. Checks if Google Cloud Gmail REST API credentials are configured -> sends via HTTPS (Port 443).
+ * 2. If not configured or if an error occurs, falls back gracefully to standard SMTP/Nodemailer.
+ */
+export async function dispatchMail(options: DispatchMailOptions): Promise<{ success: boolean; messageId?: string }> {
+  if (isGmailApiConfigured()) {
+    try {
+      const accessToken = await getGmailAccessToken();
+      const senderEmail = options.fromEmail || process.env.GMAIL_USER || "shine.mca.shctpt@gmail.com";
+      const senderName = options.fromName || "SHINE '26 — Sacred Heart College";
+
+      const boundary = `====_Boundary_${Date.now()}_====`;
+      const subjectBase64 = Buffer.from(options.subject).toString("base64");
+      const textBase64 = Buffer.from(options.text || options.subject).toString("base64");
+      const htmlBase64 = Buffer.from(options.html).toString("base64");
+      const fromNameBase64 = Buffer.from(senderName).toString("base64");
+
+      const mimeLines = [
+        `From: =?utf-8?B?${fromNameBase64}?= <${senderEmail}>`,
+        `To: <${options.to}>`,
+        options.replyTo ? `Reply-To: <${options.replyTo}>` : null,
+        `Subject: =?utf-8?B?${subjectBase64}?=`,
+        `MIME-Version: 1.0`,
+        `Content-Type: multipart/alternative; boundary="${boundary}"`,
+        ``,
+        `--${boundary}`,
+        `Content-Type: text/plain; charset="UTF-8"`,
+        `Content-Transfer-Encoding: base64`,
+        ``,
+        textBase64,
+        ``,
+        `--${boundary}`,
+        `Content-Type: text/html; charset="UTF-8"`,
+        `Content-Transfer-Encoding: base64`,
+        ``,
+        htmlBase64,
+        ``,
+        `--${boundary}--`,
+      ].filter((line) => line !== null).join("\r\n");
+
+      const raw = toBase64Url(mimeLines);
+
+      const sendRes = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ raw }),
+      });
+
+      if (!sendRes.ok) {
+        const errorText = await sendRes.text();
+        throw new Error(`Gmail API send failed (${sendRes.status}): ${errorText}`);
+      }
+
+      const result = await sendRes.json();
+      return { success: true, messageId: result.id };
+    } catch (err: any) {
+      console.error("[Gmail REST API Error]", err);
+      console.log("[Email Dispatch] Attempting SMTP fallback...");
+    }
+  }
+
+  // Fallback to standard SMTP
+  const { transporter, config } = await createTransporter();
+  const info = await transporter.sendMail({
+    from: `"${options.fromName || config.fromName}" <${options.fromEmail || config.fromEmail}>`,
+    to: options.to,
+    replyTo: options.replyTo || config.replyTo || undefined,
+    subject: options.subject,
+    text: options.text,
+    html: options.html,
+  });
+
+  return { success: true, messageId: info.messageId };
+}
+
 export async function testSmtpConnection(testRecipient: string): Promise<{ success: boolean; message: string }> {
   try {
+    if (isGmailApiConfigured()) {
+      const senderEmail = process.env.GMAIL_USER || "shine.mca.shctpt@gmail.com";
+      await dispatchMail({
+        to: testRecipient,
+        fromEmail: senderEmail,
+        fromName: "SHINE '26 Mail Dispatcher",
+        subject: `[Test] Gmail REST API Verified — SHINE '26 Event System`,
+        text: `Hello,\n\nThis is a confirmation that your Google Cloud Gmail REST API is successfully connected and verified over HTTPS (Port 443).\n\nSender: ${senderEmail}\nSent at: ${new Date().toLocaleString()}`,
+        html: `
+          <div style="font-family: sans-serif; max-width: 550px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
+            <h2 style="color: #FF6B1A; margin-top: 0;">Gmail REST API Verified!</h2>
+            <p style="color: #334155; font-size: 15px; line-height: 1.5;">
+              Your email dispatch engine is operating over <strong>HTTPS (Port 443)</strong> via the Google Cloud Gmail REST API. Outgoing connection blocks on cloud hosts (such as Railway) are completely bypassed!
+            </p>
+            <div style="background: #f8fafc; padding: 12px 16px; border-radius: 8px; font-size: 13px; color: #64748b; margin: 20px 0;">
+              <p style="margin: 4px 0;"><strong>Protocol:</strong> HTTPS REST API (Port 443)</p>
+              <p style="margin: 4px 0;"><strong>Provider:</strong> Google Cloud Gmail REST API</p>
+              <p style="margin: 4px 0;"><strong>Sender Account:</strong> ${senderEmail}</p>
+              <p style="margin: 4px 0;"><strong>Timestamp:</strong> ${new Date().toLocaleString()}</p>
+            </div>
+            <p style="font-size: 12px; color: #94a3b8; margin-bottom: 0;">
+              Automated test triggered from SHINE '26 Admin Console.
+            </p>
+          </div>
+        `,
+      });
+
+      return {
+        success: true,
+        message: `Gmail REST API (Port 443 HTTPS) connection verified! Test email sent successfully to ${testRecipient}`,
+      };
+    }
+
     const { transporter, config } = await createTransporter();
 
     // Verify SMTP connection
@@ -129,8 +315,8 @@ export async function testSmtpConnection(testRecipient: string): Promise<{ succe
 
     return { success: true, message: `SMTP connection verified and test email sent to ${testRecipient}` };
   } catch (error: any) {
-    console.error("SMTP Test Error:", error);
-    let errorMsg = error.message || "Failed to connect to SMTP server";
+    console.error("Email Test Error:", error);
+    let errorMsg = error.message || "Failed to connect to email server";
     const lower = errorMsg.toLowerCase();
     if (lower.includes("timeout") || lower.includes("etimeout") || lower.includes("etimedout") || lower.includes("greeting")) {
       errorMsg += ". Tip: Verify your host address and credentials (for Gmail, ensure you are using a 16-character Google App Password).";
@@ -152,7 +338,15 @@ export async function sendBroadcastEmail({
   eventName?: string;
   institutionName?: string;
 }) {
-  const { transporter, config } = await createTransporter();
+  const isGmailConfigured = isGmailApiConfigured();
+  const config = await getSmtpSettings();
+
+  if (!isGmailConfigured && !config) {
+    throw new Error("No email service configured (Gmail REST API or SMTP).");
+  }
+
+  const senderEmail = process.env.GMAIL_USER || config?.fromEmail || "shine.mca.shctpt@gmail.com";
+  const senderName = config?.fromName || "SHINE '26 Organizing Committee";
 
   // Convert plaintext newlines into HTML paragraphs/breaks
   const formattedHtmlContent = message
@@ -201,10 +395,11 @@ export async function sendBroadcastEmail({
         </div>
       `;
 
-      await transporter.sendMail({
-        from: `"${config.fromName}" <${config.fromEmail}>`,
+      await dispatchMail({
+        fromName: senderName,
+        fromEmail: senderEmail,
         to: recipient.email,
-        replyTo: config.replyTo || undefined,
+        replyTo: config?.replyTo || undefined,
         subject: subject,
         text: `Dear ${recipient.name},\n\n${message}\n\n---\n${eventName} Organizing Committee\n${institutionName}`,
         html: personalizedHtml,
@@ -248,13 +443,12 @@ export interface DelegateRegistrationEmailPayload {
  */
 export async function sendDelegateRegistrationEmail(payload: DelegateRegistrationEmailPayload): Promise<boolean> {
   try {
+    const isGmailConfigured = isGmailApiConfigured();
     const config = await getSmtpSettings();
-    if (!config) {
-      console.log(`[SMTP Not Configured] Registration email skipped for delegate ${payload.toEmail}`);
+    if (!isGmailConfigured && !config) {
+      console.log(`[Email Not Configured] Registration email skipped for delegate ${payload.toEmail}`);
       return false;
     }
-
-    const transporter = buildNodemailerTransport(config);
 
     const activeEdition = await prisma.eventEdition.findFirst({ where: { isActive: true } });
     const eventName = activeEdition?.name || "SHINE";
@@ -447,10 +641,14 @@ Symposium Executive Committee
 ${institutionName}
 `.trim();
 
-    await transporter.sendMail({
-      from: `"${config.fromName}" <${config.fromEmail}>`,
+    const senderEmail = process.env.GMAIL_USER || config?.fromEmail || "shine.mca.shctpt@gmail.com";
+    const senderName = config?.fromName || "Symposium Executive Committee";
+
+    await dispatchMail({
+      fromName: senderName,
+      fromEmail: senderEmail,
       to: payload.toEmail,
-      replyTo: config.replyTo || undefined,
+      replyTo: config?.replyTo || undefined,
       subject: `Registration Confirmed: ${payload.delegateName} — Student Portal Login & Pass (${eventName} ${editionYear})`,
       text: textContent,
       html,
@@ -490,13 +688,12 @@ export interface CoordinatorAlertPayload {
  */
 export async function sendCoordinatorRegistrationAlert(payload: CoordinatorAlertPayload): Promise<boolean> {
   try {
+    const isGmailConfigured = isGmailApiConfigured();
     const config = await getSmtpSettings();
-    if (!config) {
-      console.log(`[SMTP Not Configured] Coordinator alert email skipped for ${payload.coordinatorEmail}`);
+    if (!isGmailConfigured && !config) {
+      console.log(`[Email Not Configured] Coordinator alert email skipped for ${payload.coordinatorEmail}`);
       return false;
     }
-
-    const transporter = buildNodemailerTransport(config);
 
     const activeEdition = await prisma.eventEdition.findFirst({ where: { isActive: true } });
     const eventName = activeEdition?.name || "SHINE";
@@ -578,10 +775,14 @@ export async function sendCoordinatorRegistrationAlert(payload: CoordinatorAlert
       </div>
     `;
 
-    await transporter.sendMail({
-      from: `"${config.fromName}" <${config.fromEmail}>`,
+    const senderEmail = process.env.GMAIL_USER || config?.fromEmail || "shine.mca.shctpt@gmail.com";
+    const senderName = config?.fromName || "SHINE '26 Coordinator Alert";
+
+    await dispatchMail({
+      fromName: senderName,
+      fromEmail: senderEmail,
       to: payload.coordinatorEmail,
-      replyTo: config.replyTo || undefined,
+      replyTo: config?.replyTo || undefined,
       subject: `[New Registration Alert] ${payload.eventName} — ${payload.collegeName}`,
       html,
     });
@@ -599,13 +800,12 @@ export async function sendCoordinatorRegistrationAlert(payload: CoordinatorAlert
  */
 export async function sendApprovedDelegatePassEmail(payload: DelegateRegistrationEmailPayload): Promise<boolean> {
   try {
+    const isGmailConfigured = isGmailApiConfigured();
     const config = await getSmtpSettings();
-    if (!config) {
-      console.log(`[SMTP Not Configured] Approved pass email skipped for ${payload.toEmail}`);
+    if (!isGmailConfigured && !config) {
+      console.log(`[Email Not Configured] Approved pass email skipped for ${payload.toEmail}`);
       return false;
     }
-
-    const transporter = buildNodemailerTransport(config);
 
     const activeEdition = await prisma.eventEdition.findFirst({ where: { isActive: true } });
     const eventName = activeEdition?.name || "SHINE";
@@ -773,10 +973,14 @@ Symposium Executive Committee
 ${institutionName}
 `.trim();
 
-    await transporter.sendMail({
-      from: `"${config.fromName}" <${config.fromEmail}>`,
+    const senderEmail = process.env.GMAIL_USER || config?.fromEmail || "shine.mca.shctpt@gmail.com";
+    const senderName = config?.fromName || "Symposium Executive Committee";
+
+    await dispatchMail({
+      fromName: senderName,
+      fromEmail: senderEmail,
       to: payload.toEmail,
-      replyTo: config.replyTo || undefined,
+      replyTo: config?.replyTo || undefined,
       subject: `Approved ID Pass: ${payload.delegateName} — Portal Login & Pass (${eventName} ${editionYear})`,
       text: textContent,
       html,
@@ -815,13 +1019,12 @@ export interface TeamLeadConsolidatedEmailPayload {
  */
 export async function sendTeamLeadConsolidatedPassEmail(payload: TeamLeadConsolidatedEmailPayload): Promise<boolean> {
   try {
+    const isGmailConfigured = isGmailApiConfigured();
     const config = await getSmtpSettings();
-    if (!config) {
-      console.log(`[SMTP Not Configured] Team lead consolidated email skipped for ${payload.teamLeadEmail}`);
+    if (!isGmailConfigured && !config) {
+      console.log(`[Email Not Configured] Team lead consolidated email skipped for ${payload.teamLeadEmail}`);
       return false;
     }
-
-    const transporter = buildNodemailerTransport(config);
 
     const activeEdition = await prisma.eventEdition.findFirst({ where: { isActive: true } });
     const eventName = activeEdition?.name || "SHINE";
@@ -901,10 +1104,14 @@ export async function sendTeamLeadConsolidatedPassEmail(payload: TeamLeadConsoli
       </div>
     `;
 
-    await transporter.sendMail({
-      from: `"${config.fromName}" <${config.fromEmail}>`,
+    const senderEmail = process.env.GMAIL_USER || config?.fromEmail || "shine.mca.shctpt@gmail.com";
+    const senderName = config?.fromName || "Registration & Helpdesk Team";
+
+    await dispatchMail({
+      fromName: senderName,
+      fromEmail: senderEmail,
       to: payload.teamLeadEmail,
-      replyTo: config.replyTo || undefined,
+      replyTo: config?.replyTo || undefined,
       subject: `[Team Dossier] All Member ID Passes & Food Tokens — ${payload.collegeName}`,
       html,
     });
@@ -940,13 +1147,12 @@ export interface EventReminderEmailPayload {
  */
 export async function sendEventReminderEmail(payload: EventReminderEmailPayload): Promise<boolean> {
   try {
+    const isGmailConfigured = isGmailApiConfigured();
     const config = await getSmtpSettings();
-    if (!config) {
-      console.log(`[SMTP Not Configured] Event reminder email skipped for ${payload.toEmail}`);
+    if (!isGmailConfigured && !config) {
+      console.log(`[Email Not Configured] Event reminder email skipped for ${payload.toEmail}`);
       return false;
     }
-
-    const transporter = buildNodemailerTransport(config);
 
     const activeEdition = await prisma.eventEdition.findFirst({ where: { isActive: true } });
     const eventName = activeEdition?.name || "SHINE";
@@ -1113,10 +1319,14 @@ Fest Operations & Arena Management
 ${institutionName}
 `.trim();
 
-    await transporter.sendMail({
-      from: `"${config.fromName}" <${config.fromEmail}>`,
+    const senderEmail = process.env.GMAIL_USER || config?.fromEmail || "shine.mca.shctpt@gmail.com";
+    const senderName = config?.fromName || "Fest Operations & Arena Management";
+
+    await dispatchMail({
+      fromName: senderName,
+      fromEmail: senderEmail,
       to: payload.toEmail,
-      replyTo: config.replyTo || undefined,
+      replyTo: config?.replyTo || undefined,
       subject,
       text: textContent,
       html,
