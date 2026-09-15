@@ -250,6 +250,8 @@ export async function GET(req: Request) {
         name: activeEdition.name || "SHINE",
         edition: activeEdition.edition || "26",
         venue: activeEdition.venue,
+        logoUrl: activeEdition.logoUrl,
+        institutionCrestUrl: activeEdition.institutionCrestUrl,
       },
     });
   } catch (error) {
@@ -258,62 +260,13 @@ export async function GET(req: Request) {
   }
 }
 
-// PATCH: Allow logged-in student to update their dietary food preference (VEG <-> NON_VEG)
-export async function PATCH(req: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session || !session.user?.email) {
-      return NextResponse.json({ success: false, message: "Unauthorized." }, { status: 401 });
-    }
-
-    const body = await req.json();
-    const preference = String(body.preference || "").toUpperCase().trim();
-    if (preference !== "VEG" && preference !== "NON_VEG") {
-      return NextResponse.json(
-        { success: false, message: "Invalid preference. Must be VEG or NON_VEG." },
-        { status: 400 }
-      );
-    }
-
-    const email = session.user.email.toLowerCase().trim();
-
-    // Find the student's delegation member record
-    const member = await prisma.delegationMember.findFirst({
-      where: {
-        email: { equals: email, mode: "insensitive" },
-      },
-    });
-
-    if (member) {
-      if (member.foodTokenClaimed) {
-        return NextResponse.json(
-          {
-            success: false,
-            message: "Your food token has already been served and redeemed. Dietary preference cannot be changed.",
-          },
-          { status: 400 }
-        );
-      }
-
-      await prisma.delegationMember.update({
-        where: { id: member.id },
-        data: { foodPreference: preference },
-      });
-    }
-
-    // Also update User account record
-    await prisma.user.updateMany({
-      where: { email: { equals: email, mode: "insensitive" } },
-      data: { foodPreference: preference },
-    });
-
-    return NextResponse.json({
-      success: true,
-      foodPreference: preference,
-      message: `Dietary preference successfully changed to ${preference === "VEG" ? "Vegetarian (🥗)" : "Non-Vegetarian (🍗)"}.`,
-    });
-  } catch (error: any) {
-    console.error("Error updating food preference:", error);
-    return NextResponse.json({ success: false, message: "Failed to update dietary preference." }, { status: 500 });
-  }
+// PATCH: Disallow participant from modifying dietary preference after registration
+export async function PATCH() {
+  return NextResponse.json(
+    {
+      success: false,
+      message: "Dietary food preference cannot be modified after registration has been completed.",
+    },
+    { status: 403 }
+  );
 }

@@ -126,6 +126,23 @@ export default function BadgeDetailPage() {
     }
   };
 
+  const handleCloseOrBack = () => {
+    if (typeof window !== "undefined") {
+      try {
+        window.close();
+      } catch {
+        // ignore
+      }
+      setTimeout(() => {
+        if (window.history.length > 1) {
+          router.back();
+        } else {
+          router.push("/dashboard");
+        }
+      }, 100);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#FAF8F5] flex flex-col items-center justify-center p-4">
@@ -192,13 +209,15 @@ export default function BadgeDetailPage() {
 
       {/* Action Bar (Screen Only) */}
       <div className="max-w-2xl mx-auto mb-6 flex items-center justify-between no-print">
-        <Link
-          href="/register"
-          className="inline-flex items-center gap-1.5 text-xs font-bold text-stone-600 hover:text-stone-900 transition-colors"
+        <button
+          type="button"
+          onClick={handleCloseOrBack}
+          className="tap-target inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-stone-300 text-xs font-bold text-stone-700 hover:bg-stone-50 transition-colors shadow-2xs cursor-pointer"
+          title="Go back or close tab"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>New Registration</span>
-        </Link>
+          <span>Back / Close Tab</span>
+        </button>
 
         <div className="flex items-center gap-2">
           <button

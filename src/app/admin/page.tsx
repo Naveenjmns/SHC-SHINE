@@ -1265,6 +1265,12 @@ export default function AdminOverviewPage() {
     );
   }
 
+  const currentLogo = brandingForm.logoUrl || activeEdition?.logoUrl || activeEdition?.institutionCrestUrl;
+  const currentFestName = (brandingForm.name || activeEdition?.name || "SHINE").trim();
+  const currentEdition = (brandingForm.edition || activeEdition?.edition || "26").trim();
+  const currentInitial = (currentFestName?.[0] || "S").toUpperCase();
+  const currentTagline = brandingForm.tagline || activeEdition?.tagline || activeEdition?.institutionName || "Multi-Edition Event Platform";
+
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] overflow-x-hidden w-full">
       {/* Admin Header */}
@@ -1273,20 +1279,30 @@ export default function AdminOverviewPage() {
           <div className="flex items-center justify-between gap-2">
             {/* Left: Branding */}
             <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-[#FF6B1A] to-[#D9A441] flex items-center justify-center text-white font-black text-lg sm:text-xl shadow-md shrink-0">
-                S
-              </div>
+              {currentLogo ? (
+                <img
+                  src={currentLogo}
+                  alt={currentFestName}
+                  className="h-9 sm:h-10 w-auto max-w-[48px] object-contain shrink-0"
+                />
+              ) : (
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-[#FF6B1A] to-[#D9A441] flex items-center justify-center text-white font-black text-lg sm:text-xl shadow-md shrink-0">
+                  {currentInitial}
+                </div>
+              )}
               <div>
                 <div className="flex items-center gap-1.5 sm:gap-2">
                   <h1 className="text-sm sm:text-lg lg:text-xl font-black text-[#0F172A] tracking-tight whitespace-nowrap">
-                    SHINE Admin
+                    {currentFestName} Admin
                   </h1>
-                  <span className="text-[10px] sm:text-xs bg-orange-100 text-orange-800 font-bold px-2 py-0.5 rounded-full border border-orange-200 shrink-0">
-                    {activeEdition?.edition || "2027"}
-                  </span>
+                  {currentEdition && (
+                    <span className="text-[10px] sm:text-xs bg-orange-100 text-orange-800 font-bold px-2 py-0.5 rounded-full border border-orange-200 shrink-0">
+                      {currentEdition}
+                    </span>
+                  )}
                 </div>
-                <p className="text-[10px] text-[#64748B] hidden sm:block">
-                  Multi-Edition Event Platform
+                <p className="text-[10px] text-[#64748B] hidden sm:block truncate max-w-[200px] sm:max-w-[320px]">
+                  {currentTagline}
                 </p>
               </div>
             </div>
@@ -2317,9 +2333,13 @@ export default function AdminOverviewPage() {
                   )}
 
                   <div className="flex items-center gap-3 mb-3">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FF6B1A] to-[#D9A441] flex items-center justify-center text-white font-black text-lg">
-                      {ed.name.charAt(0)}
-                    </div>
+                    {ed.logoUrl ? (
+                      <img src={ed.logoUrl} alt={ed.name} className="h-10 w-auto max-w-[48px] object-contain shrink-0" />
+                    ) : (
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FF6B1A] to-[#D9A441] flex items-center justify-center text-white font-black text-lg shrink-0">
+                        {(ed.name?.charAt(0) || "S").toUpperCase()}
+                      </div>
+                    )}
                     <div>
                       <h4 className="text-lg font-bold text-[#0F172A]">
                         {ed.name} {ed.edition}

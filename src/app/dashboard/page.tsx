@@ -106,6 +106,8 @@ export default function StudentDashboard() {
     name?: string;
     edition?: string;
     venue?: string | null;
+    logoUrl?: string | null;
+    institutionCrestUrl?: string | null;
   } | null>(null);
   const [pass, setPass] = useState<PassData | null>(null);
   const [delegation, setDelegation] = useState<DelegationData | null>(null);
@@ -118,33 +120,6 @@ export default function StudentDashboard() {
     badgeType: "EVENT" | "FOOD";
     statusText?: string;
   } | null>(null);
-  const [updatingFoodPref, setUpdatingFoodPref] = useState(false);
-
-  const handleToggleFoodPreference = async () => {
-    if (!pass || pass.foodTokenClaimed || updatingFoodPref) return;
-    const currentPref = (pass.foodPreference || "VEG").toUpperCase();
-    const nextPref = currentPref === "VEG" ? "NON_VEG" : "VEG";
-
-    setUpdatingFoodPref(true);
-    try {
-      const res = await fetch("/api/student/registrations", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ preference: nextPref }),
-      });
-      const data = await safeJson(res, { success: false });
-      if (data.success) {
-        setPass((prev) => (prev ? { ...prev, foodPreference: nextPref as "VEG" | "NON_VEG" } : null));
-        toast.success(`Dietary preference updated to ${nextPref === "VEG" ? "Vegetarian" : "Non-Vegetarian"}`);
-      } else {
-        toast.error(data.message || "Failed to update dietary preference.");
-      }
-    } catch {
-      toast.error("Network error while updating dietary preference.");
-    } finally {
-      setUpdatingFoodPref(false);
-    }
-  };
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -208,6 +183,10 @@ export default function StudentDashboard() {
     : "September 17, 2026";
 
   const individualFee = editionInfo?.participantFee ?? 200;
+  const festName = editionInfo?.name || "SHINE";
+  const festEdition = editionInfo?.edition || "26";
+  const festInitial = (festName?.trim()?.[0] || "S").toUpperCase();
+  const studentLogo = editionInfo?.logoUrl || editionInfo?.institutionCrestUrl;
 
   return (
     <main className="dash-layout flex flex-col min-h-screen">
@@ -216,11 +195,19 @@ export default function StudentDashboard() {
         <div className="container-shine py-3.5 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link href="/" className="flex items-center gap-2 group">
-              <div className="w-8 h-8 rounded-lg bg-orange-600 flex items-center justify-center text-white font-black text-base shadow-sm">
-                S
-              </div>
+              {studentLogo ? (
+                <img
+                  src={studentLogo}
+                  alt={festName}
+                  className="h-8 w-auto max-w-[40px] object-contain shrink-0 group-hover:scale-105 transition-transform"
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-lg bg-orange-600 flex items-center justify-center text-white font-black text-base shadow-sm shrink-0 group-hover:scale-105 transition-transform">
+                  {festInitial}
+                </div>
+              )}
               <span className="font-extrabold text-slate-900 tracking-tight text-base">
-                SHINE <span className="text-orange-600">26</span>
+                {festName} <span className="text-orange-600">{festEdition}</span>
               </span>
             </Link>
             <span className="text-slate-300">/</span>
@@ -504,26 +491,16 @@ export default function StudentDashboard() {
                           <span>Lunch & Food Token</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            disabled={pass.foodTokenClaimed || updatingFoodPref}
-                            onClick={handleToggleFoodPreference}
-                            title={pass.foodTokenClaimed ? "Meal already redeemed" : "Click to switch dietary preference"}
-                            className={`text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1 transition-all ${
-                              pass.foodTokenClaimed ? "cursor-default opacity-80" : "cursor-pointer hover:scale-105 active:scale-95"
-                            } ${
+                          <span
+                            title="Dietary preference registered with delegation"
+                            className={`text-[10px] font-bold px-2.5 py-1 rounded-full shadow-2xs ${
                               (pass.foodPreference || "VEG") === "VEG"
-                                ? "bg-emerald-600 text-white shadow-2xs hover:bg-emerald-700"
-                                : "bg-amber-600 text-white shadow-2xs hover:bg-amber-700"
+                                ? "bg-emerald-600 text-white"
+                                : "bg-amber-600 text-white"
                             }`}
                           >
-                            <span>{(pass.foodPreference || "VEG") === "VEG" ? "🥗 Pure Veg" : "🍗 Non-Veg"}</span>
-                            {!pass.foodTokenClaimed && (
-                              <span className="text-[9px] opacity-80 font-medium ml-0.5 underline">
-                                {updatingFoodPref ? "Saving..." : "Switch"}
-                              </span>
-                            )}
-                          </button>
+                            {(pass.foodPreference || "VEG") === "VEG" ? "🥗 Pure Veg" : "🍗 Non-Veg"}
+                          </span>
                           <span className="font-mono font-black text-stone-900 bg-white px-2.5 py-0.5 rounded border border-amber-300 shadow-2xs">
                             {pass.foodTokenCode}
                           </span>
@@ -700,7 +677,7 @@ export default function StudentDashboard() {
                 No Event Registrations Found
               </h3>
               <p className="text-xs text-slate-500 mb-6">
-                You have not registered for any SHINE 26 competitions yet. Browse the lineup and enroll today!
+                You have not registered for any {festName} {festEdition} competitions yet. Browse the lineup and enroll today!
               </p>
               <Link
                 href="/register"

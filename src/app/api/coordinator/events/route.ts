@@ -48,7 +48,18 @@ export async function GET() {
       },
     });
 
-    return NextResponse.json({ success: true, events });
+    const activeEdition = await prisma.eventEdition.findFirst({
+      where: { isActive: true },
+      select: {
+        id: true,
+        name: true,
+        edition: true,
+        logoUrl: true,
+        institutionCrestUrl: true,
+      },
+    });
+
+    return NextResponse.json({ success: true, events, edition: activeEdition });
   } catch (error) {
     console.error("Error fetching coordinator events:", error);
     return NextResponse.json({ success: false, message: "Failed to fetch events." }, { status: 500 });

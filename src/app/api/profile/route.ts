@@ -248,7 +248,10 @@ export async function PATCH(req: Request) {
       updateData.college = typeof college === "string" ? college.trim() : null;
     }
     if (foodPreference && ["VEG", "NON_VEG"].includes(foodPreference)) {
-      updateData.foodPreference = foodPreference;
+      // Participants (STUDENT) cannot modify food preference after registration
+      if (existingUser.role !== "STUDENT") {
+        updateData.foodPreference = foodPreference;
+      }
     }
     if (avatarUrl !== undefined) {
       updateData.avatarUrl = typeof avatarUrl === "string" ? avatarUrl.trim() : null;
@@ -307,14 +310,13 @@ export async function PATCH(req: Request) {
       },
     });
 
-    // If student updated food preference or phone, sync to delegationMember as well
-    if (existingUser.role === "STUDENT" && (updateData.foodPreference || updateData.phone || updateData.name)) {
+    // If student updated phone or name, sync to delegationMember as well
+    if (existingUser.role === "STUDENT" && (updateData.phone || updateData.name)) {
       await prisma.delegationMember.updateMany({
         where: { email: existingUser.email.toLowerCase().trim() },
         data: {
           ...(updateData.name ? { name: updateData.name as string } : {}),
           ...(updateData.phone ? { phone: updateData.phone as string } : {}),
-          ...(updateData.foodPreference ? { foodPreference: updateData.foodPreference as string } : {}),
         },
       }).catch((e) => console.error("Error syncing delegation member info:", e));
     }

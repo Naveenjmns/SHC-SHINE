@@ -155,7 +155,6 @@ export default function ProfilePage() {
           name,
           phone,
           college,
-          foodPreference: profile?.role === "STUDENT" ? foodPreference : undefined,
         }),
       });
 
@@ -624,30 +623,21 @@ export default function ProfilePage() {
                   <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">
                     Symposium Food Preference
                   </label>
-                  <div className="flex items-center gap-4">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="foodPref"
-                        value="VEG"
-                        checked={foodPreference === "VEG"}
-                        onChange={() => setFoodPreference("VEG")}
-                        className="w-4 h-4 text-emerald-600 focus:ring-emerald-500"
-                      />
-                      <span className="text-sm font-semibold text-slate-700">Vegetarian Meal</span>
-                    </label>
-
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="foodPref"
-                        value="NON_VEG"
-                        checked={foodPreference === "NON_VEG"}
-                        onChange={() => setFoodPreference("NON_VEG")}
-                        className="w-4 h-4 text-orange-600 focus:ring-orange-500"
-                      />
-                      <span className="text-sm font-semibold text-slate-700">Non-Vegetarian Meal</span>
-                    </label>
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200/80">
+                    <div
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 ${
+                        (foodPreference || "VEG") === "VEG"
+                          ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                          : "bg-amber-100 text-amber-800 border border-amber-300"
+                      }`}
+                    >
+                      <span>
+                        {(foodPreference || "VEG") === "VEG" ? "🥗 Pure Vegetarian Meal" : "🍗 Non-Vegetarian Meal"}
+                      </span>
+                    </div>
+                    <span className="text-xs text-slate-500">
+                      (Registered preference)
+                    </span>
                   </div>
                 </div>
               )}

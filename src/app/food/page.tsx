@@ -94,10 +94,14 @@ interface ScanPopup {
 }
 
 interface FoodEditionInfo {
+  name?: string | null;
+  edition?: string | null;
   diningHallVenue?: string | null;
   diningFacilityInfo?: string | null;
   institutionName?: string | null;
   mealOptions?: "BOTH" | "VEG_ONLY" | string;
+  logoUrl?: string | null;
+  institutionCrestUrl?: string | null;
 }
 
 export default function FoodCoordinatorPage() {
@@ -819,6 +823,11 @@ export default function FoodCoordinatorPage() {
     }
   };
 
+  const foodLogo = edition?.logoUrl || edition?.institutionCrestUrl;
+  const festName = (edition?.name || "SHINE").trim();
+  const festEdition = (edition?.edition || "26").trim();
+  const festInitial = (festName?.[0] || "S").toUpperCase();
+
   return (
     <main className="dash-layout flex flex-col min-h-screen">
       {/* Calm Light Navigation — Synced with Coordinator / App UI */}
@@ -826,11 +835,19 @@ export default function FoodCoordinatorPage() {
         <div className="container-shine py-3 sm:py-3.5 flex items-center justify-between">
           <div className="flex items-center gap-2 sm:gap-3">
             <Link href="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-orange-600 flex items-center justify-center text-white font-black text-base shadow-sm">
-                S
-              </div>
+              {foodLogo ? (
+                <img
+                  src={foodLogo}
+                  alt={festName}
+                  className="h-8 w-auto max-w-[40px] object-contain shrink-0"
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-lg bg-orange-600 flex items-center justify-center text-white font-black text-base shadow-sm shrink-0">
+                  {festInitial}
+                </div>
+              )}
               <span className="font-extrabold text-slate-900 tracking-tight text-base sm:text-lg">
-                SHINE <span className="text-orange-600">26</span>
+                {festName} <span className="text-orange-600">{festEdition}</span>
               </span>
             </Link>
             <span className="text-slate-300">/</span>

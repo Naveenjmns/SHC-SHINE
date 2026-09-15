@@ -95,6 +95,8 @@ export async function GET(req: NextRequest) {
         diningHallVenue: true,
         diningFacilityInfo: true,
         mealOptions: true,
+        logoUrl: true,
+        institutionCrestUrl: true,
       },
     });
 
