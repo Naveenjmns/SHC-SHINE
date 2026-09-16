@@ -24,9 +24,11 @@ import {
   Mail,
   Target,
   Trophy,
+  Download,
 } from "lucide-react";
 import { useToast } from "@/components/ToastProvider";
 import { safeJson } from "@/lib/safeFetch";
+import { downloadEventParticipantsCSV } from "@/lib/exportEventCsv";
 
 interface CoordinatorUser {
   id: string;
@@ -95,6 +97,7 @@ export default function AdminEventsPage() {
   const [staffCoordinators, setStaffCoordinators] = useState<CoordinatorUser[]>([]);
   const [studentCoordinators, setStudentCoordinators] = useState<CoordinatorUser[]>([]);
   const [loading, setLoading] = useState(true);
+  const [downloadingEventId, setDownloadingEventId] = useState<string | null>(null);
 
   // Modal / Form state
   const [showModal, setShowModal] = useState(false);
@@ -664,6 +667,44 @@ export default function AdminEventsPage() {
 
                       <td className="p-4 text-right">
                         <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={async () => {
+                              setDownloadingEventId(ev.id);
+                              try {
+                                const res = await downloadEventParticipantsCSV({
+                                  eventId: ev.id,
+                                  eventName: ev.name,
+                                  eventData: {
+                                    id: ev.id,
+                                    name: ev.name,
+                                    category: ev.category,
+                                    venue: ev.venue,
+                                    dateTime: ev.dateTime,
+                                  },
+                                });
+                                toast.success(
+                                  res.count > 0
+                                    ? `Downloaded ${res.filename} (${res.count} participants)`
+                                    : `Downloaded empty roster template for ${ev.name}`
+                                );
+                              } catch (err: any) {
+                                console.error("Export error:", err);
+                                toast.error(err.message || "Failed to download participants CSV.");
+                              } finally {
+                                setDownloadingEventId(null);
+                              }
+                            }}
+                            disabled={downloadingEventId === ev.id}
+                            title={`Download ${ev.name} participants CSV roster`}
+                            className="tap-target inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-orange-600 hover:text-orange-700 hover:bg-orange-50 rounded-lg transition cursor-pointer disabled:opacity-50"
+                          >
+                            {downloadingEventId === ev.id ? (
+                              <span className="w-3.5 h-3.5 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                              <Download className="w-3.5 h-3.5" />
+                            )}
+                            <span>CSV</span>
+                          </button>
                           <button
                             onClick={() => openEditModal(ev)}
                             className="tap-target px-2.5 py-1 text-xs font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition"

@@ -242,23 +242,8 @@ function RegisterForm() {
       if (isChecked) {
         // Unselect event
         newEventIds = member.eventIds.filter((id) => id !== eventId);
-        const wasNominated = (member.prelimsEventIds || []).includes(eventId);
         const newPrelimsIds = (member.prelimsEventIds || []).filter((id) => id !== eventId);
         copy[memberIndex] = { ...member, eventIds: newEventIds, prelimsEventIds: newPrelimsIds };
-
-        // If this student was nominated for prelims and another student in the delegation is still registered for it,
-        // automatically transfer the prelims nomination to that remaining registered student
-        if (wasNominated) {
-          const remainingIdx = copy.findIndex(
-            (m, i) => i !== memberIndex && m.eventIds.includes(eventId)
-          );
-          if (remainingIdx !== -1) {
-            copy[remainingIdx] = {
-              ...copy[remainingIdx],
-              prelimsEventIds: [...(copy[remainingIdx].prelimsEventIds || []), eventId],
-            };
-          }
-        }
         return copy;
       } else {
         // Check capacity limit for this event in current college delegation
@@ -277,14 +262,10 @@ function RegisterForm() {
         });
         newEventIds = [...otherCategoryEvents, eventId];
 
-        // If this event has prelims and NO OTHER student in the delegation is nominated for it yet,
-        // automatically assign this student to attend prelims
-        const otherNomineeExists = prev.some(
-          (m, i) => i !== memberIndex && (m.prelimsEventIds || []).includes(eventId)
+        // Keep any existing prelims nominations for still-selected events (do NOT auto-check new event by default)
+        const newPrelimsIds = (member.prelimsEventIds || []).filter((id) =>
+          newEventIds.includes(id)
         );
-        const newPrelimsIds = targetEvent.hasPrelims && !otherNomineeExists
-          ? [...(member.prelimsEventIds || []), eventId]
-          : (member.prelimsEventIds || []);
 
         copy[memberIndex] = { ...member, eventIds: newEventIds, prelimsEventIds: newPrelimsIds };
         return copy;
@@ -317,6 +298,24 @@ function RegisterForm() {
         }
       });
     });
+  };
+
+  const handleRegisterAnotherTeam = () => {
+    setSuccessData(null);
+    setCurrentStep(1);
+    setCollegeName("");
+    setDepartment("");
+    setTeamName("");
+    setTeamLeadName("");
+    setTeamLeadEmail("");
+    setTeamLeadPhone("");
+    setPassword("");
+    setHasFacultyIncharge(false);
+    setFacultyName("");
+    setFacultyEmail("");
+    setFacultyPhone("");
+    setMembers([{ name: "", email: "", phone: "", eventIds: [], prelimsEventIds: [], foodPreference: "VEG" }]);
+    setErrorMessage("");
   };
 
   // Validation
@@ -401,29 +400,6 @@ function RegisterForm() {
       const offStageCount = m.eventIds.filter((id) => events.find((e) => e.id === id)?.category === "OFF_STAGE").length;
       if (onStageCount > 1 || offStageCount > 1) {
         setErrorMessage(`Participant #${i + 1} (${m.name || "Student"}) can select at most 1 On-Stage and 1 Off-Stage competition.`);
-        return false;
-      }
-    }
-
-    // Enforce Prelims assignment: For EVERY event with Prelims selected by any student,
-    // a student delegate MUST be nominated/assigned to attend the screening round before advancing.
-    const prelimsEventsInDelegation = new Set<string>();
-    for (const m of members) {
-      for (const evId of m.eventIds) {
-        const ev = events.find((e) => e.id === evId);
-        if (ev?.hasPrelims) {
-          prelimsEventsInDelegation.add(evId);
-        }
-      }
-    }
-
-    for (const pEvId of prelimsEventsInDelegation) {
-      const assigned = members.some((m) => (m.prelimsEventIds || []).includes(pEvId));
-      if (!assigned) {
-        const evName = events.find((e) => e.id === pEvId)?.name || "Competition";
-        setErrorMessage(
-          `"${evName}" has a Prelims round. Please assign which student delegate will attend the prelims before proceeding.`
-        );
         return false;
       }
     }
@@ -624,12 +600,8 @@ function RegisterForm() {
             </Link>
             <button
               type="button"
-              onClick={() => {
-                setSuccessData(null);
-                setCurrentStep(1);
-                setMembers([{ name: "", email: "", phone: "", eventIds: [] }]);
-              }}
-              className="tap-target px-6 py-3 text-xs font-semibold rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 transition-colors"
+              onClick={handleRegisterAnotherTeam}
+              className="tap-target px-6 py-3 text-xs font-semibold rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 transition-colors cursor-pointer"
             >
               Register Another College Team
             </button>
@@ -1400,8 +1372,8 @@ function RegisterForm() {
                                                 Assigned to {otherNominee.name || "another student"} (Click to reassign)
                                               </button>
                                             ) : (
-                                              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-rose-100 text-rose-800 border border-rose-200 animate-pulse">
-                                                ⚠️ Prelims attendee required
+                                              <span className="text-[9px] font-medium px-1.5 py-0.5 rounded bg-stone-100 text-stone-600 border border-stone-200">
+                                                Unchecked (Optional)
                                               </span>
                                             )}
                                           </div>
@@ -1529,8 +1501,8 @@ function RegisterForm() {
                                                 Assigned to {otherNominee.name || "another student"} (Click to reassign)
                                               </button>
                                             ) : (
-                                              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-rose-100 text-rose-800 border border-rose-200 animate-pulse">
-                                                ⚠️ Prelims attendee required
+                                              <span className="text-[9px] font-medium px-1.5 py-0.5 rounded bg-stone-100 text-stone-600 border border-stone-200">
+                                                Unchecked (Optional)
                                               </span>
                                             )}
                                           </div>

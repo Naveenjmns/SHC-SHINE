@@ -328,6 +328,15 @@ model SmtpSetting {
   fromEmail String   @default("")
   fromName  String   @default("")
   replyTo   String?
+
+  // Email Notification Trigger Controls
+  emailServiceEnabled       Boolean  @default(true) // Master killswitch for all outgoing emails
+  sendOnRegistration        Boolean  @default(false) // Send confirmation upon initial form submission (default false to save email quota)
+  sendOnCoordinatorAlert    Boolean  @default(true)  // Send alert to host coordinators when outer college registers
+  sendOnApproval            Boolean  @default(true)  // Send pass & food token email when registration is approved at desk
+  sendOnTeamLeadApproval    Boolean  @default(true)  // Send consolidated team pass dossier to team lead upon approval
+  sendOnEventReminder       Boolean  @default(true)  // Send 10-minute competition reminder to delegates
+
   updatedAt DateTime @updatedAt
 
   @@map("smtp_settings")

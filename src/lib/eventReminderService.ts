@@ -1,5 +1,5 @@
 import prisma from "@/lib/prisma";
-import { sendEventReminderEmail } from "@/lib/emailService";
+import { sendEventReminderEmail, getEmailNotificationSettings } from "@/lib/emailService";
 import { formatTimeSafe, formatDateSafe } from "@/lib/dateUtils";
 import { logActivity } from "@/lib/activityLogger";
 
@@ -29,6 +29,22 @@ export async function checkAndDispatchEventReminders(options?: {
   origin?: string;
 }): Promise<ReminderCheckResult> {
   const now = new Date();
+
+  // Check email policy triggers before executing scan
+  if (!options?.forceEventId && !options?.forceAll) {
+    const emailSettings = await getEmailNotificationSettings();
+    if (!emailSettings.emailServiceEnabled || !emailSettings.sendOnEventReminder) {
+      return {
+        success: true,
+        timestamp: now.toISOString(),
+        eventsScanned: 0,
+        remindersSent: 0,
+        errors: 0,
+        details: [],
+      };
+    }
+  }
+
   // Window: Events starting between now and the next 15 minutes (targeting the ~10 min mark)
   const windowStart = new Date(now.getTime() - 2 * 60 * 1000); // 2 mins past leeway
   const windowEnd = new Date(now.getTime() + 15 * 60 * 1000); // 15 mins ahead

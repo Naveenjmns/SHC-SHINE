@@ -53,6 +53,45 @@ export async function getSmtpSettings(): Promise<SmtpConfig | null> {
   }
 }
 
+export interface EmailNotificationSettings {
+  emailServiceEnabled: boolean;
+  sendOnRegistration: boolean;
+  sendOnCoordinatorAlert: boolean;
+  sendOnApproval: boolean;
+  sendOnTeamLeadApproval: boolean;
+  sendOnEventReminder: boolean;
+}
+
+export async function getEmailNotificationSettings(): Promise<EmailNotificationSettings> {
+  try {
+    const setting = await prisma.smtpSetting.findUnique({
+      where: { id: "default" },
+    }) as any;
+
+    if (setting) {
+      return {
+        emailServiceEnabled: setting.emailServiceEnabled !== false, // default true
+        sendOnRegistration: setting.sendOnRegistration === true,     // default false (saves quota!)
+        sendOnCoordinatorAlert: setting.sendOnCoordinatorAlert !== false, // default true
+        sendOnApproval: setting.sendOnApproval !== false, // default true
+        sendOnTeamLeadApproval: setting.sendOnTeamLeadApproval !== false, // default true
+        sendOnEventReminder: setting.sendOnEventReminder !== false, // default true
+      };
+    }
+  } catch (error) {
+    console.error("Error retrieving email notification settings:", error);
+  }
+
+  return {
+    emailServiceEnabled: true,
+    sendOnRegistration: false,
+    sendOnCoordinatorAlert: true,
+    sendOnApproval: true,
+    sendOnTeamLeadApproval: true,
+    sendOnEventReminder: true,
+  };
+}
+
 /**
  * Build a robust nodemailer transporter configured for cloud environments (Railway, Docker, etc.)
  * - Standardized to Port 465 (Direct SSL/TLS)
@@ -167,6 +206,7 @@ export interface DispatchMailOptions {
   fromName?: string;
   fromEmail?: string;
   replyTo?: string | null;
+  isSystemTest?: boolean;
 }
 
 /**
@@ -175,6 +215,14 @@ export interface DispatchMailOptions {
  * 2. If not configured or if an error occurs, falls back gracefully to standard SMTP/Nodemailer.
  */
 export async function dispatchMail(options: DispatchMailOptions): Promise<{ success: boolean; messageId?: string }> {
+  if (!options.isSystemTest) {
+    const triggerSettings = await getEmailNotificationSettings();
+    if (!triggerSettings.emailServiceEnabled) {
+      console.log(`[Email Dispatch Paused] Skipped outgoing mail to ${options.to} ("${options.subject}") — Master Email Switch is disabled.`);
+      return { success: false, messageId: "email-disabled-by-admin" };
+    }
+  }
+
   if (isGmailApiConfigured()) {
     try {
       const accessToken = await getGmailAccessToken();
@@ -257,6 +305,7 @@ export async function testSmtpConnection(testRecipient: string): Promise<{ succe
         fromEmail: senderEmail,
         fromName: "SHINE '26 Mail Dispatcher",
         subject: `[Test] Gmail REST API Verified — SHINE '26 Event System`,
+        isSystemTest: true,
         text: `Hello,\n\nThis is a confirmation that your Google Cloud Gmail REST API is successfully connected and verified over HTTPS (Port 443).\n\nSender: ${senderEmail}\nSent at: ${new Date().toLocaleString()}`,
         html: `
           <div style="font-family: sans-serif; max-width: 550px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
@@ -443,6 +492,12 @@ export interface DelegateRegistrationEmailPayload {
  */
 export async function sendDelegateRegistrationEmail(payload: DelegateRegistrationEmailPayload): Promise<boolean> {
   try {
+    const triggerSettings = await getEmailNotificationSettings();
+    if (!triggerSettings.emailServiceEnabled || !triggerSettings.sendOnRegistration) {
+      console.log(`[Email Policy] Initial registration email skipped for ${payload.toEmail} — sendOnRegistration trigger is disabled.`);
+      return false;
+    }
+
     const isGmailConfigured = isGmailApiConfigured();
     const config = await getSmtpSettings();
     if (!isGmailConfigured && !config) {
@@ -688,6 +743,12 @@ export interface CoordinatorAlertPayload {
  */
 export async function sendCoordinatorRegistrationAlert(payload: CoordinatorAlertPayload): Promise<boolean> {
   try {
+    const triggerSettings = await getEmailNotificationSettings();
+    if (!triggerSettings.emailServiceEnabled || !triggerSettings.sendOnCoordinatorAlert) {
+      console.log(`[Email Policy] Coordinator alert email skipped for ${payload.coordinatorEmail} — sendOnCoordinatorAlert trigger is disabled.`);
+      return false;
+    }
+
     const isGmailConfigured = isGmailApiConfigured();
     const config = await getSmtpSettings();
     if (!isGmailConfigured && !config) {
@@ -800,6 +861,12 @@ export async function sendCoordinatorRegistrationAlert(payload: CoordinatorAlert
  */
 export async function sendApprovedDelegatePassEmail(payload: DelegateRegistrationEmailPayload): Promise<boolean> {
   try {
+    const triggerSettings = await getEmailNotificationSettings();
+    if (!triggerSettings.emailServiceEnabled || !triggerSettings.sendOnApproval) {
+      console.log(`[Email Policy] Approved delegate pass email skipped for ${payload.toEmail} — sendOnApproval trigger is disabled.`);
+      return false;
+    }
+
     const isGmailConfigured = isGmailApiConfigured();
     const config = await getSmtpSettings();
     if (!isGmailConfigured && !config) {
@@ -1019,6 +1086,12 @@ export interface TeamLeadConsolidatedEmailPayload {
  */
 export async function sendTeamLeadConsolidatedPassEmail(payload: TeamLeadConsolidatedEmailPayload): Promise<boolean> {
   try {
+    const triggerSettings = await getEmailNotificationSettings();
+    if (!triggerSettings.emailServiceEnabled || !triggerSettings.sendOnTeamLeadApproval) {
+      console.log(`[Email Policy] Team lead consolidated dossier skipped for ${payload.teamLeadEmail} — sendOnTeamLeadApproval trigger is disabled.`);
+      return false;
+    }
+
     const isGmailConfigured = isGmailApiConfigured();
     const config = await getSmtpSettings();
     if (!isGmailConfigured && !config) {
@@ -1147,6 +1220,12 @@ export interface EventReminderEmailPayload {
  */
 export async function sendEventReminderEmail(payload: EventReminderEmailPayload): Promise<boolean> {
   try {
+    const triggerSettings = await getEmailNotificationSettings();
+    if (!triggerSettings.emailServiceEnabled || !triggerSettings.sendOnEventReminder) {
+      console.log(`[Email Policy] Event reminder skipped for ${payload.toEmail} — sendOnEventReminder trigger is disabled.`);
+      return false;
+    }
+
     const isGmailConfigured = isGmailApiConfigured();
     const config = await getSmtpSettings();
     if (!isGmailConfigured && !config) {

@@ -37,6 +37,7 @@ import {
 } from "lucide-react";
 import { safeJson } from "@/lib/safeFetch";
 import { parseDateSafe } from "@/lib/dateUtils";
+import { downloadEventParticipantsCSV } from "@/lib/exportEventCsv";
 
 interface ReportData {
   summary: {
@@ -245,6 +246,7 @@ export default function AdminReportsPage() {
   const [activeSection, setActiveSection] = useState<
     "all" | "summary" | "catering" | "events" | "delegations" | "roster" | "prelims" | "results" | "championship"
   >("all");
+  const [downloadingEventId, setDownloadingEventId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedEventFilter, setSelectedEventFilter] = useState("ALL");
   const [printOrientation, setPrintOrientation] = useState<"portrait" | "landscape">("portrait");
@@ -297,6 +299,31 @@ export default function AdminReportsPage() {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+  };
+
+  // Handler to download an individual event's participant CSV roster
+  const handleDownloadEventCSV = async (eventId: string, eventName?: string) => {
+    setDownloadingEventId(eventId);
+    try {
+      const ev = data?.events?.find((e: any) => e.id === eventId);
+      await downloadEventParticipantsCSV({
+        eventId,
+        eventName: ev?.name || eventName,
+        eventData: ev
+          ? {
+              id: ev.id,
+              name: ev.name,
+              category: ev.category,
+              venue: ev.venue,
+              dateTime: ev.dateTime,
+            }
+          : undefined,
+      });
+    } catch (err: any) {
+      console.error("Export event participants CSV error:", err);
+    } finally {
+      setDownloadingEventId(null);
+    }
   };
 
   // 1. Export Master Student Roster CSV
@@ -1079,6 +1106,7 @@ export default function AdminReportsPage() {
                     <th className="p-2 border border-slate-200 print:w-[18%]">Student Coordinator</th>
                     <th className="p-2 border border-slate-200 print:w-[7%] text-center">Prelims</th>
                     <th className="p-2 border border-slate-200 print:w-[7%] text-center">Enrolled</th>
+                    <th className="p-2 border border-slate-200 print:hidden no-print text-center w-20">CSV</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
@@ -1133,6 +1161,21 @@ export default function AdminReportsPage() {
                       </td>
                       <td className="p-2 border border-slate-200 text-center font-extrabold tabular-nums print:text-[7pt]">
                         {ev.registrationsCount}
+                      </td>
+                      <td className="p-2 border border-slate-200 print:hidden no-print text-center">
+                        <button
+                          onClick={() => handleDownloadEventCSV(ev.id, ev.name)}
+                          disabled={downloadingEventId === ev.id}
+                          className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-bold text-orange-600 hover:text-white hover:bg-orange-600 rounded-lg border border-orange-200 transition cursor-pointer disabled:opacity-50"
+                          title={`Download ${ev.name} participant CSV roster`}
+                        >
+                          {downloadingEventId === ev.id ? (
+                            <span className="w-3 h-3 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <Download className="w-3 h-3" />
+                          )}
+                          <span>CSV</span>
+                        </button>
                       </td>
                     </tr>
                   ))}

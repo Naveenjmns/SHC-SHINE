@@ -23,11 +23,21 @@ export async function GET() {
       where: { id: "default" },
     });
 
+    const defaultTriggers = {
+      emailServiceEnabled: true,
+      sendOnRegistration: false,
+      sendOnCoordinatorAlert: true,
+      sendOnApproval: true,
+      sendOnTeamLeadApproval: true,
+      sendOnEventReminder: true,
+    };
+
     if (!setting) {
       return NextResponse.json({
         success: true,
         isGmailApiConfigured: gmailConfigured,
         gmailUser,
+        emailTriggers: defaultTriggers,
         smtp: {
           host: process.env.SMTP_HOST || (gmailConfigured ? "gmail.googleapis.com (REST API)" : ""),
           port: 465,
@@ -41,10 +51,19 @@ export async function GET() {
       });
     }
 
+    const s = setting as any;
     return NextResponse.json({
       success: true,
       isGmailApiConfigured: gmailConfigured,
       gmailUser,
+      emailTriggers: {
+        emailServiceEnabled: s.emailServiceEnabled !== false,
+        sendOnRegistration: s.sendOnRegistration === true,
+        sendOnCoordinatorAlert: s.sendOnCoordinatorAlert !== false,
+        sendOnApproval: s.sendOnApproval !== false,
+        sendOnTeamLeadApproval: s.sendOnTeamLeadApproval !== false,
+        sendOnEventReminder: s.sendOnEventReminder !== false,
+      },
       smtp: {
         host: setting.host,
         port: 465,
@@ -71,7 +90,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { host, user, password, fromEmail, fromName, replyTo } = body;
+    const { host, user, password, fromEmail, fromName, replyTo, emailTriggers } = body;
 
     const existing = await prisma.smtpSetting.findUnique({
       where: { id: "default" },
@@ -86,6 +105,15 @@ export async function POST(req: NextRequest) {
       fromName: fromName || "Event Coordination Team",
       replyTo: replyTo || null,
     };
+
+    if (emailTriggers) {
+      if (typeof emailTriggers.emailServiceEnabled === "boolean") dataToSave.emailServiceEnabled = emailTriggers.emailServiceEnabled;
+      if (typeof emailTriggers.sendOnRegistration === "boolean") dataToSave.sendOnRegistration = emailTriggers.sendOnRegistration;
+      if (typeof emailTriggers.sendOnCoordinatorAlert === "boolean") dataToSave.sendOnCoordinatorAlert = emailTriggers.sendOnCoordinatorAlert;
+      if (typeof emailTriggers.sendOnApproval === "boolean") dataToSave.sendOnApproval = emailTriggers.sendOnApproval;
+      if (typeof emailTriggers.sendOnTeamLeadApproval === "boolean") dataToSave.sendOnTeamLeadApproval = emailTriggers.sendOnTeamLeadApproval;
+      if (typeof emailTriggers.sendOnEventReminder === "boolean") dataToSave.sendOnEventReminder = emailTriggers.sendOnEventReminder;
+    }
 
     // If password provided and not masked placeholder
     if (password && password !== "••••••••" && password !== "******") {
@@ -103,7 +131,7 @@ export async function POST(req: NextRequest) {
         ...dataToSave,
         password: dataToSave.password || "",
       },
-    });
+    }) as any;
 
     await logActivity({
       action: "SMTP_SETTINGS_UPDATED",
@@ -120,12 +148,28 @@ export async function POST(req: NextRequest) {
         secure: updated.secure,
         fromEmail: updated.fromEmail,
         fromName: updated.fromName,
+        emailTriggers: {
+          emailServiceEnabled: updated.emailServiceEnabled,
+          sendOnRegistration: updated.sendOnRegistration,
+          sendOnCoordinatorAlert: updated.sendOnCoordinatorAlert,
+          sendOnApproval: updated.sendOnApproval,
+          sendOnTeamLeadApproval: updated.sendOnTeamLeadApproval,
+          sendOnEventReminder: updated.sendOnEventReminder,
+        },
       },
     });
 
     return NextResponse.json({
       success: true,
       message: "SMTP settings saved successfully",
+      emailTriggers: {
+        emailServiceEnabled: updated.emailServiceEnabled !== false,
+        sendOnRegistration: updated.sendOnRegistration === true,
+        sendOnCoordinatorAlert: updated.sendOnCoordinatorAlert !== false,
+        sendOnApproval: updated.sendOnApproval !== false,
+        sendOnTeamLeadApproval: updated.sendOnTeamLeadApproval !== false,
+        sendOnEventReminder: updated.sendOnEventReminder !== false,
+      },
       smtp: {
         host: updated.host,
         port: updated.port,

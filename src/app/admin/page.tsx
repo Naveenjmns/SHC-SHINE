@@ -58,9 +58,15 @@ import {
   RotateCcw,
   ShieldAlert,
   Trash2,
+  Bell,
+  UserPlus,
+  Power,
+  ShieldCheck,
+  FileSpreadsheet,
 } from "lucide-react";
 import CheckInModal from "@/components/CheckInModal";
 import { INSTITUTION_THEME_PRESETS, hexToRgba, type ThemePreset } from "@/lib/colorUtils";
+import { downloadEventParticipantsCSV } from "@/lib/exportEventCsv";
 
 interface StatsData {
   totalUsers: number;
@@ -242,6 +248,8 @@ export default function AdminOverviewPage() {
   const [activeEdition, setActiveEdition] = useState<EventEditionItem | null>(null);
   const [reportsData, setReportsData] = useState<any | null>(null);
   const [loadingReports, setLoadingReports] = useState(false);
+  const [downloadingEventId, setDownloadingEventId] = useState<string | null>(null);
+  const [selectedEventIdForCsv, setSelectedEventIdForCsv] = useState<string>("");
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -347,6 +355,17 @@ export default function AdminOverviewPage() {
   const [testEmailAddress, setTestEmailAddress] = useState("");
   const [testingSmtp, setTestingSmtp] = useState(false);
   const [smtpTestResult, setSmtpTestResult] = useState<{ success?: boolean; message?: string } | null>(null);
+
+  // Email Notification Triggers State
+  const [emailTriggers, setEmailTriggers] = useState({
+    emailServiceEnabled: true,
+    sendOnRegistration: false,
+    sendOnCoordinatorAlert: true,
+    sendOnApproval: true,
+    sendOnTeamLeadApproval: true,
+    sendOnEventReminder: true,
+  });
+  const [savingTriggerKey, setSavingTriggerKey] = useState<string | null>(null);
 
   // Email Broadcast State
   const [broadcastForm, setBroadcastForm] = useState({
@@ -502,18 +521,23 @@ export default function AdminOverviewPage() {
       try {
         const smtpRes = await fetch("/api/admin/smtp");
         const smtpData = await safeJson(smtpRes, { success: false, smtp: null });
-        if (smtpData.success && smtpData.smtp) {
-          setSmtpForm((prev) => ({
-            ...prev,
-            host: smtpData.smtp.host || "",
-            port: 465,
-            secure: true,
-            user: smtpData.smtp.user || "",
-            hasPassword: !!smtpData.smtp.hasPassword,
-            fromEmail: smtpData.smtp.fromEmail || "",
-            fromName: smtpData.smtp.fromName || "Event Coordination Team",
-            replyTo: smtpData.smtp.replyTo || "",
-          }));
+        if (smtpData.success) {
+          if (smtpData.smtp) {
+            setSmtpForm((prev) => ({
+              ...prev,
+              host: smtpData.smtp.host || "",
+              port: 465,
+              secure: true,
+              user: smtpData.smtp.user || "",
+              hasPassword: !!smtpData.smtp.hasPassword,
+              fromEmail: smtpData.smtp.fromEmail || "",
+              fromName: smtpData.smtp.fromName || "Event Coordination Team",
+              replyTo: smtpData.smtp.replyTo || "",
+            }));
+          }
+          if (smtpData.emailTriggers) {
+            setEmailTriggers(smtpData.emailTriggers);
+          }
         }
       } catch (err) {
         console.error("Failed to load SMTP settings:", err);
@@ -756,6 +780,74 @@ export default function AdminOverviewPage() {
     }
   };
 
+  // Handler to download an individual event's participants CSV roster
+  const handleDownloadEventCSV = async (eventId: string, eventName?: string) => {
+    setDownloadingEventId(eventId);
+    try {
+      const evMeta = eventBreakdown.find((e) => e.id === eventId);
+      const res = await downloadEventParticipantsCSV({
+        eventId,
+        eventName: evMeta?.name || eventName,
+        eventData: evMeta
+          ? {
+              id: evMeta.id,
+              name: evMeta.name,
+              category: evMeta.category,
+              venue: evMeta.venue,
+            }
+          : undefined,
+      });
+
+      toast.success(
+        res.count > 0
+          ? `Downloaded ${res.filename} with ${res.count} participant records!`
+          : `Downloaded ${res.filename} (No registered participants yet).`,
+        "Participants CSV Exported"
+      );
+    } catch (err: any) {
+      console.error("Export error:", err);
+      toast.error(err.message || "Failed to download event participant CSV.", "Export Failed");
+    } finally {
+      setDownloadingEventId(null);
+    }
+  };
+
+  // Handler to download all event participant CSVs sequentially in batch
+  const handleDownloadAllEventCSVs = async () => {
+    if (eventBreakdown.length === 0) {
+      toast.error("No competitions found to export.", "Export Notice");
+      return;
+    }
+    setDownloadingEventId("ALL");
+    let downloadedCount = 0;
+    try {
+      for (const ev of eventBreakdown) {
+        await downloadEventParticipantsCSV({
+          eventId: ev.id,
+          eventName: ev.name,
+          eventData: {
+            id: ev.id,
+            name: ev.name,
+            category: ev.category,
+            venue: ev.venue,
+          },
+        });
+        downloadedCount++;
+        // Small pause to prevent browser blocking sequential downloads
+        await new Promise((resolve) => setTimeout(resolve, 350));
+      }
+      toast.success(
+        `Successfully downloaded ${downloadedCount} individual event participant CSVs!`,
+        "Batch Export Complete"
+      );
+    } catch (err: any) {
+      console.error("Batch export error:", err);
+      toast.error("Failed during batch export.", "Export Error");
+    } finally {
+      setDownloadingEventId(null);
+    }
+  };
+
   const handleSaveSmtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setSavingSmtp(true);
@@ -824,6 +916,32 @@ export default function AdminOverviewPage() {
       toast.error(err.message, "SMTP Error");
     } finally {
       setTestingSmtp(false);
+    }
+  };
+
+  const handleToggleTrigger = async (key: string, nextVal: boolean) => {
+    const updated = { ...emailTriggers, [key]: nextVal };
+    setEmailTriggers(updated);
+    setSavingTriggerKey(key);
+    try {
+      const res = await fetch("/api/admin/smtp/triggers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ emailTriggers: updated }),
+      });
+      const data = await safeJson(res, { success: false });
+      if (data.success && data.emailTriggers) {
+        setEmailTriggers(data.emailTriggers);
+        toast.success("Email trigger policy updated!");
+      } else {
+        setEmailTriggers(emailTriggers);
+        toast.error(data.error || "Failed to update trigger policy");
+      }
+    } catch (err: any) {
+      setEmailTriggers(emailTriggers);
+      toast.error("Error updating policy: " + err.message);
+    } finally {
+      setSavingTriggerKey(null);
     }
   };
 
@@ -1770,7 +1888,29 @@ export default function AdminOverviewPage() {
 
             {/* Competition Breakdown Table */}
             <div className="dash-card p-6">
-              <h3 className="text-lg font-bold text-[#0F172A] mb-4">Competitions Breakdown</h3>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                <div>
+                  <h3 className="text-lg font-bold text-[#0F172A]">Competitions Breakdown</h3>
+                  <p className="text-xs text-[#64748B]">
+                    Monitor event registrations and download individual participant rosters
+                  </p>
+                </div>
+                {eventBreakdown.length > 0 && (
+                  <button
+                    onClick={handleDownloadAllEventCSVs}
+                    disabled={downloadingEventId === "ALL"}
+                    className="self-start sm:self-auto inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-300 transition shadow-2xs cursor-pointer disabled:opacity-50"
+                    title="Download individual participant CSV rosters for all competitions"
+                  >
+                    {downloadingEventId === "ALL" ? (
+                      <span className="w-3.5 h-3.5 border-2 border-slate-700 border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <Download className="w-3.5 h-3.5 text-orange-600" />
+                    )}
+                    <span>Download All (CSVs)</span>
+                  </button>
+                )}
+              </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm border-collapse">
                   <thead>
@@ -1779,6 +1919,7 @@ export default function AdminOverviewPage() {
                       <th className="py-3 px-4">Category</th>
                       <th className="py-3 px-4">Coordinators</th>
                       <th className="py-3 px-4">Registrations</th>
+                      <th className="py-3 px-4 text-right">Participant Roster</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#E2E8F0]">
@@ -1822,6 +1963,21 @@ export default function AdminOverviewPage() {
                           </td>
                           <td className="py-3 px-4 font-bold text-[#0F172A] tabular-nums">
                             {ev.registrationsCount}
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            <button
+                              onClick={() => handleDownloadEventCSV(ev.id, ev.name)}
+                              disabled={downloadingEventId === ev.id}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-orange-600 bg-orange-50 hover:bg-orange-600 hover:text-white border border-orange-200 hover:border-orange-600 transition shadow-2xs cursor-pointer disabled:opacity-50"
+                              title={`Download ${ev.name} participant CSV roster`}
+                            >
+                              {downloadingEventId === ev.id ? (
+                                <span className="w-3.5 h-3.5 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+                              ) : (
+                                <Download className="w-3.5 h-3.5" />
+                              )}
+                              <span>Download CSV</span>
+                            </button>
                           </td>
                         </tr>
                       );
@@ -3808,8 +3964,310 @@ export default function AdminOverviewPage() {
                   <span>SMTP Configuration & Email Updates</span>
                 </h3>
                 <p className="text-xs text-[#64748B]">
-                  Configure your SMTP mail server and dispatch event announcements, schedule updates, or reminders to registered students.
+                  Configure your SMTP mail server, manage granular email action triggers to conserve quota, and dispatch announcements to delegates.
                 </p>
+              </div>
+            </div>
+
+            {/* EMAIL NOTIFICATION TRIGGERS & QUOTA MANAGEMENT */}
+            <div className="dash-card p-6 space-y-6 border-l-4 border-amber-500 bg-gradient-to-br from-white via-amber-50/10 to-amber-100/20">
+              {/* Header & Master Switch */}
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-stone-200 pb-4">
+                <div className="flex items-start gap-3">
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-white shadow-sm shrink-0 ${
+                    emailTriggers.emailServiceEnabled ? "bg-amber-600" : "bg-slate-400"
+                  }`}>
+                    <ShieldCheck className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h4 className="text-base font-extrabold text-[#0F172A] tracking-tight">
+                        Email Action Triggers &amp; Quota Management
+                      </h4>
+                      <span className={`text-[10px] font-extrabold uppercase tracking-widest px-2.5 py-0.5 rounded-full border ${
+                        emailTriggers.emailServiceEnabled
+                          ? "bg-emerald-100 text-emerald-900 border-emerald-300 flex items-center gap-1"
+                          : "bg-rose-100 text-rose-800 border-rose-300 flex items-center gap-1"
+                      }`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${emailTriggers.emailServiceEnabled ? "bg-emerald-600 animate-pulse" : "bg-rose-600"}`} />
+                        {emailTriggers.emailServiceEnabled ? "Engine Active" : "Engine Paused"}
+                      </span>
+                    </div>
+                    <p className="text-xs text-[#64748B] mt-1 leading-relaxed">
+                      Select which actions automatically trigger Gmail/SMTP dispatches. Disable initial registration emails to conserve quota and only deliver official passes upon Registration Desk approval.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Master Switch Button */}
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    disabled={savingTriggerKey === "emailServiceEnabled"}
+                    onClick={() => handleToggleTrigger("emailServiceEnabled", !emailTriggers.emailServiceEnabled)}
+                    className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-2 cursor-pointer ${
+                      emailTriggers.emailServiceEnabled
+                        ? "bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-300"
+                        : "bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-600/20"
+                    }`}
+                  >
+                    <Power className="w-3.5 h-3.5" />
+                    <span>
+                      {emailTriggers.emailServiceEnabled ? "Pause All Outgoing Emails" : "Resume Outgoing Emails"}
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Quota Tip Callout */}
+              <div className="p-3.5 bg-amber-50/80 rounded-xl border border-amber-200/80 text-xs text-amber-900 flex items-start gap-2.5">
+                <AlertCircle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                <div className="leading-relaxed text-[12px]">
+                  <strong>Quota Management Tip:</strong> Keeping <em>&ldquo;Initial Registration Confirmation&rdquo;</em> <strong>OFF</strong> saves dozens of emails per outer college delegation. Once your Registration Desk marks the delegation as paid, the <em>&ldquo;Desk Payment Approval&rdquo;</em> and <em>&ldquo;Team Lead Consolidated Dossier&rdquo;</em> triggers will deliver the verified pass QRs and food tokens to attendees!
+                </div>
+              </div>
+
+              {/* Granular Trigger Toggles List */}
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {/* 1. Delegate Initial Registration */}
+                <div className={`p-4 rounded-xl border transition-all ${
+                  emailTriggers.sendOnRegistration
+                    ? "bg-white border-amber-300 shadow-sm"
+                    : "bg-slate-50/70 border-slate-200 opacity-90"
+                }`}>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center shrink-0">
+                        <UserPlus className="w-3.5 h-3.5" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-extrabold text-[#0F172A]">Delegate Registration</div>
+                        <div className="text-[10px] text-[#64748B]">When student registers online</div>
+                      </div>
+                    </div>
+                    <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded-md uppercase tracking-wider ${
+                      emailTriggers.sendOnRegistration
+                        ? "bg-amber-100 text-amber-900 border border-amber-200"
+                        : "bg-emerald-100 text-emerald-900 border border-emerald-200 font-bold"
+                    }`}>
+                      {emailTriggers.sendOnRegistration ? "Active" : "Disabled (Saves Quota)"}
+                    </span>
+                  </div>
+
+                  <p className="text-[11px] text-[#475569] mt-2.5 line-clamp-2 leading-relaxed">
+                    Sends welcome email with portal credentials upon online form submission. <strong>Default OFF</strong> to prevent burning quota before payment.
+                  </p>
+
+                  <div className="mt-3 pt-2.5 border-t border-stone-100 flex items-center justify-between">
+                    <span className="text-[11px] font-semibold text-[#64748B]">Trigger Dispatch</span>
+                    <button
+                      type="button"
+                      disabled={savingTriggerKey === "sendOnRegistration" || !emailTriggers.emailServiceEnabled}
+                      onClick={() => handleToggleTrigger("sendOnRegistration", !emailTriggers.sendOnRegistration)}
+                      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none disabled:opacity-50 ${
+                        emailTriggers.sendOnRegistration ? "bg-amber-600" : "bg-slate-300"
+                      }`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                          emailTriggers.sendOnRegistration ? "translate-x-4" : "translate-x-0"
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </div>
+
+                {/* 2. Desk Payment Approval */}
+                <div className={`p-4 rounded-xl border transition-all ${
+                  emailTriggers.sendOnApproval
+                    ? "bg-white border-emerald-300 shadow-sm"
+                    : "bg-slate-50/70 border-slate-200 opacity-90"
+                }`}>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-extrabold text-[#0F172A]">Desk Payment Approval</div>
+                        <div className="text-[10px] text-[#64748B]">When Desk verifies fee</div>
+                      </div>
+                    </div>
+                    <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded-md uppercase tracking-wider ${
+                      emailTriggers.sendOnApproval
+                        ? "bg-emerald-100 text-emerald-900 border border-emerald-200"
+                        : "bg-slate-100 text-slate-700 border border-slate-200"
+                    }`}>
+                      {emailTriggers.sendOnApproval ? "Active (Recommended)" : "Disabled"}
+                    </span>
+                  </div>
+
+                  <p className="text-[11px] text-[#475569] mt-2.5 line-clamp-2 leading-relaxed">
+                    Sends verified Digital ID Card QR &amp; Food Token QR email to individual student upon desk fee approval.
+                  </p>
+
+                  <div className="mt-3 pt-2.5 border-t border-stone-100 flex items-center justify-between">
+                    <span className="text-[11px] font-semibold text-[#64748B]">Trigger Dispatch</span>
+                    <button
+                      type="button"
+                      disabled={savingTriggerKey === "sendOnApproval" || !emailTriggers.emailServiceEnabled}
+                      onClick={() => handleToggleTrigger("sendOnApproval", !emailTriggers.sendOnApproval)}
+                      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none disabled:opacity-50 ${
+                        emailTriggers.sendOnApproval ? "bg-emerald-600" : "bg-slate-300"
+                      }`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                          emailTriggers.sendOnApproval ? "translate-x-4" : "translate-x-0"
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </div>
+
+                {/* 3. Team Lead Consolidated Pass Dossier */}
+                <div className={`p-4 rounded-xl border transition-all ${
+                  emailTriggers.sendOnTeamLeadApproval
+                    ? "bg-white border-sky-300 shadow-sm"
+                    : "bg-slate-50/70 border-slate-200 opacity-90"
+                }`}>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg bg-sky-100 text-sky-800 flex items-center justify-center shrink-0">
+                        <Users className="w-3.5 h-3.5" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-extrabold text-[#0F172A]">Team Lead Dossier</div>
+                        <div className="text-[10px] text-[#64748B]">All members upon approval</div>
+                      </div>
+                    </div>
+                    <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded-md uppercase tracking-wider ${
+                      emailTriggers.sendOnTeamLeadApproval
+                        ? "bg-sky-100 text-sky-900 border border-sky-200"
+                        : "bg-slate-100 text-slate-700 border border-slate-200"
+                    }`}>
+                      {emailTriggers.sendOnTeamLeadApproval ? "Active (Recommended)" : "Disabled"}
+                    </span>
+                  </div>
+
+                  <p className="text-[11px] text-[#475569] mt-2.5 line-clamp-2 leading-relaxed">
+                    Sends a single consolidated dossier to the outer college Team Lead with all member badge IDs, food tokens, and pass links.
+                  </p>
+
+                  <div className="mt-3 pt-2.5 border-t border-stone-100 flex items-center justify-between">
+                    <span className="text-[11px] font-semibold text-[#64748B]">Trigger Dispatch</span>
+                    <button
+                      type="button"
+                      disabled={savingTriggerKey === "sendOnTeamLeadApproval" || !emailTriggers.emailServiceEnabled}
+                      onClick={() => handleToggleTrigger("sendOnTeamLeadApproval", !emailTriggers.sendOnTeamLeadApproval)}
+                      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none disabled:opacity-50 ${
+                        emailTriggers.sendOnTeamLeadApproval ? "bg-sky-600" : "bg-slate-300"
+                      }`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                          emailTriggers.sendOnTeamLeadApproval ? "translate-x-4" : "translate-x-0"
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </div>
+
+                {/* 4. Coordinator Registration Alerts */}
+                <div className={`p-4 rounded-xl border transition-all ${
+                  emailTriggers.sendOnCoordinatorAlert
+                    ? "bg-white border-purple-300 shadow-sm"
+                    : "bg-slate-50/70 border-slate-200 opacity-90"
+                }`}>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg bg-purple-100 text-purple-800 flex items-center justify-center shrink-0">
+                        <Bell className="w-3.5 h-3.5" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-extrabold text-[#0F172A]">Coordinator Alerts</div>
+                        <div className="text-[10px] text-[#64748B]">To Staff &amp; Student Incharge</div>
+                      </div>
+                    </div>
+                    <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded-md uppercase tracking-wider ${
+                      emailTriggers.sendOnCoordinatorAlert
+                        ? "bg-purple-100 text-purple-900 border border-purple-200"
+                        : "bg-slate-100 text-slate-700 border border-slate-200"
+                    }`}>
+                      {emailTriggers.sendOnCoordinatorAlert ? "Active" : "Disabled"}
+                    </span>
+                  </div>
+
+                  <p className="text-[11px] text-[#475569] mt-2.5 line-clamp-2 leading-relaxed">
+                    Sends immediate email alerts to host event coordinators whenever an outer college delegation registers for their competition.
+                  </p>
+
+                  <div className="mt-3 pt-2.5 border-t border-stone-100 flex items-center justify-between">
+                    <span className="text-[11px] font-semibold text-[#64748B]">Trigger Dispatch</span>
+                    <button
+                      type="button"
+                      disabled={savingTriggerKey === "sendOnCoordinatorAlert" || !emailTriggers.emailServiceEnabled}
+                      onClick={() => handleToggleTrigger("sendOnCoordinatorAlert", !emailTriggers.sendOnCoordinatorAlert)}
+                      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none disabled:opacity-50 ${
+                        emailTriggers.sendOnCoordinatorAlert ? "bg-purple-600" : "bg-slate-300"
+                      }`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                          emailTriggers.sendOnCoordinatorAlert ? "translate-x-4" : "translate-x-0"
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </div>
+
+                {/* 5. 10-Minute Competition Reminders */}
+                <div className={`p-4 rounded-xl border transition-all ${
+                  emailTriggers.sendOnEventReminder
+                    ? "bg-white border-orange-300 shadow-sm"
+                    : "bg-slate-50/70 border-slate-200 opacity-90"
+                }`}>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg bg-orange-100 text-orange-800 flex items-center justify-center shrink-0">
+                        <Clock className="w-3.5 h-3.5" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-extrabold text-[#0F172A]">Event Start Reminders</div>
+                        <div className="text-[10px] text-[#64748B]">10 mins prior to event</div>
+                      </div>
+                    </div>
+                    <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded-md uppercase tracking-wider ${
+                      emailTriggers.sendOnEventReminder
+                        ? "bg-orange-100 text-orange-900 border border-orange-200"
+                        : "bg-slate-100 text-slate-700 border border-slate-200"
+                    }`}>
+                      {emailTriggers.sendOnEventReminder ? "Active" : "Disabled"}
+                    </span>
+                  </div>
+
+                  <p className="text-[11px] text-[#475569] mt-2.5 line-clamp-2 leading-relaxed">
+                    Automated email sent 10 minutes before competition start with arena venue, reporting time, and coordinator hotline numbers.
+                  </p>
+
+                  <div className="mt-3 pt-2.5 border-t border-stone-100 flex items-center justify-between">
+                    <span className="text-[11px] font-semibold text-[#64748B]">Trigger Dispatch</span>
+                    <button
+                      type="button"
+                      disabled={savingTriggerKey === "sendOnEventReminder" || !emailTriggers.emailServiceEnabled}
+                      onClick={() => handleToggleTrigger("sendOnEventReminder", !emailTriggers.sendOnEventReminder)}
+                      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none disabled:opacity-50 ${
+                        emailTriggers.sendOnEventReminder ? "bg-orange-600" : "bg-slate-300"
+                      }`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                          emailTriggers.sendOnEventReminder ? "translate-x-4" : "translate-x-0"
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -4905,6 +5363,112 @@ export default function AdminOverviewPage() {
                         <span>Open & Print Report (PDF) ↗</span>
                       </Link>
                     </div>
+                  </div>
+                </div>
+
+                {/* 2B. INDIVIDUAL EVENT CSV EXPORT HUB */}
+                <div className="dash-card p-5 sm:p-6 bg-white space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                    <div className="flex items-center gap-2">
+                      <FileSpreadsheet className="w-5 h-5 text-emerald-600" />
+                      <div>
+                        <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">
+                          Individual Event Participant Rosters (CSV)
+                        </h3>
+                        <p className="text-xs text-slate-500">
+                          Export redesigned, college-grouped delegate rosters for each competition individually with collided event banners
+                        </p>
+                      </div>
+                    </div>
+                    {eventBreakdown.length > 0 && (
+                      <button
+                        onClick={handleDownloadAllEventCSVs}
+                        disabled={downloadingEventId === "ALL"}
+                        className="self-start sm:self-auto px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-xs cursor-pointer disabled:opacity-50"
+                        title="Download CSV files for all events sequentially"
+                      >
+                        {downloadingEventId === "ALL" ? (
+                          <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <Download className="w-3.5 h-3.5 text-orange-400" />
+                        )}
+                        <span>Download All Events (Batch)</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Dropdown Quick Selector */}
+                  <div className="bg-slate-50 p-3 sm:p-4 rounded-2xl border border-slate-200 flex flex-col sm:flex-row items-center gap-3">
+                    <div className="w-full sm:flex-1">
+                      <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                        Select Competition Track:
+                      </label>
+                      <select
+                        value={selectedEventIdForCsv}
+                        onChange={(e) => setSelectedEventIdForCsv(e.target.value)}
+                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      >
+                        <option value="">-- Choose an Event to Export --</option>
+                        {eventBreakdown.map((ev) => (
+                          <option key={ev.id} value={ev.id}>
+                            {ev.name} ({ev.category === "ON_STAGE" ? "On-Stage" : "Off-Stage"}) — {ev.registrationsCount} delegates
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <button
+                      onClick={() => {
+                        if (!selectedEventIdForCsv) {
+                          toast.error("Please choose an event first.", "Selection Required");
+                          return;
+                        }
+                        const ev = eventBreakdown.find((e) => e.id === selectedEventIdForCsv);
+                        handleDownloadEventCSV(selectedEventIdForCsv, ev?.name);
+                      }}
+                      disabled={!selectedEventIdForCsv || downloadingEventId === selectedEventIdForCsv}
+                      className="w-full sm:w-auto px-5 py-2.5 bg-orange-600 hover:bg-orange-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm cursor-pointer disabled:opacity-50 self-end"
+                    >
+                      {downloadingEventId === selectedEventIdForCsv ? (
+                        <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <Download className="w-3.5 h-3.5" />
+                      )}
+                      <span>Download Selected Roster</span>
+                    </button>
+                  </div>
+
+                  {/* Grid of All Events for instant one-click download */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 pt-1">
+                    {eventBreakdown.map((ev) => (
+                      <div
+                        key={ev.id}
+                        className="p-3 rounded-xl border border-slate-200 bg-white hover:border-orange-200 hover:shadow-2xs transition flex items-center justify-between gap-2"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="font-bold text-xs text-slate-900 truncate">{ev.name}</div>
+                          <div className="flex items-center gap-2 text-[11px] text-slate-500 mt-0.5">
+                            <span className={ev.category === "ON_STAGE" ? "text-amber-700 font-semibold" : "text-purple-700 font-semibold"}>
+                              {ev.category === "ON_STAGE" ? "On-Stage" : "Off-Stage"}
+                            </span>
+                            <span>•</span>
+                            <span className="tabular-nums font-medium">{ev.registrationsCount} delegates</span>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleDownloadEventCSV(ev.id, ev.name)}
+                          disabled={downloadingEventId === ev.id}
+                          className="px-2.5 py-1.5 bg-orange-50 hover:bg-orange-600 text-orange-600 hover:text-white border border-orange-200 hover:border-orange-600 rounded-lg text-xs font-bold transition flex items-center gap-1 shrink-0 cursor-pointer disabled:opacity-50"
+                          title={`Download ${ev.name} CSV`}
+                        >
+                          {downloadingEventId === ev.id ? (
+                            <span className="w-3 h-3 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <Download className="w-3 h-3" />
+                          )}
+                          <span>CSV</span>
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 </div>
 

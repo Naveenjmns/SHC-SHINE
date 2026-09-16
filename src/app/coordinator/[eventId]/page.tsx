@@ -9,6 +9,7 @@ import { useToast } from "@/components/ToastProvider";
 import { safeJson } from "@/lib/safeFetch";
 import CheckInModal from "@/components/CheckInModal";
 import Footer from "@/components/Footer";
+import { generateEventParticipantsCsv, triggerCsvDownload } from "@/lib/exportEventCsv";
 
 interface RegistrationRow {
   id: string;
@@ -589,27 +590,24 @@ export default function CoordinatorEventDetailPage({
 
   const exportCSV = () => {
     if (!event || registrations.length === 0) return;
-    const headers = ["Name", "Email", "Phone", "College", "Status", "Attendance", "Score", "Result", "Registration Date"];
-    const rows = registrations.map((r) => [
-      `"${r.user.name}"`,
-      `"${r.user.email}"`,
-      `"${r.user.phone || ""}"`,
-      `"${r.user.college || ""}"`,
-      `"${r.status}"`,
-      `"${r.attended || r.delegationMember?.eventCheckedIn ? "PRESENT" : "ABSENT"}"`,
-      `"${scoreInputs[r.id] ?? r.score ?? ""}"`,
-      `"${r.result || ""}"`,
-      `"${new Date(r.createdAt).toLocaleString()}"`,
-    ]);
-
-    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `${event.name.replace(/\s+/g, "_")}_Participants.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    try {
+      const csvContent = generateEventParticipantsCsv(
+        event,
+        registrations.map((r) => ({
+          ...r,
+          score: scoreInputs[r.id] !== undefined && scoreInputs[r.id] !== "" ? scoreInputs[r.id] : r.score,
+          result: resultInputs[r.id] !== undefined ? resultInputs[r.id] : r.result,
+        }))
+      );
+      triggerCsvDownload(
+        `${event.name.replace(/[/\\?%*:|"<>]/g, "_").replace(/\s+/g, "_")}_Participants.csv`,
+        csvContent
+      );
+      toast.success(`Exported ${registrations.length} participant records.`);
+    } catch (err) {
+      console.error("Export error:", err);
+      toast.error("Failed to export participant CSV.");
+    }
   };
 
   if (status === "loading" || loading) {

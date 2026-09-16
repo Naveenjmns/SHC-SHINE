@@ -2,23 +2,31 @@ import { ActiveEditionConfig } from "@/lib/eventService";
 
 interface StageHeaderBannerProps {
   edition?: ActiveEditionConfig;
+  forceVisible?: boolean;
+  showFestLogo?: boolean;
 }
 
-export default function StageHeaderBanner({ edition }: StageHeaderBannerProps) {
+export default function StageHeaderBanner({
+  edition,
+  forceVisible,
+  showFestLogo = false,
+}: StageHeaderBannerProps) {
   const fullBannerUrl = edition?.stageHeaderBannerUrl;
-  const crestUrl = edition?.institutionCrestUrl;
-  const deptLogoUrl = edition?.deptLogoUrl;
-  const jubileeBadgeUrl = edition?.jubileeBadgeUrl;
+  const crestUrl = edition?.institutionCrestUrl || "/uploads/1788791902171_collegelogo-nobg.png";
+  const deptLogoUrl = edition?.deptLogoUrl || "/uploads/1788791911208_mcalogo-nobg.png";
+  const jubileeBadgeUrl = edition?.jubileeBadgeUrl || "/uploads/1788792021326_SHC.png";
+  const festLogoUrl = edition?.logoUrl || "/uploads/1788792011099_SHINE_26_LOGO.png";
 
-  // Header Banner ONLY renders if a custom banner image or graphic logos are explicitly uploaded
+  // Header Banner ONLY renders if a custom banner image or graphic logos are explicitly uploaded (or forceVisible is true)
   const isBannerUploaded = !!(fullBannerUrl && fullBannerUrl.trim().length > 0);
   const isAnyGraphicUploaded = !!(
     crestUrl?.trim() ||
     deptLogoUrl?.trim() ||
-    jubileeBadgeUrl?.trim()
+    jubileeBadgeUrl?.trim() ||
+    (showFestLogo && festLogoUrl?.trim())
   );
 
-  if (!isBannerUploaded && !isAnyGraphicUploaded) {
+  if (!forceVisible && !isBannerUploaded && !isAnyGraphicUploaded) {
     return null;
   }
 
@@ -64,7 +72,7 @@ export default function StageHeaderBanner({ edition }: StageHeaderBannerProps) {
   };
 
   return (
-    <div className="stage-header-banner w-full bg-[#0E0D0D] border-b border-[#D9A441]/35 py-3 px-4 sm:px-8 text-white relative z-50 overflow-hidden shadow-2xl">
+    <div className={`${forceVisible ? "" : "stage-header-banner "}w-full bg-[#0E0D0D] border-b border-[#D9A441]/35 py-3 px-4 sm:px-8 text-white relative z-50 overflow-hidden shadow-2xl`}>
       {/* Background Solar Glow */}
       <div className="absolute inset-0 bg-gradient-to-r from-[#FF4500]/12 via-[#FF6B1A]/18 to-[#FF4500]/12 blur-xl pointer-events-none" />
 
@@ -85,8 +93,8 @@ export default function StageHeaderBanner({ edition }: StageHeaderBannerProps) {
       ) : (
         <div className="max-w-7xl mx-auto flex flex-wrap sm:flex-nowrap items-center justify-center sm:justify-between gap-2 sm:gap-4 relative z-10">
           
-          {/* LEFT ASIDE: Sacred Heart College Crest */}
-          <div className="shrink-0 flex items-center justify-center gap-2 sm:gap-3 min-w-[40px] sm:min-w-[80px] min-h-[40px] sm:min-h-[80px]">
+          {/* LEFT ASIDE: Sacred Heart College Crest & SHINE Fest Logo (Between College Logo and College Details) */}
+          <div className="shrink-0 flex items-center justify-center gap-2 sm:gap-3 md:gap-4 min-w-[40px] sm:min-w-[80px] min-h-[40px] sm:min-h-[80px]">
             {crestUrl && (
               <img
                 src={crestUrl}
@@ -100,9 +108,23 @@ export default function StageHeaderBanner({ edition }: StageHeaderBannerProps) {
                 className="h-10 sm:h-20 md:h-28 w-auto object-contain drop-shadow-[0_4px_16px_rgba(255,107,26,0.35)] transition-transform hover:scale-105"
               />
             )}
+
+            {showFestLogo && festLogoUrl && (
+              <img
+                src={festLogoUrl}
+                alt={edition?.name || "SHINE Fest Logo"}
+                width={112}
+                height={112}
+                loading="eager"
+                // @ts-ignore
+                fetchPriority="high"
+                decoding="async"
+                className="h-10 sm:h-20 md:h-28 w-auto object-contain drop-shadow-[0_4px_16px_rgba(255,107,26,0.35)] transition-transform hover:scale-105"
+              />
+            )}
           </div>
 
-          {/* CENTER: Clean 2-Line Accreditation Text Column */}
+          {/* CENTER: Clean 2-Line Accreditation Text Column (College Details) */}
           <div className="flex-1 min-w-[200px] text-center px-1 sm:px-4">
             <h2
               className="text-xs sm:text-xl md:text-2xl lg:text-3xl font-black uppercase tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-[#FF7B2F] via-[#FF6B1A] to-[#D9A441]"
@@ -121,7 +143,7 @@ export default function StageHeaderBanner({ edition }: StageHeaderBannerProps) {
             </h3>
           </div>
 
-          {/* RIGHT ASIDE: 75th Jubilee Logo & MCA Department Seal side-by-side */}
+          {/* RIGHT ASIDE: 75th Jubilee Logo & MCA Department Seal */}
           <div className="shrink-0 flex items-center justify-center gap-2 sm:gap-4 min-h-[32px] sm:min-h-[56px]">
             {jubileeBadgeUrl && (
               <img
