@@ -255,12 +255,12 @@ function RegisterForm() {
           }
         }
 
-        // Enforce max 1 per category: keep events of other categories and add current event
-        const otherCategoryEvents = member.eventIds.filter((id) => {
-          const ev = events.find((e) => e.id === id);
-          return ev && ev.category !== targetEvent.category;
-        });
-        newEventIds = [...otherCategoryEvents, eventId];
+        // Enforce max 2 competitions total per participant (any combination of On-Stage or Off-Stage)
+        if (member.eventIds.length >= 2) {
+          return prev;
+        }
+
+        newEventIds = [...member.eventIds, eventId];
 
         // Keep any existing prelims nominations for still-selected events (do NOT auto-check new event by default)
         const newPrelimsIds = (member.prelimsEventIds || []).filter((id) =>
@@ -396,10 +396,8 @@ function RegisterForm() {
         setErrorMessage(`Please select at least one competition for Participant #${i + 1} (${m.name || "Student"}).`);
         return false;
       }
-      const onStageCount = m.eventIds.filter((id) => events.find((e) => e.id === id)?.category === "ON_STAGE").length;
-      const offStageCount = m.eventIds.filter((id) => events.find((e) => e.id === id)?.category === "OFF_STAGE").length;
-      if (onStageCount > 1 || offStageCount > 1) {
-        setErrorMessage(`Participant #${i + 1} (${m.name || "Student"}) can select at most 1 On-Stage and 1 Off-Stage competition.`);
+      if (m.eventIds.length > 2) {
+        setErrorMessage(`Participant #${i + 1} (${m.name || "Student"}) can select at most 2 competitions.`);
         return false;
       }
     }
@@ -1067,7 +1065,7 @@ function RegisterForm() {
                     Student Contingent Roster
                   </h3>
                   <p className="text-xs text-stone-500">
-                    Add each participating student with contact info and select max 1 On-Stage & 1 Off-Stage competition.
+                    Add each participating student with contact info and select up to 2 competitions (any combination of On-Stage & Off-Stage).
                   </p>
                 </div>
 
@@ -1251,10 +1249,10 @@ function RegisterForm() {
                       <div className="pt-4 border-t border-stone-200 space-y-4">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                           <span className="text-xs font-black text-stone-900 uppercase tracking-wider">
-                            Select Competitions ({member.eventIds.length} Selected) *
+                            Select Competitions ({member.eventIds.length}/2 Selected) *
                           </span>
                           <span className="text-[10px] font-extrabold text-amber-800 bg-amber-100/80 border border-amber-300 px-2.5 py-0.5 rounded-full self-start sm:self-auto">
-                            Rule: Max 1 On-Stage + Max 1 Off-Stage Event
+                            Rule: Max 2 Competitions (Any combination of On-Stage & Off-Stage)
                           </span>
                         </div>
 
@@ -1266,7 +1264,7 @@ function RegisterForm() {
                               <span>On-Stage Competitions</span>
                             </div>
                             <span className="text-[10px] font-extrabold text-purple-700 bg-purple-100 px-2 py-0.5 rounded-md border border-purple-200">
-                              {member.eventIds.filter((id) => events.find((e) => e.id === id)?.category === "ON_STAGE").length}/1 Selected
+                              {member.eventIds.filter((id) => events.find((e) => e.id === id)?.category === "ON_STAGE").length} Selected
                             </span>
                           </div>
 
@@ -1275,7 +1273,8 @@ function RegisterForm() {
                               const isChecked = member.eventIds.includes(ev.id);
                               const collegeCount = members.filter((m) => m.eventIds.includes(ev.id)).length;
                               const isCapacityFull = ev.capacity && ev.capacity > 0 ? collegeCount >= ev.capacity : false;
-                              const isDisabled = !isChecked && isCapacityFull;
+                              const isMaxReached = !isChecked && member.eventIds.length >= 2;
+                              const isDisabled = !isChecked && (isCapacityFull || isMaxReached);
 
                               return (
                                 <div
@@ -1313,9 +1312,13 @@ function RegisterForm() {
                                           </span>
                                         )}
                                       </div>
-                                      {isDisabled ? (
+                                      {isCapacityFull ? (
                                         <div className="text-[10px] font-bold text-rose-600 mt-0.5">
                                           College Capacity Full ({ev.capacity}/{ev.capacity})
+                                        </div>
+                                      ) : isMaxReached ? (
+                                        <div className="text-[10px] font-medium text-stone-500 mt-0.5">
+                                          Max 2 events selected
                                         </div>
                                       ) : ev.venue ? (
                                         <div className="text-[10px] text-stone-500 truncate">
@@ -1395,7 +1398,7 @@ function RegisterForm() {
                               <span>Off-Stage Competitions</span>
                             </div>
                             <span className="text-[10px] font-extrabold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-md border border-blue-200">
-                              {member.eventIds.filter((id) => events.find((e) => e.id === id)?.category === "OFF_STAGE").length}/1 Selected
+                              {member.eventIds.filter((id) => events.find((e) => e.id === id)?.category === "OFF_STAGE").length} Selected
                             </span>
                           </div>
 
@@ -1404,7 +1407,8 @@ function RegisterForm() {
                               const isChecked = member.eventIds.includes(ev.id);
                               const collegeCount = members.filter((m) => m.eventIds.includes(ev.id)).length;
                               const isCapacityFull = ev.capacity && ev.capacity > 0 ? collegeCount >= ev.capacity : false;
-                              const isDisabled = !isChecked && isCapacityFull;
+                              const isMaxReached = !isChecked && member.eventIds.length >= 2;
+                              const isDisabled = !isChecked && (isCapacityFull || isMaxReached);
 
                               return (
                                 <div
@@ -1442,9 +1446,13 @@ function RegisterForm() {
                                           </span>
                                         )}
                                       </div>
-                                      {isDisabled ? (
+                                      {isCapacityFull ? (
                                         <div className="text-[10px] font-bold text-rose-600 mt-0.5">
                                           College Capacity Full ({ev.capacity}/{ev.capacity})
+                                        </div>
+                                      ) : isMaxReached ? (
+                                        <div className="text-[10px] font-medium text-stone-500 mt-0.5">
+                                          Max 2 events selected
                                         </div>
                                       ) : ev.venue ? (
                                         <div className="text-[10px] text-stone-500 truncate">

@@ -151,10 +151,10 @@ export async function POST(req: Request) {
           { status: 400 }
         );
       }
-      // SECURITY: Limit events per delegate to prevent abuse
-      if (m.eventIds.length > 20) {
+      // Enforce limit: maximum 2 events per participant/delegate
+      if (m.eventIds.length > 2) {
         return NextResponse.json(
-          { success: false, message: `Maximum 20 events per delegate.` },
+          { success: false, message: `Delegate "${m.name}" can select at most 2 competitions.` },
           { status: 400 }
         );
       }
