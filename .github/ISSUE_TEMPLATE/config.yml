@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 📖 SHINE User & Operations Manual
+    url: https://github.com/Naveenjmns/SHC-SHINE/blob/main/USER_MANUAL.md
+    about: Read the operations guide for Administrators, Coordinators, and Students.
+  - name: 💬 General Questions & Discussion
+    url: https://github.com/Naveenjmns/SHC-SHINE/discussions
+    about: Ask questions or discuss fest management ideas with the team.
