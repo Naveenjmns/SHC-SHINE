@@ -2,8 +2,7 @@ import { PrismaClient } from "@prisma/client";
 
 // Schema revision token: bump this whenever Prisma schema fields or models change
 // This allows hot reload to replace stale in-memory Prisma client instances without restarting Next.js
-const SCHEMA_REVISION = 3;
-
+const SCHEMA_REVISION = 2;
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;

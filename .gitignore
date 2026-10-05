@@ -42,4 +42,4 @@ yarn-error.log*
 next-env.d.ts
 
 # image optimization cache
-public/uploads/.cache
+public/uploads/.cach
