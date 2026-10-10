@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -64,9 +64,15 @@ import {
   ShieldCheck,
   FileSpreadsheet,
   Route,
+  ZoomIn,
+  ZoomOut,
+  Maximize2,
+  ExternalLink,
+  Network,
 } from "lucide-react";
 import CheckInModal from "@/components/CheckInModal";
 import PrintableQrModal from "@/components/PrintableQrModal";
+import InteractiveFloorPlanModal from "@/components/InteractiveFloorPlanModal";
 import { INSTITUTION_THEME_PRESETS, hexToRgba, type ThemePreset } from "@/lib/colorUtils";
 import { downloadEventParticipantsCSV } from "@/lib/exportEventCsv";
 import type { WaypointNode, WaypointEdge, GraphValidationResult } from "@/lib/wayfinding";
@@ -363,6 +369,19 @@ export default function AdminOverviewPage() {
   const [validatingGraph, setValidatingGraph] = useState(false);
   const [validationReport, setValidationReport] = useState<GraphValidationResult | null>(null);
   const [showPrintableQrModal, setShowPrintableQrModal] = useState(false);
+
+  // Live SVG Floor Plan Preview & Overlay State
+  const [previewSvg, setPreviewSvg] = useState<string | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+  const [previewScale, setPreviewScale] = useState(1);
+  const [previewPan, setPreviewPan] = useState({ x: 0, y: 0 });
+  const [showGraphOverlay, setShowGraphOverlay] = useState(true);
+  const [showAdminFloorPlanModal, setShowAdminFloorPlanModal] = useState(false);
+  const [hoveredWaypointOnMap, setHoveredWaypointOnMap] = useState<string | null>(null);
+  const isDraggingPreviewRef = useRef(false);
+  const dragStartCoordsRef = useRef({ x: 0, y: 0 });
+  const panStartCoordsRef = useRef({ x: 0, y: 0 });
 
 
   // SMTP Settings State
@@ -1062,6 +1081,54 @@ export default function AdminOverviewPage() {
     }
   };
 
+  const loadPreviewSvg = useCallback(async (urlToFetch?: string) => {
+    const targetUrl = urlToFetch || brandingForm.floorPlanUrl || "/uploads/campus-floorplan.svg";
+    if (!targetUrl) {
+      setPreviewSvg(null);
+      setPreviewError(null);
+      return;
+    }
+
+    setPreviewLoading(true);
+    setPreviewError(null);
+
+    try {
+      const cacheBustUrl = `${targetUrl}${targetUrl.includes("?") ? "&" : "?"}_t=${Date.now()}`;
+      const res = await fetch(cacheBustUrl);
+      if (!res.ok) {
+        throw new Error(`Failed to load SVG (${res.status} ${res.statusText})`);
+      }
+      const text = await res.text();
+      if (!text.includes("<svg")) {
+        throw new Error("File content is not valid SVG format.");
+      }
+      setPreviewSvg(text);
+      setPreviewError(null);
+    } catch (err: any) {
+      console.warn("Live SVG Preview load error:", err);
+      setPreviewError(err.message || "Failed to load floor plan SVG.");
+    } finally {
+      setPreviewLoading(false);
+    }
+  }, [brandingForm.floorPlanUrl]);
+
+  useEffect(() => {
+    loadPreviewSvg(brandingForm.floorPlanUrl || undefined);
+  }, [brandingForm.floorPlanUrl, loadPreviewSvg]);
+
+  const previewViewBox = useMemo(() => {
+    if (!previewSvg) return "0 0 1000 800";
+    const vbMatch = previewSvg.match(/viewBox=["']\s*([-\d.]+[\s,]+[-\d.]+[\s,]+[-\d.]+[\s,]+[-\d.]+)["']/i);
+    if (vbMatch) {
+      return vbMatch[1].replace(/,/g, " ").trim();
+    }
+    const wMatch = previewSvg.match(/width=["']([-\d.]+)["']/i);
+    const hMatch = previewSvg.match(/height=["']([-\d.]+)["']/i);
+    const w = wMatch ? parseFloat(wMatch[1]) : 1000;
+    const h = hMatch ? parseFloat(hMatch[1]) : 800;
+    return `0 0 ${w} ${h}`;
+  }, [previewSvg]);
+
   const loadWaypointGraph = async () => {
     setLoadingGraph(true);
     try {
@@ -1206,6 +1273,7 @@ export default function AdminOverviewPage() {
       const data = await safeJson(res, { success: false, error: "Upload failed" });
       if (data.success && data.url) {
         setBrandingForm((prev) => ({ ...prev, floorPlanUrl: data.url }));
+        loadPreviewSvg(data.url);
         if (data.zones && Array.isArray(data.zones)) {
           setDetectedZones(data.zones);
         } else {
@@ -2690,19 +2758,324 @@ export default function AdminOverviewPage() {
                     </div>
 
                     {/* Live Map Preview Box */}
-                    {brandingForm.floorPlanUrl && (
-                      <div className="space-y-2">
-                        <span className="text-xs font-bold text-[#64748B]">Live SVG Map Preview</span>
-                        <div className="relative w-full aspect-16/10 rounded-2xl bg-[#0B0A0A] border border-stone-800 overflow-hidden shadow-inner flex items-center justify-center">
-                          <img
-                            src={brandingForm.floorPlanUrl}
-                            alt="Floor Plan Preview"
-                            className="w-full h-full object-contain p-4"
-                            loading="lazy"
-                          />
+                    <div className="space-y-3">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-[#0F172A] flex items-center gap-1.5">
+                            <Eye className="w-3.5 h-3.5 text-[#FF6B1A]" />
+                            <span>Live SVG Map Preview</span>
+                          </span>
+                          {brandingForm.floorPlanUrl && (
+                            <span className="text-[10px] font-mono text-stone-500 bg-stone-100 border border-stone-200 px-2 py-0.5 rounded-full truncate max-w-[200px]" title={brandingForm.floorPlanUrl}>
+                              {brandingForm.floorPlanUrl.split("/").pop()}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Top Preview Controls */}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <button
+                            type="button"
+                            onClick={() => setShowGraphOverlay(!showGraphOverlay)}
+                            className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-lg border transition ${
+                              showGraphOverlay
+                                ? "bg-amber-50 text-amber-900 border-amber-300"
+                                : "bg-white text-stone-600 border-stone-200 hover:bg-stone-50"
+                            }`}
+                            title="Toggle visual waypoint nodes and corridor lines on top of the map"
+                          >
+                            <Network className="w-3 h-3 text-[#FF6B1A]" />
+                            <span>Graph Overlay {showGraphOverlay ? "ON" : "OFF"}</span>
+                          </button>
+
+                          <div className="inline-flex items-center bg-white border border-stone-200 rounded-lg p-0.5 text-xs text-stone-600">
+                            <button
+                              type="button"
+                              onClick={() => setPreviewScale((s) => Math.min(s * 1.25, 3.5))}
+                              className="p-1 hover:bg-stone-100 rounded text-stone-700"
+                              title="Zoom In"
+                            >
+                              <ZoomIn className="w-3.5 h-3.5" />
+                            </button>
+                            <span className="px-1.5 text-[11px] font-mono text-stone-500">
+                              {Math.round(previewScale * 100)}%
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setPreviewScale((s) => Math.max(s * 0.8, 0.5))}
+                              className="p-1 hover:bg-stone-100 rounded text-stone-700"
+                              title="Zoom Out"
+                            >
+                              <ZoomOut className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setPreviewScale(1);
+                                setPreviewPan({ x: 0, y: 0 });
+                              }}
+                              className="px-1.5 py-0.5 text-[10px] font-semibold hover:bg-stone-100 rounded text-stone-600 border-l border-stone-200"
+                              title="Reset Zoom & Pan"
+                            >
+                              Reset
+                            </button>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => loadPreviewSvg()}
+                            disabled={previewLoading}
+                            className="p-1.5 text-stone-600 hover:text-stone-900 bg-white border border-stone-200 rounded-lg hover:bg-stone-50 transition"
+                            title="Refresh SVG blueprint from server"
+                          >
+                            <RefreshCw className={`w-3.5 h-3.5 ${previewLoading ? "animate-spin text-[#FF6B1A]" : ""}`} />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setShowAdminFloorPlanModal(true)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-lg bg-gradient-to-r from-[#FF6B1A] to-[#D9A441] text-white shadow-sm hover:opacity-95 transition"
+                            title="Open full interactive 2D floor plan & 3D volumetric simulation modal"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                            <span>Open 2D/3D Viewer</span>
+                          </button>
                         </div>
                       </div>
-                    )}
+
+                      {/* Map Canvas Viewport */}
+                      <div
+                        className="relative w-full aspect-16/10 rounded-2xl bg-[#0B0A0A] border border-stone-800 overflow-hidden shadow-inner flex items-center justify-center cursor-grab active:cursor-grabbing select-none"
+                        onMouseDown={(e) => {
+                          if (e.button !== 0) return;
+                          isDraggingPreviewRef.current = true;
+                          dragStartCoordsRef.current = { x: e.clientX, y: e.clientY };
+                          panStartCoordsRef.current = { ...previewPan };
+                        }}
+                        onMouseMove={(e) => {
+                          if (!isDraggingPreviewRef.current) return;
+                          const dx = e.clientX - dragStartCoordsRef.current.x;
+                          const dy = e.clientY - dragStartCoordsRef.current.y;
+                          setPreviewPan({
+                            x: panStartCoordsRef.current.x + dx,
+                            y: panStartCoordsRef.current.y + dy,
+                          });
+                        }}
+                        onMouseUp={() => {
+                          isDraggingPreviewRef.current = false;
+                        }}
+                        onMouseLeave={() => {
+                          isDraggingPreviewRef.current = false;
+                        }}
+                      >
+                        {/* Background blueprint grid watermark */}
+                        <div
+                          className="absolute inset-0 pointer-events-none opacity-20"
+                          style={{
+                            backgroundImage: `radial-gradient(circle at 1px 1px, rgba(255,255,255,0.15) 1px, transparent 0)`,
+                            backgroundSize: "28px 28px",
+                          }}
+                        />
+
+                        {previewLoading ? (
+                          <div className="flex flex-col items-center gap-2 text-stone-400 z-10">
+                            <RefreshCw className="w-6 h-6 animate-spin text-[#FF6B1A]" />
+                            <span className="text-xs font-medium">Loading SVG blueprint...</span>
+                          </div>
+                        ) : previewError ? (
+                          <div className="flex flex-col items-center gap-3 p-6 text-center z-10 max-w-md">
+                            <div className="w-10 h-10 rounded-full bg-rose-950/80 border border-rose-800 flex items-center justify-center text-rose-400">
+                              <AlertCircle className="w-5 h-5" />
+                            </div>
+                            <div className="space-y-1">
+                              <span className="text-xs font-bold text-rose-300 block">
+                                Failed to Render SVG Blueprint
+                              </span>
+                              <p className="text-[11px] text-stone-400 font-mono">
+                                {previewError}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => loadPreviewSvg()}
+                                className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-stone-800 hover:bg-stone-700 text-stone-200 border border-stone-700 transition"
+                              >
+                                Retry
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const fallbackUrl = "/uploads/campus-floorplan.svg";
+                                  setBrandingForm({ ...brandingForm, floorPlanUrl: fallbackUrl });
+                                  loadPreviewSvg(fallbackUrl);
+                                  loadFloorPlanZones(fallbackUrl);
+                                }}
+                                className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-[#FF6B1A] hover:bg-[#E8551F] text-white transition"
+                              >
+                                Load Default Blueprint
+                              </button>
+                            </div>
+                          </div>
+                        ) : previewSvg ? (
+                          <div
+                            style={{
+                              transform: `translate(${previewPan.x}px, ${previewPan.y}px) scale(${previewScale})`,
+                              transformOrigin: "center center",
+                              transition: isDraggingPreviewRef.current ? "none" : "transform 100ms ease-out",
+                              width: "100%",
+                              height: "100%",
+                            }}
+                            className="relative w-full h-full flex items-center justify-center"
+                          >
+                            {/* Inlined SVG Blueprint */}
+                            <div
+                              className="w-full h-full flex items-center justify-center [&_svg]:w-full [&_svg]:h-full [&_svg]:max-h-full [&_svg]:object-contain pointer-events-none"
+                              dangerouslySetInnerHTML={{ __html: previewSvg }}
+                            />
+
+                            {/* Waypoint Graph Visual Overlay */}
+                            {showGraphOverlay && (
+                              <svg
+                                viewBox={previewViewBox}
+                                className="absolute inset-0 w-full h-full pointer-events-none"
+                                preserveAspectRatio="xMidYMid meet"
+                              >
+                                <defs>
+                                  <filter id="admin-glow-orange" x="-30%" y="-30%" width="160%" height="160%">
+                                    <feGaussianBlur stdDeviation="3.5" result="blur" />
+                                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                                  </filter>
+                                </defs>
+
+                                {/* Walkable Corridor Edges */}
+                                <g id="admin-overlay-edges">
+                                  {graphData.edges.map((edge, idx) => {
+                                    const nodeA = graphData.nodes.find((n) => n.id === edge.a);
+                                    const nodeB = graphData.nodes.find((n) => n.id === edge.b);
+                                    if (!nodeA || !nodeB) return null;
+                                    const isHighlighted =
+                                      selectedWaypointA === edge.a || selectedWaypointA === edge.b;
+                                    return (
+                                      <g key={`admin-edge-${edge.a}-${edge.b}-${idx}`}>
+                                        <line
+                                          x1={nodeA.x}
+                                          y1={nodeA.y}
+                                          x2={nodeB.x}
+                                          y2={nodeB.y}
+                                          stroke={isHighlighted ? "#FF6B1A" : "#38BDF8"}
+                                          strokeWidth={isHighlighted ? 4 : 2}
+                                          strokeDasharray={isHighlighted ? "6,4" : "4,4"}
+                                          strokeOpacity={isHighlighted ? 0.95 : 0.65}
+                                        />
+                                      </g>
+                                    );
+                                  })}
+                                </g>
+
+                                {/* Waypoint Nodes */}
+                                <g id="admin-overlay-nodes">
+                                  {graphData.nodes.map((node) => {
+                                    const isSelected = selectedWaypointA === node.id;
+                                    const isHovered = hoveredWaypointOnMap === node.id;
+                                    const degree = graphData.edges.filter(
+                                      (e) => e.a === node.id || e.b === node.id
+                                    ).length;
+                                    const isIsolated = degree === 0;
+
+                                    return (
+                                      <g
+                                        key={`admin-node-${node.id}`}
+                                        className="pointer-events-auto cursor-pointer"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleWaypointClick(node.id);
+                                        }}
+                                        onMouseEnter={() => setHoveredWaypointOnMap(node.id)}
+                                        onMouseLeave={() => setHoveredWaypointOnMap(null)}
+                                      >
+                                        {/* Outer pulse when selected */}
+                                        {isSelected && (
+                                          <circle
+                                            cx={node.x}
+                                            cy={node.y}
+                                            r={16}
+                                            fill="none"
+                                            stroke="#FF6B1A"
+                                            strokeWidth={2}
+                                            strokeOpacity={0.8}
+                                            filter="url(#admin-glow-orange)"
+                                          />
+                                        )}
+
+                                        {/* Node Circle */}
+                                        <circle
+                                          cx={node.x}
+                                          cy={node.y}
+                                          r={isSelected ? 8 : isHovered ? 7 : 5}
+                                          fill={
+                                            isSelected
+                                              ? "#FF6B1A"
+                                              : isIsolated
+                                              ? "#EF4444"
+                                              : node.zoneId
+                                              ? "#10B981"
+                                              : "#38BDF8"
+                                          }
+                                          stroke="#FFFFFF"
+                                          strokeWidth={1.5}
+                                        />
+
+                                        {/* Hover Tooltip / Node Label */}
+                                        {(isSelected || isHovered || graphData.nodes.length <= 16) && (
+                                          <g pointerEvents="none">
+                                            <rect
+                                              x={node.x - ((node.label || node.id).length * 3.3 + 8)}
+                                              y={node.y - 23}
+                                              width={(node.label || node.id).length * 6.6 + 16}
+                                              height={18}
+                                              rx={5}
+                                              fill="#0F172A"
+                                              fillOpacity={0.92}
+                                              stroke={isSelected ? "#FF6B1A" : "#334155"}
+                                              strokeWidth={1}
+                                            />
+                                            <text
+                                              x={node.x}
+                                              y={node.y - 10}
+                                              fill="#F8FAFC"
+                                              fontSize="9"
+                                              fontWeight="bold"
+                                              textAnchor="middle"
+                                              fontFamily="system-ui, sans-serif"
+                                            >
+                                              {node.label || node.id}
+                                            </text>
+                                          </g>
+                                        )}
+                                      </g>
+                                    );
+                                  })}
+                                </g>
+                              </svg>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center gap-2 text-stone-500 z-10">
+                            <ImageIcon className="w-8 h-8 opacity-40" />
+                            <span className="text-xs">No floor plan URL configured.</span>
+                          </div>
+                        )}
+
+                        {/* Interactive hint in bottom-left */}
+                        {previewSvg && !previewError && !previewLoading && (
+                          <div className="absolute bottom-2.5 left-2.5 z-20 px-2.5 py-1 rounded-md bg-[#0F172A]/80 border border-stone-800 text-[10px] text-stone-400 backdrop-blur-sm pointer-events-none flex items-center gap-2">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#FF6B1A]" />
+                            <span>Click any waypoint dot on map to toggle corridor connections. Drag to pan.</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
 
                     {/* Wayfinding Routing Graph Editor */}
                     <div className="p-4 bg-stone-50 rounded-2xl border border-stone-200 space-y-4">
@@ -6251,6 +6624,14 @@ export default function AdminOverviewPage() {
         waypoints={graphData.nodes}
         editionName={brandingForm.edition || brandingForm.name || "SHINE 2026"}
         institutionName={brandingForm.institutionName || "Sacred Heart College (Autonomous), Tirupattur"}
+      />
+
+      <InteractiveFloorPlanModal
+        isOpen={showAdminFloorPlanModal}
+        onClose={() => setShowAdminFloorPlanModal(false)}
+        floorPlanUrl={brandingForm.floorPlanUrl}
+        title={brandingForm.edition || brandingForm.name || "SHINE 2026"}
+        subtitle="Admin Live Venue & Navigation Simulation"
       />
 
       {/* RESET REGISTRATIONS & REVENUE CONFIRMATION MODAL */}
