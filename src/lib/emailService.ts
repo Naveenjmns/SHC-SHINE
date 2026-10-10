@@ -480,6 +480,9 @@ export interface DelegateRegistrationEmailPayload {
     name: string;
     category: string;
     venue?: string | null;
+    venueZoneId?: string | null;
+    venueZoneLabel?: string | null;
+    mapUrl?: string | null;
     time?: string | null;
     staffCoordinator?: string | null;
     studentCoordinator?: string | null;
@@ -526,8 +529,16 @@ export async function sendDelegateRegistrationEmail(payload: DelegateRegistratio
             <div style="font-size: 11px; color: #78716C; margin-top: 2px;">
               <span>${ev.category === "ON_STAGE" ? "On-Stage Arena" : "Off-Stage Challenge"}</span>
               ${ev.venue ? ` • Venue: <b>${ev.venue}</b>` : ""}
+              ${ev.venueZoneLabel || ev.venueZoneId ? ` • Zone: <b style="color: #FF6B1A;">${ev.venueZoneLabel || ev.venueZoneId}</b>` : ""}
               ${ev.time ? ` • Time: <b>${ev.time}</b>` : ""}
             </div>
+            ${ev.mapUrl ? `
+              <div style="margin-top: 8px;">
+                <a href="${ev.mapUrl}" style="display: inline-block; background-color: #FFF7ED; border: 1px solid #FFEDD5; color: #EA580C; font-size: 11px; font-weight: 700; text-decoration: none; padding: 4px 10px; border-radius: 6px;">
+                  🗺️ View on Map & Turn-by-Turn Directions →
+                </a>
+              </div>
+            ` : ""}
             ${(ev.staffCoordinator || ev.studentCoordinator) ? `
               <div style="font-size: 11px; color: #57534E; margin-top: 6px; padding-top: 6px; border-top: 1px dashed #E7E5E4;">
                 ${ev.staffCoordinator ? `Staff Incharge: <b>${ev.staffCoordinator}</b> ` : ""}
@@ -895,8 +906,16 @@ export async function sendApprovedDelegatePassEmail(payload: DelegateRegistratio
             <div style="font-size: 11px; color: #78716C; margin-top: 2px;">
               <span>${ev.category === "ON_STAGE" ? "On-Stage Arena" : "Off-Stage Challenge"}</span>
               ${ev.venue ? ` • Venue: <b>${ev.venue}</b>` : ""}
+              ${ev.venueZoneLabel || ev.venueZoneId ? ` • Zone: <b style="color: #065F46;">${ev.venueZoneLabel || ev.venueZoneId}</b>` : ""}
               ${ev.time ? ` • Time: <b>${ev.time}</b>` : ""}
             </div>
+            ${ev.mapUrl ? `
+              <div style="margin-top: 8px;">
+                <a href="${ev.mapUrl}" style="display: inline-block; background-color: #ECFDF5; border: 1px solid #A7F3D0; color: #065F46; font-size: 11px; font-weight: 700; text-decoration: none; padding: 4px 10px; border-radius: 6px;">
+                  🗺️ View on Map & Turn-by-Turn Directions →
+                </a>
+              </div>
+            ` : ""}
           </div>
         `).join("")
       : `<p style="color: #78716C; font-size: 13px;">General Fest Attendee</p>`;
@@ -1204,6 +1223,9 @@ export interface EventReminderEmailPayload {
   category: "ON_STAGE" | "OFF_STAGE" | string;
   isPrelims?: boolean;
   venue?: string | null;
+  venueZoneId?: string | null;
+  venueZoneLabel?: string | null;
+  mapUrl?: string | null;
   startTime: string;
   minutesUntilStart?: number;
   badgeCode: string;
@@ -1241,6 +1263,7 @@ export async function sendEventReminderEmail(payload: EventReminderEmailPayload)
     const minutesStr = payload.minutesUntilStart ? `${payload.minutesUntilStart}` : "10";
     const roundTitle = payload.isPrelims ? "Preliminary Screening Round" : "Final / Main Arena";
     const venueDisplay = payload.venue || "Designated Competition Arena";
+    const zoneBadge = payload.venueZoneLabel || payload.venueZoneId;
 
     const subject = `${payload.isPrelims ? "⚡ [Prelims Alert]" : "⏰ [Starting in 10 Mins]"} ${payload.eventName} — Venue: ${venueDisplay} (${payload.startTime})`;
 
@@ -1282,10 +1305,23 @@ export async function sendEventReminderEmail(payload: EventReminderEmailPayload)
                 </div>
                 <div style="font-size: 19px; font-weight: 900; color: #78350F; margin-top: 3px;">
                   ${venueDisplay}
+                  ${zoneBadge ? `
+                    <span style="display: inline-block; font-size: 11px; font-weight: 800; background-color: #FF6B1A; color: #ffffff; padding: 2px 8px; border-radius: 6px; vertical-align: middle; margin-left: 6px; letter-spacing: 0.05em;">
+                      📍 ZONE ${zoneBadge}
+                    </span>
+                  ` : ""}
                 </div>
               </div>
 
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding-top: 12px; border-top: 1px dashed #F59E0B;">
+              ${payload.mapUrl ? `
+                <div style="margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px dashed #F59E0B;">
+                  <a href="${payload.mapUrl}" style="background-color: #FF6B1A; color: #ffffff; padding: 7px 14px; font-size: 11.5px; font-weight: 800; text-decoration: none; border-radius: 8px; display: inline-block; box-shadow: 0 2px 6px rgba(255,107,26,0.3);">
+                    🗺️ View on Interactive Campus Map & Directions →
+                  </a>
+                </div>
+              ` : ""}
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding-top: 12px; ${payload.mapUrl ? "" : "border-top: 1px dashed #F59E0B;"}">
                 <div>
                   <div style="font-size: 10px; font-weight: 800; color: #92400E; text-transform: uppercase;">Reporting Time</div>
                   <div style="font-size: 15px; font-weight: 800; color: #1C1917; margin-top: 2px;">${payload.startTime}</div>
@@ -1376,8 +1412,8 @@ Your registered event "${payload.eventName}" (${roundTitle}) is scheduled to com
 EVENT DETAILS
 ============================================================
 Competition: ${payload.eventName}
-Venue / Room: ${venueDisplay}
-Start Time: ${payload.startTime}
+Venue / Room: ${venueDisplay}${zoneBadge ? ` (Zone: ${zoneBadge})` : ""}
+${payload.mapUrl ? `Floor Plan & Directions: ${payload.mapUrl}\n` : ""}Start Time: ${payload.startTime}
 Category: ${payload.category === "ON_STAGE" ? "On-Stage Arena" : "Off-Stage Arena"}
 
 ============================================================

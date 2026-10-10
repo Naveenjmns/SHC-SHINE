@@ -250,6 +250,7 @@ export async function GET(req: Request) {
         name: activeEdition.name || "SHINE",
         edition: activeEdition.edition || "26",
         venue: activeEdition.venue,
+        floorPlanUrl: activeEdition.floorPlanUrl || "/uploads/campus-floorplan.svg",
         logoUrl: activeEdition.logoUrl,
         institutionCrestUrl: activeEdition.institutionCrestUrl,
       },

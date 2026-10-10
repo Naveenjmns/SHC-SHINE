@@ -123,6 +123,11 @@ model EventEdition {
   // Student Portal Stage Mode (Event Winners Display) Visibility
   showStageModeInStudentPortal Boolean @default(false)
 
+  // Indoor Venue Floor Plan & Navigation
+  floorPlanUrl                 String?  @default("/uploads/campus-floorplan.svg")
+  waypointGraph                Json?
+
+
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 
@@ -261,7 +266,10 @@ model Event {
   hasPrelims                 Boolean       @default(false)
   prelimsDateTime            DateTime?
   prelimsVenue               String?
+  prelimsVenueZoneId         String?
   prelimsRules               String?       @db.Text
+  venueZoneId                String?
+
   firstPrize                 String?       @default("Cash Prize + Trophy + Certificate")
   secondPrize                String?       @default("Cash Prize + Merit Certificate")
   thirdPrize                 String?       @default("Distinction Certificate")

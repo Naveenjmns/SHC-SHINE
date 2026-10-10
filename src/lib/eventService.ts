@@ -59,6 +59,10 @@ export interface ActiveEditionConfig {
   defaultThirdPrize?: string | null;
   showStageModeInStudentPortal?: boolean;
 
+  // Floor plan & Wayfinding
+  floorPlanUrl?: string | null;
+  waypointGraph?: any;
+
   // Symposium Rules & Guidelines
   rulesEligibilityTitle?: string | null;
   rulesEligibilityText?: string | null;
@@ -143,6 +147,8 @@ export const DEFAULT_EDITION_CONFIG: ActiveEditionConfig = {
   defaultSecondPrize: "Cash Prize - 750Rs + Certificate",
   defaultThirdPrize: "Cash Prize - 500Rs + Certificate",
   showStageModeInStudentPortal: false,
+  floorPlanUrl: "/uploads/campus-floorplan.svg",
+  waypointGraph: null,
 
   rulesEligibilityTitle: "Eligibility & Registration",
   rulesEligibilityText:
@@ -281,6 +287,8 @@ async function fetchActiveEditionFromDb(): Promise<ActiveEditionConfig> {
       defaultSecondPrize: defaultSecond || DEFAULT_EDITION_CONFIG.defaultSecondPrize,
       defaultThirdPrize: defaultThird || DEFAULT_EDITION_CONFIG.defaultThirdPrize,
       showStageModeInStudentPortal: showStageModeInStudentPortal !== undefined ? showStageModeInStudentPortal : false,
+      floorPlanUrl: (active as any).floorPlanUrl || DEFAULT_EDITION_CONFIG.floorPlanUrl,
+      waypointGraph: (active as any).waypointGraph || null,
 
       rulesEligibilityTitle:
         rulesEligibilityTitle || DEFAULT_EDITION_CONFIG.rulesEligibilityTitle,

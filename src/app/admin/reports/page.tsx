@@ -40,6 +40,13 @@ import { parseDateSafe } from "@/lib/dateUtils";
 import { downloadEventParticipantsCSV } from "@/lib/exportEventCsv";
 
 interface ReportData {
+  edition?: {
+    id?: string | null;
+    name?: string | null;
+    edition?: string | null;
+    floorPlanUrl?: string | null;
+    waypointGraph?: any;
+  } | null;
   summary: {
     festName: string;
     festEdition: string;
@@ -75,6 +82,8 @@ interface ReportData {
     category: "ON_STAGE" | "OFF_STAGE";
     description: string | null;
     venue: string;
+    venueZoneId?: string | null;
+    prelimsVenueZoneId?: string | null;
     dateTime: string;
     rules: string | null;
     fee: number;
@@ -244,7 +253,7 @@ export default function AdminReportsPage() {
   }, []);
 
   const [activeSection, setActiveSection] = useState<
-    "all" | "summary" | "catering" | "events" | "delegations" | "roster" | "prelims" | "results" | "championship"
+    "all" | "summary" | "catering" | "events" | "venue" | "delegations" | "roster" | "prelims" | "results" | "championship"
   >("all");
   const [downloadingEventId, setDownloadingEventId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -578,6 +587,87 @@ export default function AdminReportsPage() {
     });
   }, [data, searchTerm, selectedEventFilter]);
 
+  // Memoized zone-to-events directory for the Venue Map Section
+  const zoneAllocations = useMemo(() => {
+    if (!data?.events) return [];
+
+    const zoneMap = new Map<
+      string,
+      {
+        zoneId: string;
+        zoneLabel: string;
+        mainEvents: Array<{ id: string; name: string; category: string; venue: string; coordinator: string }>;
+        prelimsEvents: Array<{ id: string; name: string; category: string; venue: string; coordinator: string }>;
+      }
+    >();
+
+    // From graph nodes if available
+    const graphNodes: Array<{ id: string }> = data.edition?.waypointGraph?.nodes || [];
+    for (const node of graphNodes) {
+      if (node.id && !node.id.startsWith("wp-")) {
+        const label = node.id
+          .replace(/^hall-|^lab-|^room-|^amenity-/, "")
+          .replace(/-/g, " ")
+          .replace(/\b\w/g, (c) => c.toUpperCase());
+        zoneMap.set(node.id, {
+          zoneId: node.id,
+          zoneLabel: label,
+          mainEvents: [],
+          prelimsEvents: [],
+        });
+      }
+    }
+
+    // From events
+    for (const ev of data.events) {
+      if (ev.venueZoneId) {
+        if (!zoneMap.has(ev.venueZoneId)) {
+          const label = ev.venueZoneId
+            .replace(/^hall-|^lab-|^room-|^amenity-/, "")
+            .replace(/-/g, " ")
+            .replace(/\b\w/g, (c) => c.toUpperCase());
+          zoneMap.set(ev.venueZoneId, {
+            zoneId: ev.venueZoneId,
+            zoneLabel: label,
+            mainEvents: [],
+            prelimsEvents: [],
+          });
+        }
+        zoneMap.get(ev.venueZoneId)!.mainEvents.push({
+          id: ev.id,
+          name: ev.name,
+          category: ev.category,
+          venue: ev.venue,
+          coordinator: ev.staffCoordinator?.name || ev.studentCoordinator?.name || "Faculty / Student Incharge",
+        });
+      }
+
+      if (ev.prelimsVenueZoneId) {
+        if (!zoneMap.has(ev.prelimsVenueZoneId)) {
+          const label = ev.prelimsVenueZoneId
+            .replace(/^hall-|^lab-|^room-|^amenity-/, "")
+            .replace(/-/g, " ")
+            .replace(/\b\w/g, (c) => c.toUpperCase());
+          zoneMap.set(ev.prelimsVenueZoneId, {
+            zoneId: ev.prelimsVenueZoneId,
+            zoneLabel: label,
+            mainEvents: [],
+            prelimsEvents: [],
+          });
+        }
+        zoneMap.get(ev.prelimsVenueZoneId)!.prelimsEvents.push({
+          id: ev.id,
+          name: ev.name,
+          category: ev.category,
+          venue: ev.prelimsVenue || ev.venue,
+          coordinator: ev.staffCoordinator?.name || ev.studentCoordinator?.name || "Faculty / Student Incharge",
+        });
+      }
+    }
+
+    return Array.from(zoneMap.values()).sort((a, b) => a.zoneLabel.localeCompare(b.zoneLabel));
+  }, [data]);
+
   if (status === "loading" || loading || !mounted) {
     return (
       <div suppressHydrationWarning className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center p-4">
@@ -866,6 +956,7 @@ export default function AdminReportsPage() {
             { id: "summary", label: "Executive Summary" },
             { id: "catering", label: `🍱 Catering & Dietary (${data.cateringSummary?.totalClaimed ?? 0}/${data.cateringSummary?.totalEligible ?? 0})` },
             { id: "events", label: `Events & Coordinators (${data.events.length})` },
+            { id: "venue", label: "🗺️ Venue Map & Zones" },
             { id: "delegations", label: `College Delegations (${data.delegations.length})` },
             { id: "roster", label: `Master Student Roster (${data.masterStudentRoster.length})` },
             { id: "prelims", label: `Prelims Progression (${data.prelimsProgression.length})` },
@@ -1181,6 +1272,176 @@ export default function AdminReportsPage() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          </div>
+        )}
+
+        {/* =========================================================================
+            SECTION 2B: INDOOR VENUE FLOOR PLAN & COMPETITION ZONES DIRECTORY
+            ========================================================================= */}
+        {(activeSection === "all" || activeSection === "venue") && (
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-xs print:border-none print:shadow-none print:p-0 print:m-0 print:break-before-page">
+            <div className="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <MapPin className="w-5 h-5 text-orange-600" />
+                <h3 className="text-base font-black text-slate-900 uppercase tracking-wider">
+                  2B. Indoor Venue Floor Plan & Competition Zones Directory
+                </h3>
+              </div>
+              <span className="text-xs font-bold text-slate-500 no-print print:hidden">
+                Campus Wayfinding & Arenas
+              </span>
+            </div>
+
+            {/* Visual Floor Plan Display */}
+            <div className="mb-6 rounded-2xl border border-slate-200 bg-slate-50 p-4 print:bg-white print:border-slate-300 print:p-2 print:break-inside-avoid">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                <div>
+                  <h4 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider">
+                    Official Indoor Floor Plan — Sacred Heart College Campus
+                  </h4>
+                  <p className="text-[11px] text-slate-500 print:text-[7pt]">
+                    Active map layout with delineated competition halls, preliminary screening rooms, amenities, and wayfinding checkpoints.
+                  </p>
+                </div>
+                <div className="no-print print:hidden flex items-center gap-2">
+                  <Link
+                    href={data.edition?.floorPlanUrl || "/uploads/campus-floorplan.svg"}
+                    target="_blank"
+                    className="text-[11px] font-bold text-orange-600 hover:text-orange-700 bg-orange-50 px-2.5 py-1 rounded-lg border border-orange-200"
+                  >
+                    View Raw Vector SVG
+                  </Link>
+                  <Link
+                    href="/loc/wp-entrance"
+                    target="_blank"
+                    className="text-[11px] font-bold text-blue-600 hover:text-blue-700 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-200"
+                  >
+                    Open Live Interactive Map →
+                  </Link>
+                </div>
+              </div>
+
+              {/* Map Image rendering */}
+              <div className="w-full flex items-center justify-center bg-slate-900 rounded-xl p-3 overflow-hidden border border-slate-700/50 print:bg-white print:border-slate-300 print:p-1">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={data.edition?.floorPlanUrl || "/uploads/campus-floorplan.svg"}
+                  alt="Official Fest Floor Plan Map"
+                  className="max-h-[360px] w-auto max-w-full object-contain print:max-h-[300px]"
+                />
+              </div>
+            </div>
+
+            {/* Zones & Hall Assignment Legend Table */}
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider">
+                  Zone & Hall Allocation Legend ({zoneAllocations.length} Active Zones)
+                </h4>
+              </div>
+
+              <div className="overflow-x-auto print:overflow-visible">
+                <table className="w-full text-left text-xs border-collapse border border-slate-200 print:text-[7pt] print:table-fixed">
+                  <thead>
+                    <tr className="bg-slate-100 text-slate-800 font-extrabold border-b border-slate-200 print:bg-slate-100">
+                      <th className="p-2 border border-slate-200 w-8 print:w-[5%] text-center">#</th>
+                      <th className="p-2 border border-slate-200 print:w-[15%]">Zone ID / Code</th>
+                      <th className="p-2 border border-slate-200 print:w-[18%]">Human-Readable Label</th>
+                      <th className="p-2 border border-slate-200 print:w-[27%]">Allocated Competitions</th>
+                      <th className="p-2 border border-slate-200 print:w-[20%]">Physical Venue Text</th>
+                      <th className="p-2 border border-slate-200 print:w-[15%]">Navigation Checkpoint</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200">
+                    {zoneAllocations.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="p-4 text-center text-slate-500 text-xs">
+                          No indoor map zones currently allocated to competitions. Assign zone IDs under Admin Events.
+                        </td>
+                      </tr>
+                    ) : (
+                      zoneAllocations.map((z, idx) => (
+                        <tr key={z.zoneId} className="hover:bg-slate-50/80 print:break-inside-avoid print:hover:bg-transparent">
+                          <td className="p-2 border border-slate-200 text-center font-bold text-slate-500">
+                            {idx + 1}
+                          </td>
+                          <td className="p-2 border border-slate-200">
+                            <span className="font-mono font-bold text-xs print:text-[7pt] text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded border border-orange-200 print:border-none print:p-0 print:bg-transparent">
+                              {z.zoneId}
+                            </span>
+                          </td>
+                          <td className="p-2 border border-slate-200">
+                            <strong className="text-slate-900 block">{z.zoneLabel}</strong>
+                          </td>
+                          <td className="p-2 border border-slate-200">
+                            {z.mainEvents.length === 0 && z.prelimsEvents.length === 0 ? (
+                              <span className="text-slate-400 italic">General Campus Zone / Facility</span>
+                            ) : (
+                              <div className="space-y-1">
+                                {z.mainEvents.map((ev) => (
+                                  <div key={ev.id} className="text-slate-800 text-[11px] print:text-[7pt]">
+                                    <span className="font-bold text-slate-900">{ev.name}</span>
+                                    <span className="ml-1 text-[9px] font-bold text-orange-600 uppercase bg-orange-100 px-1 rounded">Main</span>
+                                    <div className="text-[10px] text-slate-500">{ev.coordinator}</div>
+                                  </div>
+                                ))}
+                                {z.prelimsEvents.map((ev) => (
+                                  <div key={`prelim-${ev.id}`} className="text-slate-800 text-[11px] print:text-[7pt]">
+                                    <span className="font-bold text-slate-900">{ev.name}</span>
+                                    <span className="ml-1 text-[9px] font-bold text-blue-600 uppercase bg-blue-100 px-1 rounded">Prelims</span>
+                                    <div className="text-[10px] text-slate-500">{ev.coordinator}</div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </td>
+                          <td className="p-2 border border-slate-200 text-slate-700">
+                            {z.mainEvents[0]?.venue || z.prelimsEvents[0]?.venue || "Sacred Heart College Campus"}
+                          </td>
+                          <td className="p-2 border border-slate-200">
+                            <div className="font-mono text-[10px] print:text-[6.5pt] text-slate-600">
+                              /loc/{z.zoneId}
+                            </div>
+                            <div className="text-[9px] text-slate-400 print:text-[6pt]">
+                              QR Scannable Waypoint
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Campus Facilities & Amenities Directory */}
+            <div className="border-t border-slate-200 pt-4 print:break-inside-avoid">
+              <h4 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider mb-2">
+                Campus Facilities & Services Directory
+              </h4>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs print:text-[7pt]">
+                <div className="border border-slate-200 rounded-xl p-2.5 bg-slate-50 print:bg-transparent">
+                  <div className="font-bold text-slate-900">Restrooms / Washrooms</div>
+                  <div className="text-slate-500 text-[10px] print:text-[6.5pt] mt-0.5">Ground & 1st Floor Corridors</div>
+                  <div className="font-mono text-[9px] text-purple-600 mt-1">amenity-restroom-*</div>
+                </div>
+                <div className="border border-slate-200 rounded-xl p-2.5 bg-slate-50 print:bg-transparent">
+                  <div className="font-bold text-slate-900">Drinking Water Stations</div>
+                  <div className="text-slate-500 text-[10px] print:text-[6.5pt] mt-0.5">RO Water Purifiers (All Wings)</div>
+                  <div className="font-mono text-[9px] text-cyan-600 mt-1">amenity-water-*</div>
+                </div>
+                <div className="border border-slate-200 rounded-xl p-2.5 bg-slate-50 print:bg-transparent">
+                  <div className="font-bold text-slate-900">Dining & Refreshments</div>
+                  <div className="text-slate-500 text-[10px] print:text-[6.5pt] mt-0.5">Main College Canteen & Counters</div>
+                  <div className="font-mono text-[9px] text-amber-600 mt-1">amenity-food-*</div>
+                </div>
+                <div className="border border-slate-200 rounded-xl p-2.5 bg-slate-50 print:bg-transparent">
+                  <div className="font-bold text-slate-900">Helpdesk & First Aid</div>
+                  <div className="text-slate-500 text-[10px] print:text-[6.5pt] mt-0.5">Auditorium Main Lobby</div>
+                  <div className="font-mono text-[9px] text-emerald-600 mt-1">amenity-helpdesk-*</div>
+                </div>
+              </div>
             </div>
           </div>
         )}

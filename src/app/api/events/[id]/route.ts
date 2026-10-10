@@ -5,6 +5,9 @@ import { authOptions } from "@/lib/auth";
 import { EventCategory } from "@prisma/client";
 import { logActivity } from "@/lib/activityLogger";
 import { revalidatePath } from "next/cache";
+import { validateZoneExists } from "@/lib/svgSanitizer";
+import { getActiveEdition } from "@/lib/eventService";
+
 
 export async function GET(
   req: Request,
@@ -106,11 +109,35 @@ export async function PUT(
       hasPrelims,
       prelimsDateTime,
       prelimsVenue,
+      prelimsVenueZoneId,
       prelimsRules,
+      venueZoneId,
       firstPrize,
       secondPrize,
       thirdPrize,
     } = body;
+
+    const activeEdition = await getActiveEdition();
+
+    if (venueZoneId !== undefined && venueZoneId) {
+      const isValidZone = await validateZoneExists(venueZoneId, activeEdition?.floorPlanUrl);
+      if (!isValidZone) {
+        return NextResponse.json(
+          { success: false, message: `Selected map zone "${venueZoneId}" does not exist in the active floor plan.` },
+          { status: 400 }
+        );
+      }
+    }
+
+    if (prelimsVenueZoneId !== undefined && prelimsVenueZoneId) {
+      const isValidPrelimsZone = await validateZoneExists(prelimsVenueZoneId, activeEdition?.floorPlanUrl);
+      if (!isValidPrelimsZone) {
+        return NextResponse.json(
+          { success: false, message: `Selected prelims map zone "${prelimsVenueZoneId}" does not exist in the active floor plan.` },
+          { status: 400 }
+        );
+      }
+    }
 
     const updated = await prisma.event.update({
       where: { id },
@@ -120,6 +147,7 @@ export async function PUT(
         category: category !== undefined ? (category as EventCategory) : undefined,
         capacity: capacity !== undefined ? (capacity ? parseInt(capacity, 10) : null) : undefined,
         venue: venue !== undefined ? venue?.trim() || null : undefined,
+        venueZoneId: venueZoneId !== undefined ? venueZoneId?.trim() || null : undefined,
         dateTime: dateTime !== undefined ? new Date(dateTime) : undefined,
         rules: rules !== undefined ? rules?.trim() || null : undefined,
         imageUrl: imageUrl !== undefined ? imageUrl?.trim() || null : undefined,
@@ -143,6 +171,7 @@ export async function PUT(
         hasPrelims: hasPrelims !== undefined ? Boolean(hasPrelims) : undefined,
         prelimsDateTime: prelimsDateTime !== undefined ? (prelimsDateTime ? new Date(prelimsDateTime) : null) : undefined,
         prelimsVenue: prelimsVenue !== undefined ? prelimsVenue?.trim() || null : undefined,
+        prelimsVenueZoneId: prelimsVenueZoneId !== undefined ? (prelimsVenueZoneId?.trim() || null) : undefined,
         prelimsRules: prelimsRules !== undefined ? prelimsRules?.trim() || null : undefined,
       } as any,
       include: {

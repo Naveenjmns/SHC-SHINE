@@ -29,6 +29,7 @@ import {
   Maximize2,
   User,
 } from "lucide-react";
+import InteractiveFloorPlanModal from "@/components/InteractiveFloorPlanModal";
 
 interface RegistrationItem {
   id: string;
@@ -41,6 +42,10 @@ interface RegistrationItem {
     category: "ON_STAGE" | "OFF_STAGE";
     fee: number;
     venue: string | null;
+    venueZoneId?: string | null;
+    hasPrelims?: boolean;
+    prelimsVenue?: string | null;
+    prelimsVenueZoneId?: string | null;
     dateTime: string;
     coordinator: {
       name: string;
@@ -106,6 +111,7 @@ export default function StudentDashboard() {
     name?: string;
     edition?: string;
     venue?: string | null;
+    floorPlanUrl?: string | null;
     logoUrl?: string | null;
     institutionCrestUrl?: string | null;
   } | null>(null);
@@ -120,6 +126,16 @@ export default function StudentDashboard() {
     badgeType: "EVENT" | "FOOD";
     statusText?: string;
   } | null>(null);
+  const [mapModalState, setMapModalState] = useState<{
+    isOpen: boolean;
+    zoneId?: string | null;
+    title: string;
+    subtitle?: string;
+  }>({
+    isOpen: false,
+    zoneId: null,
+    title: "Indoor Venue Floor Plan",
+  });
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -307,9 +323,23 @@ export default function StudentDashboard() {
                 {editionInfo?.venue && (
                   <>
                     <span>•</span>
-                    <span className="inline-flex items-center gap-1 text-slate-700 font-semibold">
+                    <span className="inline-flex items-center gap-1.5 text-slate-700 font-semibold flex-wrap">
                       <MapPin className="w-3.5 h-3.5 text-[#FF6B1A]" />
                       <span>{editionInfo.venue}</span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setMapModalState({
+                            isOpen: true,
+                            zoneId: null,
+                            title: `${editionInfo.name || "SHINE"} Campus Floor Plan`,
+                            subtitle: editionInfo.venue || "Sacred Heart College (Autonomous)",
+                          })
+                        }
+                        className="tap-target px-2 py-0.5 rounded-md bg-orange-50 hover:bg-orange-100 text-[#EA580C] text-[10px] font-bold border border-orange-200/80 transition-colors inline-flex items-center gap-1 cursor-pointer"
+                      >
+                        <span>Campus Map</span>
+                      </button>
                     </span>
                   </>
                 )}
@@ -752,9 +782,50 @@ export default function StudentDashboard() {
 
                         <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500 pt-1">
                           {reg.event.venue && (
-                            <span className="inline-flex items-center gap-1">
-                              <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                              <span>Venue: <strong className="text-slate-700">{reg.event.venue}</strong></span>
+                            <span className="inline-flex items-center gap-1.5 flex-wrap">
+                              <span className="inline-flex items-center gap-1">
+                                <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                                <span>Venue: <strong className="text-slate-700">{reg.event.venue}</strong></span>
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setMapModalState({
+                                    isOpen: true,
+                                    zoneId: reg.event.venueZoneId || null,
+                                    title: `${reg.event.name} — Venue Map`,
+                                    subtitle: reg.event.venue || "Event Venue Room",
+                                  })
+                                }
+                                className="tap-target px-2 py-0.5 rounded-lg bg-orange-50 hover:bg-orange-100 text-[#EA580C] text-[10px] font-bold border border-orange-200/80 transition-colors inline-flex items-center gap-1 cursor-pointer"
+                              >
+                                <MapPin className="w-3 h-3 text-[#FF6B1A]" />
+                                <span>View on Map</span>
+                              </button>
+                            </span>
+                          )}
+
+                          {reg.event.hasPrelims && reg.event.prelimsVenue && (
+                            <span className="inline-flex items-center gap-1.5 flex-wrap">
+                              <span className="inline-flex items-center gap-1 text-amber-800">
+                                <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                                <span>Prelims: <strong className="text-amber-900">{reg.event.prelimsVenue}</strong></span>
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setMapModalState({
+                                    isOpen: true,
+                                    zoneId: reg.event.prelimsVenueZoneId || null,
+                                    title: `${reg.event.name} — Prelims Venue Map`,
+                                    subtitle: reg.event.prelimsVenue || "Preliminary Round Room",
+                                  })
+                                }
+                                className="tap-target px-2 py-0.5 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-900 text-[10px] font-bold border border-amber-300 transition-colors inline-flex items-center gap-1 cursor-pointer"
+                              >
+                                <MapPin className="w-3 h-3 text-amber-700" />
+                                <span>Prelims Map</span>
+                              </button>
                             </span>
                           )}
                           <span className="inline-flex items-center gap-1">
@@ -858,6 +929,16 @@ export default function StudentDashboard() {
           </div>
         </div>
       )}
+
+      {/* Interactive Campus & Venue Floor Plan Modal */}
+      <InteractiveFloorPlanModal
+        isOpen={mapModalState.isOpen}
+        onClose={() => setMapModalState((prev) => ({ ...prev, isOpen: false }))}
+        floorPlanUrl={editionInfo?.floorPlanUrl}
+        highlightZoneId={mapModalState.zoneId}
+        title={mapModalState.title}
+        subtitle={mapModalState.subtitle}
+      />
 
       <Footer />
     </main>

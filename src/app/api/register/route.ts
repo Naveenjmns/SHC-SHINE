@@ -383,10 +383,16 @@ export async function POST(req: Request) {
           });
         }
 
+        const zoneLabel = ev.venueZoneId
+          ? ev.venueZoneId.replace(/^hall-|^lab-|^room-/, "").replace(/-/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase())
+          : null;
         memberEvents.push({
           name: ev.name,
           category: ev.category,
           venue: ev.venue,
+          venueZoneId: ev.venueZoneId || null,
+          venueZoneLabel: zoneLabel,
+          mapUrl: ev.venueZoneId ? `${origin}/loc/${ev.venueZoneId}` : `${origin}/events`,
           time: ev.dateTime ? new Date(ev.dateTime).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) : null,
           staffCoordinator: ev.staffCoordinator?.name || ev.coordinator?.name || null,
           studentCoordinator: ev.studentCoordinator?.name || null,

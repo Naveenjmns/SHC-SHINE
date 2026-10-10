@@ -18,6 +18,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { formatDateSafe, formatTimeSafe } from "@/lib/dateUtils";
+import InteractiveFloorPlanModal from "@/components/InteractiveFloorPlanModal";
 
 export interface CoordinatorInfo {
   id?: string;
@@ -36,11 +37,14 @@ export interface EventCardProps {
   fee?: number;
   capacity?: number | null;
   venue?: string | null;
+  venueZoneId?: string | null;
   dateTime?: string | Date;
   rules?: string | null;
   hasPrelims?: boolean;
   prelimsDateTime?: string | Date | null;
   prelimsVenue?: string | null;
+  prelimsVenueZoneId?: string | null;
+  floorPlanUrl?: string | null;
   prelimsRules?: string | null;
   imageUrl?: string | null;
   logoUrl?: string | null;
@@ -66,11 +70,14 @@ export default function EventCard({
   category = "ON_STAGE",
   capacity,
   venue,
+  venueZoneId,
   dateTime,
   rules,
   hasPrelims,
   prelimsDateTime,
   prelimsVenue,
+  prelimsVenueZoneId,
+  floorPlanUrl,
   prelimsRules,
   imageUrl,
   logoUrl,
@@ -89,6 +96,24 @@ export default function EventCard({
   index = 0,
 }: EventCardProps) {
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showMapModal, setShowMapModal] = useState(false);
+  const [activeMapZone, setActiveMapZone] = useState<string | null>(venueZoneId || null);
+  const [activeMapTitle, setActiveMapTitle] = useState<string>(name);
+  const [activeMapSubtitle, setActiveMapSubtitle] = useState<string>(venue || "Event Venue");
+
+  const handleOpenMainMap = () => {
+    setActiveMapZone(venueZoneId || null);
+    setActiveMapTitle(`${name} — Competition Venue`);
+    setActiveMapSubtitle(venue || "Event Venue");
+    setShowMapModal(true);
+  };
+
+  const handleOpenPrelimsMap = () => {
+    setActiveMapZone(prelimsVenueZoneId || null);
+    setActiveMapTitle(`${name} — Prelims Venue`);
+    setActiveMapSubtitle(prelimsVenue || "Preliminary Round Venue");
+    setShowMapModal(true);
+  };
 
   const isOnStage = category === "ON_STAGE";
   const defaultIcon = isOnStage ? (
@@ -234,9 +259,23 @@ export default function EventCard({
           {/* Metadata & Dual Coordinators */}
           <div className="space-y-2 text-xs text-[#57534E] pt-3 border-t border-[#1C1917]/10 mb-5">
             {venue && (
-              <div className="flex items-center gap-2">
-                <MapPin className="w-3.5 h-3.5 text-[#D9A441] shrink-0" />
-                <span className="truncate">{venue}</span>
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 truncate min-w-0">
+                  <MapPin className="w-3.5 h-3.5 text-[#D9A441] shrink-0" />
+                  <span className="truncate">{venue}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleOpenMainMap();
+                  }}
+                  className="tap-target px-2 py-0.5 rounded-lg bg-orange-50 hover:bg-orange-100 text-[#EA580C] text-[10px] font-bold border border-orange-200/80 transition-colors inline-flex items-center gap-1 shrink-0 cursor-pointer"
+                  title="View venue on floor plan"
+                >
+                  <MapPin className="w-3 h-3 text-[#FF6B1A]" />
+                  <span>Map</span>
+                </button>
               </div>
             )}
             {formattedTime && (
@@ -398,8 +437,19 @@ export default function EventCard({
                   </div>
                   <div className="text-xs font-bold text-stone-900 flex flex-wrap items-center gap-x-3 gap-y-1 mt-0.5">
                     {prelimsVenue && (
-                      <span className="flex items-center gap-1">
-                        <MapPin className="w-3.5 h-3.5 text-amber-600" /> {prelimsVenue}
+                      <span className="flex items-center gap-1.5 flex-wrap">
+                        <span className="flex items-center gap-1">
+                          <MapPin className="w-3.5 h-3.5 text-amber-600" />
+                          <span>{prelimsVenue}</span>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={handleOpenPrelimsMap}
+                          className="tap-target px-2 py-0.5 rounded-md bg-amber-200/80 hover:bg-amber-300 text-amber-950 text-[10px] font-bold transition-colors inline-flex items-center gap-1 cursor-pointer"
+                        >
+                          <MapPin className="w-2.5 h-2.5 text-amber-800" />
+                          <span>Map</span>
+                        </button>
                       </span>
                     )}
                     {(formattedPrelimsTime || formattedPrelimsDate) && (
@@ -416,14 +466,24 @@ export default function EventCard({
             {/* Venue & Schedule Strip */}
             <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
               {venue && (
-                <div className="p-3.5 rounded-xl border border-stone-200 bg-[#FAF8F5] flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
-                    <MapPin className="w-5 h-5" />
+                <div className="p-3.5 rounded-xl border border-stone-200 bg-[#FAF8F5] flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-9 h-9 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+                      <MapPin className="w-5 h-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">Competition Venue</div>
+                      <div className="text-xs font-bold text-stone-900 truncate">{venue}</div>
+                    </div>
                   </div>
-                  <div>
-                    <div className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">Competition Venue</div>
-                    <div className="text-xs font-bold text-stone-900">{venue}</div>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={handleOpenMainMap}
+                    className="tap-target px-3 py-1.5 rounded-xl bg-[#FF6B1A] hover:bg-[#EA580C] text-white text-xs font-bold transition-colors inline-flex items-center gap-1.5 shrink-0 cursor-pointer shadow-2xs"
+                  >
+                    <MapPin className="w-3.5 h-3.5" />
+                    <span>View on Map</span>
+                  </button>
                 </div>
               )}
 
@@ -591,6 +651,16 @@ export default function EventCard({
           </div>
         </div>
       )}
+
+      {/* Interactive Floor Plan Modal */}
+      <InteractiveFloorPlanModal
+        isOpen={showMapModal}
+        onClose={() => setShowMapModal(false)}
+        floorPlanUrl={floorPlanUrl}
+        highlightZoneId={activeMapZone}
+        title={activeMapTitle}
+        subtitle={activeMapSubtitle}
+      />
     </>
   );
 }

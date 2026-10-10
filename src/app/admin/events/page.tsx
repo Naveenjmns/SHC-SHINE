@@ -48,11 +48,13 @@ interface EventItem {
   fee: number;
   capacity: number | null;
   venue: string | null;
+  venueZoneId?: string | null;
   dateTime: string;
   rules: string | null;
   hasPrelims?: boolean;
   prelimsDateTime?: string | null;
   prelimsVenue?: string | null;
+  prelimsVenueZoneId?: string | null;
   prelimsRules?: string | null;
   firstPrize?: string | null;
   secondPrize?: string | null;
@@ -111,14 +113,19 @@ export default function AdminEventsPage() {
   const [isUnlimitedCapacity, setIsUnlimitedCapacity] = useState(true);
   const [capacity, setCapacity] = useState("");
   const [venue, setVenue] = useState("");
+  const [venueZoneId, setVenueZoneId] = useState("");
   const [dateTime, setDateTime] = useState("2026-10-15T10:00");
   const [imageUrl, setImageUrl] = useState("");
   const [logoUrl, setLogoUrl] = useState("");
+
+  // Floor plan zones from SVG
+  const [floorPlanZones, setFloorPlanZones] = useState<{ id: string; label: string }[]>([]);
 
   // Prelims Form Fields
   const [hasPrelims, setHasPrelims] = useState(false);
   const [prelimsDateTime, setPrelimsDateTime] = useState("2026-10-15T09:00");
   const [prelimsVenue, setPrelimsVenue] = useState("");
+  const [prelimsVenueZoneId, setPrelimsVenueZoneId] = useState("");
   const [prelimsRules, setPrelimsRules] = useState("");
 
   // Competition Awards & Prizes (Dynamic on Leaderboard)
@@ -167,16 +174,19 @@ export default function AdminEventsPage() {
 
       async function loadData() {
         try {
-          const [eventsRes, usersRes, edRes] = await Promise.all([
+          const [eventsRes, usersRes, edRes, zonesRes] = await Promise.all([
             fetch("/api/events"),
             fetch("/api/admin/users"),
             fetch("/api/admin/edition"),
+            fetch("/api/admin/floorplan/zones"),
           ]);
           const eventsData = await safeJson(eventsRes, { success: false, events: [] });
           const usersData = await safeJson(usersRes, { success: false, users: [] });
           const edData = await safeJson(edRes, { success: false, editions: [] });
+          const zonesData = await safeJson(zonesRes, { success: false, zones: [] });
 
           if (eventsData.success && eventsData.events) setEvents(eventsData.events);
+          if (zonesData.success && Array.isArray(zonesData.zones)) setFloorPlanZones(zonesData.zones);
           if (usersData.success && usersData.users) {
             const allUsers: CoordinatorUser[] = usersData.users;
             // Staff Coordinators: COORDINATOR or ADMIN
@@ -269,12 +279,14 @@ export default function AdminEventsPage() {
     setIsUnlimitedCapacity(true);
     setCapacity("");
     setVenue("");
+    setVenueZoneId("");
     setDateTime("2026-10-15T10:00");
     setImageUrl("");
     setLogoUrl("");
     setHasPrelims(false);
     setPrelimsDateTime("2026-10-15T09:00");
     setPrelimsVenue("");
+    setPrelimsVenueZoneId("");
     setPrelimsRules("");
     setFirstPrize(centralizedPrizes.first);
     setSecondPrize(centralizedPrizes.second);
@@ -301,12 +313,14 @@ export default function AdminEventsPage() {
     setIsUnlimitedCapacity(!ev.capacity);
     setCapacity(ev.capacity ? ev.capacity.toString() : "");
     setVenue(ev.venue || "");
+    setVenueZoneId(ev.venueZoneId || "");
     setDateTime(toLocalDatetimeInput(ev.dateTime, "2026-10-15T10:00"));
     setImageUrl(ev.imageUrl || "");
     setLogoUrl(ev.logoUrl || "");
     setHasPrelims(!!ev.hasPrelims);
     setPrelimsDateTime(toLocalDatetimeInput(ev.prelimsDateTime, "2026-10-15T09:00"));
     setPrelimsVenue(ev.prelimsVenue || "");
+    setPrelimsVenueZoneId(ev.prelimsVenueZoneId || "");
     setPrelimsRules(ev.prelimsRules || "");
     setFirstPrize(ev.firstPrize || centralizedPrizes.first);
     setSecondPrize(ev.secondPrize || centralizedPrizes.second);
@@ -335,12 +349,14 @@ export default function AdminEventsPage() {
       category,
       capacity: isUnlimitedCapacity ? null : capacity ? parseInt(capacity, 10) : null,
       venue,
+      venueZoneId: venueZoneId.trim() || null,
       dateTime: new Date(dateTime).toISOString(),
       imageUrl: imageUrl.trim() || null,
       logoUrl: logoUrl.trim() || null,
       hasPrelims,
       prelimsDateTime: hasPrelims && prelimsDateTime ? new Date(prelimsDateTime).toISOString() : null,
       prelimsVenue: hasPrelims ? prelimsVenue.trim() || null : null,
+      prelimsVenueZoneId: hasPrelims ? prelimsVenueZoneId.trim() || null : null,
       prelimsRules: hasPrelims ? prelimsRules.trim() || null : null,
       firstPrize: firstPrize.trim() || null,
       secondPrize: secondPrize.trim() || null,
@@ -569,11 +585,17 @@ export default function AdminEventsPage() {
                         </div>
                       </td>
 
-                      <td className="p-4 text-xs text-slate-600 space-y-0.5">
+                      <td className="p-4 text-xs text-slate-600 space-y-1">
                         <div className="flex items-center gap-1">
                           <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                          <span>{ev.venue || "TBD"}</span>
+                          <span className="font-medium text-slate-800">{ev.venue || "TBD"}</span>
                         </div>
+                        {ev.venueZoneId && (
+                          <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-orange-50 border border-orange-200/80 text-[10px] font-bold text-orange-700">
+                            <span className="opacity-70">Map:</span>
+                            <span>{floorPlanZones.find((z) => z.id === ev.venueZoneId)?.label || ev.venueZoneId}</span>
+                          </div>
+                        )}
                         <div className="tabular-nums font-mono text-[11px] text-slate-500">
                           {new Date(ev.dateTime).toLocaleDateString("en-IN", { day: "numeric", month: "short" })} • {new Date(ev.dateTime).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
                         </div>
@@ -839,6 +861,24 @@ export default function AdminEventsPage() {
                         onChange={(e) => setVenue(e.target.value)}
                         className="w-full h-11 bg-white border border-slate-300 rounded-xl px-3 text-sm text-slate-900 focus:outline-none focus:border-orange-500 shadow-2xs"
                       />
+                      <div className="mt-2">
+                        <label className="block text-[11px] font-bold text-slate-600 mb-1 flex items-center justify-between">
+                          <span>Map Zone / Room (Floor Plan)</span>
+                          <span className="text-[10px] text-slate-400 font-normal">Optional wayfinding pinpoint</span>
+                        </label>
+                        <select
+                          value={venueZoneId}
+                          onChange={(e) => setVenueZoneId(e.target.value)}
+                          className="w-full h-9 bg-slate-50 hover:bg-white border border-slate-300 rounded-lg px-2.5 text-xs text-slate-900 focus:outline-none focus:border-orange-500 transition-colors cursor-pointer"
+                        >
+                          <option value="">-- No map zone assigned --</option>
+                          {floorPlanZones.map((z) => (
+                            <option key={z.id} value={z.id}>
+                              {z.label} ({z.id})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
                   </div>
 
@@ -940,6 +980,24 @@ export default function AdminEventsPage() {
                               onChange={(e) => setPrelimsVenue(e.target.value)}
                               className="w-full h-9 bg-white border border-amber-300 rounded-lg px-2.5 text-xs text-slate-900 focus:outline-none focus:border-amber-500"
                             />
+                            <div className="mt-1.5">
+                              <label className="block text-[10px] font-bold text-amber-900 mb-0.5 flex items-center justify-between">
+                                <span>Prelims Map Zone</span>
+                                <span className="text-[9px] text-amber-700 font-normal">Floor Plan</span>
+                              </label>
+                              <select
+                                value={prelimsVenueZoneId}
+                                onChange={(e) => setPrelimsVenueZoneId(e.target.value)}
+                                className="w-full h-8 bg-white border border-amber-300 rounded-lg px-2 text-xs text-slate-900 focus:outline-none focus:border-amber-500 cursor-pointer"
+                              >
+                                <option value="">-- No prelims zone --</option>
+                                {floorPlanZones.map((z) => (
+                                  <option key={z.id} value={z.id}>
+                                    {z.label} ({z.id})
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
                           </div>
                         </div>
 

@@ -206,12 +206,20 @@ export async function PATCH(req: Request) {
       const { sendApprovedDelegatePassEmail, sendTeamLeadConsolidatedPassEmail } = await import("@/lib/emailService");
 
       for (const member of delegation.members) {
-        const memberEvents = member.registrations.map((r) => ({
-          name: r.event.name,
-          category: r.event.category,
-          venue: r.event.venue,
-          time: r.event.dateTime ? new Date(r.event.dateTime).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) : null,
-        }));
+        const memberEvents = member.registrations.map((r) => {
+          const zoneLabel = r.event.venueZoneId
+            ? r.event.venueZoneId.replace(/^hall-|^lab-|^room-/, "").replace(/-/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase())
+            : null;
+          return {
+            name: r.event.name,
+            category: r.event.category,
+            venue: r.event.venue,
+            venueZoneId: r.event.venueZoneId || null,
+            venueZoneLabel: zoneLabel,
+            mapUrl: r.event.venueZoneId ? `${origin}/loc/${r.event.venueZoneId}` : `${origin}/events`,
+            time: r.event.dateTime ? new Date(r.event.dateTime).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) : null,
+          };
+        });
 
         const badgeUrl = `${origin}/badge/${member.badgeCode}`;
 
@@ -327,6 +335,11 @@ export async function PATCH(req: Request) {
             name: updated.event.name,
             category: updated.event.category,
             venue: updated.event.venue,
+            venueZoneId: updated.event.venueZoneId || null,
+            venueZoneLabel: updated.event.venueZoneId
+              ? updated.event.venueZoneId.replace(/^hall-|^lab-|^room-/, "").replace(/-/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase())
+              : null,
+            mapUrl: updated.event.venueZoneId ? `${origin}/loc/${updated.event.venueZoneId}` : `${origin}/events`,
           },
         ],
       }).catch((e) => console.error("Approved single delegate pass email error:", e));

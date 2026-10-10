@@ -451,6 +451,8 @@ export async function GET(req: Request) {
         category: ev.category,
         description: ev.description,
         venue: ev.venue || "Campus Lab / Auditorium",
+        venueZoneId: ev.venueZoneId || null,
+        prelimsVenueZoneId: ev.prelimsVenueZoneId || null,
         dateTime: ev.dateTime,
         rules: ev.rules,
         fee: ev.fee,
@@ -542,6 +544,13 @@ export async function GET(req: Request) {
     return NextResponse.json({
       success: true,
       report: {
+        edition: {
+          id: edition?.id || null,
+          name: edition?.name || "SHINE",
+          edition: edition?.edition || "2026",
+          floorPlanUrl: edition?.floorPlanUrl || "/uploads/campus-floorplan.svg",
+          waypointGraph: edition?.waypointGraph || null,
+        },
         summary: {
           ...summaryMetrics,
           catering: cateringSummary,

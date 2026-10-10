@@ -20,9 +20,10 @@
    - [3.8 Events Catalog CRUD & Prelims Configuration](#38-events-catalog-crud--prelims-configuration)
    - [3.9 User Management, Password Reset & Coordinator Assignment](#39-user-management-password-reset--coordinator-assignment)
    - [3.10 Automated 10-Minute Event Reminders & Cron System](#310-automated-10-minute-event-reminders--cron-system)
+   - [3.11 Indoor Venue Floor Plan & Navigation Management](#311-indoor-venue-floor-plan--navigation-management)
 4. [Academic Reports & NAAC / IQAC Dossier Guide](#4-academic-reports--naac--iqac-dossier-guide)
    - [4.1 Navigating the Consolidated Report](#41-navigating-the-consolidated-report)
-   - [4.2 The 8 Formal Report Sections](#42-the-8-formal-report-sections)
+   - [4.2 The Formal Report Sections & Venue Floor Plan](#42-the-formal-report-sections--venue-floor-plan)
    - [4.3 Exporting Official PDF (Portrait vs. Landscape)](#43-exporting-official-pdf-portrait-vs-landscape)
    - [4.4 Exporting Tabular CSV Datasets](#44-exporting-tabular-csv-datasets)
    - [4.5 Academic Signatures & Institutional Endorsement](#45-academic-signatures--institutional-endorsement)
@@ -50,6 +51,7 @@
    - [8.5 Accessing Gate Passes, Digital Badges & Food Tokens](#85-accessing-gate-passes-digital-badges--food-tokens)
    - [8.6 Automated 10-Minute Competition Start Reminders](#86-automated-10-minute-competition-start-reminders)
    - [8.7 Tracking Results & The Public Leaderboard](#87-tracking-results--the-public-leaderboard)
+   - [8.8 Interactive Indoor Wayfinding & QR Checkpoints (2D & 3D)](#88-interactive-indoor-wayfinding--qr-checkpoints-2d--3d)
 9. [Locomotive 3D Perspective Error Suite](#9-locomotive-3d-perspective-error-suite)
 10. [Troubleshooting & Frequently Asked Questions (FAQ)](#10-troubleshooting--frequently-asked-questions-faq)
 11. [Developers & Technical Support](#11-developers--technical-support)
@@ -192,6 +194,38 @@ The platform features an autonomous event reminder engine:
   - Supports `?dryRun=true` to preview eligible dispatches without sending emails.
   - Supports `?forceEventId=[id]` to trigger immediate test notifications for any specific competition.
 
+### 3.11 Indoor Venue Floor Plan & Navigation Management
+Administrators have full operational control over campus floor plans, room zoning, and navigation graphs:
+- **SVG Floor Plan Upload (`POST /api/admin/upload`)**:
+  - Open **Admin Console** -> **Floor Plan & Wayfinding** tab.
+  - Drag and drop or browse for an SVG floor plan file (maximum file size 2 MB).
+  - The server validates the `.svg` MIME type and executes strict multi-stage security sanitization:
+    - Strips `<script>` tags, inline `on*` event handlers (`onload`, `onclick`, `onerror`).
+    - Strips `<foreignObject>` and embedded iframes/objects.
+    - Strips external `href` and `xlink:href` URIs while preserving internal gradient and symbol hashes (`#id`).
+    - Strips dangerous CSS expressions (`expression(...)`, `@import`, external `url(...)`).
+  - Saves the sanitized file to `/public/uploads` and persists `EventEdition.floorPlanUrl`.
+- **Automatic Zone Detection & Extraction**:
+  - The server extracts all SVG shapes with IDs (excluding navigation waypoints `wp-*`) via `GET /api/admin/floorplan/zones`.
+  - Automatically derives human-friendly labels (e.g. `hall-1` $\rightarrow$ "Hall 1", `amenity-restroom-1` $\rightarrow$ "Restroom 1") and categorizes them into halls, rooms, and amenities.
+- **Assigning Competition Venue Zones**:
+  - Navigate to **Admin Events** (`/admin/events`).
+  - When creating or editing an event, the **Map Zone / Room** select is automatically populated with detected zones.
+  - Set zones for both the **Main Event Venue** (`venueZoneId`) and the **Preliminary Screening Venue** (`prelimsVenueZoneId`).
+  - Built-in validation ensures assigned zones exist in the active floor plan.
+- **Interactive Wayfinding Graph Editor**:
+  - Review all parsed waypoint nodes (`wp-*`) on the visual campus blueprint.
+  - Connect waypoints by clicking two nodes to create walking edges with auto-calculated Euclidean distance.
+  - Configure multi-floor transitions (stairs and elevators) between levels.
+  - Click **Save Graph** to persist nodes and edges in `EventEdition.waypointGraph`.
+- **Automated Graph Validation**:
+  - Click **Validate Graph** to execute an in-memory BFS connectivity test via `POST /api/admin/floorplan/graph/validate`.
+  - Instantly checks whether all competition room doors are reachable from campus entrances, catching isolated rooms before the symposium commences.
+- **Printable QR Checkpoint Posters**:
+  - Click **Print QR Codes** to launch the checkpoint print modal.
+  - Select any checkpoint (such as `wp-entrance`, `hall-1`, `central-hub`, or `amenity-water-1`) or generate all codes.
+  - Renders official A4 posters featuring scannable QR codes (`/loc/[waypointId]`), verified location badges, and orientation instructions ready for physical display on campus walls.
+
 ---
 
 ## 4. Academic Reports & NAAC / IQAC Dossier Guide
@@ -200,10 +234,10 @@ The **Consolidated Event Report** (`/admin/reports`) serves as the official inst
 
 ### 4.1 Navigating the Consolidated Report
 In the Admin Console, open the **Reports** tab and click **Open Printable Report (PDF) ↗**, or navigate directly to `/admin/reports`.
-- Use the **Section Navigation Tabs** at the top to filter specific sections on-screen (`Full Report`, `Executive Summary`, `Events`, `Delegations`, `Master Student Roster`, `Prelims Progression`, `Final Results`, `Championship Standings`).
+- Use the **Section Navigation Tabs** at the top to filter specific sections on-screen (`Full Report`, `Executive Summary`, `Catering & Dietary`, `Events`, `Venue Map & Zones`, `Delegations`, `Master Student Roster`, `Prelims Progression`, `Final Results`, `Championship Standings`).
 - Tabs automatically wrap on smaller screens, preventing truncation.
 
-### 4.2 The 8 Formal Report Sections
+### 4.2 The Formal Report Sections & Venue Floor Plan
 1. **Official Institutional Letterhead**: Displays university crest, NAAC accreditation level, host department, venue, and date.
 2. **Executive Summary & Fest Participation Metrics**:
    - Total colleges, unique delegates, attendance percentage, competition counts.
@@ -211,7 +245,11 @@ In the Admin Console, open the **Reports** tab and click **Open Printable Report
    - Overall Symposium Champion Institution spotlight.
 3. **Competitions Catalogue & Coordinators Directory**:
    - Full schedule, category, venue, faculty in-charge, student lead, prelims requirement, and enrollment count.
-4. **College Delegations Representation Tally**:
+4. **Section 2B: Indoor Venue Floor Plan & Competition Zones Directory**:
+   - High-contrast visual floor plan map rendering adhering to `@page` print styles.
+   - Complete Zone Allocation Legend table mapping zone IDs, human-readable hall names, physical rooms, allocated main and prelims competitions with badges, and `/loc/[zoneId]` navigation checkpoints.
+   - Campus Facilities Directory covering Restrooms, Drinking Water, Dining Counters, and First Aid Helpdesks.
+5. **College Delegations Representation Tally**:
    - Roster of all attending colleges, departments, contingent team leads, accompanying faculty members, delegate counts, and fee status.
 5. **Master Student Registration Roster**:
    - Participant name, delegation lead badge, institution, contact phone/email, badge gate pass code, enrolled competitions, and attendance status.
@@ -408,6 +446,36 @@ In the **Student Portal** (`/dashboard`):
 ### 8.7 Tracking Results & The Public Leaderboard
 - Your personal results are posted on `/dashboard` as soon as coordinators publish them.
 - Visit `/leaderboard` to view the live college championship standings and total points accumulated by participating colleges.
+
+### 8.8 Interactive Indoor Wayfinding & QR Checkpoints (2D & 3D)
+Delegates can easily navigate the Sacred Heart College campus without needing to download any app:
+- **Opening the Interactive Map**:
+  - Click **"View on Map"** on any Event Card on the Home (`/`) or Events (`/events`) page.
+  - From the **Student Dashboard** (`/dashboard`), click **"Main Venue Map"** or **"Prelims Venue Map"** next to your registered competitions.
+  - Open the map from your **Digital Badge Pass** (`/badge/[code]`) or from the direct link in your 10-minute competition reminder email.
+- **Assigned Room Spotlight**:
+  - The map highlights your assigned competition hall with an amber-orange pulsing spotlight (`#FF6B1A`) and glowing aura.
+  - The spotlight respects user accessibility settings (`prefers-reduced-motion`).
+- **2D Blueprint Experience**:
+  - Intuitive navigation controls: pinch-to-zoom on mobile touchscreens, mouse-wheel zooming, click-and-drag panning, and `+` / `-` / `Reset` zoom buttons.
+  - Amenity toggle bar: switch visible markers for Restrooms, RO Drinking Water Dispensers, Food Counters, and Helpdesks with a single tap.
+- **Volumetric 3D Simulation**:
+  - Tap the **3D View** toggle at the top of the modal.
+  - Powered by Three.js and React Three Fiber, the 2D SVG plan is extruded into 3D halls, corridors, and rooms.
+  - Use single-finger drag or left mouse drag to orbit around the campus model, two-finger pinch or scroll to zoom, and right-click drag to pan.
+  - Select between different floors using the multi-level floor switcher.
+- **Physical QR Checkpoints (`/loc/[waypointId]`)**:
+  - Look for physical SHINE Checkpoint posters displayed near campus gates, quadrangle junctions, and hall entrances.
+  - Scanning the QR code opens your browser directly to `/loc/[waypointId]`, orienting your position with a pulsing cyan **"YOU ARE HERE"** beacon.
+  - Saves your checkpoint location locally in `localStorage` so future navigations calculate from your current position.
+- **Turn-by-Turn Route Guidance**:
+  - Click the **"Navigate me"** button.
+  - The A* engine calculates the shortest walking path through corridors, doors, and staircases.
+  - An animated route polyline lights up on the 2D blueprint (or a glowing 3D tube with an animated walking sphere in 3D mode).
+  - Open the slide-up **Turn-by-Turn Directions** drawer for step-by-step guidance (e.g. *"Walk 25m along Central Quadrangle, turn left at West Junction, proceed to Hall 1 door"*).
+- **Absolute Privacy Guarantee**:
+  - Your location is kept 100% on your device in client `localStorage`.
+  - Opt-in outdoor campus approach GPS calculates distance locally and is never transmitted to or recorded on any server.
 
 ---
 

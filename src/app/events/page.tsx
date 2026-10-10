@@ -27,11 +27,13 @@ interface EventItem {
   fee: number;
   capacity: number | null;
   venue: string | null;
+  venueZoneId?: string | null;
   dateTime: string;
   rules: string | null;
   hasPrelims?: boolean;
   prelimsDateTime?: string | null;
   prelimsVenue?: string | null;
+  prelimsVenueZoneId?: string | null;
   prelimsRules?: string | null;
   imageUrl?: string | null;
   logoUrl?: string | null;
@@ -187,11 +189,13 @@ export default function EventsPage() {
                 category={ev.category}
                 capacity={ev.capacity}
                 venue={ev.venue}
+                venueZoneId={ev.venueZoneId}
                 dateTime={ev.dateTime}
                 rules={ev.rules}
                 hasPrelims={ev.hasPrelims}
                 prelimsDateTime={ev.prelimsDateTime}
                 prelimsVenue={ev.prelimsVenue}
+                prelimsVenueZoneId={ev.prelimsVenueZoneId}
                 prelimsRules={ev.prelimsRules}
                 imageUrl={ev.imageUrl}
                 logoUrl={ev.logoUrl}

@@ -15,13 +15,18 @@
 ## 🌟 Highlights & Key Features
 
 - 🎨 **Dynamic Institution Branding & Theme Engine**: Native color picker and 8 curated one-click presets allowing any institution to white-label primary, secondary, and background colors with zero layout flash.
-- ⏰ **Automated 10-Minute Event Start Reminder Engine**: Autonomous 60-second in-process background worker (`instrumentation.ts` & `reminderScheduler.ts`) and cron API (`/api/cron/reminders`) that detects upcoming competitions and emails registered delegates their arena venue, scheduled time, digital badge pass, and coordinator hotline numbers 10 minutes prior to start.
-- 📬 **Student Portal Auto-Provisioning & Credential Dispatch**: When a contingent registers, student accounts (`role: STUDENT`) are automatically provisioned with password set to their mobile number, and an automated email is dispatched with direct portal link (`/login?email=...`), User ID, default password, and digital pass.
+- 🗺️ **Interactive Indoor Venue Floor Plan & Navigation (2D + 3D)**: High-performance blueprint modal with pan, pinch/wheel zoom, reset, pulsing assigned room spotlight in SHINE Orange (`#FF6B1A`), amenity markers (restrooms, water, food, helpdesk), and instant 2D/3D mode toggling.
+- 🧊 **Volumetric 3D Venue Simulation (Three.js + R3F)**: Browser-rendered 3D extrusion of campus SVG layouts with OrbitControls, glowing `TubeGeometry` route line along `CatmullRomCurve3`, animated walker beacon, floating HTML room badges, and multi-floor level switcher.
+- 🧭 **A* Shortest-Path Wayfinding Engine**: Graph routing algorithm (`lib/wayfinding.ts`) calculating Euclidean edge distances, vertical floor/stair transitions, and generating real-time turn-by-turn navigation steps.
+- 📍 **Physical QR-Checkpoint Location System (`/loc/[waypointId]`)**: Campus-wide scannable checkpoint posters that orient visitors instantly with "You Are Here" beacon markers and one-click navigation to their events.
+- 🔒 **Zero-Telemetry Privacy Architecture**: Checkpoint locations and opt-in outdoor proximity geolocation are kept strictly client-side (`localStorage`) with zero location telemetry written to the database.
+- ⏰ **Automated 10-Minute Event Start Reminder Engine**: Autonomous 60-second in-process background worker (`instrumentation.ts` & `reminderScheduler.ts`) and cron API (`/api/cron/reminders`) that detects upcoming competitions and emails registered delegates their arena venue, designated zone badge, turn-by-turn map link, scheduled time, digital badge pass, and coordinator hotline numbers 10 minutes prior to start.
+- 📬 **Student Portal Auto-Provisioning & Credential Dispatch**: When a contingent registers, student accounts (`role: STUDENT`) are automatically provisioned with password set to their mobile number, and an automated email is dispatched with direct portal link (`/login?email=...`), User ID, default password, venue zone label, map link, and digital pass.
 - ⚡ **Preliminary Rounds Management & Rules Engine**: First-class prelims support (`hasPrelims`, `prelimsDateTime`, `prelimsVenue`, `prelimsRules`). Card previews on Home (`/`) and Events (`/events`) display dedicated prelims rules boxes, registration enforces mandatory prelims attendee nomination (max 1 per college), and coordinators manage prelims scoring with 1-click progression to Finals.
 - 👤 **Unified User Profile & Security Center (`/profile`)**: Role-aware profile portal for `ADMIN`, `COORDINATOR`, `FOOD_COORDINATOR`, and `STUDENT` featuring live participation telemetry, contact editing with live validation, meal preference toggle (`VEG`/`NON_VEG`), and secure self-service password changes.
 - 🍱 **Dedicated Food Coordinator Portal (`/food`)**: Fast-lane dining hall scanning hub with device camera QR scanner, flashlight toggle, lens switcher, and manual token lookup for instant meal voucher claiming and live Veg / Non-Veg metrics.
 - 🛡️ **Universal Field Validation Suite**: Standardized validation (`validators.ts`) enforcing RFC-compliant email formats and 10–15 digit mobile numbers with E.164 support across registration, profile, and administrative forms.
-- 📑 **Consolidated Academic Dossier & NAAC / IQAC Suite (`/admin/reports`)**: Complete 8-section institutional report with KPI metrics, event catalogs, college tallies, master student rosters, prelims progression, podium winners, championship leaderboard, and 4 formal academic signature blocks.
+- 📑 **Consolidated Academic Dossier & NAAC / IQAC Suite (`/admin/reports`)**: Complete institutional report with KPI metrics, event catalogs, print-friendly **Venue Floor Plan & Zones Directory** (Section 2B), college tallies, master student rosters, prelims progression, podium winners, championship leaderboard, and 4 formal academic signature blocks.
 - 🖨️ **Magazine-Grade PDF & Print Engine**: Paged-media print styling (`@page`), zero horizontal overflow, `table-layout: fixed`, `break-inside: avoid` preventing row slicing across pages, repeating table headers, and a **Portrait / Landscape print toggle**.
 - 🚶 **Locomotive-Inspired 3D Perspective Error Suite**: Canvas-driven 3D perspective floor grid with interactive walking delegates, directional contact shadows, click-to-walk interaction, and pure midnight dark aesthetic across 404, 500, 403, 401, 503, and `/error-preview`.
 - 🔐 **Enhanced Login & Authentication**: Modern interface with password visibility toggle, pre-filled email from URL query params, role-based middleware protection, and 1-click demo fill buttons.
@@ -71,16 +76,17 @@ For an in-depth, step-by-step operations manual for all user roles, consult:
 - `/login` — NextAuth credentials sign-in supporting `?email=` pre-fill and password toggle.
 - `/leaderboard` — Live public championship trophy standings.
 - `/badge/[badgeCode]` — High-resolution digital gate pass and scannable QR badge.
+- `/loc/[waypointId]` — **QR Checkpoint Navigator**: Scannable physical checkpoint beacon activating live "You Are Here" position, destination hall guide, turn-by-turn routing, and zero-telemetry client storage.
 
 ### Protected Dashboards & Profile
-- `/dashboard` — **Student Portal**: Real-time registration approval status, gate pass, food token, prelims updates, and competition results.
+- `/dashboard` — **Student Portal**: Real-time registration approval status, gate pass, food token, prelims updates, competition results, and "View on Map" venue navigation.
 - `/profile` — **User Profile & Security**: Unified account center for all roles with role-specific stats, contact update, and password reset.
 - `/coordinator` — **Coordinator Console**: Scoped list of assigned competitions with participant metrics.
 - `/coordinator/[eventId]` — **Event Control Room**: On-site attendee check-in, prelims scoring, mains progression, and podium publishing.
 - `/food` — **Food Coordinator Portal**: Dining hall QR scanner, meal redemption, and live token analytics.
-- `/admin` — **Admin Master Console**: Financial analytics, institution settings, edition manager, theme customizer, SMTP broadcasts, and registrations audit.
-- `/admin/reports` — **Consolidated Academic Dossier**: Printable NAAC/IQAC report with Portrait/Landscape toggles and individual CSV downloads.
-- `/admin/events` — **Events CRUD**: Create and manage competitions, venues, prelims rules, and assign faculty/student coordinators.
+- `/admin` — **Admin Master Console**: Financial analytics, institution settings, edition manager, theme customizer, SMTP broadcasts, SVG floor plan upload, and waypoint graph editor.
+- `/admin/reports` — **Consolidated Academic Dossier**: Printable NAAC/IQAC report with Section 2B Venue Floor Plan & Zones Directory, Portrait/Landscape toggles, and individual CSV downloads.
+- `/admin/events` — **Events CRUD**: Create and manage competitions, venues, prelims rules, assign faculty/student coordinators, and select Floor Plan Map Zones.
 - `/admin/users` — **User Management**: Provision and edit administrator, coordinator, and food coordinator accounts.
 - `/admin/logs` — **Activity Audit**: Tamper-evident administrative action log.
 
@@ -89,6 +95,65 @@ For an in-depth, step-by-step operations manual for all user roles, consult:
 - `/forbidden` — 403 Access Clearance boundary.
 - `/unauthorized` — 401 Session expired redirect.
 - `/maintenance` — 503 Stage maintenance blackout screen.
+
+---
+
+## 🧭 Indoor Wayfinding & Floor Plan Architecture
+
+The platform features an autonomous, multi-modal Indoor Wayfinding & Venue Floor Plan system:
+
+```
+                  ┌────────────────────────────────────────┐
+                  │        Uploaded SVG Floor Plan         │
+                  │   (/public/uploads/campus-floorplan)   │
+                  └──────────────────┬─────────────────────┘
+                                     │
+                 ┌───────────────────┴───────────────────┐
+                 │                                       │
+                 ▼                                       ▼
+     ┌───────────────────────┐               ┌───────────────────────┐
+     │   2D Blueprint Modal  │               │   3D R3F Simulation   │
+     │ - Pinch / Wheel Zoom  │               │ - SVGLoader Extrusion │
+     │ - Pulsing Active Room │               │ - Orbit Controls      │
+     │ - Amenity Legend      │               │ - Glowing Route Tube  │
+     │ - Animated Route Line │               │ - Walker Mesh Beacon  │
+     └───────────┬───────────┘               └───────────┬───────────┘
+                 │                                       │
+                 └───────────────────┬───────────────────┘
+                                     │
+                                     ▼
+                  ┌─────────────────────────────────────┐
+                  │      A* Shortest-Path Engine        │
+                  │      (src/lib/wayfinding.ts)        │
+                  │ - Euclidean Distance Weights        │
+                  │ - Staircase Floor Transitions       │
+                  │ - Turn-by-Turn Guidance Drawer      │
+                  └──────────────────┬──────────────────┘
+                                     │
+                 ┌───────────────────┴───────────────────┐
+                 │                                       │
+                 ▼                                       ▼
+     ┌───────────────────────┐               ┌───────────────────────┐
+     │ Physical QR Checkpoint│               │   Zero-Telemetry      │
+     │      (/loc/[id])      │               │  Client-Side Privacy  │
+     │ - "You Are Here" Pin  │               │ - LocalStorage only   │
+     │ - Printable Posters   │               │ - No DB Geo-Tracking  │
+     └───────────────────────┘               └───────────────────────┘
+```
+
+### Wayfinding API Reference
+
+| Endpoint | Method | Auth Scope | Description |
+|---|---|---|---|
+| `/api/admin/upload` | `POST` | `ADMIN` | Uploads `.svg` floor plan (max 2MB), sanitizes scripts & external vectors, saves to `/public/uploads`, and returns detected zones. |
+| `/api/admin/floorplan/zones` | `GET` | `ADMIN` | Extracts active SVG shapes with IDs (excluding `wp-*`), formatted labels, and categories (`hall`, `amenity`, `room`). |
+| `/api/admin/floorplan/graph` | `GET` | `ADMIN` | Returns active waypoint graph (`nodes` + `edges`) from `EventEdition.waypointGraph`. |
+| `/api/admin/floorplan/graph` | `POST` | `ADMIN` | Updates waypoint nodes and edges with auto-calculated Euclidean distances. |
+| `/api/admin/floorplan/graph/validate` | `POST` | `ADMIN` | BFS graph traversal validating room door connections and reporting unreachable zones. |
+| `/api/wayfinding/route` | `GET` | Public | Computes A* shortest path from a checkpoint waypoint (`fromId`) to an arena zone (`toZoneId`). |
+| `/loc/[waypointId]` | `GET` | Public | Physical checkpoint location screen orienting delegates and opening live navigation. |
+
+For SVG authoring rules, layer hierarchy, and ID naming conventions, consult **[docs/FLOORPLAN_GUIDE.md](./docs/FLOORPLAN_GUIDE.md)**.
 
 ---
 
@@ -125,6 +190,12 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 ```bash
 npm run build
 npm run start
+```
+
+### 6. Run Unit & Wayfinding Test Suite
+```bash
+# Run all unit tests (A* wayfinding, SVG sanitizer, zone validation)
+npx tsx --test src/lib/__tests__/*.test.ts
 ```
 
 ---

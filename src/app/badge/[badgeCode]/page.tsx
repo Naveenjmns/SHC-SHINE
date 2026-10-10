@@ -18,7 +18,9 @@ import {
   Phone,
   ShieldCheck,
   AlertCircle,
+  Sparkles,
 } from "lucide-react";
+import InteractiveFloorPlanModal from "@/components/InteractiveFloorPlanModal";
 import { copyToClipboard } from "@/lib/clipboard";
 import { formatDateSafe } from "@/lib/dateUtils";
 import { safeJson } from "@/lib/safeFetch";
@@ -54,6 +56,10 @@ interface BadgeData {
     eventName: string;
     category: string;
     venue: string | null;
+    venueZoneId?: string | null;
+    hasPrelims?: boolean;
+    prelimsVenue?: string | null;
+    prelimsVenueZoneId?: string | null;
     rules: string | null;
     staffIncharge: string | null;
     studentIncharge: string | null;
@@ -65,6 +71,7 @@ interface BadgeData {
     institutionName: string;
     departmentName: string;
     venue: string;
+    floorPlanUrl?: string | null;
     startDate: string;
     endDate: string | null;
   };
@@ -79,6 +86,16 @@ export default function BadgeDetailPage() {
   const [badge, setBadge] = useState<BadgeData | null>(null);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+  const [mapModalState, setMapModalState] = useState<{
+    isOpen: boolean;
+    zoneId?: string | null;
+    title: string;
+    subtitle?: string;
+  }>({
+    isOpen: false,
+    zoneId: null,
+    title: "Indoor Venue Floor Plan",
+  });
 
   useEffect(() => {
     async function loadBadge() {
@@ -275,9 +292,23 @@ export default function BadgeDetailPage() {
               <Calendar className="w-3.5 h-3.5 text-amber-400" />
               <span>{formattedDate}</span>
             </span>
-            <span className="inline-flex items-center gap-1 text-stone-300">
+            <span className="inline-flex items-center gap-1.5 text-stone-300 flex-wrap">
               <MapPin className="w-3.5 h-3.5 text-[#FF6B1A]" />
               <span>{badge.fest.venue}</span>
+              <button
+                type="button"
+                onClick={() =>
+                  setMapModalState({
+                    isOpen: true,
+                    zoneId: null,
+                    title: `${badge.fest.name} ${badge.fest.edition} Campus Floor Plan`,
+                    subtitle: badge.fest.venue,
+                  })
+                }
+                className="tap-target px-2 py-0.5 rounded-md bg-white/10 hover:bg-white/20 text-white text-[10px] font-bold border border-white/20 transition-colors inline-flex items-center gap-1 cursor-pointer"
+              >
+                <span>Campus Map</span>
+              </button>
             </span>
           </div>
         </div>
@@ -516,9 +547,49 @@ export default function BadgeDetailPage() {
                       </span>
                     </div>
                     {ev.venue && (
-                      <div className="text-[11px] text-stone-500 flex items-center gap-1 mt-0.5">
-                        <MapPin className="w-3 h-3 text-stone-400" />
-                        <span>Venue: {ev.venue}</span>
+                      <div className="text-[11px] text-stone-500 flex items-center gap-1.5 mt-0.5 flex-wrap">
+                        <span className="flex items-center gap-1">
+                          <MapPin className="w-3 h-3 text-stone-400" />
+                          <span>Venue: {ev.venue}</span>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setMapModalState({
+                              isOpen: true,
+                              zoneId: ev.venueZoneId || null,
+                              title: `${ev.eventName} — Venue Map`,
+                              subtitle: ev.venue || "Competition Venue",
+                            })
+                          }
+                          className="tap-target px-1.5 py-0.5 rounded-md bg-orange-50 hover:bg-orange-100 text-[#EA580C] text-[10px] font-bold border border-orange-200/80 transition-colors inline-flex items-center gap-0.5 cursor-pointer"
+                        >
+                          <MapPin className="w-2.5 h-2.5 text-[#FF6B1A]" />
+                          <span>Map</span>
+                        </button>
+                      </div>
+                    )}
+                    {ev.hasPrelims && ev.prelimsVenue && (
+                      <div className="text-[11px] text-amber-800 flex items-center gap-1.5 mt-1 flex-wrap">
+                        <span className="flex items-center gap-1">
+                          <Sparkles className="w-3 h-3 text-amber-600" />
+                          <span>Prelims: {ev.prelimsVenue}</span>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setMapModalState({
+                              isOpen: true,
+                              zoneId: ev.prelimsVenueZoneId || null,
+                              title: `${ev.eventName} — Prelims Venue Map`,
+                              subtitle: ev.prelimsVenue || "Preliminary Round Venue",
+                            })
+                          }
+                          className="tap-target px-1.5 py-0.5 rounded-md bg-amber-100 hover:bg-amber-200 text-amber-900 text-[10px] font-bold border border-amber-300 transition-colors inline-flex items-center gap-0.5 cursor-pointer"
+                        >
+                          <MapPin className="w-2.5 h-2.5 text-amber-700" />
+                          <span>Prelims Map</span>
+                        </button>
                       </div>
                     )}
                   </div>
@@ -561,6 +632,16 @@ export default function BadgeDetailPage() {
       <div className="max-w-xl mx-auto mt-6 text-center text-xs text-stone-500 no-print">
         Need assistance or event query? Reach out to the student & staff event coordinators at the helpdesk.
       </div>
+
+      {/* Interactive Floor Plan Modal */}
+      <InteractiveFloorPlanModal
+        isOpen={mapModalState.isOpen}
+        onClose={() => setMapModalState((prev) => ({ ...prev, isOpen: false }))}
+        floorPlanUrl={badge?.fest.floorPlanUrl}
+        highlightZoneId={mapModalState.zoneId}
+        title={mapModalState.title}
+        subtitle={mapModalState.subtitle}
+      />
     </div>
   );
 }

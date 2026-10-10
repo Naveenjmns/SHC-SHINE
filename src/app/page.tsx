@@ -37,11 +37,13 @@ interface EventWithCoord {
   fee: number;
   capacity: number | null;
   venue: string | null;
+  venueZoneId?: string | null;
   dateTime: Date;
   rules?: string | null;
   hasPrelims?: boolean;
   prelimsDateTime?: Date | string | null;
   prelimsVenue?: string | null;
+  prelimsVenueZoneId?: string | null;
   prelimsRules?: string | null;
   imageUrl?: string | null;
   logoUrl?: string | null;
@@ -381,11 +383,13 @@ export default async function Home() {
                   category={ev.category}
                   capacity={ev.capacity}
                   venue={ev.venue || ""}
+                  venueZoneId={ev.venueZoneId}
                   dateTime={ev.dateTime}
                   rules={ev.rules}
                   hasPrelims={ev.hasPrelims}
                   prelimsDateTime={ev.prelimsDateTime}
                   prelimsVenue={ev.prelimsVenue}
+                  prelimsVenueZoneId={ev.prelimsVenueZoneId}
                   prelimsRules={ev.prelimsRules}
                   imageUrl={ev.imageUrl}
                   logoUrl={ev.logoUrl}
@@ -422,11 +426,13 @@ export default async function Home() {
                   category={ev.category}
                   capacity={ev.capacity}
                   venue={ev.venue || ""}
+                  venueZoneId={ev.venueZoneId}
                   dateTime={ev.dateTime}
                   rules={ev.rules}
                   hasPrelims={ev.hasPrelims}
                   prelimsDateTime={ev.prelimsDateTime}
                   prelimsVenue={ev.prelimsVenue}
+                  prelimsVenueZoneId={ev.prelimsVenueZoneId}
                   prelimsRules={ev.prelimsRules}
                   imageUrl={ev.imageUrl}
                   logoUrl={ev.logoUrl}

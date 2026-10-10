@@ -63,10 +63,13 @@ import {
   Power,
   ShieldCheck,
   FileSpreadsheet,
+  Route,
 } from "lucide-react";
 import CheckInModal from "@/components/CheckInModal";
+import PrintableQrModal from "@/components/PrintableQrModal";
 import { INSTITUTION_THEME_PRESETS, hexToRgba, type ThemePreset } from "@/lib/colorUtils";
 import { downloadEventParticipantsCSV } from "@/lib/exportEventCsv";
+import type { WaypointNode, WaypointEdge, GraphValidationResult } from "@/lib/wayfinding";
 
 interface StatsData {
   totalUsers: number;
@@ -188,6 +191,9 @@ interface EventEditionItem {
   rulesChampionshipText?: string | null;
   defaultFirstPrize?: string | null;
   defaultSecondPrize?: string | null;
+  floorPlanUrl?: string | null;
+  waypointGraph?: any;
+
   defaultThirdPrize?: string | null;
   showStageModeInStudentPortal?: boolean;
 
@@ -337,7 +343,27 @@ export default function AdminOverviewPage() {
 
     // Student Portal Stage Mode Toggle
     showStageModeInStudentPortal: false,
+
+    // Indoor Venue Floor Plan & Navigation
+    floorPlanUrl: "/uploads/campus-floorplan.svg",
   });
+
+  const [detectedZones, setDetectedZones] = useState<Array<{ id: string; label: string; type: string }>>([]);
+  const [loadingZones, setLoadingZones] = useState(false);
+  const [uploadingFloorPlan, setUploadingFloorPlan] = useState(false);
+
+  // Wayfinding Graph & Navigation Editor State
+  const [graphData, setGraphData] = useState<{ nodes: WaypointNode[]; edges: WaypointEdge[] }>({
+    nodes: [],
+    edges: [],
+  });
+  const [selectedWaypointA, setSelectedWaypointA] = useState<string | null>(null);
+  const [loadingGraph, setLoadingGraph] = useState(false);
+  const [savingGraph, setSavingGraph] = useState(false);
+  const [validatingGraph, setValidatingGraph] = useState(false);
+  const [validationReport, setValidationReport] = useState<GraphValidationResult | null>(null);
+  const [showPrintableQrModal, setShowPrintableQrModal] = useState(false);
+
 
   // SMTP Settings State
   const [smtpForm, setSmtpForm] = useState({
@@ -513,7 +539,10 @@ export default function AdminOverviewPage() {
             defaultThirdPrize:
               currentActive.defaultThirdPrize || "Distinction Certificate",
             showStageModeInStudentPortal: Boolean(currentActive.showStageModeInStudentPortal),
+            floorPlanUrl: currentActive.floorPlanUrl || "/uploads/campus-floorplan.svg",
           });
+          loadFloorPlanZones(currentActive.floorPlanUrl || "/uploads/campus-floorplan.svg");
+          loadWaypointGraph();
         }
       }
 
@@ -1014,6 +1043,182 @@ export default function AdminOverviewPage() {
       toast.error("Upload error: " + err.message);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const loadFloorPlanZones = async (urlToFetch?: string) => {
+    setLoadingZones(true);
+    try {
+      const targetUrl = urlToFetch || brandingForm.floorPlanUrl || "/uploads/campus-floorplan.svg";
+      const res = await fetch(`/api/admin/floorplan/zones?url=${encodeURIComponent(targetUrl)}`);
+      const data = await safeJson(res, { success: false, zones: [] });
+      if (data.success && Array.isArray(data.zones)) {
+        setDetectedZones(data.zones);
+      }
+    } catch (e) {
+      console.error("Failed to load floor plan zones:", e);
+    } finally {
+      setLoadingZones(false);
+    }
+  };
+
+  const loadWaypointGraph = async () => {
+    setLoadingGraph(true);
+    try {
+      const res = await fetch("/api/admin/floorplan/graph");
+      const data = await safeJson(res, { success: false, graph: { nodes: [], edges: [] } });
+      if (data.success && data.graph) {
+        setGraphData(data.graph);
+      }
+    } catch (err: any) {
+      console.error("Failed to load waypoint graph:", err);
+    } finally {
+      setLoadingGraph(false);
+    }
+  };
+
+  const handleWaypointClick = (nodeId: string) => {
+    if (!selectedWaypointA) {
+      setSelectedWaypointA(nodeId);
+      toast.info(`Selected ${nodeId}. Now click another waypoint to connect or disconnect an edge.`);
+      return;
+    }
+
+    if (selectedWaypointA === nodeId) {
+      setSelectedWaypointA(null);
+      return;
+    }
+
+    // Toggle edge between selectedWaypointA and nodeId
+    const existingIndex = graphData.edges.findIndex(
+      (e) =>
+        (e.a === selectedWaypointA && e.b === nodeId) ||
+        (e.a === nodeId && e.b === selectedWaypointA)
+    );
+
+    let updatedEdges: WaypointEdge[];
+    if (existingIndex >= 0) {
+      updatedEdges = graphData.edges.filter((_, idx) => idx !== existingIndex);
+      toast.success(`Removed corridor edge between ${selectedWaypointA} and ${nodeId}`);
+    } else {
+      const nodeA = graphData.nodes.find((n) => n.id === selectedWaypointA);
+      const nodeB = graphData.nodes.find((n) => n.id === nodeId);
+      const weight =
+        nodeA && nodeB
+          ? Number(Math.hypot(nodeA.x - nodeB.x, nodeA.y - nodeB.y).toFixed(1))
+          : 50;
+
+      updatedEdges = [
+        ...graphData.edges,
+        { a: selectedWaypointA, b: nodeId, weight },
+      ];
+      toast.success(`Connected edge between ${selectedWaypointA} and ${nodeId} (${weight} units)`);
+    }
+
+    setGraphData({
+      ...graphData,
+      edges: updatedEdges,
+    });
+    setSelectedWaypointA(null);
+  };
+
+  const handleRemoveEdge = (index: number) => {
+    const updated = graphData.edges.filter((_, idx) => idx !== index);
+    setGraphData({
+      ...graphData,
+      edges: updated,
+    });
+    toast.success("Corridor edge removed.");
+  };
+
+  const handleValidateGraph = async () => {
+    setValidatingGraph(true);
+    try {
+      const res = await fetch("/api/admin/floorplan/graph/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ graph: graphData }),
+      });
+      const data = await safeJson(res, { success: false });
+      if (data.success && data.validation) {
+        setValidationReport(data.validation);
+        if (data.validation.isValid) {
+          toast.success("Graph is 100% valid! All rooms are reachable from the entrance.");
+        } else {
+          toast.warning(`Graph validation: ${data.validation.unreachableRooms.length} room(s) unreachable.`);
+        }
+      } else {
+        toast.error("Validation failed: " + (data.message || "Unknown error"));
+      }
+    } catch (err: any) {
+      toast.error("Error validating graph: " + err.message);
+    } finally {
+      setValidatingGraph(false);
+    }
+  };
+
+  const handleSaveGraph = async () => {
+    setSavingGraph(true);
+    try {
+      const res = await fetch("/api/admin/floorplan/graph", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(graphData),
+      });
+      const data = await safeJson(res, { success: false, message: "Save failed" });
+      if (data.success) {
+        toast.success("Waypoint navigation graph saved successfully!");
+      } else {
+        toast.error(data.message);
+      }
+    } catch (err: any) {
+      toast.error("Error saving graph: " + err.message);
+    } finally {
+      setSavingGraph(false);
+    }
+  };
+
+  const handleFloorPlanUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.toLowerCase().endsWith(".svg")) {
+      toast.error("Please upload an SVG vector file (.svg)");
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Floor plan SVG must be less than 2MB.");
+      return;
+    }
+
+    setUploadingFloorPlan(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("isFloorPlan", "true");
+
+      const res = await fetch("/api/admin/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await safeJson(res, { success: false, error: "Upload failed" });
+      if (data.success && data.url) {
+        setBrandingForm((prev) => ({ ...prev, floorPlanUrl: data.url }));
+        if (data.zones && Array.isArray(data.zones)) {
+          setDetectedZones(data.zones);
+        } else {
+          await loadFloorPlanZones(data.url);
+        }
+        toast.success(`Floor plan uploaded & sanitized! (${data.zones?.length || 0} zones detected)`);
+      } else {
+        toast.error(data.error || "Floor plan upload failed.");
+      }
+    } catch (err: any) {
+      toast.error("Upload error: " + err.message);
+    } finally {
+      setUploadingFloorPlan(false);
     }
   };
 
@@ -2377,6 +2582,351 @@ export default function AdminOverviewPage() {
                   </div>
                 </div>
 
+                {/* 5. Indoor Venue Floor Plan & Navigation */}
+                <div className="dash-card p-6 space-y-5 border-l-4 border-[#FF6B1A]">
+                  <div className="flex items-center justify-between border-b pb-3">
+                    <h4 className="text-sm font-bold uppercase tracking-wider text-[#0F172A] flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-[#FF6B1A]" />
+                      <span>5. Indoor Venue Floor Plan & Navigation</span>
+                    </h4>
+                    <span className="text-[10px] font-bold uppercase tracking-widest bg-orange-100 text-orange-800 px-2 py-0.5 rounded-md">
+                      Interactive Wayfinding
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-[#64748B] leading-relaxed">
+                    Upload a sanitized 2D SVG floor plan of your symposium campus venue. The system securely strips scripts, validates size (max 2MB), and auto-detects all labeled competition halls, presentation rooms, and amenity stations for the interactive 2D/3D map.
+                  </p>
+
+                  <div className="space-y-4">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <label className={`cursor-pointer inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-white transition shadow-sm ${
+                        uploadingFloorPlan ? "bg-stone-400 cursor-not-allowed" : "bg-[#FF6B1A] hover:bg-[#E8551F]"
+                      }`}>
+                        <Upload className="w-4 h-4" />
+                        <span>{uploadingFloorPlan ? "Sanitizing & Uploading..." : "Upload New Floor Plan (.svg)"}</span>
+                        <input
+                          type="file"
+                          accept=".svg,image/svg+xml"
+                          className="hidden"
+                          disabled={uploadingFloorPlan}
+                          onChange={handleFloorPlanUpload}
+                        />
+                      </label>
+
+                      <button
+                        type="button"
+                        onClick={() => loadFloorPlanZones()}
+                        disabled={loadingZones}
+                        className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl border border-stone-200 bg-white hover:bg-stone-50 text-stone-700 transition"
+                      >
+                        <RefreshCw className={`w-3.5 h-3.5 ${loadingZones ? "animate-spin text-[#FF6B1A]" : ""}`} />
+                        <span>{loadingZones ? "Scanning..." : "Re-scan Zones"}</span>
+                      </button>
+
+                      <span className="text-[11px] text-[#94A3B8]">
+                        Accepted: <code>.svg</code> vector files (max 2MB)
+                      </span>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-[#64748B] mb-1">
+                        Active Floor Plan File URL
+                      </label>
+                      <input
+                        type="text"
+                        value={brandingForm.floorPlanUrl || ""}
+                        onChange={(e) => {
+                          setBrandingForm({ ...brandingForm, floorPlanUrl: e.target.value });
+                          loadFloorPlanZones(e.target.value);
+                        }}
+                        placeholder="/uploads/campus-floorplan.svg"
+                        className="w-full px-3 py-2 text-xs border border-[#CBD5E1] rounded-xl focus:ring-2 focus:ring-[#FF6B1A] outline-none font-mono"
+                      />
+                    </div>
+
+                    {/* Detected Zones List */}
+                    <div className="p-4 bg-stone-50 rounded-2xl border border-stone-200 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-[#0F172A] flex items-center gap-1.5">
+                          <Layers className="w-3.5 h-3.5 text-[#FF6B1A]" />
+                          <span>Detected Interactive Zones</span>
+                        </span>
+                        <span className="text-[11px] font-semibold bg-white border border-stone-200 px-2 py-0.5 rounded-full text-stone-600">
+                          {detectedZones.length} {detectedZones.length === 1 ? "zone" : "zones"} identified
+                        </span>
+                      </div>
+
+                      {loadingZones ? (
+                        <div className="py-4 text-center text-xs text-stone-500">
+                          Scanning SVG shapes for zone identifiers...
+                        </div>
+                      ) : detectedZones.length > 0 ? (
+                        <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto pr-1">
+                          {detectedZones.map((z) => (
+                            <span
+                              key={z.id}
+                              className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg border font-medium ${
+                                z.type === "hall"
+                                  ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                                  : z.type === "room"
+                                  ? "bg-purple-50 text-purple-800 border-purple-200"
+                                  : z.type === "amenity"
+                                  ? "bg-sky-50 text-sky-800 border-sky-200"
+                                  : "bg-amber-50 text-amber-800 border-amber-200"
+                              }`}
+                            >
+                              <span className="w-1.5 h-1.5 rounded-full bg-current opacity-70" />
+                              <span className="font-semibold">{z.label}</span>
+                              <code className="text-[10px] opacity-60">({z.id})</code>
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-stone-500 italic">
+                          No shape IDs found yet. Ensure your SVG shapes (rect, path, polygon) have <code className="bg-stone-200 px-1 py-0.5 rounded">id="hall-1"</code> attributes.
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Live Map Preview Box */}
+                    {brandingForm.floorPlanUrl && (
+                      <div className="space-y-2">
+                        <span className="text-xs font-bold text-[#64748B]">Live SVG Map Preview</span>
+                        <div className="relative w-full aspect-16/10 rounded-2xl bg-[#0B0A0A] border border-stone-800 overflow-hidden shadow-inner flex items-center justify-center">
+                          <img
+                            src={brandingForm.floorPlanUrl}
+                            alt="Floor Plan Preview"
+                            className="w-full h-full object-contain p-4"
+                            loading="lazy"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Wayfinding Routing Graph Editor */}
+                    <div className="p-4 bg-stone-50 rounded-2xl border border-stone-200 space-y-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-stone-200/80 pb-3">
+                        <div className="flex items-center gap-2">
+                          <Route className="w-4 h-4 text-[#FF6B1A]" />
+                          <div>
+                            <span className="text-xs font-bold text-[#0F172A] block">
+                              Waypoint Routing Graph (A* Walking Network)
+                            </span>
+                            <span className="text-[11px] text-[#64748B]">
+                              {graphData.nodes.length} waypoints, {graphData.edges.length} walkable corridor connections
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => loadWaypointGraph()}
+                            disabled={loadingGraph}
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-lg border border-stone-200 bg-white hover:bg-stone-50 text-stone-700 transition"
+                            title="Re-read waypoints from active floor plan SVG"
+                          >
+                            <RefreshCw className={`w-3 h-3 ${loadingGraph ? "animate-spin text-[#FF6B1A]" : ""}`} />
+                            <span>Sync SVG</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={handleValidateGraph}
+                            disabled={validatingGraph || graphData.nodes.length === 0}
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-lg border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 transition"
+                          >
+                            <ShieldCheck className={`w-3.5 h-3.5 ${validatingGraph ? "animate-spin" : ""}`} />
+                            <span>{validatingGraph ? "Validating..." : "Validate Graph"}</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setShowPrintableQrModal(true)}
+                            disabled={graphData.nodes.length === 0}
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-lg border border-purple-300 bg-purple-50 hover:bg-purple-100 text-purple-800 transition"
+                            title="Generate and print physical QR codes for all waypoints"
+                          >
+                            <QrCode className="w-3.5 h-3.5" />
+                            <span>Print QR Checkpoints</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={handleSaveGraph}
+                            disabled={savingGraph || graphData.nodes.length === 0}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold rounded-lg bg-[#FF6B1A] hover:bg-[#E8551F] text-white shadow-sm transition"
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                            <span>{savingGraph ? "Saving..." : "Save Graph"}</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Interaction Guide */}
+                      <div className={`p-3 rounded-xl text-xs flex items-center justify-between ${
+                        selectedWaypointA
+                          ? "bg-amber-50 border border-amber-200 text-amber-900"
+                          : "bg-white border border-stone-200 text-stone-600"
+                      }`}>
+                        {selectedWaypointA ? (
+                          <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-[#FF6B1A] animate-pulse" />
+                            <span>
+                              Selected <strong>{selectedWaypointA}</strong>. Click another waypoint below to toggle (connect or disconnect) an edge.
+                            </span>
+                          </div>
+                        ) : (
+                          <span>
+                            Click any waypoint below to select it, then click a second waypoint to create or remove a walking corridor edge.
+                          </span>
+                        )}
+                        {selectedWaypointA && (
+                          <button
+                            type="button"
+                            onClick={() => setSelectedWaypointA(null)}
+                            className="text-[11px] font-semibold text-amber-800 hover:text-amber-900 underline ml-2"
+                          >
+                            Cancel
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Waypoints Selection Grid */}
+                      <div className="space-y-1.5">
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-[#64748B]">
+                          Waypoints / Nodes (Click to link)
+                        </span>
+                        {graphData.nodes.length === 0 ? (
+                          <p className="text-xs text-stone-500 italic">
+                            No waypoints found in active SVG. Check that your SVG includes a layer <code>&lt;g id="waypoints"&gt;</code> with circles whose IDs start with <code>wp-</code>.
+                          </p>
+                        ) : (
+                          <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto pr-1">
+                            {graphData.nodes.map((node) => {
+                              const isSelected = selectedWaypointA === node.id;
+                              const degree = graphData.edges.filter(
+                                (e) => e.a === node.id || e.b === node.id
+                              ).length;
+
+                              return (
+                                <button
+                                  key={node.id}
+                                  type="button"
+                                  onClick={() => handleWaypointClick(node.id)}
+                                  className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border font-mono transition text-left ${
+                                    isSelected
+                                      ? "bg-[#FF6B1A] text-white border-[#FF6B1A] shadow-md ring-2 ring-[#FF6B1A]/40"
+                                      : degree === 0
+                                      ? "bg-rose-50 text-rose-800 border-rose-200 hover:bg-rose-100"
+                                      : "bg-white text-stone-800 border-stone-200 hover:border-[#FF6B1A]/50 hover:bg-stone-50"
+                                  }`}
+                                >
+                                  <span
+                                    className={`w-1.5 h-1.5 rounded-full ${
+                                      isSelected
+                                        ? "bg-white"
+                                        : degree === 0
+                                        ? "bg-rose-500"
+                                        : "bg-emerald-500"
+                                    }`}
+                                  />
+                                  <span className="font-semibold">{node.id}</span>
+                                  {node.zoneId && (
+                                    <span className={`text-[10px] px-1 py-0.2 rounded font-sans ${
+                                      isSelected ? "bg-white/20 text-white" : "bg-stone-100 text-stone-600"
+                                    }`}>
+                                      → {node.zoneId}
+                                    </span>
+                                  )}
+                                  <span className="text-[10px] opacity-60">({degree} conn)</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Walkable Corridor Edges */}
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-bold uppercase tracking-wider text-[#64748B]">
+                            Walkable Corridor Connections ({graphData.edges.length})
+                          </span>
+                        </div>
+                        {graphData.edges.length === 0 ? (
+                          <p className="text-xs text-stone-500 italic">
+                            No corridor connections defined yet. Click two waypoints above to create a walking path.
+                          </p>
+                        ) : (
+                          <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto pr-1">
+                            {graphData.edges.map((edge, index) => (
+                              <span
+                                key={`${edge.a}-${edge.b}-${index}`}
+                                className="inline-flex items-center gap-1.5 text-[11px] font-mono px-2 py-1 rounded-md bg-stone-100 border border-stone-200 text-stone-700"
+                              >
+                                <span className="font-semibold">{edge.a}</span>
+                                <span className="text-stone-400">↔</span>
+                                <span className="font-semibold">{edge.b}</span>
+                                <span className="text-stone-400 text-[10px]">({edge.weight}m)</span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveEdge(index)}
+                                  className="ml-1 text-stone-400 hover:text-rose-600 transition"
+                                  title="Remove edge"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Validation Report Banner */}
+                      {validationReport && (
+                        <div className={`p-3 rounded-xl border text-xs space-y-2 ${
+                          validationReport.isValid
+                            ? "bg-emerald-50 border-emerald-200 text-emerald-900"
+                            : "bg-amber-50 border-amber-200 text-amber-900"
+                        }`}>
+                          <div className="flex items-center gap-2 font-bold">
+                            {validationReport.isValid ? (
+                              <>
+                                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                                <span>Graph Reachability Validated: 100% reachable from entrance!</span>
+                              </>
+                            ) : (
+                              <>
+                                <AlertCircle className="w-4 h-4 text-amber-600" />
+                                <span>Reachability Warning: Some rooms or waypoints are disconnected.</span>
+                              </>
+                            )}
+                          </div>
+
+                          {!validationReport.isValid && (
+                            <div className="space-y-1.5 text-[11px]">
+                              {validationReport.unreachableRooms.length > 0 && (
+                                <div>
+                                  <span className="font-semibold text-rose-700">Unreachable Rooms ({validationReport.unreachableRooms.length}): </span>
+                                  <span>{validationReport.unreachableRooms.join(", ")}</span>
+                                </div>
+                              )}
+                              {validationReport.disconnectedWaypoints.length > 0 && (
+                                <div>
+                                  <span className="font-semibold text-amber-700">Isolated Waypoints ({validationReport.disconnectedWaypoints.length}): </span>
+                                  <span>{validationReport.disconnectedWaypoints.join(", ")}</span>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
                 <div className="pt-2">
                   <button
                     type="button"
@@ -2599,7 +3149,9 @@ export default function AdminOverviewPage() {
                           defaultThirdPrize:
                             ed.defaultThirdPrize || "Distinction Certificate",
                           showStageModeInStudentPortal: Boolean(ed.showStageModeInStudentPortal),
+                          floorPlanUrl: ed.floorPlanUrl || "/uploads/campus-floorplan.svg",
                         });
+                        loadFloorPlanZones(ed.floorPlanUrl || "/uploads/campus-floorplan.svg");
                         setActiveTab("branding");
                       }}
                       className="text-xs font-semibold text-[#0F172A] hover:text-[#FF6B1A] underline"
@@ -5691,6 +6243,14 @@ export default function AdminOverviewPage() {
         isOpen={showCheckInModal}
         onClose={() => setShowCheckInModal(false)}
         onCheckInComplete={loadAdminData}
+      />
+
+      <PrintableQrModal
+        isOpen={showPrintableQrModal}
+        onClose={() => setShowPrintableQrModal(false)}
+        waypoints={graphData.nodes}
+        editionName={brandingForm.edition || brandingForm.name || "SHINE 2026"}
+        institutionName={brandingForm.institutionName || "Sacred Heart College (Autonomous), Tirupattur"}
       />
 
       {/* RESET REGISTRATIONS & REVENUE CONFIRMATION MODAL */}

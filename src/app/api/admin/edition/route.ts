@@ -218,6 +218,8 @@ export async function PATCH(req: NextRequest) {
       "defaultSecondPrize",
       "defaultThirdPrize",
       "showStageModeInStudentPortal",
+      "floorPlanUrl",
+      "waypointGraph",
       "isActive",
       "status",
     ];
