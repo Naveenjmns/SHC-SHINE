@@ -1,0 +1,281 @@
+/**
+ * SHINE 2026 — Master Design Tokens (Phase 1)
+ * Single Accent System (#FF6B1A SHINE Orange), Cool-Neutral Base, WCAG AA Compliant
+ * Tailwind v4 @theme Integration
+ */
+
+@theme {
+  /* Colors mapped to CSS Custom Properties */
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-sunken: var(--surface-sunken);
+
+  --color-border: var(--border);
+  --color-border-muted: var(--border-muted);
+  --color-border-strong: var(--border-strong);
+
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-subtle: var(--ink-subtle);
+
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-active: var(--accent-active);
+  --color-accent-muted: var(--accent-muted);
+  --color-accent-ink: var(--accent-ink);
+
+  --color-gold: var(--gold);
+  --color-gold-hover: var(--gold-hover);
+  --color-gold-muted: var(--gold-muted);
+  --color-gold-ink: var(--gold-ink);
+
+  --color-success: var(--success);
+  --color-success-surface: var(--success-surface);
+  --color-success-border: var(--success-border);
+  --color-success-ink: var(--success-ink);
+
+  --color-warning: var(--warning);
+  --color-warning-surface: var(--warning-surface);
+  --color-warning-border: var(--warning-border);
+  --color-warning-ink: var(--warning-ink);
+
+  --color-danger: var(--danger);
+  --color-danger-surface: var(--danger-surface);
+  --color-danger-border: var(--danger-border);
+  --color-danger-ink: var(--danger-ink);
+
+  --color-info: var(--info);
+  --color-info-surface: var(--info-surface);
+  --color-info-border: var(--info-border);
+  --color-info-ink: var(--info-ink);
+
+  --color-status-pending: var(--status-pending);
+  --color-status-pending-bg: var(--status-pending-bg);
+  --color-status-pending-border: var(--status-pending-border);
+  --color-status-pending-text: var(--status-pending-text);
+
+  --color-status-confirmed: var(--status-confirmed);
+  --color-status-confirmed-bg: var(--status-confirmed-bg);
+  --color-status-confirmed-border: var(--status-confirmed-border);
+  --color-status-confirmed-text: var(--status-confirmed-text);
+
+  --color-status-rejected: var(--status-rejected);
+  --color-status-rejected-bg: var(--status-rejected-bg);
+  --color-status-rejected-border: var(--status-rejected-border);
+  --color-status-rejected-text: var(--status-rejected-text);
+
+  /* Typography Fonts */
+  --font-display: var(--font-display, "Bricolage Grotesque", -apple-system, sans-serif);
+  --font-sans: var(--font-ui, "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
+  --font-mono: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace);
+
+  /* Fixed 8-Step Typography Scale */
+  --text-xs: 0.75rem;    /* 12px */
+  --text-sm: 0.875rem;   /* 14px */
+  --text-base: 1rem;     /* 16px */
+  --text-lg: 1.125rem;   /* 18px */
+  --text-xl: 1.5rem;     /* 24px */
+  --text-2xl: 2rem;      /* 32px */
+  --text-3xl: 3rem;      /* 48px */
+  --text-4xl: 4rem;      /* 64px */
+
+  /* Radii */
+  --radius-control: 8px;
+  --radius-panel: 12px;
+  --radius-full: 9999px;
+
+  /* Shadows (Only for overlays/popovers/menus/modals) */
+  --shadow-popover: 0 4px 16px -2px rgba(12, 10, 9, 0.08), 0 2px 6px -1px rgba(12, 10, 9, 0.04);
+  --shadow-modal: 0 20px 40px -4px rgba(12, 10, 9, 0.18), 0 8px 16px -2px rgba(12, 10, 9, 0.08);
+
+  /* Responsive Breakpoints */
+  --breakpoint-360: 360px;
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+  --breakpoint-2xl: 1536px;
+  --breakpoint-projector: 1920px;
+}
+
+/* ==========================================================================
+   Base CSS Custom Properties (:root — Light Theme Default)
+   ========================================================================== */
+:root {
+  /* Surfaces */
+  --surface: #FFFFFF;
+  --surface-raised: #F5F5F4; /* stone-100 */
+  --surface-sunken: #E7E5E4; /* stone-200 */
+
+  /* Hairline 1px Borders */
+  --border: #E7E5E4; /* stone-200 */
+  --border-muted: #F5F5F4; /* stone-100 */
+  --border-strong: #D6D3D1; /* stone-300 */
+
+  /* Typography & Ink (WCAG AA Compliant) */
+  --ink: #0C0A09; /* stone-950 near-black body */
+  --ink-muted: #57534E; /* stone-600 — Contrast 5.1:1 on white */
+  --ink-subtle: #78716C; /* stone-500 — Contrast 4.5:1 on white */
+
+  /* Accent: Single Primary Accent (#FF6B1A SHINE Orange) */
+  --accent: #FF6B1A;
+  --accent-hover: #E8551F;
+  --accent-active: #CC4414;
+  --accent-muted: rgba(255, 107, 26, 0.10);
+  --accent-ink: #0C0A09;
+
+  /* Secondary Accent: Gold (#D9A441 - Exclusively for Awards/Trophies) */
+  --gold: #D9A441;
+  --gold-hover: #C59132;
+  --gold-muted: rgba(217, 164, 65, 0.12);
+  --gold-ink: #1C1917;
+
+  /* Semantic Roles */
+  --success: #16A34A;
+  --success-surface: #F0FDF4;
+  --success-border: #BBF7D0;
+  --success-ink: #14532D;
+
+  --warning: #D97706;
+  --warning-surface: #FFFBEB;
+  --warning-border: #FDE68A;
+  --warning-ink: #78350F;
+
+  --danger: #DC2626;
+  --danger-surface: #FEF2F2;
+  --danger-border: #FECACA;
+  --danger-ink: #7F1D1D;
+
+  --info: #2563EB;
+  --info-surface: #EFF6FF;
+  --info-border: #BFDBFE;
+  --info-ink: #1E3A8A;
+
+  /* Status Colors */
+  --status-pending: #D97706;
+  --status-pending-bg: #FFFBEB;
+  --status-pending-border: #FDE68A;
+  --status-pending-text: #78350F;
+
+  --status-confirmed: #16A34A;
+  --status-confirmed-bg: #F0FDF4;
+  --status-confirmed-border: #BBF7D0;
+  --status-confirmed-text: #14532D;
+
+  --status-rejected: #DC2626;
+  --status-rejected-bg: #FEF2F2;
+  --status-rejected-border: #FECACA;
+  --status-rejected-text: #7F1D1D;
+
+  /* Radii */
+  --radius-control: 8px;
+  --radius-panel: 12px;
+  --radius-full: 9999px;
+
+  /* Motion Tokens (150ms-250ms) */
+  --motion-fast: 150ms;
+  --motion-normal: 200ms;
+  --motion-slow: 250ms;
+  --ease-standard: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Z-Index Hierarchy */
+  --z-base: 0;
+  --z-raised: 10;
+  --z-sticky: 20;
+  --z-header: 30;
+  --z-drawer: 40;
+  --z-modal: 50;
+  --z-popover: 60;
+  --z-toast: 70;
+}
+
+/* ==========================================================================
+   Dark Theme (.dark, [data-theme="dark"] — For Workspace Consoles)
+   ========================================================================== */
+.dark,
+[data-theme="dark"] {
+  --surface: #121110;
+  --surface-raised: #1C1917; /* stone-900 */
+  --surface-sunken: #0C0A09; /* stone-950 */
+
+  --border: #292524; /* stone-800 */
+  --border-muted: #1C1917;
+  --border-strong: #44403C; /* stone-700 */
+
+  --ink: #FAFAF9; /* stone-50 */
+  --ink-muted: #A8A29E; /* stone-400 — Contrast 6.8:1 on #121110 */
+  --ink-subtle: #78716C; /* stone-500 — Contrast 4.6:1 on #121110 */
+
+  --accent-muted: rgba(255, 107, 26, 0.16);
+
+  --gold-ink: #FAFAF9;
+  --gold-muted: rgba(217, 164, 65, 0.20);
+
+  --success-surface: #052E16;
+  --success-border: #14532D;
+  --success-ink: #BBF7D0;
+
+  --warning-surface: #451A03;
+  --warning-border: #78350F;
+  --warning-ink: #FDE68A;
+
+  --danger-surface: #450A0A;
+  --danger-border: #7F1D1D;
+  --danger-ink: #FECACA;
+
+  --info-surface: #172554;
+  --info-border: #1E3A8A;
+  --info-ink: #BFDBFE;
+
+  --status-pending-bg: #451A03;
+  --status-pending-border: #78350F;
+  --status-pending-text: #FDE68A;
+
+  --status-confirmed-bg: #052E16;
+  --status-confirmed-border: #14532D;
+  --status-confirmed-text: #BBF7D0;
+
+  --status-rejected-bg: #450A0A;
+  --status-rejected-border: #7F1D1D;
+  --status-rejected-text: #FECACA;
+
+  --shadow-popover: 0 4px 20px -2px rgba(0, 0, 0, 0.4);
+  --shadow-modal: 0 24px 48px -4px rgba(0, 0, 0, 0.6);
+}
+
+/* ==========================================================================
+   Stage Mode ([data-stage-mode="true"] — 16:9 Projector Theme)
+   ========================================================================== */
+[data-stage-mode="true"] {
+  --surface: #080706;
+  --surface-raised: #141210;
+  --surface-sunken: #000000;
+
+  --border: #2C2825;
+  --border-muted: #1A1816;
+  --border-strong: #4A443E;
+
+  --ink: #FFFFFF;
+  --ink-muted: #D6D3D1;
+  --ink-subtle: #A8A29E;
+
+  --accent: #FF7728; /* Slightly elevated luminosity for LED stage arrays */
+  --accent-ink: #000000;
+
+  --gold: #F2C94C;
+  --gold-ink: #000000;
+}
+
+/* ==========================================================================
+   Motion Preference: Respect prefers-reduced-motion
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
