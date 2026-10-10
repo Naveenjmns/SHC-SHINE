@@ -69,6 +69,12 @@ import {
   Maximize2,
   ExternalLink,
   Network,
+  Move,
+  PlusCircle,
+  Link2,
+  Edit3,
+  MousePointer,
+  Crosshair,
 } from "lucide-react";
 import CheckInModal from "@/components/CheckInModal";
 import PrintableQrModal from "@/components/PrintableQrModal";
@@ -382,6 +388,31 @@ export default function AdminOverviewPage() {
   const isDraggingPreviewRef = useRef(false);
   const dragStartCoordsRef = useRef({ x: 0, y: 0 });
   const panStartCoordsRef = useRef({ x: 0, y: 0 });
+
+  // Interactive Waypoint Mapping Tool States
+  const [mappingToolMode, setMappingToolMode] = useState<"connect" | "add" | "move" | "delete">("connect");
+  const [showAddNodeModal, setShowAddNodeModal] = useState(false);
+  const [showEditNodeModal, setShowEditNodeModal] = useState(false);
+  const [editingNodeData, setEditingNodeData] = useState<WaypointNode | null>(null);
+  const [newNodeData, setNewNodeData] = useState<{
+    x: number;
+    y: number;
+    id: string;
+    label: string;
+    floor: number;
+    zoneId: string;
+    autoConnectToSelected: boolean;
+  }>({
+    x: 0,
+    y: 0,
+    id: "",
+    label: "",
+    floor: 1,
+    zoneId: "",
+    autoConnectToSelected: false,
+  });
+  const [draggingNodeId, setDraggingNodeId] = useState<string | null>(null);
+  const overlaySvgRef = useRef<SVGSVGElement | null>(null);
 
 
   // SMTP Settings State
@@ -1142,6 +1173,174 @@ export default function AdminOverviewPage() {
     } finally {
       setLoadingGraph(false);
     }
+  };
+
+  const getSvgCoordinates = useCallback((e: React.MouseEvent<SVGSVGElement>): { x: number; y: number } | null => {
+    const svg = overlaySvgRef.current;
+    if (!svg) return null;
+    const pt = svg.createSVGPoint();
+    pt.x = e.clientX;
+    pt.y = e.clientY;
+    const ctm = svg.getScreenCTM();
+    if (!ctm) return null;
+    const transformed = pt.matrixTransform(ctm.inverse());
+    return {
+      x: Math.round(transformed.x),
+      y: Math.round(transformed.y),
+    };
+  }, []);
+
+  const handleMapCanvasClick = (e: React.MouseEvent<SVGSVGElement>) => {
+    if (mappingToolMode !== "add") return;
+    const coords = getSvgCoordinates(e);
+    if (!coords) return;
+
+    const nextIndex = graphData.nodes.length + 1;
+    setNewNodeData({
+      x: coords.x,
+      y: coords.y,
+      id: `wp-node-${nextIndex}`,
+      label: `Waypoint ${nextIndex}`,
+      floor: 1,
+      zoneId: "",
+      autoConnectToSelected: !!selectedWaypointA,
+    });
+    setShowAddNodeModal(true);
+  };
+
+  const handleAddWaypointSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newNodeData.id.trim()) {
+      toast.warning("Please enter a waypoint ID.");
+      return;
+    }
+
+    let cleanId = newNodeData.id.trim().toLowerCase();
+    if (!cleanId.startsWith("wp-")) {
+      cleanId = `wp-${cleanId}`;
+    }
+
+    if (graphData.nodes.some((n) => n.id === cleanId)) {
+      toast.error(`A waypoint with ID "${cleanId}" already exists. Please choose a unique ID.`);
+      return;
+    }
+
+    const createdNode: WaypointNode = {
+      id: cleanId,
+      x: newNodeData.x,
+      y: newNodeData.y,
+      floor: Number(newNodeData.floor) || 1,
+      label: newNodeData.label.trim() || cleanId,
+      zoneId: newNodeData.zoneId.trim() || undefined,
+    };
+
+    let updatedEdges = [...graphData.edges];
+    if (newNodeData.autoConnectToSelected && selectedWaypointA) {
+      const prevNode = graphData.nodes.find((n) => n.id === selectedWaypointA);
+      if (prevNode) {
+        const dist = Math.hypot(createdNode.x - prevNode.x, createdNode.y - prevNode.y);
+        updatedEdges.push({
+          a: selectedWaypointA,
+          b: cleanId,
+          weight: parseFloat(dist.toFixed(1)),
+          isStairOrLift: createdNode.floor !== prevNode.floor,
+        });
+      }
+    }
+
+    setGraphData((prev) => ({
+      nodes: [...prev.nodes, createdNode],
+      edges: updatedEdges,
+    }));
+
+    setSelectedWaypointA(cleanId);
+    setShowAddNodeModal(false);
+    toast.success(`Waypoint "${cleanId}" placed on map!`);
+  };
+
+  const handleDeleteWaypoint = (nodeId: string) => {
+    const node = graphData.nodes.find((n) => n.id === nodeId);
+    if (!node) return;
+
+    setGraphData((prev) => ({
+      nodes: prev.nodes.filter((n) => n.id !== nodeId),
+      edges: prev.edges.filter((e) => e.a !== nodeId && e.b !== nodeId),
+    }));
+
+    if (selectedWaypointA === nodeId) {
+      setSelectedWaypointA(null);
+    }
+    if (editingNodeData?.id === nodeId) {
+      setShowEditNodeModal(false);
+      setEditingNodeData(null);
+    }
+    toast.info(`Waypoint "${nodeId}" deleted.`);
+  };
+
+  const handleUpdateWaypointSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingNodeData) return;
+
+    setGraphData((prev) => ({
+      ...prev,
+      nodes: prev.nodes.map((n) => (n.id === editingNodeData.id ? editingNodeData : n)),
+    }));
+
+    setShowEditNodeModal(false);
+    setEditingNodeData(null);
+    toast.success(`Waypoint "${editingNodeData.id}" updated!`);
+  };
+
+  const handleNodeMouseDown = (e: React.MouseEvent, nodeId: string) => {
+    if (mappingToolMode === "move") {
+      e.stopPropagation();
+      setDraggingNodeId(nodeId);
+    }
+  };
+
+  const handleOverlayMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    if (mappingToolMode === "move" && draggingNodeId) {
+      const coords = getSvgCoordinates(e);
+      if (!coords) return;
+
+      setGraphData((prev) => {
+        const updatedNodes = prev.nodes.map((n) =>
+          n.id === draggingNodeId ? { ...n, x: coords.x, y: coords.y } : n
+        );
+        const updatedEdges = prev.edges.map((edge) => {
+          if (edge.a === draggingNodeId || edge.b === draggingNodeId) {
+            const nodeA = updatedNodes.find((n) => n.id === edge.a);
+            const nodeB = updatedNodes.find((n) => n.id === edge.b);
+            if (nodeA && nodeB && !edge.isStairOrLift) {
+              const dist = Math.hypot(nodeB.x - nodeA.x, nodeB.y - nodeA.y);
+              return { ...edge, weight: parseFloat(dist.toFixed(1)) };
+            }
+          }
+          return edge;
+        });
+        return { nodes: updatedNodes, edges: updatedEdges };
+      });
+    }
+  };
+
+  const handleOverlayMouseUp = () => {
+    if (draggingNodeId) {
+      setDraggingNodeId(null);
+      toast.success("Waypoint position updated!");
+    }
+  };
+
+  const handleMapNodeClick = (nodeId: string) => {
+    if (mappingToolMode === "delete") {
+      handleDeleteWaypoint(nodeId);
+      return;
+    }
+    if (mappingToolMode === "connect") {
+      handleWaypointClick(nodeId);
+      return;
+    }
+    // In move mode or add mode, selecting for inspector
+    setSelectedWaypointA(nodeId);
   };
 
   const handleWaypointClick = (nodeId: string) => {
@@ -2758,21 +2957,22 @@ export default function AdminOverviewPage() {
                     </div>
 
                     {/* Live Map Preview Box */}
+                    {/* Live Map Preview & Interactive Waypoint Mapping Box */}
                     <div className="space-y-3">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
                           <span className="text-xs font-bold text-[#0F172A] flex items-center gap-1.5">
-                            <Eye className="w-3.5 h-3.5 text-[#FF6B1A]" />
-                            <span>Live SVG Map Preview</span>
+                            <Crosshair className="w-3.5 h-3.5 text-[#FF6B1A]" />
+                            <span>Interactive Waypoint Mapper & Live SVG</span>
                           </span>
                           {brandingForm.floorPlanUrl && (
-                            <span className="text-[10px] font-mono text-stone-500 bg-stone-100 border border-stone-200 px-2 py-0.5 rounded-full truncate max-w-[200px]" title={brandingForm.floorPlanUrl}>
+                            <span className="text-[10px] font-mono text-stone-500 bg-stone-100 border border-stone-200 px-2 py-0.5 rounded-full truncate max-w-[180px]" title={brandingForm.floorPlanUrl}>
                               {brandingForm.floorPlanUrl.split("/").pop()}
                             </span>
                           )}
                         </div>
 
-                        {/* Top Preview Controls */}
+                        {/* Top View & Simulation Controls */}
                         <div className="flex items-center gap-2 flex-wrap">
                           <button
                             type="button"
@@ -2785,7 +2985,7 @@ export default function AdminOverviewPage() {
                             title="Toggle visual waypoint nodes and corridor lines on top of the map"
                           >
                             <Network className="w-3 h-3 text-[#FF6B1A]" />
-                            <span>Graph Overlay {showGraphOverlay ? "ON" : "OFF"}</span>
+                            <span>Overlay {showGraphOverlay ? "ON" : "OFF"}</span>
                           </button>
 
                           <div className="inline-flex items-center bg-white border border-stone-200 rounded-lg p-0.5 text-xs text-stone-600">
@@ -2843,23 +3043,124 @@ export default function AdminOverviewPage() {
                         </div>
                       </div>
 
+                      {/* Interactive Tool Modes Toolbar */}
+                      <div className="flex flex-wrap items-center justify-between gap-2 p-2 bg-stone-900 rounded-xl border border-stone-800 text-xs">
+                        <div className="flex items-center gap-1 flex-wrap">
+                          <span className="text-[11px] font-bold text-stone-400 uppercase tracking-wider px-1">Tool Mode:</span>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setMappingToolMode("connect");
+                            }}
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-semibold transition ${
+                              mappingToolMode === "connect"
+                                ? "bg-[#FF6B1A] text-white shadow-md"
+                                : "text-stone-300 hover:text-white hover:bg-stone-800"
+                            }`}
+                            title="Connect Paths Mode: Click node A then node B to toggle corridor connection"
+                          >
+                            <Link2 className="w-3.5 h-3.5" />
+                            <span>Connect Paths</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setMappingToolMode("add");
+                              toast.info("Click anywhere on the map to drop a new waypoint!");
+                            }}
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-semibold transition ${
+                              mappingToolMode === "add"
+                                ? "bg-emerald-600 text-white shadow-md ring-2 ring-emerald-400/40"
+                                : "text-stone-300 hover:text-white hover:bg-stone-800"
+                            }`}
+                            title="Add Waypoint Mode: Click anywhere on the map canvas to place a new node"
+                          >
+                            <PlusCircle className="w-3.5 h-3.5" />
+                            <span>Add Waypoint</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setMappingToolMode("move");
+                              toast.info("Move Mode: Drag any waypoint circle to relocate its coordinates.");
+                            }}
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-semibold transition ${
+                              mappingToolMode === "move"
+                                ? "bg-sky-600 text-white shadow-md ring-2 ring-sky-400/40"
+                                : "text-stone-300 hover:text-white hover:bg-stone-800"
+                            }`}
+                            title="Move Mode: Click and drag any waypoint dot on the map to reposition it"
+                          >
+                            <Move className="w-3.5 h-3.5" />
+                            <span>Move / Drag</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setMappingToolMode("delete");
+                              toast.warning("Delete Mode: Click any waypoint on the map to remove it.");
+                            }}
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-semibold transition ${
+                              mappingToolMode === "delete"
+                                ? "bg-rose-600 text-white shadow-md ring-2 ring-rose-400/40"
+                                : "text-stone-300 hover:text-white hover:bg-stone-800"
+                            }`}
+                            title="Delete Mode: Click any waypoint circle on the map to delete it"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>Delete Mode</span>
+                          </button>
+                        </div>
+
+                        {/* Mode Context Hint */}
+                        <div className="text-[11px] text-stone-300 flex items-center gap-1.5">
+                          {mappingToolMode === "connect" && (
+                            <span className="text-amber-400">Click node A, then node B to link a corridor.</span>
+                          )}
+                          {mappingToolMode === "add" && (
+                            <span className="text-emerald-400 animate-pulse font-semibold">Click on blueprint to drop a waypoint.</span>
+                          )}
+                          {mappingToolMode === "move" && (
+                            <span className="text-sky-300">Drag any waypoint dot to adjust position.</span>
+                          )}
+                          {mappingToolMode === "delete" && (
+                            <span className="text-rose-400 font-semibold">Click any waypoint on map to delete it.</span>
+                          )}
+                        </div>
+                      </div>
+
                       {/* Map Canvas Viewport */}
                       <div
-                        className="relative w-full aspect-16/10 rounded-2xl bg-[#0B0A0A] border border-stone-800 overflow-hidden shadow-inner flex items-center justify-center cursor-grab active:cursor-grabbing select-none"
+                        className={`relative w-full aspect-16/10 rounded-2xl bg-[#0B0A0A] border border-stone-800 overflow-hidden shadow-inner flex items-center justify-center select-none ${
+                          mappingToolMode === "add"
+                            ? "cursor-crosshair"
+                            : mappingToolMode === "move"
+                            ? "cursor-move"
+                            : mappingToolMode === "delete"
+                            ? "cursor-pointer"
+                            : "cursor-grab active:cursor-grabbing"
+                        }`}
                         onMouseDown={(e) => {
                           if (e.button !== 0) return;
-                          isDraggingPreviewRef.current = true;
-                          dragStartCoordsRef.current = { x: e.clientX, y: e.clientY };
-                          panStartCoordsRef.current = { ...previewPan };
+                          if (mappingToolMode === "connect") {
+                            isDraggingPreviewRef.current = true;
+                            dragStartCoordsRef.current = { x: e.clientX, y: e.clientY };
+                            panStartCoordsRef.current = { ...previewPan };
+                          }
                         }}
                         onMouseMove={(e) => {
-                          if (!isDraggingPreviewRef.current) return;
-                          const dx = e.clientX - dragStartCoordsRef.current.x;
-                          const dy = e.clientY - dragStartCoordsRef.current.y;
-                          setPreviewPan({
-                            x: panStartCoordsRef.current.x + dx,
-                            y: panStartCoordsRef.current.y + dy,
-                          });
+                          if (isDraggingPreviewRef.current && mappingToolMode === "connect") {
+                            const dx = e.clientX - dragStartCoordsRef.current.x;
+                            const dy = e.clientY - dragStartCoordsRef.current.y;
+                            setPreviewPan({
+                              x: panStartCoordsRef.current.x + dx,
+                              y: panStartCoordsRef.current.y + dy,
+                            });
+                          }
                         }}
                         onMouseUp={() => {
                           isDraggingPreviewRef.current = false;
@@ -2922,7 +3223,7 @@ export default function AdminOverviewPage() {
                             style={{
                               transform: `translate(${previewPan.x}px, ${previewPan.y}px) scale(${previewScale})`,
                               transformOrigin: "center center",
-                              transition: isDraggingPreviewRef.current ? "none" : "transform 100ms ease-out",
+                              transition: isDraggingPreviewRef.current || draggingNodeId ? "none" : "transform 100ms ease-out",
                               width: "100%",
                               height: "100%",
                             }}
@@ -2937,9 +3238,15 @@ export default function AdminOverviewPage() {
                             {/* Waypoint Graph Visual Overlay */}
                             {showGraphOverlay && (
                               <svg
+                                ref={overlaySvgRef}
                                 viewBox={previewViewBox}
-                                className="absolute inset-0 w-full h-full pointer-events-none"
+                                className={`absolute inset-0 w-full h-full ${
+                                  mappingToolMode === "add" ? "pointer-events-auto" : "pointer-events-none"
+                                }`}
                                 preserveAspectRatio="xMidYMid meet"
+                                onClick={handleMapCanvasClick}
+                                onMouseMove={handleOverlayMouseMove}
+                                onMouseUp={handleOverlayMouseUp}
                               >
                                 <defs>
                                   <filter id="admin-glow-orange" x="-30%" y="-30%" width="160%" height="160%">
@@ -2964,9 +3271,9 @@ export default function AdminOverviewPage() {
                                           x2={nodeB.x}
                                           y2={nodeB.y}
                                           stroke={isHighlighted ? "#FF6B1A" : "#38BDF8"}
-                                          strokeWidth={isHighlighted ? 4 : 2}
+                                          strokeWidth={isHighlighted ? 4 : 2.5}
                                           strokeDasharray={isHighlighted ? "6,4" : "4,4"}
-                                          strokeOpacity={isHighlighted ? 0.95 : 0.65}
+                                          strokeOpacity={isHighlighted ? 0.95 : 0.7}
                                         />
                                       </g>
                                     );
@@ -2987,9 +3294,10 @@ export default function AdminOverviewPage() {
                                       <g
                                         key={`admin-node-${node.id}`}
                                         className="pointer-events-auto cursor-pointer"
+                                        onMouseDown={(e) => handleNodeMouseDown(e, node.id)}
                                         onClick={(e) => {
                                           e.stopPropagation();
-                                          handleWaypointClick(node.id);
+                                          handleMapNodeClick(node.id);
                                         }}
                                         onMouseEnter={() => setHoveredWaypointOnMap(node.id)}
                                         onMouseLeave={() => setHoveredWaypointOnMap(null)}
@@ -3012,15 +3320,17 @@ export default function AdminOverviewPage() {
                                         <circle
                                           cx={node.x}
                                           cy={node.y}
-                                          r={isSelected ? 8 : isHovered ? 7 : 5}
+                                          r={isSelected ? 8.5 : isHovered ? 7.5 : 5.5}
                                           fill={
-                                            isSelected
+                                            mappingToolMode === "delete" && isHovered
+                                              ? "#EF4444"
+                                              : isSelected
                                               ? "#FF6B1A"
                                               : isIsolated
-                                              ? "#EF4444"
+                                              ? "#F43F5E"
                                               : node.zoneId
                                               ? "#10B981"
-                                              : "#38BDF8"
+                                              : "#0284C7"
                                           }
                                           stroke="#FFFFFF"
                                           strokeWidth={1.5}
@@ -3071,10 +3381,83 @@ export default function AdminOverviewPage() {
                         {previewSvg && !previewError && !previewLoading && (
                           <div className="absolute bottom-2.5 left-2.5 z-20 px-2.5 py-1 rounded-md bg-[#0F172A]/80 border border-stone-800 text-[10px] text-stone-400 backdrop-blur-sm pointer-events-none flex items-center gap-2">
                             <span className="w-1.5 h-1.5 rounded-full bg-[#FF6B1A]" />
-                            <span>Click any waypoint dot on map to toggle corridor connections. Drag to pan.</span>
+                            <span>
+                              {mappingToolMode === "add" && "Add Mode: Click on map to place a waypoint."}
+                              {mappingToolMode === "move" && "Move Mode: Drag waypoint to reposition."}
+                              {mappingToolMode === "delete" && "Delete Mode: Click waypoint to delete."}
+                              {mappingToolMode === "connect" && "Connect Mode: Click node A then B to link corridor."}
+                            </span>
                           </div>
                         )}
                       </div>
+
+                      {/* Selected Node Inspector Banner */}
+                      {selectedWaypointA && (() => {
+                        const selNode = graphData.nodes.find((n) => n.id === selectedWaypointA);
+                        if (!selNode) return null;
+                        const degree = graphData.edges.filter(
+                          (e) => e.a === selNode.id || e.b === selNode.id
+                        ).length;
+
+                        return (
+                          <div className="p-3 bg-stone-900 border border-amber-500/40 rounded-xl text-xs flex flex-wrap items-center justify-between gap-3 text-stone-200">
+                            <div className="flex items-center gap-3 flex-wrap">
+                              <div className="flex items-center gap-2">
+                                <span className="w-2.5 h-2.5 rounded-full bg-[#FF6B1A] animate-pulse" />
+                                <span className="font-bold text-white text-sm">
+                                  {selNode.label || selNode.id}
+                                </span>
+                                <code className="text-[10px] text-stone-400 bg-stone-800 px-1.5 py-0.5 rounded">
+                                  {selNode.id}
+                                </code>
+                              </div>
+
+                              <div className="text-[11px] text-stone-400 flex items-center gap-2">
+                                <span>Coords: ({selNode.x}, {selNode.y})</span>
+                                <span>•</span>
+                                <span>Floor {selNode.floor}</span>
+                                <span>•</span>
+                                <span>
+                                  Zone: {selNode.zoneId ? <strong className="text-emerald-400">{selNode.zoneId}</strong> : "Corridor"}
+                                </span>
+                                <span>•</span>
+                                <span>{degree} connection{degree === 1 ? "" : "s"}</span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingNodeData({ ...selNode });
+                                  setShowEditNodeModal(true);
+                                }}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-stone-800 hover:bg-stone-700 text-stone-200 transition"
+                              >
+                                <Edit3 className="w-3 h-3 text-sky-400" />
+                                <span>Edit Node</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteWaypoint(selNode.id)}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-rose-950/80 hover:bg-rose-900 border border-rose-800 text-rose-300 transition"
+                              >
+                                <Trash2 className="w-3 h-3 text-rose-400" />
+                                <span>Delete</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => setSelectedWaypointA(null)}
+                                className="text-stone-400 hover:text-white px-2 py-1 text-xs font-semibold"
+                              >
+                                Deselect
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
 
                     {/* Wayfinding Routing Graph Editor */}
@@ -6633,6 +7016,277 @@ export default function AdminOverviewPage() {
         title={brandingForm.edition || brandingForm.name || "SHINE 2026"}
         subtitle="Admin Live Venue & Navigation Simulation"
       />
+
+      {/* ADD WAYPOINT MODAL */}
+      {showAddNodeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-stone-200 space-y-4 animate-scale-up">
+            <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                  <PlusCircle className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-stone-900">Place New Waypoint</h3>
+                  <p className="text-[11px] text-stone-500">
+                    Dropped at canvas position X: {newNodeData.x}, Y: {newNodeData.y}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAddNodeModal(false)}
+                className="text-stone-400 hover:text-stone-600 p-1"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddWaypointSubmit} className="space-y-3.5">
+              <div>
+                <label className="block text-xs font-bold text-stone-700 mb-1">
+                  Waypoint ID <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={newNodeData.id}
+                  onChange={(e) => setNewNodeData({ ...newNodeData, id: e.target.value })}
+                  placeholder="e.g. wp-hall-1 or wp-canteen"
+                  className="w-full px-3 py-2 text-xs border border-stone-300 rounded-xl focus:ring-2 focus:ring-[#FF6B1A] outline-none font-mono"
+                />
+                <p className="text-[10px] text-stone-400 mt-1">Must start with <code>wp-</code> (auto-prefixed if omitted).</p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-stone-700 mb-1">
+                  Display Label <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={newNodeData.label}
+                  onChange={(e) => setNewNodeData({ ...newNodeData, label: e.target.value })}
+                  placeholder="e.g. Main Auditorium Door"
+                  className="w-full px-3 py-2 text-xs border border-stone-300 rounded-xl focus:ring-2 focus:ring-[#FF6B1A] outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 mb-1">
+                    Linked Room / Zone
+                  </label>
+                  <select
+                    value={newNodeData.zoneId}
+                    onChange={(e) => {
+                      const selZone = e.target.value;
+                      const matched = detectedZones.find((z) => z.id === selZone);
+                      setNewNodeData({
+                        ...newNodeData,
+                        zoneId: selZone,
+                        label: matched && !newNodeData.label ? `${matched.label} Entrance` : newNodeData.label,
+                        id: selZone && !newNodeData.id.includes("wp-") ? `wp-${selZone}` : newNodeData.id,
+                      });
+                    }}
+                    className="w-full px-3 py-2 text-xs border border-stone-300 rounded-xl focus:ring-2 focus:ring-[#FF6B1A] outline-none"
+                  >
+                    <option value="">None (Corridor / Hub)</option>
+                    {detectedZones.map((z) => (
+                      <option key={z.id} value={z.id}>
+                        {z.label} ({z.id})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 mb-1">
+                    Floor Level
+                  </label>
+                  <select
+                    value={newNodeData.floor}
+                    onChange={(e) => setNewNodeData({ ...newNodeData, floor: Number(e.target.value) || 1 })}
+                    className="w-full px-3 py-2 text-xs border border-stone-300 rounded-xl focus:ring-2 focus:ring-[#FF6B1A] outline-none"
+                  >
+                    <option value={1}>Floor 1 (Ground)</option>
+                    <option value={2}>Floor 2</option>
+                    <option value={3}>Floor 3</option>
+                    <option value={4}>Floor 4</option>
+                  </select>
+                </div>
+              </div>
+
+              {selectedWaypointA && (
+                <div className="flex items-center gap-2 p-2.5 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900">
+                  <input
+                    type="checkbox"
+                    id="autoConnectCheck"
+                    checked={newNodeData.autoConnectToSelected}
+                    onChange={(e) => setNewNodeData({ ...newNodeData, autoConnectToSelected: e.target.checked })}
+                    className="w-4 h-4 text-[#FF6B1A] rounded focus:ring-[#FF6B1A]"
+                  />
+                  <label htmlFor="autoConnectCheck" className="cursor-pointer font-medium text-[11px]">
+                    Auto-connect to selected waypoint (<code>{selectedWaypointA}</code>)
+                  </label>
+                </div>
+              )}
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-stone-100">
+                <button
+                  type="button"
+                  onClick={() => setShowAddNodeModal(false)}
+                  className="px-4 py-2 text-xs font-semibold rounded-xl text-stone-600 hover:bg-stone-100 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-md transition"
+                >
+                  Place Waypoint
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* EDIT WAYPOINT MODAL */}
+      {showEditNodeModal && editingNodeData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-stone-200 space-y-4 animate-scale-up">
+            <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center">
+                  <Edit3 className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-stone-900">Edit Waypoint Details</h3>
+                  <code className="text-[11px] text-stone-500 font-mono">
+                    {editingNodeData.id}
+                  </code>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowEditNodeModal(false);
+                  setEditingNodeData(null);
+                }}
+                className="text-stone-400 hover:text-stone-600 p-1"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateWaypointSubmit} className="space-y-3.5">
+              <div>
+                <label className="block text-xs font-bold text-stone-700 mb-1">
+                  Display Label
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editingNodeData.label || ""}
+                  onChange={(e) => setEditingNodeData({ ...editingNodeData, label: e.target.value })}
+                  className="w-full px-3 py-2 text-xs border border-stone-300 rounded-xl focus:ring-2 focus:ring-[#FF6B1A] outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 mb-1">
+                    Linked Room / Zone
+                  </label>
+                  <select
+                    value={editingNodeData.zoneId || ""}
+                    onChange={(e) => setEditingNodeData({ ...editingNodeData, zoneId: e.target.value || undefined })}
+                    className="w-full px-3 py-2 text-xs border border-stone-300 rounded-xl focus:ring-2 focus:ring-[#FF6B1A] outline-none"
+                  >
+                    <option value="">None (Corridor / Hub)</option>
+                    {detectedZones.map((z) => (
+                      <option key={z.id} value={z.id}>
+                        {z.label} ({z.id})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 mb-1">
+                    Floor Level
+                  </label>
+                  <select
+                    value={editingNodeData.floor || 1}
+                    onChange={(e) => setEditingNodeData({ ...editingNodeData, floor: Number(e.target.value) || 1 })}
+                    className="w-full px-3 py-2 text-xs border border-stone-300 rounded-xl focus:ring-2 focus:ring-[#FF6B1A] outline-none"
+                  >
+                    <option value={1}>Floor 1 (Ground)</option>
+                    <option value={2}>Floor 2</option>
+                    <option value={3}>Floor 3</option>
+                    <option value={4}>Floor 4</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 mb-1">
+                    Canvas Coordinate X
+                  </label>
+                  <input
+                    type="number"
+                    value={editingNodeData.x}
+                    onChange={(e) => setEditingNodeData({ ...editingNodeData, x: Number(e.target.value) || 0 })}
+                    className="w-full px-3 py-2 text-xs border border-stone-300 rounded-xl focus:ring-2 focus:ring-[#FF6B1A] outline-none font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 mb-1">
+                    Canvas Coordinate Y
+                  </label>
+                  <input
+                    type="number"
+                    value={editingNodeData.y}
+                    onChange={(e) => setEditingNodeData({ ...editingNodeData, y: Number(e.target.value) || 0 })}
+                    className="w-full px-3 py-2 text-xs border border-stone-300 rounded-xl focus:ring-2 focus:ring-[#FF6B1A] outline-none font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-2 border-t border-stone-100">
+                <button
+                  type="button"
+                  onClick={() => handleDeleteWaypoint(editingNodeData.id)}
+                  className="px-3 py-2 text-xs font-semibold rounded-xl text-rose-600 hover:bg-rose-50 border border-rose-200 transition"
+                >
+                  Delete Node
+                </button>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowEditNodeModal(false);
+                      setEditingNodeData(null);
+                    }}
+                    className="px-4 py-2 text-xs font-semibold rounded-xl text-stone-600 hover:bg-stone-100 transition"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2 text-xs font-bold rounded-xl bg-sky-600 hover:bg-sky-700 text-white shadow-md transition"
+                  >
+                    Save Changes
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* RESET REGISTRATIONS & REVENUE CONFIRMATION MODAL */}
       {showResetModal && (

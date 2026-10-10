@@ -92,7 +92,7 @@
              points="155,100 230,100 230,300 330,460 270,510 155,330"
              fill="#2d241e" stroke="#fb923c" stroke-width="2.5" stroke-dasharray="8,4" />
     <text x="210" y="270" fill="#fed7aa" font-size="13" font-weight="800" text-anchor="middle" letter-spacing="1">FOOD AREA</text>
-    <text x="210" y="290" fill="#fdba74" font-size="9" text-anchor="middle">Dining & Refreshments</text>
+    <text x="210" y="290" fill="#fdba74" font-size="9" text-anchor="middle">Dining &amp; Refreshments</text>
   </g>
 
   <!-- Sponsor Booths (Lower Center) -->
