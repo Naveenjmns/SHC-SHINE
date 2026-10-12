@@ -1,1375 +1,297 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import {
-  Theater,
-  Laptop,
-  MapPin,
-  X,
-  History,
-  BookOpen,
-  UserCheck,
-  GraduationCap,
-  Users,
-  CheckCircle2,
-  AlertCircle,
-  HelpCircle,
-  Upload,
-  Image as ImageIcon,
-  Camera,
-  Phone,
-  Mail,
-  Target,
-  Trophy,
+  Plus,
+  Search,
   Download,
+  ArrowLeft,
+  RefreshCw,
 } from "lucide-react";
+import { Button, Input } from "@/components/ui";
 import { useToast } from "@/components/ToastProvider";
 import { safeJson } from "@/lib/safeFetch";
 import { downloadEventParticipantsCSV } from "@/lib/exportEventCsv";
-
-interface CoordinatorUser {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  phone?: string | null;
-  avatarUrl?: string | null;
-  college?: string | null;
-}
-
-interface EventItem {
-  id: string;
-  name: string;
-  description: string | null;
-  category: "ON_STAGE" | "OFF_STAGE";
-  fee: number;
-  capacity: number | null;
-  venue: string | null;
-  venueZoneId?: string | null;
-  dateTime: string;
-  rules: string | null;
-  hasPrelims?: boolean;
-  prelimsDateTime?: string | null;
-  prelimsVenue?: string | null;
-  prelimsVenueZoneId?: string | null;
-  prelimsRules?: string | null;
-  firstPrize?: string | null;
-  secondPrize?: string | null;
-  thirdPrize?: string | null;
-  imageUrl?: string | null;
-  logoUrl?: string | null;
-  staffCoordinatorName?: string | null;
-  staffCoordinatorEmail?: string | null;
-  staffCoordinatorPhone?: string | null;
-  staffCoordinatorImageUrl?: string | null;
-  studentCoordinatorName?: string | null;
-  studentCoordinatorEmail?: string | null;
-  studentCoordinatorPhone?: string | null;
-  studentCoordinatorImageUrl?: string | null;
-  staffCoordinator?: CoordinatorUser | null;
-  studentCoordinator?: CoordinatorUser | null;
-  coordinator?: CoordinatorUser | null;
-  _count?: {
-    registrations: number;
-  };
-}
-
-function toLocalDatetimeInput(dateVal?: Date | string | null, fallback = "2026-10-15T10:00"): string {
-  if (!dateVal) return fallback;
-  const d = new Date(dateVal);
-  if (isNaN(d.getTime())) return fallback;
-  const pad = (n: number) => String(n).padStart(2, "0");
-  const year = d.getFullYear();
-  const month = pad(d.getMonth() + 1);
-  const day = pad(d.getDate());
-  const hours = pad(d.getHours());
-  const minutes = pad(d.getMinutes());
-  return `${year}-${month}-${day}T${hours}:${minutes}`;
-}
+import AdminEventsTable, { CoordinatorUser, EventItem } from "./components/AdminEventsTable";
+import AdminEventFormModal from "./components/AdminEventFormModal";
+import AdminEventRosterModal from "./components/AdminEventRosterModal";
 
 export default function AdminEventsPage() {
-  const { data: session, status } = useSession();
-  const router = useRouter();
   const { toast, confirmAction } = useToast();
 
   const [events, setEvents] = useState<EventItem[]>([]);
   const [staffCoordinators, setStaffCoordinators] = useState<CoordinatorUser[]>([]);
   const [studentCoordinators, setStudentCoordinators] = useState<CoordinatorUser[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [downloadingEventId, setDownloadingEventId] = useState<string | null>(null);
-
-  // Modal / Form state
-  const [showModal, setShowModal] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-
-  // Form fields
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [rules, setRules] = useState("");
-  const [category, setCategory] = useState<"ON_STAGE" | "OFF_STAGE">("ON_STAGE");
-  const [isUnlimitedCapacity, setIsUnlimitedCapacity] = useState(true);
-  const [capacity, setCapacity] = useState("");
-  const [venue, setVenue] = useState("");
-  const [venueZoneId, setVenueZoneId] = useState("");
-  const [dateTime, setDateTime] = useState("2026-10-15T10:00");
-  const [imageUrl, setImageUrl] = useState("");
-  const [logoUrl, setLogoUrl] = useState("");
-
-  // Floor plan zones from SVG
   const [floorPlanZones, setFloorPlanZones] = useState<{ id: string; label: string }[]>([]);
-
-  // Prelims Form Fields
-  const [hasPrelims, setHasPrelims] = useState(false);
-  const [prelimsDateTime, setPrelimsDateTime] = useState("2026-10-15T09:00");
-  const [prelimsVenue, setPrelimsVenue] = useState("");
-  const [prelimsVenueZoneId, setPrelimsVenueZoneId] = useState("");
-  const [prelimsRules, setPrelimsRules] = useState("");
-
-  // Competition Awards & Prizes (Dynamic on Leaderboard)
-  const [firstPrize, setFirstPrize] = useState("Cash Prize + Trophy + Certificate");
-  const [secondPrize, setSecondPrize] = useState("Cash Prize + Merit Certificate");
-  const [thirdPrize, setThirdPrize] = useState("Distinction Certificate");
-
-  // Centralized Awards from Admin -> Branding & Stage Tab
   const [centralizedPrizes, setCentralizedPrizes] = useState({
     first: "Cash Prize + Trophy + Certificate",
     second: "Cash Prize + Merit Certificate",
     third: "Distinction Certificate",
   });
 
-  // Staff Coordinator form fields
-  const [staffCoordinatorId, setStaffCoordinatorId] = useState("");
-  const [staffCoordName, setStaffCoordName] = useState("");
-  const [staffCoordEmail, setStaffCoordEmail] = useState("");
-  const [staffCoordPhone, setStaffCoordPhone] = useState("");
-  const [staffCoordImageUrl, setStaffCoordImageUrl] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
-  // Student Coordinator form fields
-  const [studentCoordinatorId, setStudentCoordinatorId] = useState("");
-  const [studentCoordName, setStudentCoordName] = useState("");
-  const [studentCoordEmail, setStudentCoordEmail] = useState("");
-  const [studentCoordPhone, setStudentCoordPhone] = useState("");
-  const [studentCoordImageUrl, setStudentCoordImageUrl] = useState("");
+  // Filters
+  const [categoryFilter, setCategoryFilter] = useState<"ALL" | "ON_STAGE" | "OFF_STAGE">("ALL");
+  const [search, setSearch] = useState("");
 
-  const [uploadingField, setUploadingField] = useState<string | null>(null);
-  const [formSubmitting, setFormSubmitting] = useState(false);
+  // Modals
+  const [formModalOpen, setFormModalOpen] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<EventItem | null>(null);
+  const [rosterModalEvent, setRosterModalEvent] = useState<EventItem | null>(null);
 
-  // Rules viewer modal
-  const [viewingRulesEvent, setViewingRulesEvent] = useState<EventItem | null>(null);
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const [eventsRes, coordsRes, zonesRes, edRes] = await Promise.all([
+        fetch("/api/events"),
+        fetch("/api/admin/users?role=COORDINATOR"),
+        fetch("/api/admin/floorplan/zones"),
+        fetch("/api/admin/edition"),
+      ]);
+
+      const [eventsData, coordsData, zonesData, edData] = await Promise.all([
+        safeJson(eventsRes, { success: false, events: [] }),
+        safeJson(coordsRes, { success: false, users: [] }),
+        safeJson(zonesRes, { success: false, zones: [] }),
+        safeJson(edRes, { success: false }),
+      ]);
+
+      if (eventsData.success) setEvents(eventsData.events || []);
+      if (coordsData.success && coordsData.users) {
+        setStaffCoordinators(coordsData.users.filter((u: any) => u.email?.endsWith("@shctpt.edu") || u.role === "COORDINATOR"));
+        setStudentCoordinators(coordsData.users);
+      }
+      if (zonesData.success && zonesData.zones) setFloorPlanZones(zonesData.zones);
+      if (edData.success && edData.edition) {
+        setCentralizedPrizes({
+          first: edData.edition.defaultFirstPrize || "Cash Prize + Trophy + Certificate",
+          second: edData.edition.defaultSecondPrize || "Cash Prize + Merit Certificate",
+          third: edData.edition.defaultThirdPrize || "Distinction Certificate",
+        });
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to load events.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/login?callbackUrl=/admin/events");
-      return;
-    }
+    loadData();
+  }, []);
 
-    if (status === "authenticated") {
-      if (session.user.role !== "ADMIN") {
-        router.push("/dashboard");
-        return;
-      }
+  const filteredEvents = useMemo(() => {
+    return events.filter((ev) => {
+      const matchesCategory =
+        categoryFilter === "ALL" || ev.category === categoryFilter;
+      const q = search.toLowerCase();
+      const matchesSearch =
+        !q ||
+        ev.name.toLowerCase().includes(q) ||
+        (ev.venue && ev.venue.toLowerCase().includes(q)) ||
+        (ev.description && ev.description.toLowerCase().includes(q));
+      return matchesCategory && matchesSearch;
+    });
+  }, [events, categoryFilter, search]);
 
-      async function loadData() {
-        try {
-          const [eventsRes, usersRes, edRes, zonesRes] = await Promise.all([
-            fetch("/api/events"),
-            fetch("/api/admin/users"),
-            fetch("/api/admin/edition"),
-            fetch("/api/admin/floorplan/zones"),
-          ]);
-          const eventsData = await safeJson(eventsRes, { success: false, events: [] });
-          const usersData = await safeJson(usersRes, { success: false, users: [] });
-          const edData = await safeJson(edRes, { success: false, editions: [] });
-          const zonesData = await safeJson(zonesRes, { success: false, zones: [] });
-
-          if (eventsData.success && eventsData.events) setEvents(eventsData.events);
-          if (zonesData.success && Array.isArray(zonesData.zones)) setFloorPlanZones(zonesData.zones);
-          if (usersData.success && usersData.users) {
-            const allUsers: CoordinatorUser[] = usersData.users;
-            // Staff Coordinators: COORDINATOR or ADMIN
-            setStaffCoordinators(allUsers.filter((u) => u.role === "COORDINATOR" || u.role === "ADMIN"));
-            // Student Coordinators: STUDENT or COORDINATOR
-            setStudentCoordinators(allUsers.filter((u) => u.role === "STUDENT" || u.role === "COORDINATOR"));
-          }
-          if (edData.success && edData.editions) {
-            const activeEd = edData.editions.find((e: any) => e.isActive) || edData.editions[0];
-            if (activeEd) {
-              setCentralizedPrizes({
-                first: activeEd.defaultFirstPrize || "Cash Prize + Trophy + Certificate",
-                second: activeEd.defaultSecondPrize || "Cash Prize + Merit Certificate",
-                third: activeEd.defaultThirdPrize || "Distinction Certificate",
-              });
-            }
-          }
-        } catch (err) {
-          console.error("Error loading events admin data:", err);
-        } finally {
-          setLoading(false);
-        }
-      }
-      loadData();
-    }
-  }, [status, session, router]);
-
-  const handleFileUpload = async (
-    e: React.ChangeEvent<HTMLInputElement>,
-    setter: (val: string) => void,
-    fieldKey: string
-  ) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploadingField(fieldKey);
+  const handleSave = async (payload: any) => {
+    setSaving(true);
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      const res = await fetch("/api/admin/upload", {
-        method: "POST",
-        body: formData,
-      });
-      const data = await safeJson(res, { success: false, error: "Upload failed." });
-      if (data.success && data.url) {
-        setter(data.url);
-        toast.success("Image uploaded successfully!");
-      } else {
-        toast.error(data.error || "Failed to upload image.");
-      }
-    } catch (err) {
-      console.error("Upload error:", err);
-      toast.error("An error occurred during file upload.");
-    } finally {
-      setUploadingField(null);
-    }
-  };
-
-  const handleStaffSelect = (userId: string) => {
-    setStaffCoordinatorId(userId);
-    if (userId) {
-      const u = staffCoordinators.find((c) => c.id === userId);
-      if (u) {
-        setStaffCoordName(u.name);
-        setStaffCoordEmail(u.email);
-        if (u.phone) setStaffCoordPhone(u.phone);
-        if (u.avatarUrl) setStaffCoordImageUrl(u.avatarUrl);
-      }
-    }
-  };
-
-  const handleStudentSelect = (userId: string) => {
-    setStudentCoordinatorId(userId);
-    if (userId) {
-      const u = studentCoordinators.find((c) => c.id === userId);
-      if (u) {
-        setStudentCoordName(u.name);
-        setStudentCoordEmail(u.email);
-        if (u.phone) setStudentCoordPhone(u.phone);
-        if (u.avatarUrl) setStudentCoordImageUrl(u.avatarUrl);
-      }
-    }
-  };
-
-  const openCreateModal = () => {
-    setEditingId(null);
-    setName("");
-    setDescription("");
-    setRules("");
-    setCategory("ON_STAGE");
-    setIsUnlimitedCapacity(true);
-    setCapacity("");
-    setVenue("");
-    setVenueZoneId("");
-    setDateTime("2026-10-15T10:00");
-    setImageUrl("");
-    setLogoUrl("");
-    setHasPrelims(false);
-    setPrelimsDateTime("2026-10-15T09:00");
-    setPrelimsVenue("");
-    setPrelimsVenueZoneId("");
-    setPrelimsRules("");
-    setFirstPrize(centralizedPrizes.first);
-    setSecondPrize(centralizedPrizes.second);
-    setThirdPrize(centralizedPrizes.third);
-    setStaffCoordinatorId("");
-    setStaffCoordName("");
-    setStaffCoordEmail("");
-    setStaffCoordPhone("");
-    setStaffCoordImageUrl("");
-    setStudentCoordinatorId("");
-    setStudentCoordName("");
-    setStudentCoordEmail("");
-    setStudentCoordPhone("");
-    setStudentCoordImageUrl("");
-    setShowModal(true);
-  };
-
-  const openEditModal = (ev: EventItem) => {
-    setEditingId(ev.id);
-    setName(ev.name);
-    setDescription(ev.description || "");
-    setRules(ev.rules || "");
-    setCategory(ev.category);
-    setIsUnlimitedCapacity(!ev.capacity);
-    setCapacity(ev.capacity ? ev.capacity.toString() : "");
-    setVenue(ev.venue || "");
-    setVenueZoneId(ev.venueZoneId || "");
-    setDateTime(toLocalDatetimeInput(ev.dateTime, "2026-10-15T10:00"));
-    setImageUrl(ev.imageUrl || "");
-    setLogoUrl(ev.logoUrl || "");
-    setHasPrelims(!!ev.hasPrelims);
-    setPrelimsDateTime(toLocalDatetimeInput(ev.prelimsDateTime, "2026-10-15T09:00"));
-    setPrelimsVenue(ev.prelimsVenue || "");
-    setPrelimsVenueZoneId(ev.prelimsVenueZoneId || "");
-    setPrelimsRules(ev.prelimsRules || "");
-    setFirstPrize(ev.firstPrize || centralizedPrizes.first);
-    setSecondPrize(ev.secondPrize || centralizedPrizes.second);
-    setThirdPrize(ev.thirdPrize || centralizedPrizes.third);
-    setStaffCoordinatorId(ev.staffCoordinator?.id || ev.coordinator?.id || "");
-    setStaffCoordName(ev.staffCoordinatorName || ev.staffCoordinator?.name || ev.coordinator?.name || "");
-    setStaffCoordEmail(ev.staffCoordinatorEmail || ev.staffCoordinator?.email || ev.coordinator?.email || "");
-    setStaffCoordPhone(ev.staffCoordinatorPhone || ev.staffCoordinator?.phone || ev.coordinator?.phone || "");
-    setStaffCoordImageUrl(ev.staffCoordinatorImageUrl || ev.staffCoordinator?.avatarUrl || ev.coordinator?.avatarUrl || "");
-    setStudentCoordinatorId(ev.studentCoordinator?.id || "");
-    setStudentCoordName(ev.studentCoordinatorName || ev.studentCoordinator?.name || "");
-    setStudentCoordEmail(ev.studentCoordinatorEmail || ev.studentCoordinator?.email || "");
-    setStudentCoordPhone(ev.studentCoordinatorPhone || ev.studentCoordinator?.phone || "");
-    setStudentCoordImageUrl(ev.studentCoordinatorImageUrl || ev.studentCoordinator?.avatarUrl || "");
-    setShowModal(true);
-  };
-
-  const handleSaveEvent = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setFormSubmitting(true);
-
-    const payload = {
-      name,
-      description,
-      rules,
-      category,
-      capacity: isUnlimitedCapacity ? null : capacity ? parseInt(capacity, 10) : null,
-      venue,
-      venueZoneId: venueZoneId.trim() || null,
-      dateTime: new Date(dateTime).toISOString(),
-      imageUrl: imageUrl.trim() || null,
-      logoUrl: logoUrl.trim() || null,
-      hasPrelims,
-      prelimsDateTime: hasPrelims && prelimsDateTime ? new Date(prelimsDateTime).toISOString() : null,
-      prelimsVenue: hasPrelims ? prelimsVenue.trim() || null : null,
-      prelimsVenueZoneId: hasPrelims ? prelimsVenueZoneId.trim() || null : null,
-      prelimsRules: hasPrelims ? prelimsRules.trim() || null : null,
-      firstPrize: firstPrize.trim() || null,
-      secondPrize: secondPrize.trim() || null,
-      thirdPrize: thirdPrize.trim() || null,
-      staffCoordinatorId: staffCoordinatorId || null,
-      staffCoordinatorName: staffCoordName.trim() || null,
-      staffCoordinatorEmail: staffCoordEmail.trim() || null,
-      staffCoordinatorPhone: staffCoordPhone.trim() || null,
-      staffCoordinatorImageUrl: staffCoordImageUrl.trim() || null,
-      studentCoordinatorId: studentCoordinatorId || null,
-      studentCoordinatorName: studentCoordName.trim() || null,
-      studentCoordinatorEmail: studentCoordEmail.trim() || null,
-      studentCoordinatorPhone: studentCoordPhone.trim() || null,
-      studentCoordinatorImageUrl: studentCoordImageUrl.trim() || null,
-    };
-
-    try {
-      const url = editingId ? `/api/events/${editingId}` : "/api/events";
-      const method = editingId ? "PUT" : "POST";
+      const url = editingEvent ? `/api/events/${editingEvent.id}` : "/api/events";
+      const method = editingEvent ? "PUT" : "POST";
 
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
+      const data = await safeJson(res);
 
-      const data = await safeJson(res, { success: false, message: "Network error occurred." });
-      if (data.success) {
-        toast.success(editingId ? "Event updated successfully." : "Event competition created successfully.");
-        const refreshed = await fetch("/api/events");
-        const refData = await safeJson(refreshed, { success: false, events: [] });
-        if (refData.success && refData.events) setEvents(refData.events);
-        setShowModal(false);
+      if (res.ok && data.success) {
+        toast.success(editingEvent ? "Competition updated." : "Competition created.");
+        setFormModalOpen(false);
+        setEditingEvent(null);
+        loadData();
       } else {
-        toast.error(data.message || "Failed to save event.");
+        toast.error(data.message || "Failed to save competition.");
       }
-    } catch (err) {
-      console.error("Error saving event:", err);
-      toast.error("Error saving event.");
+    } catch (err: any) {
+      toast.error(err.message || "Network error saving competition.");
     } finally {
-      setFormSubmitting(false);
+      setSaving(false);
     }
   };
 
-  const handleDeleteEvent = async (id: string, evName: string) => {
+  const handleDelete = async (id: string, name: string) => {
     const confirmed = await confirmAction({
-      title: "Delete Event Competition",
-      message: `Are you sure you want to delete "${evName}"? All associated registrations, attendance records, and award placements will be permanently removed.`,
+      title: "Delete Competition?",
+      message: `Are you sure you want to delete "${name}"? All associated registrations and scores will be removed.`,
       confirmText: "Delete Competition",
-      cancelText: "Keep Competition",
       isDestructive: true,
     });
-    if (!confirmed) {
-      return;
-    }
+    if (!confirmed) return;
 
     try {
       const res = await fetch(`/api/events/${id}`, { method: "DELETE" });
-      const data = await safeJson(res, { success: false, message: "Network error occurred." });
-      if (data.success) {
-        setEvents((prev) => prev.filter((e) => e.id !== id));
-        toast.success(`Event "${evName}" has been removed.`);
+      const data = await safeJson(res);
+      if (res.ok && data.success) {
+        toast.success("Competition deleted.");
+        loadData();
       } else {
-        toast.error(data.message || "Failed to delete event.");
+        toast.error(data.message || "Failed to delete competition.");
       }
-    } catch (err) {
-      console.error("Delete event error:", err);
-      toast.error("Error deleting event.");
+    } catch (err: any) {
+      toast.error(err.message || "Error deleting competition.");
     }
   };
 
-  if (status === "loading" || loading) {
-    return (
-      <main className="dash-layout flex items-center justify-center p-8">
-        <div className="text-center">
-          <div className="w-10 h-10 border-3 border-orange-500/20 border-t-orange-600 rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-xs font-semibold text-slate-500">Loading events manager...</p>
-        </div>
-      </main>
-    );
-  }
+  const handleDownloadCSV = async (id: string, name: string) => {
+    setDownloadingId(id);
+    try {
+      await downloadEventParticipantsCSV({ eventId: id, eventName: name });
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
+  const handleDownloadAll = async () => {
+    setDownloadingId("ALL");
+    try {
+      for (const ev of events) {
+        await downloadEventParticipantsCSV({ eventId: ev.id, eventName: ev.name });
+      }
+    } finally {
+      setDownloadingId(null);
+    }
+  };
 
   return (
-    <main className="dash-layout flex flex-col min-h-screen">
-      {/* Light Header */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-20">
-        <div className="container-wide py-3.5 flex items-center justify-between">
-          <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
-            <Link href="/admin" className="hover:text-slate-900">
-              Admin Master Control
+    <main className="min-h-screen bg-[var(--surface-raised)] flex flex-col">
+      {/* Sticky Header */}
+      <header className="bg-[var(--surface)] border-b border-[var(--border)] sticky top-0 z-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Link href="/admin" className="font-semibold text-xs text-[var(--ink-muted)] hover:text-[var(--ink)] flex items-center gap-1.5">
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Admin Console</span>
             </Link>
-            <span>/</span>
-            <span className="text-slate-900 font-bold">Events Management</span>
+            <span className="text-[var(--border)]">/</span>
+            <span className="text-xs font-semibold text-[var(--ink)]">
+              Arenas & Competitions ({events.length})
+            </span>
           </div>
 
-          <div className="flex items-center gap-3">
-            <Link
-              href="/admin/logs"
-              className="tap-target px-3 py-1.5 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors flex items-center gap-1.5"
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDownloadAll}
+              disabled={downloadingId === "ALL"}
+              className="text-xs gap-1.5 hidden sm:inline-flex"
             >
-              <History className="w-3.5 h-3.5 text-orange-600" />
-              <span>Activity Logs</span>
-            </Link>
-            <button
-              onClick={openCreateModal}
-              className="tap-target px-4 py-1.5 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer shadow-xs"
+              <Download className="w-3.5 h-3.5 text-[var(--accent)]" />
+              <span>Export All CSVs</span>
+            </Button>
+
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => {
+                setEditingEvent(null);
+                setFormModalOpen(true);
+              }}
+              className="text-xs gap-1.5"
             >
-              + Create New Event
-            </button>
-            <Link
-              href="/admin"
-              className="tap-target px-3.5 py-1.5 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
-            >
-              ← Back to Control
-            </Link>
+              <Plus className="w-3.5 h-3.5" />
+              <span>New Competition</span>
+            </Button>
           </div>
         </div>
       </header>
 
-      {/* Main Wide Body */}
-      <div className="container-wide py-8 flex-1">
-        {/* Banner */}
-        <div className="dash-card p-6 sm:p-8 mb-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 block mb-1">
-                Competition Setup & Dual-Coordinator Allocation
-              </span>
-              <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-                Manage Events & Coordinators
-              </h1>
-              <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-2xl">
-                Configure competition tracks, venue schedules, rules & regulations, and assign both a
-                Faculty (Staff) Incharge and a Student Incharge to manage live delegate registrations.
-              </p>
-            </div>
-            <button
-              onClick={openCreateModal}
-              className="tap-target btn-primary text-xs px-5 py-2.5 rounded-xl cursor-pointer shadow-sm shrink-0"
-            >
-              + Add Competition
-            </button>
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full space-y-5">
+        {/* Search & Filter Bar */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-1 bg-[var(--surface)] border border-[var(--border)] p-1 rounded-xl">
+            {(["ALL", "ON_STAGE", "OFF_STAGE"] as const).map((cat) => (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => setCategoryFilter(cat)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                  categoryFilter === cat
+                    ? "bg-[var(--surface-raised)] text-[var(--accent)] shadow-xs"
+                    : "text-[var(--ink-muted)] hover:text-[var(--ink)]"
+                }`}
+              >
+                {cat === "ALL" ? "All Arenas" : cat === "ON_STAGE" ? "On-Stage" : "Off-Stage"}
+              </button>
+            ))}
+          </div>
+
+          <div className="relative w-full sm:w-72">
+            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--ink-muted)]" />
+            <input
+              type="text"
+              placeholder="Search competitions, venues..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full h-9 pl-9 pr-3 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-xs text-[var(--ink)] focus:outline-none focus:border-[var(--accent)]"
+            />
           </div>
         </div>
 
-        {/* Events Table */}
-        <div className="dash-card overflow-hidden">
-          <div className="table-responsive">
-            <table className="w-full text-left text-xs sm:text-sm">
-              <thead className="bg-slate-50 text-slate-500 text-[11px] uppercase tracking-wider border-b border-slate-200">
-                <tr>
-                  <th className="p-4">Competition Name</th>
-                  <th className="p-4">Category</th>
-                  <th className="p-4">Venue & Time</th>
-                  <th className="p-4">Capacity</th>
-                  <th className="p-4">Staff Coordinator (Faculty)</th>
-                  <th className="p-4">Student Coordinator</th>
-                  <th className="p-4">Rules</th>
-                  <th className="p-4">Registered</th>
-                  <th className="p-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {events.map((ev) => {
-                  const staffName = ev.staffCoordinatorName || ev.staffCoordinator?.name || ev.coordinator?.name;
-                  const staffEmail = ev.staffCoordinatorEmail || ev.staffCoordinator?.email || ev.coordinator?.email;
-                  const staffPhone = ev.staffCoordinatorPhone || ev.staffCoordinator?.phone || ev.coordinator?.phone;
-                  const staffPhoto = ev.staffCoordinatorImageUrl || ev.staffCoordinator?.avatarUrl || ev.coordinator?.avatarUrl;
-
-                  const studentName = ev.studentCoordinatorName || ev.studentCoordinator?.name;
-                  const studentEmail = ev.studentCoordinatorEmail || ev.studentCoordinator?.email;
-                  const studentPhone = ev.studentCoordinatorPhone || ev.studentCoordinator?.phone;
-                  const studentPhoto = ev.studentCoordinatorImageUrl || ev.studentCoordinator?.avatarUrl;
-
-                  return (
-                    <tr key={ev.id} className="hover:bg-slate-50/70 transition-colors">
-                      <td className="p-4">
-                        <div className="flex items-center gap-3">
-                          {ev.imageUrl || ev.logoUrl ? (
-                            /* eslint-disable-next-line @next/next/no-img-element */
-                            <img
-                              src={ev.imageUrl || ev.logoUrl || ""}
-                              alt={ev.name}
-                              className="w-10 h-10 rounded-xl object-cover border border-slate-200 shrink-0"
-                            />
-                          ) : (
-                            <div className="w-10 h-10 rounded-xl bg-orange-50 border border-orange-200 flex items-center justify-center text-orange-600 shrink-0">
-                              {ev.category === "ON_STAGE" ? <Theater className="w-5 h-5" /> : <Laptop className="w-5 h-5" />}
-                            </div>
-                          )}
-                          <div>
-                            <div className="font-bold text-slate-900 text-sm">{ev.name}</div>
-                            {ev.description && (
-                              <div className="text-[11px] text-slate-500 line-clamp-1 max-w-xs">{ev.description}</div>
-                            )}
-                            {ev.firstPrize && (
-                              <div className="text-[10px] font-semibold text-amber-800 flex items-center gap-1 mt-0.5">
-                                <span>🥇 {ev.firstPrize}</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </td>
-
-                      <td className="p-4">
-                        <div className="flex flex-col gap-1 items-start">
-                          <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-700 uppercase inline-flex items-center gap-1.5">
-                            {ev.category === "ON_STAGE" ? (
-                              <>
-                                <Theater className="w-3.5 h-3.5" />
-                                <span>On-Stage</span>
-                              </>
-                            ) : (
-                              <>
-                                <Laptop className="w-3.5 h-3.5" />
-                                <span>Off-Stage</span>
-                              </>
-                            )}
-                          </span>
-                          {ev.hasPrelims && (
-                            <span className="text-[10px] font-extrabold text-amber-900 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
-                              <Target className="w-3 h-3 text-amber-800" />
-                              <span>Prelims Round</span>
-                            </span>
-                          )}
-                        </div>
-                      </td>
-
-                      <td className="p-4 text-xs text-slate-600 space-y-1">
-                        <div className="flex items-center gap-1">
-                          <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                          <span className="font-medium text-slate-800">{ev.venue || "TBD"}</span>
-                        </div>
-                        {ev.venueZoneId && (
-                          <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-orange-50 border border-orange-200/80 text-[10px] font-bold text-orange-700">
-                            <span className="opacity-70">Map:</span>
-                            <span>{floorPlanZones.find((z) => z.id === ev.venueZoneId)?.label || ev.venueZoneId}</span>
-                          </div>
-                        )}
-                        <div className="tabular-nums font-mono text-[11px] text-slate-500">
-                          {new Date(ev.dateTime).toLocaleDateString("en-IN", { day: "numeric", month: "short" })} • {new Date(ev.dateTime).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
-                        </div>
-                      </td>
-
-                      <td className="p-4">
-                        {ev.capacity ? (
-                          <span className="font-semibold text-slate-700 tabular-nums">Max {ev.capacity}</span>
-                        ) : (
-                          <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                            Unlimited
-                          </span>
-                        )}
-                      </td>
-
-                      {/* Staff Coordinator */}
-                      <td className="p-4">
-                        {staffName ? (
-                          <div className="flex items-center gap-2.5">
-                            {staffPhoto ? (
-                              /* eslint-disable-next-line @next/next/no-img-element */
-                              <img
-                                src={staffPhoto}
-                                alt={staffName}
-                                className="w-8 h-8 rounded-full object-cover border border-orange-300 shrink-0"
-                              />
-                            ) : (
-                              <div className="w-8 h-8 rounded-full bg-orange-100 border border-orange-200 flex items-center justify-center text-orange-700 font-bold text-xs shrink-0">
-                                {staffName.charAt(0)}
-                              </div>
-                            )}
-                            <div className="min-w-0">
-                              <div className="font-semibold text-slate-900 text-xs truncate flex items-center gap-1">
-                                <span>{staffName}</span>
-                              </div>
-                              {staffPhone && <div className="text-[11px] text-slate-600 font-mono">{staffPhone}</div>}
-                              {staffEmail && <div className="text-[10px] text-slate-400 truncate">{staffEmail}</div>}
-                            </div>
-                          </div>
-                        ) : (
-                          <span className="text-[11px] font-semibold text-slate-400">Unassigned</span>
-                        )}
-                      </td>
-
-                      {/* Student Coordinator */}
-                      <td className="p-4">
-                        {studentName ? (
-                          <div className="flex items-center gap-2.5">
-                            {studentPhoto ? (
-                              /* eslint-disable-next-line @next/next/no-img-element */
-                              <img
-                                src={studentPhoto}
-                                alt={studentName}
-                                className="w-8 h-8 rounded-full object-cover border border-blue-300 shrink-0"
-                              />
-                            ) : (
-                              <div className="w-8 h-8 rounded-full bg-blue-100 border border-blue-200 flex items-center justify-center text-blue-700 font-bold text-xs shrink-0">
-                                {studentName.charAt(0)}
-                              </div>
-                            )}
-                            <div className="min-w-0">
-                              <div className="font-semibold text-slate-900 text-xs truncate flex items-center gap-1">
-                                <span>{studentName}</span>
-                              </div>
-                              {studentPhone && <div className="text-[11px] text-slate-600 font-mono">{studentPhone}</div>}
-                              {studentEmail && <div className="text-[10px] text-slate-400 truncate">{studentEmail}</div>}
-                            </div>
-                          </div>
-                        ) : (
-                          <span className="text-[11px] font-semibold text-slate-400">Unassigned</span>
-                        )}
-                      </td>
-
-                      <td className="p-4">
-                        {ev.rules ? (
-                          <button
-                            onClick={() => setViewingRulesEvent(ev)}
-                            className="tap-target inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold text-orange-600 bg-orange-50 hover:bg-orange-100 transition cursor-pointer"
-                          >
-                            <BookOpen className="w-3.5 h-3.5" />
-                            <span>View Rules</span>
-                          </button>
-                        ) : (
-                          <span className="text-[11px] text-slate-400 font-medium">None</span>
-                        )}
-                      </td>
-
-                      <td className="p-4 font-bold text-slate-900 tabular-nums">
-                        {ev._count?.registrations ?? 0}
-                      </td>
-
-                      <td className="p-4 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <button
-                            onClick={async () => {
-                              setDownloadingEventId(ev.id);
-                              try {
-                                const res = await downloadEventParticipantsCSV({
-                                  eventId: ev.id,
-                                  eventName: ev.name,
-                                  eventData: {
-                                    id: ev.id,
-                                    name: ev.name,
-                                    category: ev.category,
-                                    venue: ev.venue,
-                                    dateTime: ev.dateTime,
-                                  },
-                                });
-                                toast.success(
-                                  res.count > 0
-                                    ? `Downloaded ${res.filename} (${res.count} participants)`
-                                    : `Downloaded empty roster template for ${ev.name}`
-                                );
-                              } catch (err: any) {
-                                console.error("Export error:", err);
-                                toast.error(err.message || "Failed to download participants CSV.");
-                              } finally {
-                                setDownloadingEventId(null);
-                              }
-                            }}
-                            disabled={downloadingEventId === ev.id}
-                            title={`Download ${ev.name} participants CSV roster`}
-                            className="tap-target inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-orange-600 hover:text-orange-700 hover:bg-orange-50 rounded-lg transition cursor-pointer disabled:opacity-50"
-                          >
-                            {downloadingEventId === ev.id ? (
-                              <span className="w-3.5 h-3.5 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
-                            ) : (
-                              <Download className="w-3.5 h-3.5" />
-                            )}
-                            <span>CSV</span>
-                          </button>
-                          <button
-                            onClick={() => openEditModal(ev)}
-                            className="tap-target px-2.5 py-1 text-xs font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => handleDeleteEvent(ev.id, ev.name)}
-                            className="tap-target px-2.5 py-1 text-xs font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition"
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+        {/* Competitions Table */}
+        {loading ? (
+          <div className="py-20 text-center text-xs text-[var(--ink-muted)] flex flex-col items-center gap-2">
+            <RefreshCw className="w-6 h-6 animate-spin text-[var(--accent)]" />
+            <span>Loading fest competitions...</span>
           </div>
-        </div>
-
-        {/* Create / Edit Modal */}
-        {showModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
-            <div className="bg-white rounded-3xl max-w-2xl w-full border border-slate-200 shadow-2xl max-h-[90vh] flex flex-col overflow-hidden my-auto">
-              {/* Fixed Header */}
-              <div className="flex items-start justify-between p-5 sm:p-6 border-b border-slate-100 bg-slate-50/50 shrink-0">
-                <div>
-                  <h3 className="text-xl font-extrabold text-slate-900">
-                    {editingId ? "Edit Event Competition" : "Create New Event Competition"}
-                  </h3>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Configure competition track, upload poster, and assign staff & student coordinators with photos.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  className="tap-target text-slate-400 hover:text-slate-900 cursor-pointer p-1.5 rounded-xl hover:bg-slate-200/60 transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              {/* Form with Scrollable Content Body */}
-              <form onSubmit={handleSaveEvent} className="flex flex-col flex-1 min-h-0 overflow-hidden">
-                <div className="p-5 sm:p-6 space-y-5 overflow-y-auto flex-1">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Competition Name *</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. Code Hackathon, Web Odyssey, Quiz Arena"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      className="w-full h-11 bg-white border border-slate-300 rounded-xl px-3.5 text-sm text-slate-900 focus:outline-none focus:border-orange-500 shadow-2xs"
-                    />
-                  </div>
-
-                  {/* Event Image / Poster / Logo */}
-                  <div className="bg-slate-50 border border-slate-200 p-4 rounded-2xl space-y-3">
-                    <div className="flex items-center justify-between">
-                      <label className="block text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                        <ImageIcon className="w-3.5 h-3.5 text-orange-600" />
-                        <span>Event Poster / Logo Image</span>
-                      </label>
-                      <span className="text-[10px] text-slate-400 font-semibold">Optional</span>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      {imageUrl ? (
-                        <div className="relative w-16 h-16 rounded-xl border border-slate-300 overflow-hidden bg-white shrink-0 group">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={imageUrl} alt="Event preview" className="w-full h-full object-cover" />
-                          <button
-                            type="button"
-                            onClick={() => setImageUrl("")}
-                            className="absolute inset-0 bg-black/60 text-white text-[10px] font-bold flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                          >
-                            Remove
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="w-16 h-16 rounded-xl border-2 border-dashed border-slate-300 flex items-center justify-center text-slate-400 bg-white shrink-0">
-                          <ImageIcon className="w-6 h-6 text-slate-300" />
-                        </div>
-                      )}
-                      <div className="flex-1 space-y-2">
-                        <div className="flex items-center gap-2">
-                          <label className="tap-target px-3 py-1.5 bg-white border border-slate-300 hover:border-slate-400 rounded-lg text-xs font-semibold text-slate-700 cursor-pointer inline-flex items-center gap-1.5 shadow-2xs">
-                            <Upload className="w-3.5 h-3.5 text-orange-600" />
-                            <span>{uploadingField === "eventImage" ? "Uploading..." : "Upload Image"}</span>
-                            <input
-                              type="file"
-                              accept="image/*"
-                              className="hidden"
-                              onChange={(e) => handleFileUpload(e, setImageUrl, "eventImage")}
-                            />
-                          </label>
-                          <span className="text-[11px] text-slate-400">or paste URL:</span>
-                        </div>
-                        <input
-                          type="text"
-                          placeholder="https://... or /uploads/..."
-                          value={imageUrl}
-                          onChange={(e) => setImageUrl(e.target.value)}
-                          className="w-full h-9 bg-white border border-slate-300 rounded-lg px-3 text-xs text-slate-900 focus:outline-none focus:border-orange-500"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">Category *</label>
-                      <select
-                        value={category}
-                        onChange={(e) => setCategory(e.target.value as "ON_STAGE" | "OFF_STAGE")}
-                        className="w-full h-11 bg-white border border-slate-300 rounded-xl px-3 text-sm text-slate-900 focus:outline-none focus:border-orange-500 shadow-2xs"
-                      >
-                        <option value="ON_STAGE">On-Stage Competition</option>
-                        <option value="OFF_STAGE">Off-Stage Competition</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">Venue / Lab Room</label>
-                      <input
-                        type="text"
-                        placeholder="e.g. MCA Lab 3 / SGB Auditorium"
-                        value={venue}
-                        onChange={(e) => setVenue(e.target.value)}
-                        className="w-full h-11 bg-white border border-slate-300 rounded-xl px-3 text-sm text-slate-900 focus:outline-none focus:border-orange-500 shadow-2xs"
-                      />
-                      <div className="mt-2">
-                        <label className="block text-[11px] font-bold text-slate-600 mb-1 flex items-center justify-between">
-                          <span>Map Zone / Room (Floor Plan)</span>
-                          <span className="text-[10px] text-slate-400 font-normal">Optional wayfinding pinpoint</span>
-                        </label>
-                        <select
-                          value={venueZoneId}
-                          onChange={(e) => setVenueZoneId(e.target.value)}
-                          className="w-full h-9 bg-slate-50 hover:bg-white border border-slate-300 rounded-lg px-2.5 text-xs text-slate-900 focus:outline-none focus:border-orange-500 transition-colors cursor-pointer"
-                        >
-                          <option value="">-- No map zone assigned --</option>
-                          {floorPlanZones.map((z) => (
-                            <option key={z.id} value={z.id}>
-                              {z.label} ({z.id})
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Capacity with "No Limit" option */}
-                  <div className="bg-slate-50 border border-slate-200 p-4 rounded-2xl space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <span className="block text-xs font-bold text-slate-800">Participation Capacity Limit</span>
-                        <span className="text-[11px] text-slate-500">Allow unlimited delegate registrations or restrict to maximum seats</span>
-                      </div>
-                      <label className="inline-flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={isUnlimitedCapacity}
-                          onChange={(e) => {
-                            setIsUnlimitedCapacity(e.target.checked);
-                            if (e.target.checked) setCapacity("");
-                          }}
-                          className="w-4 h-4 rounded text-orange-600 focus:ring-orange-500 border-slate-300"
-                        />
-                        <span className="text-xs font-bold text-slate-700">No Limit (Unlimited)</span>
-                      </label>
-                    </div>
-
-                    {!isUnlimitedCapacity && (
-                      <div>
-                        <label className="block text-xs font-semibold text-slate-600 mb-1">Max Participant / Team Capacity *</label>
-                        <input
-                          type="number"
-                          min={1}
-                          required={!isUnlimitedCapacity}
-                          placeholder="e.g. 50"
-                          value={capacity}
-                          onChange={(e) => setCapacity(e.target.value)}
-                          className="w-full h-10 bg-white border border-slate-300 rounded-xl px-3 text-sm text-slate-900 focus:outline-none focus:border-orange-500 shadow-2xs"
-                        />
-                      </div>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Date & Time *</label>
-                    <input
-                      type="datetime-local"
-                      required
-                      value={dateTime}
-                      onChange={(e) => setDateTime(e.target.value)}
-                      className="w-full h-11 bg-white border border-slate-300 rounded-xl px-3 text-sm text-slate-900 focus:outline-none focus:border-orange-500 shadow-2xs"
-                    />
-                  </div>
-
-                  {/* PRELIMS CONFIGURATION BLOCK */}
-                  <div className="bg-amber-50/60 border border-amber-300/80 p-4 rounded-2xl space-y-3">
-                    <div className="flex items-center justify-between">
-                      <label htmlFor="hasPrelimsCheck" className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          id="hasPrelimsCheck"
-                          checked={hasPrelims}
-                          onChange={(e) => setHasPrelims(e.target.checked)}
-                          className="w-4 h-4 rounded text-amber-600 focus:ring-amber-500 border-stone-300 cursor-pointer"
-                        />
-                        <div>
-                          <span className="block text-xs font-black text-amber-950 flex items-center gap-1.5">
-                            <Target className="w-3.5 h-3.5 text-amber-800 shrink-0" />
-                            <span>Enable Preliminary Round (Prelims)</span>
-                          </span>
-                          <span className="text-[11px] text-amber-800">
-                            Requires 1 participant per college delegation to participate in prelims first.
-                          </span>
-                        </div>
-                      </label>
-                    </div>
-
-                    {hasPrelims && (
-                      <div className="pt-2 border-t border-amber-200/80 space-y-3 animate-in fade-in duration-150">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          <div>
-                            <label className="block text-[11px] font-bold text-amber-950 mb-1">
-                              Prelims Schedule (Date & Time) *
-                            </label>
-                            <input
-                              type="datetime-local"
-                              required={hasPrelims}
-                              value={prelimsDateTime}
-                              onChange={(e) => setPrelimsDateTime(e.target.value)}
-                              className="w-full h-9 bg-white border border-amber-300 rounded-lg px-2.5 text-xs text-slate-900 focus:outline-none focus:border-amber-500"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="block text-[11px] font-bold text-amber-950 mb-1">
-                              Prelims Venue / Hall Room
-                            </label>
-                            <input
-                              type="text"
-                              placeholder="e.g. Lab 2 / Seminar Hall B"
-                              value={prelimsVenue}
-                              onChange={(e) => setPrelimsVenue(e.target.value)}
-                              className="w-full h-9 bg-white border border-amber-300 rounded-lg px-2.5 text-xs text-slate-900 focus:outline-none focus:border-amber-500"
-                            />
-                            <div className="mt-1.5">
-                              <label className="block text-[10px] font-bold text-amber-900 mb-0.5 flex items-center justify-between">
-                                <span>Prelims Map Zone</span>
-                                <span className="text-[9px] text-amber-700 font-normal">Floor Plan</span>
-                              </label>
-                              <select
-                                value={prelimsVenueZoneId}
-                                onChange={(e) => setPrelimsVenueZoneId(e.target.value)}
-                                className="w-full h-8 bg-white border border-amber-300 rounded-lg px-2 text-xs text-slate-900 focus:outline-none focus:border-amber-500 cursor-pointer"
-                              >
-                                <option value="">-- No prelims zone --</option>
-                                {floorPlanZones.map((z) => (
-                                  <option key={z.id} value={z.id}>
-                                    {z.label} ({z.id})
-                                  </option>
-                                ))}
-                              </select>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] font-bold text-amber-950 mb-1">
-                            Prelims Rules & Evaluation Guidelines
-                          </label>
-                          <textarea
-                            rows={2}
-                            placeholder="e.g. 1. 20-minute multiple choice test. 2. Top 6 colleges advance to main stage."
-                            value={prelimsRules}
-                            onChange={(e) => setPrelimsRules(e.target.value)}
-                            className="w-full bg-white border border-amber-300 rounded-lg p-2.5 text-xs text-slate-900 focus:outline-none focus:border-amber-500"
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* COMPETITION AWARDS & PODIUM PRIZES (DYNAMIC LEADERBOARD PRIZES) */}
-                  <div className="bg-gradient-to-br from-amber-50/70 to-orange-50/50 border border-amber-300/90 p-4 rounded-2xl space-y-3.5 shadow-2xs">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <span className="block text-xs font-black text-slate-900 flex items-center gap-1.5">
-                          <Trophy className="w-4 h-4 text-amber-500 shrink-0" />
-                          <span>Competition Awards & Podium Prizes (Dynamic on Leaderboard)</span>
-                        </span>
-                        <span className="text-[11px] text-slate-500">
-                          Pre-populated from Admin &rarr; Branding & Stage defaults. You can customize them for this competition or reset to defaults anytime.
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setFirstPrize(centralizedPrizes.first);
-                          setSecondPrize(centralizedPrizes.second);
-                          setThirdPrize(centralizedPrizes.third);
-                          toast.success("Awards reset to centralized defaults.");
-                        }}
-                        className="text-[10px] font-bold text-amber-900 bg-amber-100 hover:bg-amber-200 border border-amber-300 px-2.5 py-1 rounded-lg transition-colors cursor-pointer shrink-0"
-                        title="Reset to Admin Branding & Stage defaults"
-                      >
-                        Reset to Centralized
-                      </button>
-                    </div>
-
-                    <div className="space-y-3 pt-1 border-t border-amber-200/60">
-                      <div>
-                        <label className="block text-[11px] font-extrabold text-amber-950 mb-1 flex items-center gap-1.5">
-                          <span>🥇 1st Place Award (Champion)</span>
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="e.g. Cash Prize ₹5,000 + Trophy + Certificate"
-                          value={firstPrize}
-                          onChange={(e) => setFirstPrize(e.target.value)}
-                          className="w-full h-9 bg-white border border-amber-300 rounded-lg px-2.5 text-xs text-slate-900 font-semibold focus:outline-none focus:border-amber-500"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-[11px] font-extrabold text-stone-800 mb-1 flex items-center gap-1.5">
-                          <span>🥈 2nd Place Award (Runner-Up)</span>
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="e.g. Cash Prize ₹3,000 + Merit Certificate"
-                          value={secondPrize}
-                          onChange={(e) => setSecondPrize(e.target.value)}
-                          className="w-full h-9 bg-white border border-stone-300 rounded-lg px-2.5 text-xs text-slate-900 font-semibold focus:outline-none focus:border-stone-500"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-[11px] font-extrabold text-[#C2410C] mb-1 flex items-center gap-1.5">
-                          <span>🥉 3rd Place Award (Finalist)</span>
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="e.g. Distinction Certificate"
-                          value={thirdPrize}
-                          onChange={(e) => setThirdPrize(e.target.value)}
-                          className="w-full h-9 bg-white border border-orange-200 rounded-lg px-2.5 text-xs text-slate-900 font-semibold focus:outline-none focus:border-orange-500"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Staff Coordinator Section */}
-                  <div className="bg-orange-50/50 border border-orange-200/80 p-4 rounded-2xl space-y-3">
-                    <div className="flex items-center justify-between">
-                      <label className="block text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                        <GraduationCap className="w-4 h-4 text-orange-600" />
-                        <span>Staff Coordinator (Faculty Incharge)</span>
-                      </label>
-                      <span className="text-[10px] text-orange-800 font-semibold bg-orange-100/60 px-2 py-0.5 rounded">Event Incharge</span>
-                    </div>
-
-                    <div>
-                      <label className="block text-[11px] font-semibold text-slate-600 mb-1">Select from Registered Staff (Auto-fills below)</label>
-                      <select
-                        value={staffCoordinatorId}
-                        onChange={(e) => handleStaffSelect(e.target.value)}
-                        className="w-full h-10 bg-white border border-slate-300 rounded-xl px-3 text-xs text-slate-900 focus:outline-none focus:border-orange-500 shadow-2xs"
-                      >
-                        <option value="">-- Custom or Select Registered Staff --</option>
-                        {staffCoordinators.map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {c.name} ({c.email})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                      <div>
-                        <label className="block text-[11px] font-semibold text-slate-600 mb-1">Staff Full Name</label>
-                        <input
-                          type="text"
-                          placeholder="e.g. Dr. A. Mary"
-                          value={staffCoordName}
-                          onChange={(e) => setStaffCoordName(e.target.value)}
-                          className="w-full h-9 bg-white border border-slate-300 rounded-lg px-2.5 text-xs text-slate-900 focus:outline-none focus:border-orange-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-semibold text-slate-600 mb-1">Staff Email Address</label>
-                        <input
-                          type="email"
-                          placeholder="mary@college.edu"
-                          value={staffCoordEmail}
-                          onChange={(e) => setStaffCoordEmail(e.target.value)}
-                          className="w-full h-9 bg-white border border-slate-300 rounded-lg px-2.5 text-xs text-slate-900 focus:outline-none focus:border-orange-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-semibold text-slate-600 mb-1">Staff Mobile / Contact</label>
-                        <input
-                          type="tel"
-                          placeholder="+91 9840123456"
-                          value={staffCoordPhone}
-                          onChange={(e) => setStaffCoordPhone(e.target.value)}
-                          className="w-full h-9 bg-white border border-slate-300 rounded-lg px-2.5 text-xs text-slate-900 focus:outline-none focus:border-orange-500"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Staff Photo Upload */}
-                    <div className="pt-2 border-t border-orange-200/60 flex items-center gap-3">
-                      {staffCoordImageUrl ? (
-                        <div className="relative w-11 h-11 rounded-full border border-orange-300 overflow-hidden bg-white shrink-0 group">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={staffCoordImageUrl} alt="Staff preview" className="w-full h-full object-cover" />
-                          <button
-                            type="button"
-                            onClick={() => setStaffCoordImageUrl("")}
-                            className="absolute inset-0 bg-black/60 text-white text-[9px] font-bold flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                          >
-                            Clear
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="w-11 h-11 rounded-full bg-orange-100/70 border border-orange-300 flex items-center justify-center text-orange-600 shrink-0">
-                          <Camera className="w-5 h-5" />
-                        </div>
-                      )}
-                      <div className="flex-1 flex flex-col sm:flex-row items-start sm:items-center gap-2">
-                        <label className="tap-target px-2.5 py-1 bg-white border border-slate-300 hover:border-slate-400 rounded-lg text-xs font-semibold text-slate-700 cursor-pointer inline-flex items-center gap-1.5 shadow-2xs shrink-0">
-                          <Upload className="w-3.5 h-3.5 text-orange-600" />
-                          <span>{uploadingField === "staffPhoto" ? "Uploading..." : "Upload Staff Photo"}</span>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={(e) => handleFileUpload(e, setStaffCoordImageUrl, "staffPhoto")}
-                          />
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="Staff photo URL (optional)"
-                          value={staffCoordImageUrl}
-                          onChange={(e) => setStaffCoordImageUrl(e.target.value)}
-                          className="w-full h-8 bg-white border border-slate-300 rounded-lg px-2.5 text-xs text-slate-900 focus:outline-none focus:border-orange-500"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Student Coordinator Section */}
-                  <div className="bg-blue-50/50 border border-blue-200/80 p-4 rounded-2xl space-y-3">
-                    <div className="flex items-center justify-between">
-                      <label className="block text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                        <Users className="w-4 h-4 text-blue-600" />
-                        <span>Student Coordinator (Student Incharge)</span>
-                      </label>
-                      <span className="text-[10px] text-blue-800 font-semibold bg-blue-100/60 px-2 py-0.5 rounded">Student Lead</span>
-                    </div>
-
-                    <div>
-                      <label className="block text-[11px] font-semibold text-slate-600 mb-1">Select from Registered Students (Auto-fills below)</label>
-                      <select
-                        value={studentCoordinatorId}
-                        onChange={(e) => handleStudentSelect(e.target.value)}
-                        className="w-full h-10 bg-white border border-slate-300 rounded-xl px-3 text-xs text-slate-900 focus:outline-none focus:border-orange-500 shadow-2xs"
-                      >
-                        <option value="">-- Custom or Select Registered Student --</option>
-                        {studentCoordinators.map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {c.name} ({c.email})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                      <div>
-                        <label className="block text-[11px] font-semibold text-slate-600 mb-1">Student Full Name</label>
-                        <input
-                          type="text"
-                          placeholder="e.g. Rahul Sharma"
-                          value={studentCoordName}
-                          onChange={(e) => setStudentCoordName(e.target.value)}
-                          className="w-full h-9 bg-white border border-slate-300 rounded-lg px-2.5 text-xs text-slate-900 focus:outline-none focus:border-orange-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-semibold text-slate-600 mb-1">Student Email Address</label>
-                        <input
-                          type="email"
-                          placeholder="rahul@student.edu"
-                          value={studentCoordEmail}
-                          onChange={(e) => setStudentCoordEmail(e.target.value)}
-                          className="w-full h-9 bg-white border border-slate-300 rounded-lg px-2.5 text-xs text-slate-900 focus:outline-none focus:border-orange-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-semibold text-slate-600 mb-1">Student Mobile / WhatsApp</label>
-                        <input
-                          type="tel"
-                          placeholder="+91 9840998877"
-                          value={studentCoordPhone}
-                          onChange={(e) => setStudentCoordPhone(e.target.value)}
-                          className="w-full h-9 bg-white border border-slate-300 rounded-lg px-2.5 text-xs text-slate-900 focus:outline-none focus:border-orange-500"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Student Photo Upload */}
-                    <div className="pt-2 border-t border-blue-200/60 flex items-center gap-3">
-                      {studentCoordImageUrl ? (
-                        <div className="relative w-11 h-11 rounded-full border border-blue-300 overflow-hidden bg-white shrink-0 group">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={studentCoordImageUrl} alt="Student preview" className="w-full h-full object-cover" />
-                          <button
-                            type="button"
-                            onClick={() => setStudentCoordImageUrl("")}
-                            className="absolute inset-0 bg-black/60 text-white text-[9px] font-bold flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                          >
-                            Clear
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="w-11 h-11 rounded-full bg-blue-100/70 border border-blue-300 flex items-center justify-center text-blue-600 shrink-0">
-                          <Camera className="w-5 h-5" />
-                        </div>
-                      )}
-                      <div className="flex-1 flex flex-col sm:flex-row items-start sm:items-center gap-2">
-                        <label className="tap-target px-2.5 py-1 bg-white border border-slate-300 hover:border-slate-400 rounded-lg text-xs font-semibold text-slate-700 cursor-pointer inline-flex items-center gap-1.5 shadow-2xs shrink-0">
-                          <Upload className="w-3.5 h-3.5 text-blue-600" />
-                          <span>{uploadingField === "studentPhoto" ? "Uploading..." : "Upload Student Photo"}</span>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={(e) => handleFileUpload(e, setStudentCoordImageUrl, "studentPhoto")}
-                          />
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="Student photo URL (optional)"
-                          value={studentCoordImageUrl}
-                          onChange={(e) => setStudentCoordImageUrl(e.target.value)}
-                          className="w-full h-8 bg-white border border-slate-300 rounded-lg px-2.5 text-xs text-slate-900 focus:outline-none focus:border-orange-500"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Brief Description</label>
-                    <textarea
-                      rows={2}
-                      placeholder="Short summary displayed on public event arena cards..."
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                      className="w-full bg-white border border-slate-300 rounded-xl p-3 text-xs sm:text-sm text-slate-900 focus:outline-none focus:border-orange-500 shadow-2xs"
-                    />
-                  </div>
-
-                  {/* Rules and Regulations */}
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="block text-xs font-bold text-slate-700">Rules & Regulations</label>
-                      <span className="text-[11px] text-slate-400 font-medium">Competition guidelines and constraints</span>
-                    </div>
-                    <textarea
-                      rows={4}
-                      placeholder="1. Each team may consist of maximum 2 members from the same college.&#10;2. College ID cards are mandatory for verification.&#10;3. External libraries or internet access will be restricted.&#10;4. Decision of the jury panel is final and binding."
-                      value={rules}
-                      onChange={(e) => setRules(e.target.value)}
-                      className="w-full bg-white border border-slate-300 rounded-xl p-3 font-mono text-xs text-slate-900 focus:outline-none focus:border-orange-500 shadow-2xs leading-relaxed"
-                    />
-                  </div>
-                </div>
-
-                {/* Fixed Footer */}
-                <div className="flex items-center justify-end gap-3 p-4 sm:p-5 border-t border-slate-100 bg-slate-50 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => setShowModal(false)}
-                    className="tap-target px-4 py-2.5 text-xs font-bold text-slate-600 hover:text-slate-900 cursor-pointer rounded-xl hover:bg-slate-200/50 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={formSubmitting}
-                    className="tap-target px-5 py-2.5 bg-orange-600 hover:bg-orange-700 text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer disabled:opacity-50"
-                  >
-                    {formSubmitting ? "Saving..." : editingId ? "Update Competition" : "Save Competition"}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {/* Rules Viewer Modal */}
-        {viewingRulesEvent && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
-            <div className="bg-white rounded-3xl max-w-lg w-full p-6 border border-slate-200 shadow-2xl space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                <div className="flex items-center gap-2">
-                  <BookOpen className="w-5 h-5 text-orange-600" />
-                  <h3 className="text-base font-extrabold text-slate-900">
-                    {viewingRulesEvent.name} — Rules
-                  </h3>
-                </div>
-                <button
-                  onClick={() => setViewingRulesEvent(null)}
-                  className="tap-target p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 whitespace-pre-wrap font-mono text-xs text-slate-800 leading-relaxed max-h-72 overflow-y-auto">
-                {viewingRulesEvent.rules || "No specific rules published for this competition."}
-              </div>
-
-              <div className="flex justify-end pt-2">
-                <button
-                  onClick={() => setViewingRulesEvent(null)}
-                  className="tap-target px-4 py-2 rounded-xl text-xs font-bold bg-slate-900 text-white hover:bg-slate-800 transition cursor-pointer"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
+        ) : (
+          <AdminEventsTable
+            events={events}
+            filteredEvents={filteredEvents}
+            onEdit={(ev) => {
+              setEditingEvent(ev);
+              setFormModalOpen(true);
+            }}
+            onDelete={handleDelete}
+            onInspectRoster={(ev) => setRosterModalEvent(ev)}
+            onDownloadCSV={handleDownloadCSV}
+            downloadingId={downloadingId}
+          />
         )}
       </div>
+
+      {/* Create / Edit Form Modal */}
+      <AdminEventFormModal
+        isOpen={formModalOpen}
+        onClose={() => {
+          setFormModalOpen(false);
+          setEditingEvent(null);
+        }}
+        editingEvent={editingEvent}
+        staffCoordinators={staffCoordinators}
+        studentCoordinators={studentCoordinators}
+        floorPlanZones={floorPlanZones}
+        centralizedPrizes={centralizedPrizes}
+        onSave={handleSave}
+        saving={saving}
+      />
+
+      {/* Roster Modal */}
+      <AdminEventRosterModal
+        isOpen={Boolean(rosterModalEvent)}
+        onClose={() => setRosterModalEvent(null)}
+        event={rosterModalEvent}
+        onDownloadCSV={handleDownloadCSV}
+        downloading={downloadingId === rosterModalEvent?.id}
+      />
     </main>
   );
 }

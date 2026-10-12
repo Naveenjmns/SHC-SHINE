@@ -1,0 +1,265 @@
+"use client";
+
+import React from "react";
+import {
+  Theater,
+  Laptop,
+  MapPin,
+  Clock,
+  Users,
+  Download,
+  Edit2,
+  Trash2,
+  Eye,
+  RefreshCw,
+} from "lucide-react";
+import { Button, Badge } from "@/components/ui";
+
+export interface CoordinatorUser {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  phone?: string | null;
+  avatarUrl?: string | null;
+  college?: string | null;
+}
+
+export interface EventItem {
+  id: string;
+  name: string;
+  description: string | null;
+  category: "ON_STAGE" | "OFF_STAGE";
+  fee: number;
+  capacity: number | null;
+  venue: string | null;
+  venueZoneId?: string | null;
+  dateTime: string;
+  rules: string | null;
+  hasPrelims?: boolean;
+  prelimsDateTime?: string | null;
+  prelimsVenue?: string | null;
+  prelimsVenueZoneId?: string | null;
+  prelimsRules?: string | null;
+  firstPrize?: string | null;
+  secondPrize?: string | null;
+  thirdPrize?: string | null;
+  imageUrl?: string | null;
+  logoUrl?: string | null;
+  staffCoordinatorName?: string | null;
+  staffCoordinatorEmail?: string | null;
+  staffCoordinatorPhone?: string | null;
+  staffCoordinatorImageUrl?: string | null;
+  studentCoordinatorName?: string | null;
+  studentCoordinatorEmail?: string | null;
+  studentCoordinatorPhone?: string | null;
+  studentCoordinatorImageUrl?: string | null;
+  staffCoordinator?: CoordinatorUser | null;
+  studentCoordinator?: CoordinatorUser | null;
+  coordinator?: CoordinatorUser | null;
+  _count?: {
+    registrations: number;
+  };
+}
+
+interface AdminEventsTableProps {
+  events: EventItem[];
+  filteredEvents: EventItem[];
+  onEdit: (event: EventItem) => void;
+  onDelete: (id: string, name: string) => void;
+  onInspectRoster: (event: EventItem) => void;
+  onDownloadCSV: (id: string, name: string) => void;
+  downloadingId: string | null;
+}
+
+export default function AdminEventsTable({
+  events,
+  filteredEvents,
+  onEdit,
+  onDelete,
+  onInspectRoster,
+  onDownloadCSV,
+  downloadingId,
+}: AdminEventsTableProps) {
+  if (events.length === 0) {
+    return (
+      <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-12 text-center">
+        <p className="text-sm font-semibold text-[var(--ink-muted)]">
+          No competitions created yet. Click "+ New Competition" above to add your first arena.
+        </p>
+      </div>
+    );
+  }
+
+  if (filteredEvents.length === 0) {
+    return (
+      <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-12 text-center">
+        <p className="text-sm font-semibold text-[var(--ink-muted)]">
+          No competitions match your current filter or search criteria.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl overflow-hidden shadow-xs">
+      <div className="overflow-x-auto">
+        <table className="w-full text-left border-collapse text-xs">
+          <thead>
+            <tr className="border-b border-[var(--border)] bg-[var(--surface-raised)] text-[11px] font-bold text-[var(--ink-muted)] uppercase tracking-wider">
+              <th className="py-3 px-4">Competition</th>
+              <th className="py-3 px-4">Category</th>
+              <th className="py-3 px-4">Venue & Time</th>
+              <th className="py-3 px-4">Coordinators</th>
+              <th className="py-3 px-4 text-center">Registrations</th>
+              <th className="py-3 px-4 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-[var(--border)]">
+            {filteredEvents.map((ev) => {
+              const regCount = ev._count?.registrations ?? 0;
+              const isDownloading = downloadingId === ev.id;
+              const staffCoord = ev.staffCoordinatorName || ev.staffCoordinator?.name;
+              const studentCoord = ev.studentCoordinatorName || ev.studentCoordinator?.name;
+
+              return (
+                <tr
+                  key={ev.id}
+                  className="hover:bg-[var(--surface-raised)]/60 transition-colors"
+                >
+                  {/* Event Name & Description */}
+                  <td className="py-3.5 px-4">
+                    <div className="font-bold text-sm text-[var(--ink)]">
+                      {ev.name}
+                    </div>
+                    {ev.description && (
+                      <p className="text-[11px] text-[var(--ink-muted)] line-clamp-1 max-w-xs mt-0.5">
+                        {ev.description}
+                      </p>
+                    )}
+                    {ev.hasPrelims && (
+                      <span className="inline-block mt-1 text-[10px] font-semibold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 px-1.5 py-0.2 rounded">
+                        Has Prelims
+                      </span>
+                    )}
+                  </td>
+
+                  {/* Category */}
+                  <td className="py-3.5 px-4 whitespace-nowrap">
+                    {ev.category === "ON_STAGE" ? (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                        <Theater className="w-3 h-3" />
+                        <span>On-Stage</span>
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                        <Laptop className="w-3 h-3" />
+                        <span>Off-Stage</span>
+                      </span>
+                    )}
+                  </td>
+
+                  {/* Venue & Time */}
+                  <td className="py-3.5 px-4 whitespace-nowrap">
+                    <div className="flex items-center gap-1.5 font-medium text-[var(--ink)]">
+                      <MapPin className="w-3.5 h-3.5 text-[var(--accent)] shrink-0" />
+                      <span>{ev.venue || "TBA"}</span>
+                    </div>
+                    {ev.dateTime && (
+                      <div className="flex items-center gap-1.5 text-[11px] text-[var(--ink-muted)] mt-0.5">
+                        <Clock className="w-3 h-3 shrink-0" />
+                        <span>{new Date(ev.dateTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+                      </div>
+                    )}
+                  </td>
+
+                  {/* Coordinators */}
+                  <td className="py-3.5 px-4">
+                    <div className="space-y-0.5 max-w-[200px]">
+                      {staffCoord ? (
+                        <div className="text-xs text-[var(--ink)] truncate" title={staffCoord}>
+                          <span className="font-semibold text-[10px] text-[var(--ink-muted)] uppercase mr-1">Staff:</span>
+                          {staffCoord}
+                        </div>
+                      ) : null}
+                      {studentCoord ? (
+                        <div className="text-[11px] text-[var(--ink-muted)] truncate" title={studentCoord}>
+                          <span className="font-semibold text-[10px] text-[var(--ink-muted)] uppercase mr-1">Student:</span>
+                          {studentCoord}
+                        </div>
+                      ) : null}
+                      {!staffCoord && !studentCoord && (
+                        <span className="text-[11px] text-[var(--ink-muted)] italic">Unassigned</span>
+                      )}
+                    </div>
+                  </td>
+
+                  {/* Registrations Count */}
+                  <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[var(--surface-raised)] border border-[var(--border)] font-bold text-xs text-[var(--ink)]">
+                      <Users className="w-3 h-3 text-[var(--accent)]" />
+                      <span>{regCount}</span>
+                      {ev.capacity && <span className="text-[var(--ink-muted)]">/{ev.capacity}</span>}
+                    </span>
+                  </td>
+
+                  {/* Action Buttons */}
+                  <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                    <div className="flex items-center justify-end gap-1.5">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onInspectRoster(ev)}
+                        title="View registered delegates"
+                        className="h-8 px-2 text-xs gap-1"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">Roster</span>
+                      </Button>
+
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onDownloadCSV(ev.id, ev.name)}
+                        disabled={isDownloading}
+                        title="Download CSV Roster"
+                        className="h-8 px-2 text-xs"
+                      >
+                        {isDownloading ? (
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Download className="w-3.5 h-3.5 text-[var(--accent)]" />
+                        )}
+                      </Button>
+
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onEdit(ev)}
+                        title="Edit arena"
+                        className="h-8 px-2 text-xs"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </Button>
+
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onDelete(ev.id, ev.name)}
+                        title="Delete arena"
+                        className="h-8 px-2 text-xs hover:text-rose-600"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
