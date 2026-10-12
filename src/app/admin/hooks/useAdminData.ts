@@ -126,16 +126,34 @@ export function useAdminData() {
   const loadAdminData = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await fetch("/api/admin/overview");
-      const data = await safeJson(res);
+      const [statsRes, regRes, edRes, smtpRes, historyRes] = await Promise.all([
+        fetch("/api/admin/stats"),
+        fetch("/api/admin/registrations"),
+        fetch("/api/admin/edition"),
+        fetch("/api/admin/smtp"),
+        fetch("/api/admin/email/history"),
+      ]);
 
-      if (data.success) {
-        setStats(data.stats);
-        setEventBreakdown(data.eventsBreakdown || []);
-        setRegistrations(data.registrations || []);
-        setEditions(data.editions || []);
+      const [statsData, regData, edData, smtpData, historyData] = await Promise.all([
+        safeJson(statsRes, { success: false, stats: null, eventBreakdown: [] }),
+        safeJson(regRes, { success: false, registrations: [] }),
+        safeJson(edRes, { success: false, editions: [] }),
+        safeJson(smtpRes, { success: false, smtp: null }),
+        safeJson(historyRes, { success: false, history: [] }),
+      ]);
 
-        const active = data.editions?.find((e: any) => e.isActive) || data.editions?.[0] || null;
+      if (statsData.success) {
+        setStats(statsData.stats);
+        setEventBreakdown(statsData.eventBreakdown || []);
+      }
+
+      if (regData.success) {
+        setRegistrations(regData.registrations || []);
+      }
+
+      if (edData.success && edData.editions) {
+        setEditions(edData.editions);
+        const active = edData.editions.find((e: any) => e.isActive) || edData.editions[0] || null;
         setActiveEdition(active);
 
         if (active) {
@@ -193,24 +211,25 @@ export function useAdminData() {
             setGraphData(active.waypointGraph);
           }
         }
+      }
 
-        if (data.smtp) {
-          setSmtpForm({
-            host: data.smtp.host || "",
-            port: "465",
-            user: data.smtp.user || "",
-            password: "",
-            fromName: data.smtp.fromName || "",
-            fromEmail: data.smtp.fromEmail || "",
-            hasPassword: Boolean(data.smtp.hasPassword),
-          });
+      if (smtpData.success && smtpData.smtp) {
+        setSmtpForm({
+          host: smtpData.smtp.host || "",
+          port: "465",
+          user: smtpData.smtp.user || "",
+          password: "",
+          fromName: smtpData.smtp.fromName || "",
+          fromEmail: smtpData.smtp.fromEmail || "",
+          hasPassword: Boolean(smtpData.smtp.hasPassword),
+        });
+        if (smtpData.emailTriggers) {
+          setEmailTriggers(smtpData.emailTriggers);
         }
-        if (data.emailTriggers) {
-          setEmailTriggers(data.emailTriggers);
-        }
-        if (data.broadcastHistory) {
-          setBroadcastHistory(data.broadcastHistory);
-        }
+      }
+
+      if (historyData.success && historyData.history) {
+        setBroadcastHistory(historyData.history);
       }
     } catch (err: any) {
       toast.error(err.message || "Failed to load dashboard data");
