@@ -44,5 +44,5 @@ next-env.d.ts
 # image optimization cache
 public/uploads/.cach
 
-# playwright browsers
-/.playwright-browsers/
+# Playwright cache
+.playwright-browsers/

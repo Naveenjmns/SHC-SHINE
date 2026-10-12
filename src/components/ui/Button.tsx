@@ -8,6 +8,7 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
   size?: ButtonSize;
   isLoading?: boolean;
+  loading?: boolean;
   leftIcon?: ReactNode;
   rightIcon?: ReactNode;
   fullWidth?: boolean;
@@ -40,6 +41,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       variant = "primary",
       size = "md",
       isLoading = false,
+      loading = false,
       leftIcon,
       rightIcon,
       fullWidth = false,
@@ -50,7 +52,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     },
     ref
   ) => {
-    const isDisabled = disabled || isLoading;
+    const isBusy = isLoading || loading;
+    const isDisabled = disabled || isBusy;
 
     return (
       <button
@@ -65,7 +68,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         } ${className}`}
         {...props}
       >
-        {isLoading ? (
+        {isBusy ? (
           <>
             <Loader2 className="w-4 h-4 animate-spin shrink-0" />
             <span>{children}</span>

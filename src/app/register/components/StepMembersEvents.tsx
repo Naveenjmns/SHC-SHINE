@@ -1,0 +1,269 @@
+import React from "react";
+import {
+  Input,
+  Button,
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  Badge,
+  Checkbox,
+} from "@/components/ui";
+import {
+  Users,
+  UserPlus,
+  Trash2,
+  Utensils,
+  ArrowRight,
+  ArrowLeft,
+  Calendar,
+  AlertCircle,
+} from "lucide-react";
+
+export interface EventOption {
+  id: string;
+  name: string;
+  category: "ON_STAGE" | "OFF_STAGE";
+  fee: number;
+}
+
+export interface MemberState {
+  name: string;
+  email: string;
+  phone: string;
+  eventIds: string[];
+  foodPreference: "VEG" | "NON_VEG";
+}
+
+interface StepMembersEventsProps {
+  members: MemberState[];
+  events: EventOption[];
+  onUpdateMember: (index: number, fields: Partial<MemberState>) => void;
+  onAddMember: () => void;
+  onRemoveMember: (index: number) => void;
+  onPrev: () => void;
+  onNext: () => void;
+  errors: Record<string, string>;
+}
+
+export default function StepMembersEvents({
+  members,
+  events,
+  onUpdateMember,
+  onAddMember,
+  onRemoveMember,
+  onPrev,
+  onNext,
+  errors,
+}: StepMembersEventsProps) {
+  const onStageEvents = events.filter((e) => e.category === "ON_STAGE");
+  const offStageEvents = events.filter((e) => e.category === "OFF_STAGE");
+
+  const toggleEvent = (memberIdx: number, eventId: string) => {
+    const current = members[memberIdx].eventIds;
+    const next = current.includes(eventId)
+      ? current.filter((id) => id !== eventId)
+      : [...current, eventId];
+    onUpdateMember(memberIdx, { eventIds: next });
+  };
+
+  return (
+    <div className="max-w-3xl mx-auto space-y-6">
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-accent">
+              <Users className="w-4 h-4" /> Step 2 of 3
+            </div>
+            <Badge variant="accent">
+              {members.length} {members.length === 1 ? "Delegate" : "Delegates"}
+            </Badge>
+          </div>
+          <CardTitle>Delegation Roster & Competition Allocation</CardTitle>
+          <CardDescription>
+            Add your team participants and assign each student to specific on-stage or off-stage arenas.
+          </CardDescription>
+        </CardHeader>
+      </Card>
+
+      {/* Members Cards Stack */}
+      <div className="space-y-4">
+        {members.map((member, idx) => {
+          const isLead = idx === 0;
+
+          return (
+            <Card key={idx} className="p-5 space-y-4">
+              <div className="flex items-center justify-between border-b border-border pb-3">
+                <div className="flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-full bg-accent-muted text-accent font-bold text-xs flex items-center justify-center">
+                    {idx + 1}
+                  </span>
+                  <h3 className="text-sm font-bold text-ink">
+                    {isLead ? "Team Lead (Delegate #1)" : `Delegate #${idx + 1}`}
+                  </h3>
+                  {isLead && <Badge variant="gold" size="sm">Primary</Badge>}
+                </div>
+
+                {!isLead && (
+                  <button
+                    type="button"
+                    onClick={() => onRemoveMember(idx)}
+                    className="p-1.5 rounded-[6px] hover:bg-danger-surface text-ink-subtle hover:text-danger transition-colors cursor-pointer text-xs flex items-center gap-1"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" /> Remove
+                  </button>
+                )}
+              </div>
+
+              {/* Personal Details */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <Input
+                  label="Delegate Full Name *"
+                  placeholder="Student name"
+                  value={member.name}
+                  onChange={(e) => onUpdateMember(idx, { name: e.target.value })}
+                  error={errors[`member_${idx}_name`]}
+                />
+
+                <Input
+                  label="Email Address *"
+                  type="email"
+                  placeholder="student@college.edu"
+                  value={member.email}
+                  onChange={(e) => onUpdateMember(idx, { email: e.target.value })}
+                  error={errors[`member_${idx}_email`]}
+                />
+
+                <Input
+                  label="Mobile Number *"
+                  type="tel"
+                  placeholder="10 digits"
+                  value={member.phone}
+                  onChange={(e) => onUpdateMember(idx, { phone: e.target.value })}
+                  error={errors[`member_${idx}_phone`]}
+                />
+              </div>
+
+              {/* Food Preference */}
+              <div className="pt-2 border-t border-border flex items-center justify-between gap-4">
+                <div className="text-xs font-semibold text-ink flex items-center gap-1.5">
+                  <Utensils className="w-3.5 h-3.5 text-accent" /> Meal Token Preference:
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => onUpdateMember(idx, { foodPreference: "VEG" })}
+                    className={`px-3 py-1 rounded-[6px] text-xs font-semibold border transition-all cursor-pointer ${
+                      member.foodPreference === "VEG"
+                        ? "bg-success-surface border-success-border text-success-ink"
+                        : "bg-surface border-border text-ink-muted hover:bg-surface-raised"
+                    }`}
+                  >
+                    Pure Vegetarian
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => onUpdateMember(idx, { foodPreference: "NON_VEG" })}
+                    className={`px-3 py-1 rounded-[6px] text-xs font-semibold border transition-all cursor-pointer ${
+                      member.foodPreference === "NON_VEG"
+                        ? "bg-amber-100 border-amber-300 text-amber-900 dark:bg-amber-950 dark:border-amber-800 dark:text-amber-200"
+                        : "bg-surface border-border text-ink-muted hover:bg-surface-raised"
+                    }`}
+                  >
+                    Non-Vegetarian
+                  </button>
+                </div>
+              </div>
+
+              {/* Competition Checkboxes */}
+              <div className="space-y-3 pt-3 border-t border-border">
+                <div className="flex items-center justify-between">
+                  <div className="text-xs font-semibold text-ink">
+                    Assign Competitions for {member.name || `Delegate #${idx + 1}`} *
+                  </div>
+                  <span className="text-[11px] text-ink-subtle">
+                    {member.eventIds.length} assigned
+                  </span>
+                </div>
+
+                {errors[`member_${idx}_events`] && (
+                  <p className="text-xs text-danger font-medium flex items-center gap-1">
+                    <AlertCircle className="w-3.5 h-3.5" />
+                    {errors[`member_${idx}_events`]}
+                  </p>
+                )}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                  {events.map((evt) => {
+                    const isChecked = member.eventIds.includes(evt.id);
+
+                    return (
+                      <label
+                        key={evt.id}
+                        className={`p-2.5 rounded-[8px] border transition-all flex items-start gap-2.5 cursor-pointer select-none ${
+                          isChecked
+                            ? "bg-accent-muted border-accent text-ink"
+                            : "bg-surface border-border hover:bg-surface-raised text-ink-muted"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => toggleEvent(idx, evt.id)}
+                          className="mt-0.5 rounded-[4px] border-border text-accent focus:ring-accent"
+                        />
+                        <div className="min-w-0">
+                          <div className="font-semibold truncate">{evt.name}</div>
+                          <div className="text-[10px] text-ink-subtle">
+                            {evt.category === "ON_STAGE" ? "On-Stage Arena" : "Off-Stage Challenge"}
+                          </div>
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            </Card>
+          );
+        })}
+      </div>
+
+      {/* Add Member Button */}
+      <div className="flex justify-center">
+        <Button
+          variant="outline"
+          size="md"
+          onClick={onAddMember}
+          leftIcon={<UserPlus className="w-4 h-4 text-accent" />}
+        >
+          Add Another Delegation Member
+        </Button>
+      </div>
+
+      {/* Bottom Nav */}
+      <div className="pt-4 flex items-center justify-between">
+        <Button
+          variant="secondary"
+          size="md"
+          onClick={onPrev}
+          leftIcon={<ArrowLeft className="w-4 h-4" />}
+        >
+          Back: Institution
+        </Button>
+
+        <Button
+          variant="primary"
+          size="md"
+          onClick={onNext}
+          rightIcon={<ArrowRight className="w-4 h-4" />}
+        >
+          Next: Review & Confirm
+        </Button>
+      </div>
+    </div>
+  );
+}
+

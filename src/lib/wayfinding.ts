@@ -498,3 +498,13 @@ export function validateGraph(
     totalRooms: zones.length,
   };
 }
+
+/**
+ * Backward-compatible alias for validateGraph with optional zones.
+ */
+export function validateWaypointGraph(
+  graph: WaypointGraph,
+  zones: Array<{ id: string; label?: string }> = []
+): GraphValidationResult {
+  return validateGraph(graph, zones);
+}
