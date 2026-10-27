@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
+import DOMPurify from "dompurify";
 import {
   X,
   ZoomIn,
@@ -154,7 +155,13 @@ export default function InteractiveFloorPlanModal({
         if (!svgText.includes("<svg")) {
           throw new Error("Invalid floor plan SVG content.");
         }
-        setSvgContent(svgText);
+        // SECURITY: The SVG is injected as live markup, so strip scripts, event handlers and
+        // foreignObject with a real DOM-based sanitizer (the server-side check is regex-based).
+        const safeSvg = DOMPurify.sanitize(svgText, {
+          USE_PROFILES: { svg: true, svgFilters: true },
+          ADD_TAGS: ["style"],
+        });
+        setSvgContent(safeSvg);
         setLoadedUrl(effectiveFloorPlanUrl);
         setLoadError(null);
       })

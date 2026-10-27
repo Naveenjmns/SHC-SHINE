@@ -38,20 +38,6 @@ export default function AdminUsersPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserItem | null>(null);
 
-  useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/login?callbackUrl=/admin/users");
-      return;
-    }
-    if (status === "authenticated") {
-      if (session.user.role !== "ADMIN") {
-        router.push("/dashboard");
-        return;
-      }
-      loadUsers();
-    }
-  }, [status, session, router]);
-
   const loadUsers = async () => {
     setLoading(true);
     try {
@@ -73,6 +59,21 @@ export default function AdminUsersPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/login?callbackUrl=/admin/users");
+      return;
+    }
+    if (status === "authenticated") {
+      if (session.user.role !== "ADMIN") {
+        router.push("/dashboard");
+        return;
+      }
+      loadUsers();
+    }
+  }, [status, session, router]);
+
 
   const filteredUsers = useMemo(() => {
     return users.filter((u) => {

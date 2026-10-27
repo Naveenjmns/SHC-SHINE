@@ -11,7 +11,12 @@ export async function PATCH(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session) {
+    if (
+      !session ||
+      (session.user.role !== "COORDINATOR" &&
+        session.user.role !== "ADMIN" &&
+        !(session.user as any).isEventCoordinator)
+    ) {
       return NextResponse.json({ success: false, message: "Unauthorized." }, { status: 403 });
     }
 
@@ -84,19 +89,27 @@ export async function PATCH(
     }
 
     if (result !== undefined) {
-      updateData.result = result ? result.trim() : null;
+      updateData.result = result ? String(result).trim() : null;
     }
     if (score !== undefined) {
-      updateData.score = score === "" || score === null ? null : parseFloat(score);
+      const parsed = score === "" || score === null ? null : parseFloat(score);
+      if (parsed !== null && !Number.isFinite(parsed)) {
+        return NextResponse.json({ success: false, message: "Score must be a number." }, { status: 400 });
+      }
+      updateData.score = parsed;
     }
     if (prelimsStatus !== undefined) {
-      updateData.prelimsStatus = prelimsStatus ? prelimsStatus.trim() : "PENDING";
+      updateData.prelimsStatus = prelimsStatus ? String(prelimsStatus).trim() : "PENDING";
     }
     if (prelimsScore !== undefined) {
-      updateData.prelimsScore = prelimsScore === "" || prelimsScore === null ? null : parseFloat(prelimsScore);
+      const parsed = prelimsScore === "" || prelimsScore === null ? null : parseFloat(prelimsScore);
+      if (parsed !== null && !Number.isFinite(parsed)) {
+        return NextResponse.json({ success: false, message: "Score must be a number." }, { status: 400 });
+      }
+      updateData.prelimsScore = parsed;
     }
     if (prelimsNotes !== undefined) {
-      updateData.prelimsNotes = prelimsNotes ? prelimsNotes.trim() : null;
+      updateData.prelimsNotes = prelimsNotes ? String(prelimsNotes).trim() : null;
     }
     if (attended !== undefined) {
       updateData.attended = Boolean(attended);

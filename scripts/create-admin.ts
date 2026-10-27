@@ -41,11 +41,11 @@ async function main() {
       .trim()
       .toLowerCase();
 
-    const rawPassword = (
-      getArg("password") ||
-      process.env.ADMIN_PASSWORD ||
-      "admin123"
-    ).trim();
+    // SECURITY: no default password — an admin must be created with an explicit, strong secret
+    const rawPassword = (getArg("password") || process.env.ADMIN_PASSWORD || "").trim();
+    if (rawPassword.length < 12) {
+      throw new Error("Provide an admin password of at least 12 characters via --password or ADMIN_PASSWORD.");
+    }
 
     const name = (
       getArg("name") ||
@@ -123,7 +123,7 @@ async function main() {
     console.log(`ID:       ${user.id}`);
     console.log(`Name:     ${user.name}`);
     console.log(`Email:    ${user.email}`);
-    console.log(`Password: ${rawPassword}`);
+    console.log("Password: (as provided — not echoed)");
     console.log(`Role:     ${user.role}`);
     console.log(`College:  ${user.college}`);
     console.log("==========================================");

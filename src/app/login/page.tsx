@@ -19,11 +19,14 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { safeJson } from "@/lib/safeFetch";
+import { isSafeRelativePath } from "@/lib/validators";
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl");
+  // SECURITY: Only honour same-origin relative callback paths (blocks open redirects and javascript: URIs)
+  const rawCallbackUrl = searchParams.get("callbackUrl");
+  const callbackUrl = isSafeRelativePath(rawCallbackUrl) ? rawCallbackUrl : null;
   const emailParam = searchParams.get("email") || "";
 
   const [email, setEmail] = useState(emailParam);

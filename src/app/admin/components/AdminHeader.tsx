@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { signOut } from "next-auth/react";
+import { signOutAndClearCache } from "@/lib/signOutAndClearCache";
 import { LogOut, QrCode, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui";
 
@@ -49,7 +49,7 @@ export default function AdminHeader({
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => signOut({ callbackUrl: "/login" })}
+            onClick={() => signOutAndClearCache({ callbackUrl: "/login" })}
             className="text-xs text-[var(--ink-muted)] hover:text-rose-600"
             title="Sign Out"
           >

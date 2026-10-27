@@ -56,17 +56,9 @@ export async function GET(req: NextRequest) {
           console.warn("Could not fetch SVG from ImageStore DB:", dbErr);
         }
       }
-    } else if (requestedUrl.startsWith("http://") || requestedUrl.startsWith("https://")) {
-      // 3. Remote URL
-      try {
-        const res = await fetch(requestedUrl);
-        if (res.ok) {
-          svgContent = await res.text();
-        }
-      } catch (fetchErr) {
-        console.warn("Could not fetch remote SVG:", fetchErr);
-      }
     }
+    // SECURITY: Remote URLs are intentionally NOT fetched server-side (SSRF). Floor plans
+    // must be uploaded through /api/admin/upload and referenced as /uploads/<file>.
 
     if (!svgContent) {
       // Fallback: check if the default campus floorplan exists on disk
@@ -98,7 +90,7 @@ export async function GET(req: NextRequest) {
     });
   } catch (error: any) {
     console.error("GET /api/admin/floorplan/zones error:", error);
-    return NextResponse.json({ success: false, error: error.message || "Failed to parse zones" }, { status: 500 });
+    return NextResponse.json({ success: false, error: "Failed to parse zones" }, { status: 500 });
   }
 }
 

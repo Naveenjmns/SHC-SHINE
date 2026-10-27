@@ -1,6 +1,18 @@
 import nodemailer from "nodemailer";
 import prisma from "@/lib/prisma";
-import { decryptSecret } from "@/lib/security";
+import { decryptSecret, escapeHtml } from "@/lib/security";
+
+/** Recursively HTML-escape every string in a payload (for use inside HTML email bodies only). */
+function escapeHtmlDeep<T>(value: T): T {
+  if (typeof value === "string") return escapeHtml(value) as unknown as T;
+  if (Array.isArray(value)) return value.map((v) => escapeHtmlDeep(v)) as unknown as T;
+  if (value && typeof value === "object" && !(value instanceof Date)) {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>).map(([k, v]) => [k, escapeHtmlDeep(v)])
+    ) as T;
+  }
+  return value;
+}
 
 export interface SmtpConfig {
   host: string;
@@ -398,7 +410,7 @@ export async function sendBroadcastEmail({
   const senderName = config?.fromName || "SHINE '26 Organizing Committee";
 
   // Convert plaintext newlines into HTML paragraphs/breaks
-  const formattedHtmlContent = message
+  const formattedHtmlContent = escapeHtml(message)
     .split("\n\n")
     .map((paragraph) => `<p style="margin: 0 0 14px 0; line-height: 1.6;">${paragraph.replace(/\n/g, "<br/>")}</p>`)
     .join("");
@@ -413,17 +425,17 @@ export async function sendBroadcastEmail({
             <!-- Branded Header -->
             <div style="background: linear-gradient(135deg, #1C1917 0%, #292524 100%); padding: 28px 32px; border-bottom: 3px solid #FF6B1A;">
               <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.15em; color: #D9A441; text-transform: uppercase; margin-bottom: 6px;">
-                ${institutionName}
+                ${escapeHtml(institutionName)}
               </div>
               <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.02em;">
-                ${eventName}
+                ${escapeHtml(eventName)}
               </h1>
             </div>
 
             <!-- Email Body -->
             <div style="padding: 32px; color: #292524; font-size: 15px;">
               <p style="font-weight: 600; color: #1C1917; margin-top: 0; margin-bottom: 18px;">
-                Dear ${recipient.name || "Participant"},
+                Dear ${escapeHtml(recipient.name || "Participant")},
               </p>
 
               <div style="color: #44403C;">
@@ -432,13 +444,13 @@ export async function sendBroadcastEmail({
 
               <div style="margin-top: 32px; padding-top: 20px; border-top: 1px solid #F5F5F4; font-size: 13px; color: #78716C;">
                 <p style="margin: 0 0 4px 0; font-weight: 600; color: #1C1917;">Coordination & Organizing Committee</p>
-                <p style="margin: 0;">${institutionName}</p>
+                <p style="margin: 0;">${escapeHtml(institutionName)}</p>
               </div>
             </div>
 
             <!-- Footer -->
             <div style="background-color: #F5F5F4; padding: 16px 32px; font-size: 11px; color: #A8A29E; text-align: center; border-top: 1px solid #E7E5E4;">
-              <p style="margin: 0;">You received this announcement because you are registered for ${eventName}.</p>
+              <p style="margin: 0;">You received this announcement because you are registered for ${escapeHtml(eventName)}.</p>
             </div>
           </div>
         </div>
@@ -515,15 +527,17 @@ export async function sendDelegateRegistrationEmail(payload: DelegateRegistratio
 
     // Resolve Student Portal credentials & URL
     const studentUserId = payload.userId || payload.toEmail;
-    const studentPassword = payload.password || payload.userPhone || "Your registered mobile number";
+    const studentPassword = payload.password || (payload.password === null ? "Your existing account password" : "Your registered 10-digit mobile number (unless you have changed it)");
     const baseUrl = (process.env.NEXTAUTH_URL || "").replace(/\/$/, "");
     const basePortalUrl = payload.portalUrl || (baseUrl ? `${baseUrl}/login` : "https://shc-shine.up.railway.app/login");
     const loginPortalUrl = basePortalUrl.includes("?")
       ? basePortalUrl
       : `${basePortalUrl}?email=${encodeURIComponent(studentUserId)}`;
 
-    const eventsListHtml = payload.events.length > 0
-      ? payload.events.map((ev) => `
+    // SECURITY: HTML-escaped copy of user-supplied fields for the HTML body only
+    const h = escapeHtmlDeep(payload);
+    const eventsListHtml = h.events.length > 0
+      ? h.events.map((ev) => `
           <div style="background-color: #FAF8F5; border: 1px solid #E7E5E4; border-radius: 12px; padding: 14px 16px; margin-bottom: 10px;">
             <div style="font-weight: 700; color: #1C1917; font-size: 14px;">${ev.name}</div>
             <div style="font-size: 11px; color: #78716C; margin-top: 2px;">
@@ -555,10 +569,10 @@ export async function sendDelegateRegistrationEmail(payload: DelegateRegistratio
           <!-- Header -->
           <div style="background: linear-gradient(135deg, #1C1917 0%, #292524 100%); padding: 28px 32px; border-bottom: 3px solid #FF6B1A;">
             <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.15em; color: #D9A441; text-transform: uppercase; margin-bottom: 4px;">
-              ${institutionName}
+              ${escapeHtml(institutionName)}
             </div>
             <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 800;">
-              ${eventName} ${editionYear} — Registration Confirmed
+              ${escapeHtml(eventName)} ${escapeHtml(editionYear)} — Registration Confirmed
             </h1>
             <div style="color: #A8A29E; font-size: 13px; margin-top: 4px;">
               Student Portal Access & Official Pass Details
@@ -568,10 +582,10 @@ export async function sendDelegateRegistrationEmail(payload: DelegateRegistratio
           <!-- Body -->
           <div style="padding: 32px; color: #292524;">
             <p style="font-size: 16px; font-weight: 700; color: #1C1917; margin-top: 0;">
-              Welcome, ${payload.delegateName}!
+              Welcome, ${h.delegateName}!
             </p>
             <p style="font-size: 14px; color: #57534E; line-height: 1.6;">
-              Your registration as part of the <b>${payload.collegeName}</b> contingent has been successfully received. Below are your <b>Student Portal Login Credentials</b> to manage your fest participation, track prelims, and view live results.
+              Your registration as part of the <b>${h.collegeName}</b> contingent has been successfully received. Below are your <b>Student Portal Login Credentials</b> to manage your fest participation, track prelims, and view live results.
             </p>
 
             <!-- Student Portal Access & Credentials Box -->
@@ -594,28 +608,28 @@ export async function sendDelegateRegistrationEmail(payload: DelegateRegistratio
                   <tr>
                     <td style="padding: 6px 0; color: #A8A29E; width: 36%; font-weight: 600;">Portal Link:</td>
                     <td style="padding: 6px 0;">
-                      <a href="${loginPortalUrl}" style="color: #FF8A4C; font-weight: 700; text-decoration: underline; word-break: break-all;">
-                        ${loginPortalUrl}
+                      <a href="${escapeHtml(loginPortalUrl)}" style="color: #FF8A4C; font-weight: 700; text-decoration: underline; word-break: break-all;">
+                        ${escapeHtml(loginPortalUrl)}
                       </a>
                     </td>
                   </tr>
                   <tr>
                     <td style="padding: 6px 0; color: #A8A29E; font-weight: 600;">User ID / Login:</td>
                     <td style="padding: 6px 0; color: #FFFFFF; font-weight: 700; font-family: monospace; font-size: 13.5px;">
-                      ${studentUserId}
+                      ${escapeHtml(studentUserId)}
                     </td>
                   </tr>
                   <tr>
                     <td style="padding: 6px 0; color: #A8A29E; font-weight: 600;">Password:</td>
                     <td style="padding: 6px 0; color: #FCD34D; font-weight: 800; font-family: monospace; font-size: 14.5px; letter-spacing: 0.04em;">
-                      ${studentPassword}
+                      ${escapeHtml(studentPassword)}
                     </td>
                   </tr>
-                  ${payload.userPhone ? `
+                  ${h.userPhone ? `
                   <tr>
                     <td style="padding: 6px 0; color: #A8A29E; font-weight: 600;">Registered Mobile:</td>
                     <td style="padding: 6px 0; color: #E7E5E4; font-family: monospace;">
-                      ${payload.userPhone}
+                      ${h.userPhone}
                     </td>
                   </tr>
                   ` : ""}
@@ -623,7 +637,7 @@ export async function sendDelegateRegistrationEmail(payload: DelegateRegistratio
               </div>
 
               <div style="text-align: center;">
-                <a href="${loginPortalUrl}" style="background: linear-gradient(135deg, #FF6B1A 0%, #EA580C 100%); color: #ffffff; padding: 13px 26px; font-size: 13.5px; font-weight: 700; text-decoration: none; border-radius: 10px; display: inline-block; box-shadow: 0 4px 14px rgba(255,107,26,0.35);">
+                <a href="${escapeHtml(loginPortalUrl)}" style="background: linear-gradient(135deg, #FF6B1A 0%, #EA580C 100%); color: #ffffff; padding: 13px 26px; font-size: 13.5px; font-weight: 700; text-decoration: none; border-radius: 10px; display: inline-block; box-shadow: 0 4px 14px rgba(255,107,26,0.35);">
                   Login to Student Portal →
                 </a>
               </div>
@@ -638,7 +652,7 @@ export async function sendDelegateRegistrationEmail(payload: DelegateRegistratio
                 <div>
                   <div style="font-size: 10px; font-weight: 800; color: #92400E; text-transform: uppercase; letter-spacing: 0.1em;">Delegate Badge ID</div>
                   <div style="font-size: 18px; font-weight: 900; color: #78350F; font-family: monospace; letter-spacing: 0.05em; margin-top: 2px;">
-                    ${payload.badgeCode}
+                    ${h.badgeCode}
                   </div>
                 </div>
               </div>
@@ -646,7 +660,7 @@ export async function sendDelegateRegistrationEmail(payload: DelegateRegistratio
               <div style="padding-top: 12px; border-top: 1px dashed #F59E0B;">
                 <div style="font-size: 10px; font-weight: 800; color: #065F46; text-transform: uppercase; letter-spacing: 0.1em;">Food & Lunch Token</div>
                 <div style="font-size: 16px; font-weight: 800; color: #047857; font-family: monospace; margin-top: 2px;">
-                  ${payload.foodTokenCode}
+                  ${h.foodTokenCode}
                 </div>
                 <div style="font-size: 11px; color: #065F46; margin-top: 4px;">Valid for official fest meal & refreshments at the dining hall.</div>
               </div>
@@ -654,7 +668,7 @@ export async function sendDelegateRegistrationEmail(payload: DelegateRegistratio
 
             <!-- View Pass Button -->
             <div style="text-align: center; margin: 28px 0;">
-              <a href="${payload.badgeUrl}" style="background-color: #FF6B1A; color: #ffffff; padding: 14px 28px; font-size: 14px; font-weight: 700; text-decoration: none; border-radius: 12px; display: inline-block; box-shadow: 0 4px 12px rgba(255,107,26,0.25);">
+              <a href="${h.badgeUrl}" style="background-color: #FF6B1A; color: #ffffff; padding: 14px 28px; font-size: 14px; font-weight: 700; text-decoration: none; border-radius: 12px; display: inline-block; box-shadow: 0 4px 12px rgba(255,107,26,0.25);">
                 Open Digital ID Card & QR Pass →
               </a>
             </div>
@@ -669,7 +683,7 @@ export async function sendDelegateRegistrationEmail(payload: DelegateRegistratio
 
             <div style="margin-top: 32px; padding-top: 20px; border-top: 1px solid #F5F5F4; font-size: 12px; color: #78716C;">
               <p style="margin: 0 0 4px 0; font-weight: 700; color: #1C1917;">Symposium Executive Committee</p>
-              <p style="margin: 0;">${institutionName}</p>
+              <p style="margin: 0;">${escapeHtml(institutionName)}</p>
             </div>
           </div>
         </div>
@@ -771,7 +785,9 @@ export async function sendCoordinatorRegistrationAlert(payload: CoordinatorAlert
     const eventName = activeEdition?.name || "SHINE";
     const editionYear = activeEdition?.edition || "2027";
 
-    const participantRows = payload.participants.map((p) => `
+    // SECURITY: HTML-escaped copy of user-supplied fields for the HTML body only
+    const h = escapeHtmlDeep(payload);
+    const participantRows = h.participants.map((p) => `
       <tr style="border-bottom: 1px solid #E7E5E4;">
         <td style="padding: 10px 12px; font-weight: 600; color: #1C1917; font-size: 13px;">${p.name}</td>
         <td style="padding: 10px 12px; font-size: 12px; color: #57534E;">${p.email}</td>
@@ -786,35 +802,35 @@ export async function sendCoordinatorRegistrationAlert(payload: CoordinatorAlert
           <!-- Header -->
           <div style="background: linear-gradient(135deg, #1C1917 0%, #292524 100%); padding: 24px 30px; border-bottom: 3px solid #FF6B1A;">
             <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.15em; color: #D9A441; text-transform: uppercase; margin-bottom: 4px;">
-              ${eventName} ${editionYear} — Coordinator Alert
+              ${escapeHtml(eventName)} ${escapeHtml(editionYear)} — Coordinator Alert
             </div>
             <h1 style="color: #ffffff; margin: 0; font-size: 20px; font-weight: 800;">
-              New Delegation Entered: ${payload.eventName}
+              New Delegation Entered: ${h.eventName}
             </h1>
           </div>
 
           <!-- Content -->
           <div style="padding: 28px 30px; color: #292524;">
             <p style="font-size: 15px; font-weight: 700; color: #1C1917; margin-top: 0;">
-              Dear ${payload.coordinatorName} (${payload.roleType}),
+              Dear ${h.coordinatorName} (${h.roleType}),
             </p>
             <p style="font-size: 13.5px; color: #57534E; line-height: 1.6;">
-              A new college delegation has registered delegates for your competition <b>"${payload.eventName}"</b>.
+              A new college delegation has registered delegates for your competition <b>"${h.eventName}"</b>.
             </p>
 
             <!-- Delegation Summary Box -->
             <div style="background-color: #FAF8F5; border: 1px solid #E7E5E4; border-radius: 14px; padding: 16px; margin: 18px 0;">
               <div style="font-size: 11px; font-weight: 700; color: #78716C; text-transform: uppercase;">Participating Institution</div>
               <div style="font-size: 15px; font-weight: 800; color: #1C1917; margin-top: 2px;">
-                ${payload.collegeName}
+                ${h.collegeName}
               </div>
-              ${payload.teamName ? `<div style="font-size: 12px; color: #FF6B1A; font-weight: 600; margin-top: 2px;">Team: ${payload.teamName}</div>` : ""}
+              ${h.teamName ? `<div style="font-size: 12px; color: #FF6B1A; font-weight: 600; margin-top: 2px;">Team: ${h.teamName}</div>` : ""}
 
-              ${payload.staffIncharge && payload.staffIncharge.name ? `
+              ${h.staffIncharge && h.staffIncharge.name ? `
                 <div style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed #E7E5E4; font-size: 12px; color: #57534E;">
-                  <b>Accompanying Outer College Staff:</b> ${payload.staffIncharge.name}
-                  ${payload.staffIncharge.phone ? ` (${payload.staffIncharge.phone})` : ""}
-                  ${payload.staffIncharge.email ? ` • ${payload.staffIncharge.email}` : ""}
+                  <b>Accompanying Outer College Staff:</b> ${h.staffIncharge.name}
+                  ${h.staffIncharge.phone ? ` (${h.staffIncharge.phone})` : ""}
+                  ${h.staffIncharge.email ? ` • ${h.staffIncharge.email}` : ""}
                 </div>
               ` : ""}
             </div>
@@ -838,7 +854,7 @@ export async function sendCoordinatorRegistrationAlert(payload: CoordinatorAlert
 
             <!-- Coordinator CTA -->
             <div style="text-align: center; margin-top: 28px;">
-              <a href="${payload.coordinatorPortalUrl}" style="background-color: #1C1917; color: #ffffff; padding: 12px 24px; font-size: 13px; font-weight: 700; text-decoration: none; border-radius: 10px; display: inline-block;">
+              <a href="${h.coordinatorPortalUrl}" style="background-color: #1C1917; color: #ffffff; padding: 12px 24px; font-size: 13px; font-weight: 700; text-decoration: none; border-radius: 10px; display: inline-block;">
                 Access Coordinator Console →
               </a>
             </div>
@@ -892,15 +908,17 @@ export async function sendApprovedDelegatePassEmail(payload: DelegateRegistratio
 
     // Resolve Student Portal credentials & URL
     const studentUserId = payload.userId || payload.toEmail;
-    const studentPassword = payload.password || payload.userPhone || "Your registered mobile number";
+    const studentPassword = payload.password || (payload.password === null ? "Your existing account password" : "Your registered 10-digit mobile number (unless you have changed it)");
     const baseUrl = (process.env.NEXTAUTH_URL || "").replace(/\/$/, "");
     const basePortalUrl = payload.portalUrl || (baseUrl ? `${baseUrl}/login` : "https://shc-shine.up.railway.app/login");
     const loginPortalUrl = basePortalUrl.includes("?")
       ? basePortalUrl
       : `${basePortalUrl}?email=${encodeURIComponent(studentUserId)}`;
 
-    const eventsListHtml = payload.events.length > 0
-      ? payload.events.map((ev) => `
+    // SECURITY: HTML-escaped copy of user-supplied fields for the HTML body only
+    const h = escapeHtmlDeep(payload);
+    const eventsListHtml = h.events.length > 0
+      ? h.events.map((ev) => `
           <div style="background-color: #FAF8F5; border: 1px solid #E7E5E4; border-radius: 12px; padding: 12px 14px; margin-bottom: 8px;">
             <div style="font-weight: 700; color: #1C1917; font-size: 13.5px;">${ev.name}</div>
             <div style="font-size: 11px; color: #78716C; margin-top: 2px;">
@@ -926,18 +944,18 @@ export async function sendApprovedDelegatePassEmail(payload: DelegateRegistratio
           <!-- Header -->
           <div style="background: linear-gradient(135deg, #065F46 0%, #047857 100%); padding: 26px 32px; border-bottom: 3px solid #10B981;">
             <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.15em; color: #A7F3D0; text-transform: uppercase; margin-bottom: 4px;">
-              ${institutionName}
+              ${escapeHtml(institutionName)}
             </div>
             <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 800;">
               Registration Approved & Passes Ready
             </h1>
-            <div style="color: #D1FAE5; font-size: 13px; margin-top: 4px;">${eventName} ${editionYear} • Official Digital ID & Food Token</div>
+            <div style="color: #D1FAE5; font-size: 13px; margin-top: 4px;">${escapeHtml(eventName)} ${escapeHtml(editionYear)} • Official Digital ID & Food Token</div>
           </div>
 
           <!-- Body -->
           <div style="padding: 30px; color: #292524;">
             <p style="font-size: 16px; font-weight: 700; color: #1C1917; margin-top: 0;">
-              Congratulations, ${payload.delegateName}!
+              Congratulations, ${h.delegateName}!
             </p>
             <p style="font-size: 14px; color: #57534E; line-height: 1.6;">
               Your registration fee has been verified by the Registration Desk. Your <b>Official Digital ID Pass (with Event Check-In QR and Food Token QR)</b> and <b>Student Portal</b> are now officially active.
@@ -959,28 +977,28 @@ export async function sendApprovedDelegatePassEmail(payload: DelegateRegistratio
                   <tr>
                     <td style="padding: 5px 0; color: #A8A29E; width: 36%; font-weight: 600;">Portal Link:</td>
                     <td style="padding: 5px 0;">
-                      <a href="${loginPortalUrl}" style="color: #34D399; font-weight: 700; text-decoration: underline; word-break: break-all;">
-                        ${loginPortalUrl}
+                      <a href="${escapeHtml(loginPortalUrl)}" style="color: #34D399; font-weight: 700; text-decoration: underline; word-break: break-all;">
+                        ${escapeHtml(loginPortalUrl)}
                       </a>
                     </td>
                   </tr>
                   <tr>
                     <td style="padding: 5px 0; color: #A8A29E; font-weight: 600;">User ID / Login:</td>
                     <td style="padding: 5px 0; color: #FFFFFF; font-weight: 700; font-family: monospace; font-size: 13.5px;">
-                      ${studentUserId}
+                      ${escapeHtml(studentUserId)}
                     </td>
                   </tr>
                   <tr>
                     <td style="padding: 5px 0; color: #A8A29E; font-weight: 600;">Password:</td>
                     <td style="padding: 5px 0; color: #FCD34D; font-weight: 800; font-family: monospace; font-size: 14px; letter-spacing: 0.04em;">
-                      ${studentPassword}
+                      ${escapeHtml(studentPassword)}
                     </td>
                   </tr>
                 </table>
               </div>
 
               <div style="text-align: center;">
-                <a href="${loginPortalUrl}" style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: #ffffff; padding: 11px 22px; font-size: 13px; font-weight: 700; text-decoration: none; border-radius: 10px; display: inline-block;">
+                <a href="${escapeHtml(loginPortalUrl)}" style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: #ffffff; padding: 11px 22px; font-size: 13px; font-weight: 700; text-decoration: none; border-radius: 10px; display: inline-block;">
                   Open Student Dashboard →
                 </a>
               </div>
@@ -991,7 +1009,7 @@ export async function sendApprovedDelegatePassEmail(payload: DelegateRegistratio
               <div style="margin-bottom: 12px;">
                 <div style="font-size: 10px; font-weight: 800; color: #92400E; text-transform: uppercase; letter-spacing: 0.1em;">1. Event Gate Pass Code</div>
                 <div style="font-size: 18px; font-weight: 900; color: #78350F; font-family: monospace; letter-spacing: 0.05em; margin-top: 2px;">
-                  ${payload.badgeCode}
+                  ${h.badgeCode}
                 </div>
                 <div style="font-size: 11px; color: #92400E; margin-top: 2px;">Valid for venue entry across all your registered competitions.</div>
               </div>
@@ -999,7 +1017,7 @@ export async function sendApprovedDelegatePassEmail(payload: DelegateRegistratio
               <div style="padding-top: 12px; border-top: 1px dashed #F59E0B;">
                 <div style="font-size: 10px; font-weight: 800; color: #065F46; text-transform: uppercase; letter-spacing: 0.1em;">2. Meal & Refreshment Token Code</div>
                 <div style="font-size: 16px; font-weight: 800; color: #047857; font-family: monospace; margin-top: 2px;">
-                  ${payload.foodTokenCode}
+                  ${h.foodTokenCode}
                 </div>
                 <div style="font-size: 11px; color: #065F46; margin-top: 2px;">Present at dining hall for 1x meal allocation.</div>
               </div>
@@ -1007,7 +1025,7 @@ export async function sendApprovedDelegatePassEmail(payload: DelegateRegistratio
 
             <!-- CTA Button -->
             <div style="text-align: center; margin: 26px 0;">
-              <a href="${payload.badgeUrl}" style="background-color: #047857; color: #ffffff; padding: 14px 28px; font-size: 14px; font-weight: 700; text-decoration: none; border-radius: 12px; display: inline-block; box-shadow: 0 4px 12px rgba(4,120,87,0.3);">
+              <a href="${h.badgeUrl}" style="background-color: #047857; color: #ffffff; padding: 14px 28px; font-size: 14px; font-weight: 700; text-decoration: none; border-radius: 12px; display: inline-block; box-shadow: 0 4px 12px rgba(4,120,87,0.3);">
                 View Approved Digital Pass & QRs →
               </a>
             </div>
@@ -1022,7 +1040,7 @@ export async function sendApprovedDelegatePassEmail(payload: DelegateRegistratio
 
             <div style="margin-top: 30px; padding-top: 18px; border-top: 1px solid #F5F5F4; font-size: 12px; color: #78716C;">
               <p style="margin: 0 0 4px 0; font-weight: 700; color: #1C1917;">Symposium Executive Committee</p>
-              <p style="margin: 0;">${institutionName}</p>
+              <p style="margin: 0;">${escapeHtml(institutionName)}</p>
             </div>
           </div>
         </div>
@@ -1123,7 +1141,9 @@ export async function sendTeamLeadConsolidatedPassEmail(payload: TeamLeadConsoli
     const editionYear = activeEdition?.edition || "2027";
     const institutionName = activeEdition?.institutionName || "Sacred Heart College (Autonomous)";
 
-    const memberCardsHtml = payload.members.map((m, idx) => `
+    // SECURITY: HTML-escaped copy of user-supplied fields for the HTML body only
+    const h = escapeHtmlDeep(payload);
+    const memberCardsHtml = h.members.map((m, idx) => `
       <div style="background-color: #FAF8F5; border: 1.5px solid #E7E5E4; border-radius: 14px; padding: 16px; margin-bottom: 14px;">
         <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #E7E5E4; padding-bottom: 10px; margin-bottom: 10px;">
           <div>
@@ -1162,24 +1182,24 @@ export async function sendTeamLeadConsolidatedPassEmail(payload: TeamLeadConsoli
           <!-- Header -->
           <div style="background: linear-gradient(135deg, #1C1917 0%, #292524 100%); padding: 28px 32px; border-bottom: 3px solid #FF6B1A;">
             <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.15em; color: #D9A441; text-transform: uppercase; margin-bottom: 4px;">
-              ${institutionName}
+              ${escapeHtml(institutionName)}
             </div>
             <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 800;">
               Team Dossier: All Member ID Passes & Food Tokens
             </h1>
-            <div style="color: #A8A29E; font-size: 13px; margin-top: 4px;">${eventName} ${editionYear} • Team Lead Consolidated Roster</div>
+            <div style="color: #A8A29E; font-size: 13px; margin-top: 4px;">${escapeHtml(eventName)} ${escapeHtml(editionYear)} • Team Lead Consolidated Roster</div>
           </div>
 
           <!-- Body -->
           <div style="padding: 30px; color: #292524;">
             <p style="font-size: 16px; font-weight: 700; color: #1C1917; margin-top: 0;">
-              Hello ${payload.teamLeadName} (Contingent Team Lead),
+              Hello ${h.teamLeadName} (Contingent Team Lead),
             </p>
             <p style="font-size: 14px; color: #57534E; line-height: 1.6;">
-              Payment has been verified at the Registration Desk for your college contingent <b>${payload.collegeName}</b>${payload.teamName ? ` (${payload.teamName})` : ""}.
+              Payment has been verified at the Registration Desk for your college contingent <b>${h.collegeName}</b>${h.teamName ? ` (${h.teamName})` : ""}.
             </p>
             <p style="font-size: 13.5px; color: #57534E; line-height: 1.6;">
-              Below is the complete dossier of <b>all ${payload.members.length} team members</b>, including their unique <b>Badge Codes</b>, <b>Food Tokens</b>, and direct links to each member's digital pass containing both their <b>Event Registration QR</b> and <b>Food Token QR</b>.
+              Below is the complete dossier of <b>all ${h.members.length} team members</b>, including their unique <b>Badge Codes</b>, <b>Food Tokens</b>, and direct links to each member's digital pass containing both their <b>Event Registration QR</b> and <b>Food Token QR</b>.
             </p>
 
             <!-- Members List -->
@@ -1189,7 +1209,7 @@ export async function sendTeamLeadConsolidatedPassEmail(payload: TeamLeadConsoli
 
             <div style="margin-top: 30px; padding-top: 18px; border-top: 1px solid #F5F5F4; font-size: 12px; color: #78716C;">
               <p style="margin: 0 0 4px 0; font-weight: 700; color: #1C1917;">Registration & Helpdesk Team</p>
-              <p style="margin: 0;">${institutionName}</p>
+              <p style="margin: 0;">${escapeHtml(institutionName)}</p>
             </div>
           </div>
         </div>
@@ -1267,6 +1287,8 @@ export async function sendEventReminderEmail(payload: EventReminderEmailPayload)
 
     const subject = `${payload.isPrelims ? "⚡ [Prelims Alert]" : "⏰ [Starting in 10 Mins]"} ${payload.eventName} — Venue: ${venueDisplay} (${payload.startTime})`;
 
+    // SECURITY: HTML-escaped copy of user-supplied fields for the HTML body only
+    const h = escapeHtmlDeep(payload);
     const html = `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background-color: #FAF8F5; padding: 32px 20px;">
         <div style="background-color: #ffffff; border-radius: 20px; border: 1px solid #E7E5E4; overflow: hidden; box-shadow: 0 6px 24px rgba(0,0,0,0.08);">
@@ -1274,27 +1296,27 @@ export async function sendEventReminderEmail(payload: EventReminderEmailPayload)
           <div style="background: linear-gradient(135deg, #1C1917 0%, #292524 100%); padding: 26px 32px; border-bottom: 3px solid #FF6B1A;">
             <div style="display: flex; align-items: center; justify-content: space-between;">
               <span style="font-size: 11px; font-weight: 800; letter-spacing: 0.15em; color: #D9A441; text-transform: uppercase;">
-                ${institutionName}
+                ${escapeHtml(institutionName)}
               </span>
               <span style="background-color: #FF6B1A; color: #ffffff; font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.08em;">
-                Starts in ~${minutesStr} Mins
+                Starts in ~${escapeHtml(minutesStr)} Mins
               </span>
             </div>
             <h1 style="color: #ffffff; margin: 8px 0 0 0; font-size: 22px; font-weight: 800;">
-              ${payload.eventName} Starting Soon!
+              ${h.eventName} Starting Soon!
             </h1>
             <div style="color: #D6D3D1; font-size: 13px; margin-top: 4px;">
-              ${eventName} ${editionYear} • ${roundTitle}
+              ${escapeHtml(eventName)} ${escapeHtml(editionYear)} • ${escapeHtml(roundTitle)}
             </div>
           </div>
 
           <!-- Body -->
           <div style="padding: 30px; color: #292524;">
             <p style="font-size: 16px; font-weight: 700; color: #1C1917; margin-top: 0;">
-              Hello ${payload.studentName},
+              Hello ${h.studentName},
             </p>
             <p style="font-size: 14px; color: #57534E; line-height: 1.6; margin-bottom: 22px;">
-              This is a timely notification that your registered competition <b>${payload.eventName}</b> is scheduled to commence in approximately <b>${minutesStr} minutes</b>. Please proceed to the arena immediately.
+              This is a timely notification that your registered competition <b>${h.eventName}</b> is scheduled to commence in approximately <b>${escapeHtml(minutesStr)} minutes</b>. Please proceed to the arena immediately.
             </p>
 
             <!-- Venue & Time Spotlight Card -->
@@ -1304,32 +1326,32 @@ export async function sendEventReminderEmail(payload: EventReminderEmailPayload)
                   📍 Competition Venue / Hall
                 </div>
                 <div style="font-size: 19px; font-weight: 900; color: #78350F; margin-top: 3px;">
-                  ${venueDisplay}
+                  ${escapeHtml(venueDisplay)}
                   ${zoneBadge ? `
                     <span style="display: inline-block; font-size: 11px; font-weight: 800; background-color: #FF6B1A; color: #ffffff; padding: 2px 8px; border-radius: 6px; vertical-align: middle; margin-left: 6px; letter-spacing: 0.05em;">
-                      📍 ZONE ${zoneBadge}
+                      📍 ZONE ${escapeHtml(zoneBadge)}
                     </span>
                   ` : ""}
                 </div>
               </div>
 
-              ${payload.mapUrl ? `
+              ${h.mapUrl ? `
                 <div style="margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px dashed #F59E0B;">
-                  <a href="${payload.mapUrl}" style="background-color: #FF6B1A; color: #ffffff; padding: 7px 14px; font-size: 11.5px; font-weight: 800; text-decoration: none; border-radius: 8px; display: inline-block; box-shadow: 0 2px 6px rgba(255,107,26,0.3);">
+                  <a href="${h.mapUrl}" style="background-color: #FF6B1A; color: #ffffff; padding: 7px 14px; font-size: 11.5px; font-weight: 800; text-decoration: none; border-radius: 8px; display: inline-block; box-shadow: 0 2px 6px rgba(255,107,26,0.3);">
                     🗺️ View on Interactive Campus Map & Directions →
                   </a>
                 </div>
               ` : ""}
 
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding-top: 12px; ${payload.mapUrl ? "" : "border-top: 1px dashed #F59E0B;"}">
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding-top: 12px; ${h.mapUrl ? "" : "border-top: 1px dashed #F59E0B;"}">
                 <div>
                   <div style="font-size: 10px; font-weight: 800; color: #92400E; text-transform: uppercase;">Reporting Time</div>
-                  <div style="font-size: 15px; font-weight: 800; color: #1C1917; margin-top: 2px;">${payload.startTime}</div>
+                  <div style="font-size: 15px; font-weight: 800; color: #1C1917; margin-top: 2px;">${h.startTime}</div>
                 </div>
                 <div>
                   <div style="font-size: 10px; font-weight: 800; color: #92400E; text-transform: uppercase;">Track Category</div>
                   <div style="font-size: 14px; font-weight: 700; color: #1C1917; margin-top: 2px;">
-                    ${payload.category === "ON_STAGE" ? "On-Stage Arena" : "Off-Stage Arena"}
+                    ${h.category === "ON_STAGE" ? "On-Stage Arena" : "Off-Stage Arena"}
                   </div>
                 </div>
               </div>
@@ -1343,7 +1365,7 @@ export async function sendEventReminderEmail(payload: EventReminderEmailPayload)
                     Your Official Delegate Pass
                   </div>
                   <div style="font-size: 18px; font-weight: 900; color: #FFFFFF; font-family: monospace; margin-top: 2px;">
-                    ${payload.badgeCode}
+                    ${h.badgeCode}
                   </div>
                 </div>
                 <div style="text-align: right;">
@@ -1356,45 +1378,45 @@ export async function sendEventReminderEmail(payload: EventReminderEmailPayload)
                 Present your Digital ID Pass QR to the student volunteer at the arena entrance for physical attendance verification.
               </p>
               <div style="text-align: center;">
-                <a href="${payload.badgeUrl}" style="background: linear-gradient(135deg, #FF6B1A 0%, #EA580C 100%); color: #ffffff; padding: 13px 26px; font-size: 13.5px; font-weight: 700; text-decoration: none; border-radius: 10px; display: inline-block; box-shadow: 0 4px 14px rgba(255,107,26,0.35);">
+                <a href="${h.badgeUrl}" style="background: linear-gradient(135deg, #FF6B1A 0%, #EA580C 100%); color: #ffffff; padding: 13px 26px; font-size: 13.5px; font-weight: 700; text-decoration: none; border-radius: 10px; display: inline-block; box-shadow: 0 4px 14px rgba(255,107,26,0.35);">
                   Open Digital ID Pass & QR Code →
                 </a>
               </div>
             </div>
 
             <!-- Event Incharge Coordinators Hotline -->
-            ${(payload.staffCoordinator || payload.studentCoordinator) ? `
+            ${(h.staffCoordinator || h.studentCoordinator) ? `
               <div style="background-color: #FAF8F5; border: 1px solid #E7E5E4; border-radius: 14px; padding: 16px; margin-bottom: 22px;">
                 <div style="font-size: 11px; font-weight: 800; color: #1C1917; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">
                   Event Incharge Coordinators
                 </div>
                 <div style="font-size: 12.5px; color: #57534E; line-height: 1.6;">
-                  ${payload.staffCoordinator?.name ? `
-                    <div>Staff Incharge: <b>${payload.staffCoordinator.name}</b> ${payload.staffCoordinator.phone ? `(<a href="tel:${payload.staffCoordinator.phone}" style="color: #FF6B1A; font-weight: 700; text-decoration: none;">${payload.staffCoordinator.phone}</a>)` : ""}</div>
+                  ${h.staffCoordinator?.name ? `
+                    <div>Staff Incharge: <b>${h.staffCoordinator.name}</b> ${h.staffCoordinator.phone ? `(<a href="tel:${h.staffCoordinator.phone}" style="color: #FF6B1A; font-weight: 700; text-decoration: none;">${h.staffCoordinator.phone}</a>)` : ""}</div>
                   ` : ""}
-                  ${payload.studentCoordinator?.name ? `
-                    <div style="margin-top: 3px;">Student Incharge: <b>${payload.studentCoordinator.name}</b> ${payload.studentCoordinator.phone ? `(<a href="tel:${payload.studentCoordinator.phone}" style="color: #2563EB; font-weight: 700; text-decoration: none;">${payload.studentCoordinator.phone}</a>)` : ""}</div>
+                  ${h.studentCoordinator?.name ? `
+                    <div style="margin-top: 3px;">Student Incharge: <b>${h.studentCoordinator.name}</b> ${h.studentCoordinator.phone ? `(<a href="tel:${h.studentCoordinator.phone}" style="color: #2563EB; font-weight: 700; text-decoration: none;">${h.studentCoordinator.phone}</a>)` : ""}</div>
                   ` : ""}
                 </div>
               </div>
             ` : ""}
 
-            ${payload.rules ? `
+            ${h.rules ? `
               <div style="background-color: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 14px; margin-bottom: 22px; font-size: 12px; color: #475569; line-height: 1.5;">
                 <b style="color: #1E293B; display: block; margin-bottom: 4px;">Quick Rules Reminder:</b>
-                <div style="white-space: pre-line;">${payload.rules}</div>
+                <div style="white-space: pre-line;">${h.rules}</div>
               </div>
             ` : ""}
 
-            ${payload.portalUrl ? `
+            ${h.portalUrl ? `
               <p style="font-size: 12px; text-align: center; color: #78716C; margin: 16px 0 0 0;">
-                Need to view your full fest schedule? <a href="${payload.portalUrl}" style="color: #FF6B1A; font-weight: 700; text-decoration: underline;">Log in to your Student Portal</a>
+                Need to view your full fest schedule? <a href="${h.portalUrl}" style="color: #FF6B1A; font-weight: 700; text-decoration: underline;">Log in to your Student Portal</a>
               </p>
             ` : ""}
 
             <div style="margin-top: 28px; padding-top: 18px; border-top: 1px solid #F5F5F4; font-size: 12px; color: #78716C;">
               <p style="margin: 0 0 4px 0; font-weight: 700; color: #1C1917;">Fest Operations & Arena Management</p>
-              <p style="margin: 0;">${institutionName}</p>
+              <p style="margin: 0;">${escapeHtml(institutionName)}</p>
             </div>
           </div>
         </div>

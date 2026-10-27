@@ -9,7 +9,14 @@ export async function GET(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || (session.user.role !== "COORDINATOR" && session.user.role !== "ADMIN")) {
+    // Student coordinators (role STUDENT, assigned via studentCoordinatorId) are allowed too;
+    // per-event assignment is enforced below.
+    if (
+      !session ||
+      (session.user.role !== "COORDINATOR" &&
+        session.user.role !== "ADMIN" &&
+        !(session.user as any).isEventCoordinator)
+    ) {
       return NextResponse.json({ success: false, message: "Unauthorized." }, { status: 403 });
     }
 

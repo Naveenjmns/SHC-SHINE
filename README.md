@@ -53,7 +53,9 @@ For an in-depth, step-by-step operations manual for all user roles, consult:
 
 ---
 
-## 🔑 Demo & Testing Credentials
+## 🔑 Demo & Testing Credentials (local development only)
+
+> ⚠️ These accounts are created by `npm run seed` / `npm run create-credentials`, which refuse to run when `NODE_ENV=production`. Never create them on a deployed database — use `npm run create-admin -- --password <strong-secret>` instead.
 
 | Role | Email | Password | Target Portal |
 |---|---|---|---|
@@ -63,7 +65,7 @@ For an in-depth, step-by-step operations manual for all user roles, consult:
 | **Food Coordinator** | `food@shctpt.edu` | `food123` | `/food` |
 | **Student (Registered)** | `student@example.com` | `student123` | `/dashboard` |
 
-> *Tip: The `/login` page includes 1-click **Quick-Fill Demo Credentials** buttons. You can also re-seed all demo accounts via `npx tsx scripts/create-demo-credentials.ts`.*
+> *Tip: Re-seed all demo accounts locally via `npx tsx scripts/create-demo-credentials.ts`.*
 
 ---
 

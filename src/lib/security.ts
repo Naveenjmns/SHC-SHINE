@@ -83,7 +83,7 @@ export function sanitizeString(
     .slice(0, maxLength);
 }
 
-export { isValidEmail, isValidPhone, sanitizeToTenDigitPhone } from "./validators";
+export { isValidEmail, isValidPhone, sanitizeToTenDigitPhone, isSafeRelativePath } from "./validators";
 
 // ─── Secure Error Handling ──────────────────────────────────────────────────
 
@@ -110,16 +110,71 @@ export function buildSecureErrorResponse(
 // ─── IP Extraction ──────────────────────────────────────────────────────────
 
 /**
+ * Number of trusted reverse proxies in front of the app (Railway/Vercel = 1).
+ * The client IP is read that many entries from the RIGHT of X-Forwarded-For,
+ * because left-most entries are supplied by the client and can be spoofed.
+ */
+const TRUSTED_PROXY_HOPS = Math.max(1, parseInt(process.env.TRUSTED_PROXY_HOPS || "1", 10) || 1);
+
+function resolveClientIp(forwarded: string | null | undefined, realIp: string | null | undefined): string {
+  if (forwarded) {
+    const hops = forwarded.split(",").map((s) => s.trim()).filter(Boolean);
+    if (hops.length > 0) {
+      return hops[Math.max(0, hops.length - TRUSTED_PROXY_HOPS)];
+    }
+  }
+  if (realIp) return realIp.trim();
+  return "unknown";
+}
+
+/**
  * Extract client IP from request headers.
  */
 export function getClientIp(req: Request): string {
-  const forwarded = req.headers.get("x-forwarded-for");
-  if (forwarded) {
-    return forwarded.split(",")[0].trim();
+  return resolveClientIp(req.headers.get("x-forwarded-for"), req.headers.get("x-real-ip"));
+}
+
+/**
+ * Extract client IP from a plain header record (e.g. NextAuth's authorize() request).
+ */
+export function getClientIpFromHeaders(
+  headers: Record<string, string | string[] | undefined> | undefined
+): string {
+  const pick = (name: string) => {
+    const value = headers?.[name];
+    return Array.isArray(value) ? value.join(",") : value;
+  };
+  return resolveClientIp(pick("x-forwarded-for"), pick("x-real-ip"));
+}
+
+/**
+ * Public origin used for links embedded in QR codes and emails.
+ * Uses NEXTAUTH_URL; the Host header is client-controlled, so it is only
+ * trusted as a fallback outside production (local development).
+ */
+export function getAppOrigin(req?: Request): string {
+  const configured = process.env.NEXTAUTH_URL;
+  if (configured) return configured.replace(/\/$/, "");
+  if (process.env.NODE_ENV === "production") {
+    console.error("NEXTAUTH_URL is not set; refusing to derive links from the Host header.");
+    return "http://localhost:3000";
   }
-  const realIp = req.headers.get("x-real-ip");
-  if (realIp) return realIp.trim();
-  return "unknown";
+  const host = req?.headers.get("host") || "localhost:3000";
+  const protocol = host.includes("localhost") ? "http" : "https";
+  return `${protocol}://${host}`;
+}
+
+/**
+ * Escape a value for safe interpolation into HTML (emails, server-rendered markup).
+ */
+export function escapeHtml(value: unknown): string {
+  if (value === null || value === undefined) return "";
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 // ─── SMTP Password Encryption ───────────────────────────────────────────────

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSession, signOut } from "next-auth/react";
+import { useSession } from "next-auth/react";
+import { signOutAndClearCache } from "@/lib/signOutAndClearCache";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { LogOut, ArrowLeft, RefreshCw } from "lucide-react";
@@ -178,7 +179,7 @@ export default function ProfilePage() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => signOut({ callbackUrl: "/login" })}
+              onClick={() => signOutAndClearCache({ callbackUrl: "/login" })}
               className="text-xs text-[var(--ink-muted)] hover:text-rose-600 gap-1.5"
             >
               <LogOut className="w-3.5 h-3.5" />

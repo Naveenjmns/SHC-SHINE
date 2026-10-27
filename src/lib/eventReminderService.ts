@@ -22,12 +22,34 @@ export interface ReminderCheckResult {
  * Checks for upcoming competitions starting within the next ~10-15 minutes and
  * automatically dispatches reminder emails to all registered student delegates.
  */
-export async function checkAndDispatchEventReminders(options?: {
+type ReminderCheckOptions = {
   forceEventId?: string;
   forceAll?: boolean;
   dryRun?: boolean;
   origin?: string;
-}): Promise<ReminderCheckResult> {
+};
+
+let reminderRunInFlight: Promise<ReminderCheckResult> | null = null;
+
+/**
+ * Runs one reminder sweep. Overlapping calls within this process share the in-flight
+ * sweep instead of starting a second one (a slow SMTP run can exceed the 60s interval).
+ */
+export async function checkAndDispatchEventReminders(options?: ReminderCheckOptions): Promise<ReminderCheckResult> {
+  const isForced = Boolean(options?.forceEventId || options?.forceAll || options?.dryRun);
+  if (reminderRunInFlight) {
+    if (!isForced) return reminderRunInFlight;
+    // Forced/manual runs wait for the current sweep instead of running concurrently with it
+    await reminderRunInFlight.catch(() => undefined);
+    return checkAndDispatchEventReminders(options);
+  }
+  reminderRunInFlight = runReminderSweep(options).finally(() => {
+    reminderRunInFlight = null;
+  });
+  return reminderRunInFlight;
+}
+
+async function runReminderSweep(options?: ReminderCheckOptions): Promise<ReminderCheckResult> {
   const now = new Date();
 
   // Check email policy triggers before executing scan
@@ -135,6 +157,23 @@ export async function checkAndDispatchEventReminders(options?: {
               continue;
             }
 
+            // Claim the row BEFORE sending so overlapping runs (in-process scheduler, external
+            // cron, multiple instances) cannot email the same delegate twice.
+            if (!options?.forceAll) {
+              const claim = await prisma.registration.updateMany({
+                where: { id: reg.id, reminderSentAt: null },
+                data: { reminderSentAt: new Date() },
+              });
+              if (claim.count === 0) continue;
+            }
+            const releaseClaim = () =>
+              options?.forceAll
+                ? Promise.resolve()
+                : prisma.registration
+                    .update({ where: { id: reg.id }, data: { reminderSentAt: null } })
+                    .then(() => undefined)
+                    .catch(() => undefined);
+
             try {
               const mainZoneId = event.venueZoneId || null;
               const mainZoneLabel = mainZoneId
@@ -172,10 +211,12 @@ export async function checkAndDispatchEventReminders(options?: {
                 eventSentCount++;
                 remindersSent++;
               } else {
+                await releaseClaim();
                 errors++;
               }
             } catch (err) {
               console.error(`Error sending reminder to ${studentEmail}:`, err);
+              await releaseClaim();
               errors++;
             }
           }
@@ -266,6 +307,23 @@ export async function checkAndDispatchEventReminders(options?: {
                 continue;
               }
 
+              // Claim the row BEFORE sending so overlapping runs (in-process scheduler, external
+              // cron, multiple instances) cannot email the same delegate twice.
+              if (!options?.forceAll) {
+                const claim = await prisma.registration.updateMany({
+                  where: { id: reg.id, prelimsReminderSentAt: null },
+                  data: { prelimsReminderSentAt: new Date() },
+                });
+                if (claim.count === 0) continue;
+              }
+              const releaseClaim = () =>
+                options?.forceAll
+                  ? Promise.resolve()
+                  : prisma.registration
+                      .update({ where: { id: reg.id }, data: { prelimsReminderSentAt: null } })
+                      .then(() => undefined)
+                      .catch(() => undefined);
+
               try {
                 const prelimsZoneId = event.prelimsVenueZoneId || event.venueZoneId || null;
                 const prelimsZoneLabel = prelimsZoneId
@@ -303,10 +361,12 @@ export async function checkAndDispatchEventReminders(options?: {
                   prelimsSentCount++;
                   remindersSent++;
                 } else {
+                  await releaseClaim();
                   errors++;
                 }
               } catch (err) {
                 console.error(`Error sending prelims reminder to ${studentEmail}:`, err);
+                await releaseClaim();
                 errors++;
               }
             }

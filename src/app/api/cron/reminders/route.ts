@@ -1,6 +1,14 @@
 import { NextResponse } from "next/server";
 import { checkAndDispatchEventReminders } from "@/lib/eventReminderService";
 import { startReminderScheduler } from "@/lib/reminderScheduler";
+import { getAppOrigin } from "@/lib/security";
+import { timingSafeEqual } from "crypto";
+
+function safeEqual(a: string, b: string): boolean {
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  return bufA.length === bufB.length && timingSafeEqual(bufA, bufB);
+}
 
 export const dynamic = "force-dynamic";
 
@@ -13,26 +21,28 @@ export async function GET(req: Request) {
   try {
     startReminderScheduler();
     const { searchParams } = new URL(req.url);
-    const secret = searchParams.get("secret");
     const cronSecret = process.env.CRON_SECRET;
 
-    // If CRON_SECRET is configured, enforce authorization
-    if (cronSecret && secret !== cronSecret) {
-      const authHeader = req.headers.get("authorization");
-      if (authHeader !== `Bearer ${cronSecret}`) {
+    // SECURITY: Fail closed in production when CRON_SECRET is missing; in development
+    // allow unauthenticated triggers but never the mass re-send options.
+    if (!cronSecret) {
+      if (process.env.NODE_ENV === "production") {
+        console.error("CRON_SECRET is not set; refusing external cron trigger.");
+        return NextResponse.json({ success: false, message: "Cron trigger is not configured." }, { status: 503 });
+      }
+    } else {
+      const authHeader = req.headers.get("authorization") || "";
+      const provided = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : searchParams.get("secret") || "";
+      if (!safeEqual(provided, cronSecret)) {
         return NextResponse.json({ success: false, message: "Unauthorized cron trigger." }, { status: 401 });
       }
     }
 
-    const forceEventId = searchParams.get("forceEventId") || undefined;
-    const forceAll = searchParams.get("forceAll") === "true";
+    const forceEventId = cronSecret ? searchParams.get("forceEventId") || undefined : undefined;
+    const forceAll = cronSecret ? searchParams.get("forceAll") === "true" : false;
     const dryRun = searchParams.get("dryRun") === "true";
 
-    const hostHeader = req.headers.get("host") || "localhost:3000";
-    const protocol = hostHeader.includes("localhost") ? "http" : "https";
-    const origin = process.env.NEXTAUTH_URL
-      ? process.env.NEXTAUTH_URL.replace(/\/$/, "")
-      : `${protocol}://${hostHeader}`;
+    const origin = getAppOrigin(req);
 
     const result = await checkAndDispatchEventReminders({
       forceEventId,
@@ -44,7 +54,7 @@ export async function GET(req: Request) {
     return NextResponse.json(result);
   } catch (error: any) {
     console.error("Cron reminder error:", error);
-    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, message: "Reminder dispatch failed." }, { status: 500 });
   }
 }
 

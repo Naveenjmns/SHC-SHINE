@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useSession, signOut } from "next-auth/react";
+import { useSession } from "next-auth/react";
+import { signOutAndClearCache } from "@/lib/signOutAndClearCache";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
@@ -105,7 +106,7 @@ export default function StudentDashboardPage() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => signOut({ callbackUrl: "/" })}
+              onClick={() => signOutAndClearCache({ callbackUrl: "/" })}
               leftIcon={<LogOut className="w-3.5 h-3.5" />}
             >
               Sign Out

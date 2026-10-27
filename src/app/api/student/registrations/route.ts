@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { generateBadgeCode, generateFoodTokenCode, generateEventPassQr, generateFoodTokenQr } from "@/lib/badgeService";
+import { getAppOrigin } from "@/lib/security";
 import { getActiveEdition } from "@/lib/eventService";
 
 export async function GET(req: Request) {
@@ -51,10 +52,15 @@ export async function GET(req: Request) {
             },
           },
         },
-        delegationMember: true,
+        // SECURITY: never expose teammates' badge/food token codes or QR payloads
+        delegationMember: {
+          select: { id: true, name: true, badgeCode: true, isTeamLead: true },
+        },
         delegation: {
           include: {
-            members: true,
+            members: {
+              select: { id: true, name: true, isTeamLead: true },
+            },
           },
         },
       },
@@ -64,13 +70,10 @@ export async function GET(req: Request) {
     });
 
     // 2. Find or associate DelegationMember record
+    // SECURITY: match by email only — phone numbers are user-editable in the profile,
+    // so a phone match would let a student claim another delegate's pass.
     let member = await prisma.delegationMember.findFirst({
-      where: {
-        OR: [
-          { email: user.email.toLowerCase().trim() },
-          ...(user.phone ? [{ phone: user.phone.trim() }] : []),
-        ],
-      },
+      where: { email: user.email.toLowerCase().trim() },
       include: {
         delegation: {
           include: {
@@ -81,16 +84,14 @@ export async function GET(req: Request) {
       orderBy: { createdAt: "desc" },
     });
 
-    const hostHeader = req.headers.get("host") || "localhost:3000";
-    const protocol = hostHeader.includes("localhost") ? "http" : "https";
-    const origin = `${protocol}://${hostHeader}`;
+    const origin = getAppOrigin(req);
 
     // If student has no DelegationMember record yet, auto-create one linked to active edition
     if (!member) {
       const activeEdition = await getActiveEdition();
       const editionYear = activeEdition?.edition || "2026";
       const badgeCode = generateBadgeCode(editionYear);
-      const foodTokenCode = generateFoodTokenCode(badgeCode);
+      const foodTokenCode = generateFoodTokenCode();
       const verifyUrl = `${origin}/badge/${badgeCode}`;
 
       const qrData = await generateEventPassQr({
