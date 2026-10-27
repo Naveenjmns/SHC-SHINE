@@ -248,10 +248,14 @@ export async function dispatchMail(options: DispatchMailOptions): Promise<{ succ
       const htmlBase64 = Buffer.from(options.html).toString("base64");
       const fromNameBase64 = Buffer.from(senderName).toString("base64");
 
+      // SECURITY: addresses go into raw MIME headers; strip CR/LF and angle brackets so a crafted
+      // value can never start a new header line (header injection)
+      const headerAddr = (v: string) => v.replace(/[\r\n<>]/g, "").trim();
+
       const mimeLines = [
-        `From: =?utf-8?B?${fromNameBase64}?= <${senderEmail}>`,
-        `To: <${options.to}>`,
-        options.replyTo ? `Reply-To: <${options.replyTo}>` : null,
+        `From: =?utf-8?B?${fromNameBase64}?= <${headerAddr(senderEmail)}>`,
+        `To: <${headerAddr(options.to)}>`,
+        options.replyTo ? `Reply-To: <${headerAddr(options.replyTo)}>` : null,
         `Subject: =?utf-8?B?${subjectBase64}?=`,
         `MIME-Version: 1.0`,
         `Content-Type: multipart/alternative; boundary="${boundary}"`,

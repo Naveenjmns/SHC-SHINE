@@ -141,9 +141,11 @@ export async function GET() {
       prisma.registration.findMany({
         where: {
           status: "PENDING",
-          delegation: {
-            paymentStatus: { notIn: ["PAID", "VERIFIED"] },
-          },
+          // Unpaid delegation members, plus individual registrants who have no delegation at all
+          OR: [
+            { delegation: { paymentStatus: { notIn: [...PAID_STATUSES] } } },
+            { delegationId: null },
+          ],
         },
         select: { userId: true, user: { select: { email: true } } },
       }),

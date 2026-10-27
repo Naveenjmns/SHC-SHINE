@@ -386,6 +386,27 @@ export default function AdminSmtpTab({
               Dispatch Announcement
             </Button>
           </form>
+
+          {/* Recent broadcasts (sending happens in the background; status updates on refresh) */}
+          {broadcastHistory.length > 0 && (
+            <div className="mt-5 pt-4 border-t border-[var(--border)] space-y-2">
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-[var(--ink-muted)]">
+                Recent Broadcasts
+              </div>
+              <ul className="space-y-1.5">
+                {broadcastHistory.slice(0, 5).map((b) => (
+                  <li key={b.id} className="flex items-center justify-between gap-2 text-xs">
+                    <span className="truncate text-[var(--ink)]" title={b.subject}>
+                      {b.subject}
+                    </span>
+                    <span className="shrink-0 text-[var(--ink-muted)]">
+                      {b.status === "SENDING" ? "Sending…" : `${b.status} · ${b.recipientCount} delivered`}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       </div>
     </div>

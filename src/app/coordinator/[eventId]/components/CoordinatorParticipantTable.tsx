@@ -151,7 +151,7 @@ export default function CoordinatorParticipantTable({
                       id: row.id,
                       name: row.user.name,
                       college: collegeName,
-                      score: row.score || null,
+                      score: row.score ?? null,
                       result: row.result || null,
                     })
                   }

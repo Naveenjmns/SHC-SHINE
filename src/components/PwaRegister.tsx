@@ -28,8 +28,9 @@ export default function PwaRegister() {
     }
 
     // 1. Register Service Worker in production
+    let registerSW: (() => void) | null = null;
     if (typeof window !== "undefined" && "serviceWorker" in navigator) {
-      const registerSW = () => {
+      registerSW = () => {
         navigator.serviceWorker
           .register("/sw.js")
           .then((reg) => {
@@ -42,18 +43,21 @@ export default function PwaRegister() {
 
       if (document.readyState === "complete") {
         registerSW();
+        registerSW = null;
       } else {
-        window.addEventListener("load", registerSW);
+        window.addEventListener("load", registerSW, { once: true });
       }
     }
 
     // 2. Track Network Status
+    // Event handler return values are ignored, so the toast timer is tracked here for cleanup
+    let toastTimer: ReturnType<typeof setTimeout> | undefined;
     const handleOffline = () => setIsOffline(true);
     const handleOnline = () => {
       setIsOffline(false);
       setShowOnlineToast(true);
-      const timer = setTimeout(() => setShowOnlineToast(false), 4000);
-      return () => clearTimeout(timer);
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => setShowOnlineToast(false), 4000);
     };
 
     if (typeof window !== "undefined") {
@@ -66,7 +70,9 @@ export default function PwaRegister() {
       if (typeof window !== "undefined") {
         window.removeEventListener("offline", handleOffline);
         window.removeEventListener("online", handleOnline);
+        if (registerSW) window.removeEventListener("load", registerSW);
       }
+      clearTimeout(toastTimer);
     };
   }, []);
 

@@ -37,6 +37,8 @@ export default function AdminOverviewPage() {
     registrations,
     editions,
     activeEdition,
+    editingEdition,
+    selectEditionForEdit,
     reportsData,
     loadingReports,
     loadReports,
@@ -193,6 +195,23 @@ export default function AdminOverviewPage() {
           })}
         </div>
 
+        {/* Editing a non-live edition via "Configure" */}
+        {editingEdition && activeEdition && editingEdition.id !== activeEdition.id &&
+          (activeTab === "branding" || activeTab === "institution" || activeTab === "floorplan") && (
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-4 py-2.5 text-xs">
+              <span className="text-[var(--ink)]">
+                Editing <strong>{editingEdition.name} {editingEdition.edition}</strong>, which is not the live edition.
+              </span>
+              <button
+                type="button"
+                onClick={() => selectEditionForEdit(activeEdition)}
+                className="font-semibold text-[var(--accent)] hover:underline cursor-pointer"
+              >
+                Back to live edition
+              </button>
+            </div>
+          )}
+
         {/* Tab Views */}
         {activeTab === "overview" && stats && (
           <AdminOverviewTab
@@ -232,7 +251,10 @@ export default function AdminOverviewPage() {
             activeEdition={activeEdition}
             saving={saving}
             onMakeEditionActive={handleMakeEditionActive}
-            onSelectEditionForEdit={() => setActiveTab("branding")}
+            onSelectEditionForEdit={(ed) => {
+              selectEditionForEdit(ed);
+              setActiveTab("branding");
+            }}
             onOpenNewEditionModal={() => setShowNewEditionModal(true)}
           />
         )}
@@ -251,7 +273,7 @@ export default function AdminOverviewPage() {
           <AdminBrandingTab
             brandingForm={brandingForm}
             setBrandingForm={setBrandingForm}
-            activeEdition={activeEdition}
+            activeEdition={editingEdition}
             saving={saving}
             handleFileUpload={handleUploadField}
             handleSaveBranding={handleSaveBranding}

@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
     ) {
       return NextResponse.json(
         { success: false, message: "Unauthorized. Staff, Coordinator, or Food Committee login required." },
-        { status: 401 }
+        { status: session ? 403 : 401 }
       );
     }
 
@@ -231,14 +231,14 @@ export async function POST(req: NextRequest) {
     ) {
       return NextResponse.json(
         { success: false, message: "Unauthorized. Staff, Coordinator, or Food Committee login required." },
-        { status: 401 }
+        { status: session ? 403 : 401 }
       );
     }
 
     const body = await req.json();
     const { code: rawCode, action, eventId } = body;
 
-    if (!rawCode || !action) {
+    if (typeof rawCode !== "string" || !rawCode.trim() || typeof action !== "string" || !action) {
       return NextResponse.json(
         { success: false, message: "Code and action are required." },
         { status: 400 }
@@ -668,6 +668,20 @@ export async function POST(req: NextRequest) {
         );
       }
 
+      // A food desk volunteer may only undo a fresh claim (mis-scan / wrong person), otherwise a
+      // meal could be issued, reset and issued again. Admins can reset at any time.
+      const UNDO_WINDOW_MS = 5 * 60 * 1000;
+      const claimAge = member.foodClaimedAt ? Date.now() - new Date(member.foodClaimedAt).getTime() : Infinity;
+      if (!isAdmin && member.foodTokenClaimed && claimAge > UNDO_WINDOW_MS) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "This meal was claimed more than 5 minutes ago. Ask an administrator to reset it.",
+          },
+          { status: 403 }
+        );
+      }
+
       const updated = await prisma.delegationMember.update({
         where: { id: member.id },
         data: {
@@ -717,6 +731,19 @@ export async function POST(req: NextRequest) {
       }
 
       const newPref = body.preference === "NON_VEG" ? "NON_VEG" : "VEG";
+      // Respect the edition's meal policy, same as registration does
+      if (newPref === "NON_VEG" && member.delegation.editionId) {
+        const edition = await prisma.eventEdition.findUnique({
+          where: { id: member.delegation.editionId },
+          select: { mealOptions: true },
+        });
+        if (edition?.mealOptions === "VEG_ONLY") {
+          return NextResponse.json(
+            { success: false, message: "This edition serves vegetarian meals only." },
+            { status: 400 }
+          );
+        }
+      }
       const updated = await prisma.delegationMember.update({
         where: { id: member.id },
         data: {

@@ -299,7 +299,7 @@ export function shortestPath(
   for (const edge of graph.edges) {
     const listA = adj.get(edge.a);
     const listB = adj.get(edge.b);
-    const weight = edge.weight || 10;
+    const weight = edge.weight ?? 10;
     const isStair = !!edge.isStairOrLift;
 
     if (listA) listA.push({ neighborId: edge.b, weight, isStair });

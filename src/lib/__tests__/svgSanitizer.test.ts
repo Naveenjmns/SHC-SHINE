@@ -126,6 +126,26 @@ describe("SVG Sanitizer & Security Validator", () => {
     assert.ok(!result.sanitized.includes("http://evil.com"));
     assert.ok(result.sanitized.includes(".safe { fill: #FF6B1A; }"));
   });
+
+  test("strips event handlers that use a slash separator", () => {
+    const result = sanitizeSvg(`<svg viewBox="0 0 10 10"><g/onload="alert(1)"><rect id="a"/></g></svg>`);
+    assert.ok(!/onload/i.test(result.sanitized));
+  });
+
+  test("blocks entity-encoded and unquoted javascript: links", () => {
+    const encoded = sanitizeSvg(`<svg viewBox="0 0 10 10"><a href="&#106;avascript:alert(1)"><rect id="a"/></a></svg>`);
+    assert.ok(!/javascript/i.test(encoded.sanitized) && !encoded.sanitized.includes("&#106;"));
+    const unquoted = sanitizeSvg(`<svg viewBox="0 0 10 10"><a href=javascript:alert(1)><rect id="b"/></a></svg>`);
+    assert.ok(!/javascript/i.test(unquoted.sanitized));
+  });
+
+  test("removes animations that rewrite href", () => {
+    const result = sanitizeSvg(
+      `<svg viewBox="0 0 10 10"><a href="#x"><set attributeName="href" to="javascript:alert(1)"/><rect id="a"/></a></svg>`
+    );
+    assert.ok(!/<set\b/i.test(result.sanitized));
+    assert.ok(result.sanitized.includes('href="#x"'));
+  });
 });
 
 describe("Zone Extraction & Label Formatting", () => {

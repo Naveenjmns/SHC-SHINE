@@ -104,11 +104,21 @@ export function sanitizeSvg(svgRaw: string): SanitizedSvgResult {
   sanitized = sanitized.replace(/<(?:iframe|object|embed|applet|meta|link)\b[^>]*\/>/gi, "");
 
   // 5. Remove on* event handler attributes (onload, onclick, onerror, onmouseover, etc.)
-  sanitized = sanitized.replace(/\s+on[a-z0-9_-]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, "");
+  // The separator may be whitespace or "/" (e.g. <svg/onload=...>), both are valid to browsers
+  sanitized = sanitized.replace(/[\s/]+on[a-z0-9_-]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, " ");
+
+  // 5b. Remove animation elements that rewrite href/xlink:href at runtime (<set>/<animate to="javascript:">)
+  sanitized = sanitized.replace(/<(?:set|animate)\b[^>]*attributeName\s*=\s*["']?(?:xlink:)?href["']?[^>]*>(?:\s*<\/(?:set|animate)>)?/gi, "");
 
   // 6. Sanitize href and xlink:href: allow only fragment links (#id) or local relative URLs; block javascript:, data:, http:, https:, //
-  sanitized = sanitized.replace(/\s+(?:xlink:)?href\s*=\s*["']([^"']*)["']/gi, (match, url) => {
-    const cleanUrl = url.trim();
+  sanitized = sanitized.replace(/\s+(?:xlink:)?href\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+))/gi, (match, dq, sq, uq) => {
+    // Decode character references and drop whitespace/control characters before checking the
+    // scheme, so "&#106;avascript:" or "java\tscript:" cannot slip through
+    const cleanUrl = String(dq ?? sq ?? uq ?? "")
+      .replace(/&#x([0-9a-f]+);?/gi, (_m, hex) => String.fromCodePoint(parseInt(hex, 16)))
+      .replace(/&#(\d+);?/g, (_m, dec) => String.fromCodePoint(parseInt(dec, 10)))
+      .replace(/&colon;/gi, ":")
+      .replace(/[\s\u0000-\u001f]/g, "");
     // Allow internal references like href="#hall-1" or href="#linear-gradient-1"
     if (cleanUrl.startsWith("#")) {
       return match;
@@ -134,7 +144,7 @@ export function sanitizeSvg(svgRaw: string): SanitizedSvgResult {
   });
 
   // Final validation check to guarantee no remaining <script or on* handlers survived
-  if (/<script/i.test(sanitized) || /\son[a-z]+\s*=/i.test(sanitized) || /<foreignObject/i.test(sanitized)) {
+  if (/<script/i.test(sanitized) || /[\s/]on[a-z]+\s*=/i.test(sanitized) || /<foreignObject/i.test(sanitized)) {
     return { sanitized: "", isValid: false, error: "SVG contains unremovable executable scripts or handlers." };
   }
 

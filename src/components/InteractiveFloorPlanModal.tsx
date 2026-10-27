@@ -620,6 +620,9 @@ export default function InteractiveFloorPlanModal({
       if (e.key === "Escape") {
         onClose();
       }
+      // Zoom shortcuts must not fire while typing in a field or using a dropdown
+      const target = e.target as HTMLElement | null;
+      if (target && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName))) return;
       if (e.key === "+" || e.key === "=") {
         setScale((prev) => Math.min(prev * 1.2, 4.5));
       }

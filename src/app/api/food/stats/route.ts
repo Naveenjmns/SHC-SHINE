@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
     ) {
       return NextResponse.json(
         { success: false, message: "Unauthorized. Food Committee or Admin login required." },
-        { status: 401 }
+        { status: session ? 403 : 401 }
       );
     }
 

@@ -7,6 +7,7 @@ import { logActivity } from "@/lib/activityLogger";
 import { getActiveEdition } from "@/lib/eventService";
 import { revalidatePath } from "next/cache";
 import { validateZoneExists } from "@/lib/svgSanitizer";
+import { validateEventFields } from "@/lib/validators";
 
 
 // GET /api/events - Public list of events
@@ -156,6 +157,10 @@ export async function POST(req: Request) {
         { success: false, message: "Name, category, and date/time are required." },
         { status: 400 }
       );
+    }
+    const fieldError = validateEventFields({ category, dateTime, prelimsDateTime, capacity });
+    if (fieldError) {
+      return NextResponse.json({ success: false, message: fieldError }, { status: 400 });
     }
 
     const activeEdition = await getActiveEdition();

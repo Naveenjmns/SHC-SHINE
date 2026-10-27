@@ -38,6 +38,7 @@ const OPTIMIZABLE_MIMES = new Set([
   "image/jpeg",
   "image/jpg",
   "image/tiff",
+  "image/webp", // re-encoded only when a resize is requested
 ]);
 
 // WebP quality for on-the-fly conversion
@@ -146,12 +147,12 @@ export async function GET(
     // Check if we have a cached optimized version on disk
     const ext = path.extname(filename).toLowerCase();
     const isAlreadyWebP = ext === ".webp";
-    const needsOptimization = !isAlreadyWebP && OPTIMIZABLE_MIMES.has(MIME_TYPES[ext] || "");
-    
-    // Build cache key for optimized version
-    const cacheFilename = needsOptimization
-      ? `${path.basename(filename, ext)}${maxWidth || maxHeight ? `_${maxWidth || ""}x${maxHeight || ""}` : ""}.webp`
-      : filename;
+    const isResize = Boolean(maxWidth || maxHeight);
+    // Convert non-WebP rasters to WebP; WebP files are only re-encoded when resized
+    const needsOptimization = OPTIMIZABLE_MIMES.has(MIME_TYPES[ext] || "") && (!isAlreadyWebP || isResize);
+
+    // Every optimized variant gets its own cache name (size suffix), never the original's name
+    const cacheFilename = `${path.basename(filename, ext)}${isResize ? `_${maxWidth || ""}x${maxHeight || ""}` : ""}.webp`;
     const cachePath = path.join(uploadsDir, ".cache", cacheFilename);
 
     // Try serving from optimization cache first
@@ -171,7 +172,7 @@ export async function GET(
     }
 
     // Optimize if possible
-    if (needsOptimization || maxWidth || maxHeight) {
+    if (needsOptimization) {
       const optimized = await optimizeOnTheFly(
         Buffer.from(result.data),
         result.mimeType,
@@ -179,15 +180,18 @@ export async function GET(
         maxHeight
       );
 
-      // Cache the optimized version to disk for future requests
-      try {
-        const cacheDir = path.join(uploadsDir, ".cache");
-        if (!fs.existsSync(cacheDir)) {
-          fs.mkdirSync(cacheDir, { recursive: true });
+      // Cache only real WebP output: if sharp failed we got the original bytes back, and storing
+      // them under a .webp name would later be served with the wrong content type
+      if (optimized.mimeType === "image/webp") {
+        try {
+          const cacheDir = path.join(uploadsDir, ".cache");
+          if (!fs.existsSync(cacheDir)) {
+            fs.mkdirSync(cacheDir, { recursive: true });
+          }
+          await fs.promises.writeFile(cachePath, optimized.buffer);
+        } catch {
+          // Cache write failure is non-fatal
         }
-        await fs.promises.writeFile(cachePath, optimized.buffer);
-      } catch {
-        // Cache write failure is non-fatal
       }
 
       return new NextResponse(new Uint8Array(optimized.buffer), {

@@ -80,19 +80,6 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // If no registrations yet, also include any users with role STUDENT
-      if (emailMap.size === 0) {
-        const students = await prisma.user.findMany({
-          where: { role: "STUDENT" },
-          select: { email: true, name: true },
-        });
-        for (const s of students) {
-          if (s.email) {
-            emailMap.set(s.email, s.name || "Student Delegate");
-          }
-        }
-      }
-
       recipients = Array.from(emailMap.entries()).map(([email, name]) => ({ email, name }));
     }
 
@@ -103,59 +90,66 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
-    // Send the broadcast emails
-    const dispatchResults = await sendBroadcastEmail({
-      recipients,
-      subject,
-      message,
-      eventName,
-      institutionName,
-    });
-
-    const successCount = dispatchResults.filter((r) => r.success).length;
-    const failureCount = dispatchResults.filter((r) => !r.success).length;
-    const status = failureCount === 0 ? "SENT" : successCount > 0 ? "PARTIAL" : "FAILED";
-
-    // Save record to EmailBroadcast
+    // Record the broadcast first, then send in the background. Sending one email at a time can
+    // outlast the request timeout on large lists, and a timed-out request used to leave no record,
+    // so a retry re-sent to everyone already reached. The status is updated when sending finishes.
     const broadcastRecord = await prisma.emailBroadcast.create({
       data: {
         subject,
         message,
         targetAudience,
         targetEventId: targetAudience === "EVENT" ? targetEventId : null,
-        recipientCount: successCount,
-        status,
+        recipientCount: 0,
+        status: "SENDING",
         sentBy: session.user.email,
       },
     });
 
-    await logActivity({
-      action: "EMAIL_BROADCAST",
+    const actor = {
       actorId: session.user.id,
       actorName: session.user.name,
       actorEmail: session.user.email,
       actorRole: session.user.role,
-      targetType: "Email",
-      targetId: broadcastRecord.id,
-      targetTitle: `Broadcast: "${subject}" (${successCount} delivered)`,
-      details: {
-        subject,
-        targetAudience,
-        recipientCount: recipients.length,
-        delivered: successCount,
-        failed: failureCount,
-        status,
-      },
-    });
+    };
 
-    return NextResponse.json({
-      success: true,
-      broadcast: broadcastRecord,
-      recipientCount: recipients.length,
-      successCount,
-      failureCount,
-      message: `Broadcast delivered to ${successCount} out of ${recipients.length} recipients.`,
-    });
+    void (async () => {
+      let successCount = 0;
+      let failureCount = recipients.length;
+      try {
+        const dispatchResults = await sendBroadcastEmail({ recipients, subject, message, eventName, institutionName });
+        successCount = dispatchResults.filter((r) => r.success).length;
+        failureCount = dispatchResults.length - successCount;
+      } catch (err) {
+        console.error("Broadcast dispatch error:", err);
+      }
+      const status = failureCount === 0 ? "SENT" : successCount > 0 ? "PARTIAL" : "FAILED";
+      try {
+        await prisma.emailBroadcast.update({
+          where: { id: broadcastRecord.id },
+          data: { recipientCount: successCount, status },
+        });
+        await logActivity({
+          action: "EMAIL_BROADCAST",
+          ...actor,
+          targetType: "Email",
+          targetId: broadcastRecord.id,
+          targetTitle: `Broadcast: "${subject}" (${successCount} delivered)`,
+          details: { subject, targetAudience, recipientCount: recipients.length, delivered: successCount, failed: failureCount, status },
+        });
+      } catch (err) {
+        console.error("Broadcast bookkeeping error:", err);
+      }
+    })();
+
+    return NextResponse.json(
+      {
+        success: true,
+        broadcast: broadcastRecord,
+        recipientCount: recipients.length,
+        message: `Broadcast queued for ${recipients.length} recipient(s). Delivery status will appear in the broadcast history.`,
+      },
+      { status: 202 }
+    );
   } catch (error: any) {
     console.error("POST /api/admin/email/broadcast error:", error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

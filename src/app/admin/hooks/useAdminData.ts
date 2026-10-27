@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useToast } from "@/components/ToastProvider";
 import { safeJson } from "@/lib/safeFetch";
 import type { StatsData, EventBreakdown } from "../components/AdminOverviewTab";
@@ -8,6 +8,59 @@ import type { RegistrationRecord, CollegeGroup } from "../components/AdminRegist
 import type { EventEditionItem } from "../components/AdminEditionsTab";
 import type { WaypointNode, WaypointEdge } from "@/lib/wayfinding";
 import { downloadEventParticipantsCSV } from "@/lib/exportEventCsv";
+
+// Form state for the Branding / Institution tabs, built from one edition record
+function formFromEdition(ed: EventEditionItem) {
+  return {
+    name: ed.name || "SHINE",
+    edition: ed.edition || "26",
+    tagline: ed.tagline || "",
+    metadataText: ed.metadataText || "",
+    venue: ed.venue || "",
+    startDate: ed.startDate ? new Date(ed.startDate).toISOString().slice(0, 16) : "2026-09-17T09:30",
+    logoUrl: ed.logoUrl || "",
+    primaryCtaText: ed.primaryCtaText || "EXPLORE SHINE →",
+    primaryCtaLink: ed.primaryCtaLink || "#events",
+    themePrimaryAccent: ed.themePrimaryAccent || "#FF6B1A",
+    themeSecondaryAccent: ed.themeSecondaryAccent || "#D9A441",
+    themeBgColor: ed.themeBgColor || "#FAF8F5",
+    institutionName: ed.institutionName || "",
+    institutionShortName: ed.institutionShortName || "SHC",
+    institutionLocation: ed.institutionLocation || "",
+    institutionAbout: ed.institutionAbout || "",
+    accreditationText: ed.accreditationText || "",
+    institutionCrestUrl: ed.institutionCrestUrl || "",
+    jubileeBadgeUrl: ed.jubileeBadgeUrl || "",
+    hostDepartment: ed.hostDepartment || "",
+    departmentAbout: ed.departmentAbout || "",
+    departmentProgram: ed.departmentProgram || "MCA Program",
+    deptLogoUrl: ed.deptLogoUrl || "",
+    acronymExpansion: ed.acronymExpansion || "",
+    stageHeaderBannerUrl: ed.stageHeaderBannerUrl || "",
+    contactEmail: ed.contactEmail || "",
+    contactPhone: ed.contactPhone || "",
+    websiteUrl: ed.websiteUrl || "",
+    diningHallVenue: ed.diningHallVenue || "",
+    diningFacilityInfo: ed.diningFacilityInfo || "",
+    mealOptions: ed.mealOptions || "BOTH",
+    participantFee: ed.participantFee || 0,
+    isRegistrationOpen: ed.isRegistrationOpen ?? true,
+    registrationClosedNotice: ed.registrationClosedNotice || "",
+    prizePool: ed.prizePool || "₹25K+",
+    expectedDelegates: ed.expectedDelegates || "500+",
+    rulesEligibilityTitle: ed.rulesEligibilityTitle || "Eligibility & Registration",
+    rulesEligibilityText: ed.rulesEligibilityText || "",
+    rulesTimingsTitle: ed.rulesTimingsTitle || "Reporting & Timings",
+    rulesTimingsText: ed.rulesTimingsText || "",
+    rulesChampionshipTitle: ed.rulesChampionshipTitle || "Overall Championship",
+    rulesChampionshipText: ed.rulesChampionshipText || "",
+    defaultFirstPrize: ed.defaultFirstPrize || "Cash Prize + Trophy + Certificate",
+    defaultSecondPrize: ed.defaultSecondPrize || "Cash Prize + Merit Certificate",
+    defaultThirdPrize: ed.defaultThirdPrize || "Distinction Certificate",
+    showStageModeInStudentPortal: Boolean(ed.showStageModeInStudentPortal),
+    floorPlanUrl: ed.floorPlanUrl || "/uploads/campus-floorplan.svg",
+  };
+}
 
 export function useAdminData() {
   const { toast, confirmAction } = useToast();
@@ -21,6 +74,10 @@ export function useAdminData() {
   const [registrations, setRegistrations] = useState<RegistrationRecord[]>([]);
   const [editions, setEditions] = useState<EventEditionItem[]>([]);
   const [activeEdition, setActiveEdition] = useState<EventEditionItem | null>(null);
+  // Edition whose settings the Branding / Institution tabs edit (null = the active edition)
+  const [editingEditionId, setEditingEditionId] = useState<string | null>(null);
+  const editingEditionIdRef = useRef<string | null>(null);
+  const editingEdition = editions.find((e) => e.id === editingEditionId) || activeEdition;
   const [reportsData, setReportsData] = useState<any | null>(null);
   const [loadingReports, setLoadingReports] = useState(false);
   const [downloadingEventId, setDownloadingEventId] = useState<string | null>(null);
@@ -155,61 +212,15 @@ export function useAdminData() {
         setEditions(edData.editions);
         const active = edData.editions.find((e: any) => e.isActive) || edData.editions[0] || null;
         setActiveEdition(active);
+        // Keep editing the edition picked via "Configure", if it still exists
+        const target = edData.editions.find((e: EventEditionItem) => e.id === editingEditionIdRef.current) || active;
+        if (target?.id !== editingEditionIdRef.current) editingEditionIdRef.current = null;
+        setEditingEditionId(editingEditionIdRef.current);
 
-        if (active) {
-          setBrandingForm({
-            name: active.name || "SHINE",
-            edition: active.edition || "26",
-            tagline: active.tagline || "",
-            metadataText: active.metadataText || "",
-            venue: active.venue || "",
-            startDate: active.startDate ? new Date(active.startDate).toISOString().slice(0, 16) : "2026-09-17T09:30",
-            logoUrl: active.logoUrl || "",
-            primaryCtaText: active.primaryCtaText || "EXPLORE SHINE →",
-            primaryCtaLink: active.primaryCtaLink || "#events",
-            themePrimaryAccent: active.themePrimaryAccent || "#FF6B1A",
-            themeSecondaryAccent: active.themeSecondaryAccent || "#D9A441",
-            themeBgColor: active.themeBgColor || "#FAF8F5",
-            institutionName: active.institutionName || "",
-            institutionShortName: active.institutionShortName || "SHC",
-            institutionLocation: active.institutionLocation || "",
-            institutionAbout: active.institutionAbout || "",
-            accreditationText: active.accreditationText || "",
-            institutionCrestUrl: active.institutionCrestUrl || "",
-            jubileeBadgeUrl: active.jubileeBadgeUrl || "",
-            hostDepartment: active.hostDepartment || "",
-            departmentAbout: active.departmentAbout || "",
-            departmentProgram: active.departmentProgram || "MCA Program",
-            deptLogoUrl: active.deptLogoUrl || "",
-            acronymExpansion: active.acronymExpansion || "",
-            stageHeaderBannerUrl: active.stageHeaderBannerUrl || "",
-            contactEmail: active.contactEmail || "",
-            contactPhone: active.contactPhone || "",
-            websiteUrl: active.websiteUrl || "",
-            diningHallVenue: active.diningHallVenue || "",
-            diningFacilityInfo: active.diningFacilityInfo || "",
-            mealOptions: active.mealOptions || "BOTH",
-            participantFee: active.participantFee || 0,
-            isRegistrationOpen: active.isRegistrationOpen ?? true,
-            registrationClosedNotice: active.registrationClosedNotice || "",
-            prizePool: active.prizePool || "₹25K+",
-            expectedDelegates: active.expectedDelegates || "500+",
-            rulesEligibilityTitle: active.rulesEligibilityTitle || "Eligibility & Registration",
-            rulesEligibilityText: active.rulesEligibilityText || "",
-            rulesTimingsTitle: active.rulesTimingsTitle || "Reporting & Timings",
-            rulesTimingsText: active.rulesTimingsText || "",
-            rulesChampionshipTitle: active.rulesChampionshipTitle || "Overall Championship",
-            rulesChampionshipText: active.rulesChampionshipText || "",
-            defaultFirstPrize: active.defaultFirstPrize || "Cash Prize + Trophy + Certificate",
-            defaultSecondPrize: active.defaultSecondPrize || "Cash Prize + Merit Certificate",
-            defaultThirdPrize: active.defaultThirdPrize || "Distinction Certificate",
-            showStageModeInStudentPortal: Boolean(active.showStageModeInStudentPortal),
-            floorPlanUrl: active.floorPlanUrl || "/uploads/campus-floorplan.svg",
-          });
+        if (target) {
+          setBrandingForm(formFromEdition(target));
 
-          if (active.waypointGraph) {
-            setGraphData(active.waypointGraph);
-          }
+          setGraphData(target.waypointGraph || { nodes: [], edges: [] });
         }
       }
 
@@ -260,14 +271,14 @@ export function useAdminData() {
   }, [toast]);
 
   // All edition settings (branding, institution, toggles) are saved through PATCH /api/admin/edition
-  const patchActiveEdition = async (fields: Record<string, unknown>) => {
-    if (!activeEdition?.id) {
+  const patchEdition = async (editionId: string | undefined, fields: Record<string, unknown>) => {
+    if (!editionId) {
       throw new Error("Create an edition first before saving settings.");
     }
     const res = await fetch("/api/admin/edition", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: activeEdition.id, ...fields }),
+      body: JSON.stringify({ id: editionId, ...fields }),
     });
     const data = await safeJson(res);
     if (!res.ok || !data.success) {
@@ -279,7 +290,7 @@ export function useAdminData() {
   const handleSaveBranding = async () => {
     setSaving(true);
     try {
-      await patchActiveEdition(brandingForm);
+      await patchEdition(editingEdition?.id, brandingForm);
       toast.success("Settings saved successfully.");
       loadAdminData();
     } catch (err: any) {
@@ -290,11 +301,13 @@ export function useAdminData() {
   };
 
   const handleToggleRegistration = async () => {
-    const nextState = !brandingForm.isRegistrationOpen;
+    const nextState = !(activeEdition?.isRegistrationOpen ?? true);
     setSaving(true);
     try {
-      await patchActiveEdition({ isRegistrationOpen: nextState });
-      setBrandingForm((prev: any) => ({ ...prev, isRegistrationOpen: nextState }));
+      await patchEdition(activeEdition?.id, { isRegistrationOpen: nextState });
+      if (!editingEditionId || editingEditionId === activeEdition?.id) {
+        setBrandingForm((prev: any) => ({ ...prev, isRegistrationOpen: nextState }));
+      }
       setActiveEdition((prev) => (prev ? { ...prev, isRegistrationOpen: nextState } : prev));
       toast.success(nextState ? "Public registration reopened." : "Registration frozen.");
     } catch (err: any) {
@@ -307,8 +320,10 @@ export function useAdminData() {
   const handleToggleStageMode = async (enabled: boolean) => {
     setSaving(true);
     try {
-      await patchActiveEdition({ showStageModeInStudentPortal: enabled });
-      setBrandingForm((prev: any) => ({ ...prev, showStageModeInStudentPortal: enabled }));
+      await patchEdition(activeEdition?.id, { showStageModeInStudentPortal: enabled });
+      if (!editingEditionId || editingEditionId === activeEdition?.id) {
+        setBrandingForm((prev: any) => ({ ...prev, showStageModeInStudentPortal: enabled }));
+      }
       setActiveEdition((prev) => (prev ? { ...prev, showStageModeInStudentPortal: enabled } : prev));
       toast.success(enabled ? "Stage Mode published to students." : "Stage Mode hidden.");
     } catch (err: any) {
@@ -597,7 +612,19 @@ export function useAdminData() {
 
   // Navigation & schedule items are separate records, saved immediately through their own APIs
   const updateEditionList = (key: "navItems" | "scheduleItems", update: (items: any[]) => any[]) => {
-    setActiveEdition((prev) => (prev ? { ...prev, [key]: update(prev[key] || []) } : prev));
+    const targetId = editingEdition?.id;
+    if (!targetId) return;
+    const apply = (ed: EventEditionItem) => (ed.id === targetId ? { ...ed, [key]: update(ed[key] || []) } : ed);
+    setEditions((prev) => prev.map(apply));
+    setActiveEdition((prev) => (prev ? apply(prev) : prev));
+  };
+
+  const selectEditionForEdit = (ed: EventEditionItem) => {
+    const id = ed.id === activeEdition?.id ? null : ed.id;
+    editingEditionIdRef.current = id;
+    setEditingEditionId(id);
+    setBrandingForm(formFromEdition(ed));
+    setGraphData(ed.waypointGraph || { nodes: [], edges: [] });
   };
 
   const editionItemRequest = async (path: string, init: RequestInit, failMessage: string) => {
@@ -611,11 +638,11 @@ export function useAdminData() {
   };
 
   const handleAddNavItem = async (label: string, url: string) => {
-    if (!activeEdition?.id) return;
-    const order = (activeEdition.navItems?.length || 0) + 1;
+    if (!editingEdition?.id) return;
+    const order = (editingEdition.navItems?.length || 0) + 1;
     const data = await editionItemRequest(
       "/api/admin/navigation",
-      { method: "POST", body: JSON.stringify({ editionId: activeEdition.id, label, url, order }) },
+      { method: "POST", body: JSON.stringify({ editionId: editingEdition.id, label, url, order }) },
       "Failed to add navigation link."
     );
     if (data?.item) updateEditionList("navItems", (items) => [...items, data.item]);
@@ -636,10 +663,10 @@ export function useAdminData() {
   };
 
   const handleAddScheduleItem = async (item: any) => {
-    if (!activeEdition?.id) return;
+    if (!editingEdition?.id) return;
     const data = await editionItemRequest(
       "/api/admin/schedule",
-      { method: "POST", body: JSON.stringify({ ...item, editionId: activeEdition.id }) },
+      { method: "POST", body: JSON.stringify({ ...item, editionId: editingEdition.id }) },
       "Failed to add schedule item."
     );
     if (data?.item) updateEditionList("scheduleItems", (items) => [...items, data.item]);
@@ -738,6 +765,8 @@ export function useAdminData() {
     registrations,
     editions,
     activeEdition,
+    editingEdition,
+    selectEditionForEdit,
     reportsData,
     loadingReports,
     loadReports,

@@ -68,10 +68,10 @@ export async function GET(req: Request) {
       to,
     });
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Failed to compute navigation route.";
+    // Log the detail server-side only; never return internal error text to the client
     console.error("GET /api/wayfinding/route error:", error);
     return NextResponse.json(
-      { success: false, message },
+      { success: false, message: "Failed to compute navigation route." },
       { status: 500 }
     );
   }

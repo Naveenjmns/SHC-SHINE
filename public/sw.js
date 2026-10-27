@@ -1,6 +1,6 @@
 // SHINE 26 Event Platform — High-Performance Service Worker
 // v3: purge caches from earlier versions that stored authenticated pages
-const CACHE_NAME = "shine26-cache-v3";
+const CACHE_NAME = "shine26-cache-v4";
 
 // Authenticated or per-user pages must never be written to the shared cache:
 // scanner/registration devices are shared between staff and the cache outlives logout.
@@ -88,15 +88,18 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Static Assets (Images, Next.js chunks, fonts, icons): Cache-first with network fallback
+  // Static Assets (Images, Next.js chunks, fonts, icons): Cache-first with network fallback.
+  // /uploads/ files (logos, floor plan) can be replaced at the same URL, so they use the
+  // network-first default below instead of being pinned to the first cached copy.
   if (
-    url.pathname.startsWith("/_next/static/") ||
+    !url.pathname.startsWith("/uploads/") &&
+    (url.pathname.startsWith("/_next/static/") ||
     url.pathname.startsWith("/icons/") ||
     url.pathname.endsWith(".png") ||
     url.pathname.endsWith(".jpg") ||
     url.pathname.endsWith(".svg") ||
     url.pathname.endsWith(".woff2") ||
-    url.pathname.endsWith(".css")
+    url.pathname.endsWith(".css"))
   ) {
     event.respondWith(
       caches.match(req).then((cached) => {
