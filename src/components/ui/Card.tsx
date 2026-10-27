@@ -9,9 +9,9 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
     return (
       <div
         ref={ref}
-        className={`rounded-[12px] bg-surface border border-border overflow-hidden transition-colors ${
+        className={`rounded-2xl bg-surface border border-border shadow-card overflow-hidden transition-[box-shadow,border-color] duration-200 ${
           interactive
-            ? "hover:border-border-strong hover:bg-surface-raised/30 cursor-pointer"
+            ? "hover:border-border-strong hover:shadow-elevated cursor-pointer"
             : ""
         } ${className}`}
         {...props}
@@ -29,7 +29,7 @@ export function CardHeader({
   ...props
 }: HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={`p-5 pb-3 space-y-1.5 ${className}`} {...props}>
+    <div className={`p-6 pb-3 space-y-1.5 ${className}`} {...props}>
       {children}
     </div>
   );
@@ -42,7 +42,7 @@ export function CardTitle({
 }: HTMLAttributes<HTMLHeadingElement>) {
   return (
     <h3
-      className={`text-lg font-bold text-ink leading-snug tracking-tight ${className}`}
+      className={`text-lg font-bold text-ink leading-snug ${className}`}
       {...props}
     >
       {children}
@@ -56,7 +56,7 @@ export function CardDescription({
   ...props
 }: HTMLAttributes<HTMLParagraphElement>) {
   return (
-    <p className={`text-xs text-ink-muted leading-relaxed ${className}`} {...props}>
+    <p className={`text-sm text-ink-muted leading-relaxed ${className}`} {...props}>
       {children}
     </p>
   );
@@ -68,7 +68,7 @@ export function CardContent({
   ...props
 }: HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={`p-5 pt-0 ${className}`} {...props}>
+    <div className={`p-6 pt-0 ${className}`} {...props}>
       {children}
     </div>
   );
@@ -81,7 +81,7 @@ export function CardFooter({
 }: HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={`p-5 pt-3 border-t border-border bg-surface-raised/40 flex items-center justify-between gap-3 ${className}`}
+      className={`px-6 py-4 border-t border-border bg-canvas flex items-center justify-between gap-3 ${className}`}
       {...props}
     >
       {children}

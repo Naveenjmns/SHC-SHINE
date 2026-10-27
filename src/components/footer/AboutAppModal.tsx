@@ -26,31 +26,32 @@ export default function AboutAppModal({ isOpen, onClose }: AboutAppModalProps) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0b3558]/50 backdrop-blur-xs animate-in fade-in duration-150"
       role="dialog"
       aria-modal="true"
+      aria-label="About SHINE Platform"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-2xl bg-[var(--surface)] text-[var(--ink)] rounded-2xl p-6 shadow-xl border border-[var(--border)] max-h-[85vh] overflow-y-auto space-y-5"
+        className="w-full max-w-2xl bg-surface text-ink rounded-3xl p-6 shadow-modal border border-border max-h-[85vh] overflow-y-auto space-y-5"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-start justify-between gap-4 pb-4 border-b border-[var(--border)]">
+        <div className="flex items-start justify-between gap-4 pb-4 border-b border-border">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[var(--surface-raised)] border border-[var(--border)] flex items-center justify-center text-[var(--accent)] shrink-0">
+            <div className="w-10 h-10 rounded-[12px] bg-accent-muted flex items-center justify-center text-accent shrink-0">
               <Sparkles className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-base font-bold text-[var(--ink)]">
+                <h3 className="text-base font-bold text-ink">
                   SHINE Platform OS
                 </h3>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[var(--surface-raised)] text-[var(--accent)] border border-[var(--border)]">
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-accent-muted text-accent-strong">
                   v2.0
                 </span>
               </div>
-              <p className="text-xs text-[var(--ink-muted)]">
+              <p className="text-xs text-ink-muted">
                 Intercollegiate Fest Management & Wayfinding System
               </p>
             </div>
@@ -59,7 +60,7 @@ export default function AboutAppModal({ isOpen, onClose }: AboutAppModalProps) {
           <button
             type="button"
             onClick={onClose}
-            className="p-1 rounded-lg text-[var(--ink-muted)] hover:text-[var(--ink)] hover:bg-[var(--surface-raised)] transition-colors"
+            className="p-1 rounded-[8px] text-ink-muted hover:text-ink hover:bg-surface-raised transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -67,46 +68,46 @@ export default function AboutAppModal({ isOpen, onClose }: AboutAppModalProps) {
 
         {/* Feature Highlights Grid */}
         <div className="space-y-3">
-          <h4 className="text-xs font-bold text-[var(--ink-muted)] uppercase tracking-wider">
+          <h4 className="eyebrow">
             Architecture Highlights
           </h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-            <div className="p-3 rounded-xl bg-[var(--surface-raised)] border border-[var(--border)] space-y-1">
-              <div className="font-bold text-[var(--ink)] flex items-center gap-1.5">
-                <QrCode className="w-3.5 h-3.5 text-[var(--accent)]" />
+            <div className="p-4 rounded-2xl bg-surface-raised border border-border space-y-1">
+              <div className="font-bold text-ink flex items-center gap-1.5">
+                <QrCode className="w-3.5 h-3.5 text-accent" />
                 <span>Paperless Digital Passes</span>
               </div>
-              <p className="text-[11px] text-[var(--ink-muted)]">
+              <p className="text-[11px] text-ink-muted">
                 Unique encrypted QR badges with live desk check-in and multi-device scanner support.
               </p>
             </div>
 
-            <div className="p-3 rounded-xl bg-[var(--surface-raised)] border border-[var(--border)] space-y-1">
-              <div className="font-bold text-[var(--ink)] flex items-center gap-1.5">
-                <Utensils className="w-3.5 h-3.5 text-[var(--accent)]" />
+            <div className="p-4 rounded-2xl bg-surface-raised border border-border space-y-1">
+              <div className="font-bold text-ink flex items-center gap-1.5">
+                <Utensils className="w-3.5 h-3.5 text-accent" />
                 <span>Dining Hall Distribution</span>
               </div>
-              <p className="text-[11px] text-[var(--ink-muted)]">
+              <p className="text-[11px] text-ink-muted">
                 Sub-second audio-cued food voucher claims preventing duplicate catering redemptions.
               </p>
             </div>
 
-            <div className="p-3 rounded-xl bg-[var(--surface-raised)] border border-[var(--border)] space-y-1">
-              <div className="font-bold text-[var(--ink)] flex items-center gap-1.5">
-                <Award className="w-3.5 h-3.5 text-[#D9A441]" />
+            <div className="p-4 rounded-2xl bg-surface-raised border border-border space-y-1">
+              <div className="font-bold text-ink flex items-center gap-1.5">
+                <Award className="w-3.5 h-3.5 text-gold" />
                 <span>Stage Leaderboard Engine</span>
               </div>
-              <p className="text-[11px] text-[var(--ink-muted)]">
+              <p className="text-[11px] text-ink-muted">
                 16:9 projector auditorium mode with remote cycling and live championship standings.
               </p>
             </div>
 
-            <div className="p-3 rounded-xl bg-[var(--surface-raised)] border border-[var(--border)] space-y-1">
-              <div className="font-bold text-[var(--ink)] flex items-center gap-1.5">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+            <div className="p-4 rounded-2xl bg-surface-raised border border-border space-y-1">
+              <div className="font-bold text-ink flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-success" />
                 <span>Role-Based Access Control</span>
               </div>
-              <p className="text-[11px] text-[var(--ink-muted)]">
+              <p className="text-[11px] text-ink-muted">
                 Strict NextAuth RBAC boundaries for Students, Coordinators, Catering, and Admins.
               </p>
             </div>
@@ -114,13 +115,13 @@ export default function AboutAppModal({ isOpen, onClose }: AboutAppModalProps) {
         </div>
 
         {/* Technical Stack */}
-        <div className="space-y-2 pt-2 border-t border-[var(--border)]">
-          <h4 className="text-xs font-bold text-[var(--ink-muted)] uppercase tracking-wider">
+        <div className="space-y-2 pt-2 border-t border-border">
+          <h4 className="eyebrow">
             Technical Stack
           </h4>
           <div className="flex flex-wrap gap-1.5 text-[11px]">
             {["Next.js 16 App Router", "React 19", "Tailwind CSS v4", "PostgreSQL", "Prisma ORM", "NextAuth v4", "A* Wayfinding"].map((tech) => (
-              <span key={tech} className="px-2.5 py-0.5 rounded-md bg-[var(--surface-raised)] border border-[var(--border)] text-[var(--ink)] font-mono">
+              <span key={tech} className="px-2.5 py-0.5 rounded-full bg-surface-raised border border-border text-ink font-medium">
                 {tech}
               </span>
             ))}
@@ -128,10 +129,10 @@ export default function AboutAppModal({ isOpen, onClose }: AboutAppModalProps) {
         </div>
 
         {/* Institution Attribution */}
-        <div className="p-3.5 rounded-xl bg-[var(--surface-raised)] border border-[var(--border)] flex items-center justify-between gap-3 text-xs">
+        <div className="p-4 rounded-2xl bg-surface-raised border border-border flex items-center justify-between gap-3 text-xs">
           <div>
-            <div className="font-bold text-[var(--ink)]">Department of Computer Applications (PG)</div>
-            <div className="text-[11px] text-[var(--ink-muted)]">Sacred Heart College (Autonomous), Tirupattur</div>
+            <div className="font-bold text-ink">Department of Computer Applications (PG)</div>
+            <div className="text-[11px] text-ink-muted">Sacred Heart College (Autonomous), Tirupattur</div>
           </div>
           <Button variant="secondary" size="sm" onClick={onClose} className="text-xs shrink-0">
             Close

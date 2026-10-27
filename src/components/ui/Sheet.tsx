@@ -56,7 +56,7 @@ export function Sheet({
       {/* Backdrop Scrim */}
       <div
         onClick={onClose}
-        className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
+        className="fixed inset-0 bg-[#0b3558]/50 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
       />
 
       {/* Drawer Container */}

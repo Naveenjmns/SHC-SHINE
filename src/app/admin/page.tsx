@@ -133,10 +133,10 @@ export default function AdminOverviewPage() {
 
   if (loading && !stats) {
     return (
-      <div className="min-h-screen bg-[var(--surface-raised)] flex items-center justify-center p-6">
+      <div className="min-h-screen bg-canvas flex items-center justify-center p-6">
         <div className="flex flex-col items-center gap-3">
-          <RefreshCw className="w-8 h-8 animate-spin text-[var(--accent)]" />
-          <p className="text-xs font-semibold text-[var(--ink-muted)] uppercase tracking-wider">
+          <RefreshCw className="w-8 h-8 animate-spin text-accent" />
+          <p className="text-xs font-semibold text-ink-muted uppercase tracking-wider">
             Loading Admin Console...
           </p>
         </div>
@@ -145,7 +145,7 @@ export default function AdminOverviewPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[var(--surface-raised)] flex flex-col">
+    <main className="min-h-screen bg-canvas flex flex-col">
       <AdminHeader
         editionNumber={activeEdition?.edition || "26"}
         onOpenCheckIn={() => setShowCheckInModal(true)}
@@ -153,7 +153,7 @@ export default function AdminOverviewPage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full space-y-6">
         {/* Navigation Tabs Bar */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 border-b border-[var(--border)]">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 border-b border-border">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -167,16 +167,16 @@ export default function AdminOverviewPage() {
                     loadReports();
                   }
                 }}
-                className={`px-3 py-2 text-xs font-semibold rounded-lg transition-colors cursor-pointer flex items-center gap-2 whitespace-nowrap ${
+                className={`px-3 py-2 text-xs font-semibold rounded-[8px] transition-colors cursor-pointer flex items-center gap-2 whitespace-nowrap ${
                   isActive
-                    ? "bg-[var(--surface)] text-[var(--accent)] border border-[var(--border)] shadow-xs"
-                    : "text-[var(--ink-muted)] hover:text-[var(--ink)] hover:bg-[var(--surface)]/50"
+                    ? "bg-surface text-accent border border-border shadow-card"
+                    : "text-ink-muted hover:text-ink hover:bg-surface/50"
                 }`}
               >
-                <Icon className={`w-3.5 h-3.5 ${isActive ? "text-[var(--accent)]" : "text-[var(--ink-muted)]"}`} />
+                <Icon className={`w-3.5 h-3.5 ${isActive ? "text-accent" : "text-ink-muted"}`} />
                 <span>{tab.label}</span>
                 {tab.badge !== undefined && tab.badge > 0 && (
-                  <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[var(--surface-raised)] border border-[var(--border)] text-[var(--ink)]">
+                  <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-surface-raised border border-border text-ink">
                     {tab.badge}
                   </span>
                 )}

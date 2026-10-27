@@ -8,6 +8,12 @@ import type { RegistrationRecord, CollegeGroup } from "../components/AdminRegist
 import type { EventEditionItem } from "../components/AdminEditionsTab";
 import type { WaypointNode, WaypointEdge } from "@/lib/wayfinding";
 import { downloadEventParticipantsCSV } from "@/lib/exportEventCsv";
+import {
+  resolveEditionTheme,
+  DEFAULT_PRIMARY_ACCENT,
+  DEFAULT_SECONDARY_ACCENT,
+  DEFAULT_BG_COLOR,
+} from "@/lib/colorUtils";
 
 export function useAdminData() {
   const { toast, confirmAction } = useToast();
@@ -40,9 +46,9 @@ export function useAdminData() {
     logoUrl: "",
     primaryCtaText: "EXPLORE SHINE →",
     primaryCtaLink: "#events",
-    themePrimaryAccent: "#FF6B1A",
-    themeSecondaryAccent: "#D9A441",
-    themeBgColor: "#FAF8F5",
+    themePrimaryAccent: DEFAULT_PRIMARY_ACCENT,
+    themeSecondaryAccent: DEFAULT_SECONDARY_ACCENT,
+    themeBgColor: DEFAULT_BG_COLOR,
     institutionName: "",
     institutionShortName: "SHC",
     institutionLocation: "",
@@ -157,6 +163,11 @@ export function useAdminData() {
         setActiveEdition(active);
 
         if (active) {
+          const theme = resolveEditionTheme(
+            active.themePrimaryAccent,
+            active.themeSecondaryAccent,
+            active.themeBgColor
+          );
           setBrandingForm({
             name: active.name || "SHINE",
             edition: active.edition || "26",
@@ -167,9 +178,9 @@ export function useAdminData() {
             logoUrl: active.logoUrl || "",
             primaryCtaText: active.primaryCtaText || "EXPLORE SHINE →",
             primaryCtaLink: active.primaryCtaLink || "#events",
-            themePrimaryAccent: active.themePrimaryAccent || "#FF6B1A",
-            themeSecondaryAccent: active.themeSecondaryAccent || "#D9A441",
-            themeBgColor: active.themeBgColor || "#FAF8F5",
+            themePrimaryAccent: theme.primary,
+            themeSecondaryAccent: theme.secondary,
+            themeBgColor: theme.bg,
             institutionName: active.institutionName || "",
             institutionShortName: active.institutionShortName || "SHC",
             institutionLocation: active.institutionLocation || "",
@@ -257,20 +268,33 @@ export function useAdminData() {
     }
   }, [toast]);
 
+  // Live-preview theme edits across the console (ThemeInjector listens for this)
+  useEffect(() => {
+    window.dispatchEvent(
+      new CustomEvent("shine:theme-update", {
+        detail: {
+          primary: brandingForm.themePrimaryAccent,
+          secondary: brandingForm.themeSecondaryAccent,
+          bg: brandingForm.themeBgColor,
+        },
+      })
+    );
+  }, [brandingForm.themePrimaryAccent, brandingForm.themeSecondaryAccent, brandingForm.themeBgColor]);
+
   const handleSaveBranding = async () => {
     setSaving(true);
     try {
-      const res = await fetch("/api/admin/branding", {
-        method: "POST",
+      const res = await fetch("/api/admin/edition", {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(brandingForm),
+        body: JSON.stringify({ ...brandingForm, id: activeEdition?.id }),
       });
       const data = await safeJson(res);
       if (res.ok && data.success) {
         toast.success("Settings saved successfully.");
         loadAdminData();
       } else {
-        throw new Error(data.message || "Failed to save settings");
+        throw new Error(data.error || data.message || "Failed to save settings");
       }
     } catch (err: any) {
       toast.error(err.message);
@@ -283,10 +307,10 @@ export function useAdminData() {
     const nextState = !brandingForm.isRegistrationOpen;
     setSaving(true);
     try {
-      const res = await fetch("/api/admin/branding", {
-        method: "POST",
+      const res = await fetch("/api/admin/edition", {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...brandingForm, isRegistrationOpen: nextState }),
+        body: JSON.stringify({ ...brandingForm, id: activeEdition?.id, isRegistrationOpen: nextState }),
       });
       const data = await safeJson(res);
       if (res.ok && data.success) {
@@ -301,10 +325,10 @@ export function useAdminData() {
   const handleToggleStageMode = async (enabled: boolean) => {
     setSaving(true);
     try {
-      const res = await fetch("/api/admin/branding", {
-        method: "POST",
+      const res = await fetch("/api/admin/edition", {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...brandingForm, showStageModeInStudentPortal: enabled }),
+        body: JSON.stringify({ ...brandingForm, id: activeEdition?.id, showStageModeInStudentPortal: enabled }),
       });
       const data = await safeJson(res);
       if (res.ok && data.success) {

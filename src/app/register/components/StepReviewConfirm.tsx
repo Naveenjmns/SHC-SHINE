@@ -55,9 +55,9 @@ export default function StepReviewConfirm({
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      <Card>
+      <Card className="rounded-3xl">
         <CardHeader>
-          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-accent">
+          <div className="eyebrow flex items-center gap-2 text-accent">
             <CheckCircle2 className="w-4 h-4" /> Step 3 of 3
           </div>
           <CardTitle>Review Delegation & Live Fee Summary</CardTitle>
@@ -68,8 +68,8 @@ export default function StepReviewConfirm({
       </Card>
 
       {/* Institution & Team Lead Summary */}
-      <Card className="p-5 space-y-3">
-        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-ink-muted">
+      <Card className="p-6 space-y-3">
+        <div className="flex items-center gap-2 text-sm font-semibold text-ink">
           <Building2 className="w-4 h-4 text-accent" /> Affiliated Institution
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
@@ -92,9 +92,9 @@ export default function StepReviewConfirm({
       </Card>
 
       {/* Roster & Event Allocations */}
-      <Card className="p-5 space-y-3">
+      <Card className="p-6 space-y-3">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-ink-muted">
+          <div className="flex items-center gap-2 text-sm font-semibold text-ink">
             <Users className="w-4 h-4 text-accent" /> Registered Delegates ({members.length})
           </div>
         </div>
@@ -116,7 +116,7 @@ export default function StepReviewConfirm({
                 {m.eventIds.map((evtId) => (
                   <span
                     key={evtId}
-                    className="inline-block px-2 py-0.5 rounded-[4px] bg-surface-raised border border-border text-[11px] text-ink-muted"
+                    className="inline-block px-2 py-0.5 rounded-full bg-surface-raised text-[11px] font-medium text-ink-muted"
                   >
                     {getEventName(evtId)}
                   </span>
@@ -128,9 +128,9 @@ export default function StepReviewConfirm({
       </Card>
 
       {/* Live Fee Summary */}
-      <Card className="p-5 space-y-4 bg-surface-raised border-border">
+      <Card className="p-6 space-y-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-ink-muted">
+          <div className="flex items-center gap-2 text-sm font-semibold text-ink">
             <ReceiptIndianRupee className="w-4 h-4 text-accent" /> Live Fee Summary
           </div>
           <Badge variant="accent">Official Registration</Badge>
@@ -155,7 +155,7 @@ export default function StepReviewConfirm({
       </Card>
 
       {/* Terms & Code of Conduct */}
-      <div className="p-4 rounded-[8px] bg-surface border border-border">
+      <div className="p-5 rounded-2xl bg-surface border border-border shadow-card">
         <Checkbox
           checked={agreedToTerms}
           onChange={(e) => setAgreedToTerms(e.target.checked)}
@@ -165,7 +165,7 @@ export default function StepReviewConfirm({
       </div>
 
       {submitError && (
-        <div className="p-4 rounded-[8px] bg-danger-surface border border-danger-border text-xs text-danger-ink flex items-start gap-2.5">
+        <div className="p-4 rounded-2xl bg-danger-surface border border-danger-border text-xs text-danger-ink flex items-start gap-2.5">
           <AlertCircle className="w-4 h-4 text-danger shrink-0 mt-0.5" />
           <div>{submitError}</div>
         </div>
@@ -174,7 +174,7 @@ export default function StepReviewConfirm({
       {/* Actions */}
       <div className="pt-2 flex items-center justify-between">
         <Button
-          variant="secondary"
+          variant="outline"
           size="md"
           onClick={onPrev}
           disabled={isSubmitting}

@@ -56,7 +56,7 @@ export default function EventDetailModal({
       title={
         <div className="flex items-center gap-2">
           <Badge
-            variant={event.category === "ON_STAGE" ? "confirmed" : "neutral"}
+            variant={event.category === "ON_STAGE" ? "accent" : "neutral"}
             size="sm"
           >
             {event.category === "ON_STAGE" ? "On-Stage Arena" : "Off-Stage Challenge"}
@@ -69,14 +69,14 @@ export default function EventDetailModal({
     >
       <div className="space-y-6 text-sm text-ink">
         {/* Venue & Location Waypoint */}
-        <div className="p-4 rounded-[8px] bg-surface-raised border border-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div className="p-4 rounded-2xl bg-surface-raised flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-[6px] bg-surface border border-border flex items-center justify-center text-accent shrink-0">
+            <div className="w-9 h-9 rounded-[8px] bg-accent-muted flex items-center justify-center text-accent shrink-0">
               <MapPin className="w-4 h-4" />
             </div>
             <div>
-              <div className="text-xs font-semibold text-ink">Arena Venue</div>
-              <div className="text-xs text-ink-muted">{event.venue || "Main Auditorium Complex"}</div>
+              <div className="text-sm font-semibold text-ink">Arena Venue</div>
+              <div className="text-sm text-ink-muted">{event.venue || "Main Auditorium Complex"}</div>
             </div>
           </div>
 
@@ -91,10 +91,10 @@ export default function EventDetailModal({
 
         {/* Rules & Guidelines */}
         <div className="space-y-2">
-          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-ink-muted">
+          <div className="flex items-center gap-2 text-sm font-semibold text-ink">
             <BookOpen className="w-4 h-4 text-accent" /> Rules & Evaluation Criteria
           </div>
-          <div className="p-4 rounded-[8px] border border-border bg-surface text-xs leading-relaxed text-ink space-y-2 max-h-48 overflow-y-auto whitespace-pre-line">
+          <div className="p-4 rounded-2xl border border-border bg-surface text-sm leading-relaxed text-ink space-y-2 max-h-48 overflow-y-auto whitespace-pre-line">
             {event.rules ||
               "1. Valid bona fide college ID card is mandatory.\n2. Maximum 2 participants per institution.\n3. Decision of the judging panel will be final and binding."}
           </div>
@@ -102,16 +102,16 @@ export default function EventDetailModal({
 
         {/* Prelims Schedule (if applicable) */}
         {event.hasPrelims && (
-          <div className="p-4 rounded-[8px] border border-amber-200 bg-amber-50/50 dark:bg-amber-950/20 dark:border-amber-900/40 space-y-2">
-            <div className="flex items-center gap-2 text-xs font-bold text-amber-800 dark:text-amber-300">
-              <Calendar className="w-4 h-4 text-amber-600" /> Preliminary Round Schedule
+          <div className="p-4 rounded-2xl border border-warning-border bg-warning-surface space-y-2">
+            <div className="flex items-center gap-2 text-sm font-semibold text-warning-ink">
+              <Calendar className="w-4 h-4 text-warning" /> Preliminary Round Schedule
             </div>
-            <p className="text-xs text-amber-900/80 dark:text-amber-200/80">
+            <p className="text-sm text-warning-ink">
               Venue: <span className="font-semibold">{event.prelimsVenue || "Lab 3"}</span>
               {event.prelimsDateTime && ` at ${formatTimeSafe(event.prelimsDateTime)}`}
             </p>
             {event.prelimsRules && (
-              <p className="text-xs text-amber-900/80 dark:text-amber-200/80 italic">
+              <p className="text-sm text-warning-ink italic">
                 {event.prelimsRules}
               </p>
             )}
@@ -120,22 +120,22 @@ export default function EventDetailModal({
 
         {/* Event Coordinators Strip */}
         <div className="space-y-2">
-          <div className="text-xs font-semibold uppercase tracking-wider text-ink-muted">
+          <div className="text-sm font-semibold text-ink">
             Event Coordinators
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {event.staffCoordinatorName && (
-              <div className="p-3 rounded-[8px] border border-border bg-surface-raised flex items-center gap-3">
+              <div className="p-4 rounded-2xl border border-border bg-surface flex items-center gap-3">
                 <Avatar name={event.staffCoordinatorName} size="sm" />
                 <div className="min-w-0 flex-1">
-                  <div className="text-xs font-semibold text-ink truncate">
+                  <div className="text-sm font-semibold text-ink truncate">
                     {event.staffCoordinatorName}
                   </div>
-                  <div className="text-[11px] text-ink-muted">Staff Coordinator</div>
+                  <div className="text-xs text-ink-muted">Staff Coordinator</div>
                   {event.staffCoordinatorPhone && (
                     <a
                       href={`tel:${event.staffCoordinatorPhone}`}
-                      className="text-[11px] text-accent hover:underline flex items-center gap-1 mt-0.5"
+                      className="text-xs text-accent hover:underline flex items-center gap-1 mt-0.5 tabular-nums"
                     >
                       <Phone className="w-3 h-3" /> {event.staffCoordinatorPhone}
                     </a>
@@ -145,17 +145,17 @@ export default function EventDetailModal({
             )}
 
             {event.studentCoordinatorName && (
-              <div className="p-3 rounded-[8px] border border-border bg-surface-raised flex items-center gap-3">
+              <div className="p-4 rounded-2xl border border-border bg-surface flex items-center gap-3">
                 <Avatar name={event.studentCoordinatorName} size="sm" />
                 <div className="min-w-0 flex-1">
-                  <div className="text-xs font-semibold text-ink truncate">
+                  <div className="text-sm font-semibold text-ink truncate">
                     {event.studentCoordinatorName}
                   </div>
-                  <div className="text-[11px] text-ink-muted">Student Coordinator</div>
+                  <div className="text-xs text-ink-muted">Student Coordinator</div>
                   {event.studentCoordinatorPhone && (
                     <a
                       href={`tel:${event.studentCoordinatorPhone}`}
-                      className="text-[11px] text-accent hover:underline flex items-center gap-1 mt-0.5"
+                      className="text-xs text-accent hover:underline flex items-center gap-1 mt-0.5 tabular-nums"
                     >
                       <Phone className="w-3 h-3" /> {event.studentCoordinatorPhone}
                     </a>
@@ -167,8 +167,8 @@ export default function EventDetailModal({
         </div>
 
         {/* Modal Bottom CTA */}
-        <div className="pt-2 flex items-center justify-between border-t border-border">
-          <Button variant="secondary" size="sm" onClick={onClose}>
+        <div className="pt-5 flex items-center justify-between gap-3 border-t border-border">
+          <Button variant="outline" size="sm" onClick={onClose}>
             Close
           </Button>
 

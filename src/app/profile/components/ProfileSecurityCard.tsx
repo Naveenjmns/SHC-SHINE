@@ -41,21 +41,21 @@ export default function ProfileSecurityCard({
   };
 
   return (
-    <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-6 shadow-xs space-y-4">
-      <div className="flex items-center justify-between pb-3 border-b border-[var(--border)]">
+    <div className="bg-surface border border-border rounded-2xl p-6 shadow-card space-y-4">
+      <div className="flex items-center justify-between pb-3 border-b border-border">
         <div>
-          <h3 className="text-sm font-bold text-[var(--ink)] flex items-center gap-2">
-            <KeyRound className="w-4 h-4 text-[var(--accent)]" />
+          <h3 className="text-sm font-bold text-ink flex items-center gap-2">
+            <KeyRound className="w-4 h-4 text-accent" />
             <span>Account Security</span>
           </h3>
-          <p className="text-xs text-[var(--ink-muted)]">
+          <p className="text-xs text-ink-muted">
             Change your account password for secure festival portal access.
           </p>
         </div>
       </div>
 
       {errorMsg && (
-        <div className="p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 rounded-xl text-xs flex items-center gap-2">
+        <div className="p-3 bg-danger-surface border border-danger-border text-danger-ink rounded-[8px] text-xs flex items-center gap-2">
           <AlertCircle className="w-4 h-4 shrink-0" />
           <span>{errorMsg}</span>
         </div>
@@ -63,7 +63,7 @@ export default function ProfileSecurityCard({
 
       <form onSubmit={handleSubmit} className="space-y-3.5">
         <div>
-          <label className="block text-xs font-semibold text-[var(--ink)] mb-1">
+          <label className="block text-xs font-semibold text-ink mb-1">
             Current Password *
           </label>
           <Input
@@ -77,7 +77,7 @@ export default function ProfileSecurityCard({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-semibold text-[var(--ink)] mb-1">
+            <label className="block text-xs font-semibold text-ink mb-1">
               New Password *
             </label>
             <Input
@@ -90,7 +90,7 @@ export default function ProfileSecurityCard({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-[var(--ink)] mb-1">
+            <label className="block text-xs font-semibold text-ink mb-1">
               Confirm New Password *
             </label>
             <Input
@@ -103,8 +103,8 @@ export default function ProfileSecurityCard({
           </div>
         </div>
 
-        <div className="flex justify-end pt-2 border-t border-[var(--border)]">
-          <Button variant="secondary" size="sm" type="submit" loading={changing}>
+        <div className="flex justify-end pt-2 border-t border-border">
+          <Button variant="outline" size="sm" type="submit" loading={changing}>
             Update Password
           </Button>
         </div>

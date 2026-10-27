@@ -28,9 +28,9 @@ export function EmptyState({
 }: EmptyStateProps) {
   return (
     <div
-      className={`p-10 rounded-[12px] border border-dashed border-border bg-surface text-center flex flex-col items-center justify-center space-y-4 ${className}`}
+      className={`p-10 rounded-2xl border border-dashed border-border-strong bg-surface text-center flex flex-col items-center justify-center space-y-4 ${className}`}
     >
-      <div className="w-12 h-12 rounded-[12px] bg-surface-raised border border-border flex items-center justify-center text-ink-muted shrink-0">
+      <div className="w-12 h-12 rounded-2xl bg-accent-muted flex items-center justify-center text-accent shrink-0">
         {icon || <Inbox className="w-6 h-6" />}
       </div>
 

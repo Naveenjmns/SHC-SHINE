@@ -97,30 +97,30 @@ export default function AdminRegistrationsTab({
   const [regViewMode, setRegViewMode] = useState<"COLLEGE" | "FLAT">("COLLEGE");
 
   return (
-    <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-5 space-y-5">
+    <div className="bg-surface border border-border rounded-2xl shadow-card p-5 space-y-5">
       {/* Header Controls */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[var(--border)]">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-border">
         <div>
-          <h3 className="text-base font-bold text-[var(--ink)]">
+          <h3 className="text-base font-bold text-ink">
             Student Registrations &amp; Delegation Approvals
           </h3>
-          <p className="text-xs text-[var(--ink-muted)]">
+          <p className="text-xs text-ink-muted">
             Batch-approve contingents college-wise or inspect individual delegates.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
-          <div className="bg-[var(--surface-raised)] p-0.5 rounded-lg flex items-center border border-[var(--border)]">
+          <div className="bg-surface-raised p-0.5 rounded-2xl flex items-center border border-border">
             <button
               type="button"
               onClick={() => setRegViewMode("COLLEGE")}
               className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-colors cursor-pointer flex items-center gap-1.5 ${
                 regViewMode === "COLLEGE"
-                  ? "bg-[var(--surface)] text-[var(--ink)] shadow-xs"
-                  : "text-[var(--ink-muted)] hover:text-[var(--ink)]"
+                  ? "bg-surface text-ink"
+                  : "text-ink-muted hover:text-ink"
               }`}
             >
-              <Building2 className="w-3.5 h-3.5 text-[var(--accent)]" />
+              <Building2 className="w-3.5 h-3.5 text-accent" />
               <span>Colleges ({collegeGroups.length})</span>
             </button>
             <button
@@ -128,17 +128,17 @@ export default function AdminRegistrationsTab({
               onClick={() => setRegViewMode("FLAT")}
               className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-colors cursor-pointer flex items-center gap-1.5 ${
                 regViewMode === "FLAT"
-                  ? "bg-[var(--surface)] text-[var(--ink)] shadow-xs"
-                  : "text-[var(--ink-muted)] hover:text-[var(--ink)]"
+                  ? "bg-surface text-ink"
+                  : "text-ink-muted hover:text-ink"
               }`}
             >
-              <ListFilter className="w-3.5 h-3.5 text-[var(--accent)]" />
+              <ListFilter className="w-3.5 h-3.5 text-accent" />
               <span>All ({filteredRegistrations.length})</span>
             </button>
           </div>
 
           <div className="relative">
-            <Search className="w-3.5 h-3.5 text-[var(--ink-muted)] absolute left-2.5 top-1/2 -translate-y-1/2" />
+            <Search className="w-3.5 h-3.5 text-ink-muted absolute left-2.5 top-1/2 -translate-y-1/2" />
             <Input
               placeholder="Search delegate, college..."
               value={searchTerm}
@@ -150,7 +150,7 @@ export default function AdminRegistrationsTab({
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-2.5 py-1 text-xs border border-[var(--border)] rounded-lg bg-[var(--surface)] text-[var(--ink)] font-medium h-8 outline-none"
+            className="px-2.5 py-1 text-xs border border-border rounded-[8px] bg-surface text-ink font-medium h-8 outline-none"
           >
             <option value="ALL">All Statuses</option>
             <option value="PENDING">Pending</option>
@@ -164,7 +164,7 @@ export default function AdminRegistrationsTab({
       {regViewMode === "COLLEGE" && (
         <div className="space-y-3">
           {collegeGroups.length === 0 ? (
-            <div className="text-center py-10 text-xs text-[var(--ink-muted)] bg-[var(--surface-raised)] rounded-lg border border-[var(--border)]">
+            <div className="text-center py-10 text-xs text-ink-muted bg-surface-raised rounded-2xl border border-border">
               No college registrations match your filter criteria.
             </div>
           ) : (
@@ -185,10 +185,10 @@ export default function AdminRegistrationsTab({
 
       {/* VIEW MODE 2: FLAT TABLE */}
       {regViewMode === "FLAT" && (
-        <div className="overflow-x-auto border border-[var(--border)] rounded-lg">
+        <div className="overflow-x-auto border border-border rounded-2xl">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
-              <tr className="bg-[var(--surface-raised)] border-b border-[var(--border)] font-semibold text-[var(--ink-muted)] uppercase">
+              <tr className="bg-surface-raised border-b border-border font-semibold text-ink-muted uppercase">
                 <th className="py-2.5 px-3">Delegate</th>
                 <th className="py-2.5 px-3">Institution</th>
                 <th className="py-2.5 px-3">Event</th>
@@ -196,25 +196,25 @@ export default function AdminRegistrationsTab({
                 <th className="py-2.5 px-3 text-right">Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[var(--border)]">
+            <tbody className="divide-y divide-border">
               {filteredRegistrations.map((reg) => (
-                <tr key={reg.id} className="hover:bg-[var(--surface-raised)] transition-colors">
+                <tr key={reg.id} className="hover:bg-surface-raised transition-colors">
                   <td className="py-2.5 px-3">
-                    <span className="font-semibold text-[var(--ink)] block">{reg.user.name}</span>
-                    <span className="text-[11px] text-[var(--ink-muted)]">{reg.user.email}</span>
+                    <span className="font-semibold text-ink block">{reg.user.name}</span>
+                    <span className="text-[11px] text-ink-muted">{reg.user.email}</span>
                   </td>
-                  <td className="py-2.5 px-3 text-[var(--ink)]">
+                  <td className="py-2.5 px-3 text-ink">
                     {reg.delegation?.collegeName || reg.user.collegeName}
                   </td>
-                  <td className="py-2.5 px-3 text-[var(--ink)]">{reg.event.name}</td>
+                  <td className="py-2.5 px-3 text-ink">{reg.event.name}</td>
                   <td className="py-2.5 px-3">
                     <span
                       className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
                         reg.status === "CONFIRMED"
-                          ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300"
+                          ? "bg-success-surface text-success-ink"
                           : reg.status === "PENDING"
-                          ? "bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300"
-                          : "bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300"
+                          ? "bg-warning-surface text-warning-ink"
+                          : "bg-danger-surface text-danger-ink"
                       }`}
                     >
                       {reg.status}
@@ -225,7 +225,7 @@ export default function AdminRegistrationsTab({
                       {reg.status !== "CONFIRMED" && (
                         <button
                           onClick={() => onApproveSingle(reg.id)}
-                          className="p-1 text-emerald-700 hover:bg-emerald-50 rounded"
+                          className="p-1 text-success-ink hover:bg-success-surface rounded"
                           title="Approve"
                         >
                           <Check className="w-3.5 h-3.5" />
@@ -234,7 +234,7 @@ export default function AdminRegistrationsTab({
                       {reg.status !== "REJECTED" && (
                         <button
                           onClick={() => onRejectSingle(reg.id)}
-                          className="p-1 text-rose-700 hover:bg-rose-50 rounded"
+                          className="p-1 text-danger-ink hover:bg-danger-surface rounded"
                           title="Reject"
                         >
                           <X className="w-3.5 h-3.5" />

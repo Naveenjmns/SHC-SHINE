@@ -133,7 +133,7 @@ export default function CoordinatorParticipantTable({
               <TableCell>
                 <div className="flex items-center gap-2 text-xs">
                   {row.score !== null && row.score !== undefined && (
-                    <span className="font-mono font-bold text-ink">
+                    <span className="font-bold tabular-nums text-ink">
                       {row.score} pts
                     </span>
                   )}

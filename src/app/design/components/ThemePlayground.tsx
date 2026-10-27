@@ -8,15 +8,17 @@ import {
   isContrastSafe,
   getContrastSafeInk,
   INSTITUTION_THEME_PRESETS,
+  DEFAULT_PRIMARY_ACCENT,
+  DEFAULT_SECONDARY_ACCENT,
 } from "@/lib/colorUtils";
 
 export default function ThemePlayground() {
   const [activeTheme, setActiveTheme] = useState<"light" | "dark" | "stage">("light");
-  const [customPrimary, setCustomPrimary] = useState("#FF6B1A");
-  const [customSecondary, setCustomSecondary] = useState("#D9A441");
+  const [customPrimary, setCustomPrimary] = useState(DEFAULT_PRIMARY_ACCENT);
+  const [customSecondary, setCustomSecondary] = useState(DEFAULT_SECONDARY_ACCENT);
 
   // Contrast calculator state
-  const [fgColor, setFgColor] = useState("#0C0A09");
+  const [fgColor, setFgColor] = useState("#0B3558");
   const [bgColor, setBgColor] = useState("#FFFFFF");
 
   // Switch document theme
@@ -62,7 +64,7 @@ export default function ThemePlayground() {
   };
 
   const resetToDefault = () => {
-    handlePresetSelect("#FF6B1A", "#D9A441");
+    handlePresetSelect(DEFAULT_PRIMARY_ACCENT, DEFAULT_SECONDARY_ACCENT);
     applyTheme("light");
   };
 
@@ -75,18 +77,19 @@ export default function ThemePlayground() {
   return (
     <section className="space-y-6">
       <div>
-        <h2 className="text-xl font-bold text-ink">4. Interactive Theme & Token Playground</h2>
+        <p className="eyebrow">Playground</p>
+        <h2 className="text-2xl font-bold text-ink mt-1">1. Interactive Theme &amp; Token Playground</h2>
         <p className="text-sm text-ink-muted mt-1">
-          Switch themes, test dynamic edition presets, and audit color contrast in real-time.
+          Switch between light, dark-navy and stage modes, test edition accent presets (Signal Blue is the default), and audit contrast in real time.
         </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left: Theme Mode & Accent Presets */}
-        <div className="p-5 border border-border rounded-[12px] bg-surface space-y-5">
+        <div className="p-6 border border-border rounded-2xl bg-surface shadow-card space-y-5">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-ink-muted">
-              Theme Mode & Presets
+            <h3 className="eyebrow">
+              Theme mode &amp; presets
             </h3>
             <button
               onClick={resetToDefault}
@@ -117,7 +120,7 @@ export default function ThemePlayground() {
                   : "bg-surface-raised border-border text-ink hover:bg-surface-sunken"
               }`}
             >
-              <Moon className="w-4 h-4" /> Dark Workspace
+              <Moon className="w-4 h-4" /> Dark (Navy)
             </button>
 
             <button
@@ -147,12 +150,12 @@ export default function ThemePlayground() {
                   }`}
                 >
                   <span
-                    className="w-5 h-5 rounded-full shrink-0 border border-black/10"
+                    className="w-5 h-5 rounded-full shrink-0 border border-border"
                     style={{ backgroundColor: preset.primary }}
                   />
                   <div className="truncate">
                     <div className="text-xs font-semibold text-ink truncate">{preset.name}</div>
-                    <div className="text-[11px] text-ink-subtle truncate">{preset.primary}</div>
+                    <div className="text-[11px] font-mono text-ink-subtle truncate">{preset.primary}</div>
                   </div>
                 </button>
               ))}
@@ -161,9 +164,9 @@ export default function ThemePlayground() {
         </div>
 
         {/* Right: Live WCAG AA Contrast Calculator */}
-        <div className="p-5 border border-border rounded-[12px] bg-surface space-y-5">
-          <h3 className="text-sm font-semibold uppercase tracking-wider text-ink-muted">
-            Live WCAG AA Contrast Calculator
+        <div className="p-6 border border-border rounded-2xl bg-surface shadow-card space-y-5">
+          <h3 className="eyebrow">
+            Live WCAG AA contrast calculator
           </h3>
 
           <div className="grid grid-cols-2 gap-3">
@@ -174,13 +177,13 @@ export default function ThemePlayground() {
                   type="color"
                   value={fgColor}
                   onChange={(e) => setFgColor(e.target.value)}
-                  className="w-9 h-9 rounded-[6px] border border-border cursor-pointer p-0.5"
+                  className="w-9 h-9 rounded-[8px] border border-border cursor-pointer p-0.5"
                 />
                 <input
                   type="text"
                   value={fgColor}
                   onChange={(e) => setFgColor(e.target.value)}
-                  className="w-full h-9 px-2.5 rounded-[6px] border border-border bg-surface text-xs font-mono uppercase text-ink"
+                  className="w-full h-9 px-2.5 rounded-[8px] border border-border bg-surface-raised text-xs font-mono uppercase text-ink focus:outline-none focus:border-accent"
                 />
               </div>
             </div>
@@ -192,13 +195,13 @@ export default function ThemePlayground() {
                   type="color"
                   value={bgColor}
                   onChange={(e) => setBgColor(e.target.value)}
-                  className="w-9 h-9 rounded-[6px] border border-border cursor-pointer p-0.5"
+                  className="w-9 h-9 rounded-[8px] border border-border cursor-pointer p-0.5"
                 />
                 <input
                   type="text"
                   value={bgColor}
                   onChange={(e) => setBgColor(e.target.value)}
-                  className="w-full h-9 px-2.5 rounded-[6px] border border-border bg-surface text-xs font-mono uppercase text-ink"
+                  className="w-full h-9 px-2.5 rounded-[8px] border border-border bg-surface-raised text-xs font-mono uppercase text-ink focus:outline-none focus:border-accent"
                 />
               </div>
             </div>
@@ -218,8 +221,8 @@ export default function ThemePlayground() {
           {/* Results Matrix */}
           <div className="grid grid-cols-3 gap-2 text-center">
             <div className="p-2.5 rounded-[8px] border border-border bg-surface-raised space-y-0.5">
-              <div className="text-[10px] uppercase font-mono text-ink-muted">Contrast Ratio</div>
-              <div className="text-base font-bold font-mono text-ink">
+              <div className="eyebrow text-[10px]">Contrast ratio</div>
+              <div className="text-base font-bold tabular-nums text-ink">
                 {contrastRatio.toFixed(2)}:1
               </div>
             </div>
@@ -231,7 +234,7 @@ export default function ThemePlayground() {
                   : "bg-danger-surface border-danger-border text-danger-ink"
               }`}
             >
-              <div className="text-[10px] uppercase font-mono">Normal (≥4.5)</div>
+              <div className="text-[10px] font-semibold tabular-nums">Normal text (≥4.5)</div>
               <div className="text-xs font-bold flex items-center justify-center gap-1">
                 {passesNormalAA ? (
                   <CheckCircle2 className="w-3.5 h-3.5" />
@@ -249,7 +252,7 @@ export default function ThemePlayground() {
                   : "bg-danger-surface border-danger-border text-danger-ink"
               }`}
             >
-              <div className="text-[10px] uppercase font-mono">Large (≥3.0)</div>
+              <div className="text-[10px] font-semibold tabular-nums">Large text (≥3.0)</div>
               <div className="text-xs font-bold flex items-center justify-center gap-1">
                 {passesLargeAA ? (
                   <CheckCircle2 className="w-3.5 h-3.5" />

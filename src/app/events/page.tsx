@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import EventCard from "@/components/EventCard";
-import { Input, Badge, EmptyState } from "@/components/ui";
+import { Input, EmptyState } from "@/components/ui";
 import { Search, Theater, Laptop, Sparkles, Filter } from "lucide-react";
 import { safeJson } from "@/lib/safeFetch";
 
@@ -73,17 +73,17 @@ export default function EventsPage() {
   const offStageCount = events.filter((e) => e.category === "OFF_STAGE").length;
 
   return (
-    <div className="min-h-screen bg-surface text-ink flex flex-col">
+    <div className="min-h-screen bg-canvas text-ink flex flex-col">
       <Navbar />
 
-      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 pt-28 pb-16 space-y-8">
+      <main className="flex-1 container-shine pt-28 lg:pt-36 pb-20 space-y-10">
         {/* Header Title & Intro */}
-        <div className="space-y-2 border-b border-border pb-6">
-          <Badge variant="accent">COMPETITIONS DIRECTORY</Badge>
-          <h1 className="text-3xl sm:text-4xl font-bold font-display text-ink tracking-tight">
+        <div className="space-y-3 border-b border-border pb-8">
+          <span className="eyebrow">Competitions directory</span>
+          <h1 className="text-fluid-h1 text-ink">
             Fest Competitions & Arenas
           </h1>
-          <p className="text-sm text-ink-muted max-w-2xl">
+          <p className="text-base sm:text-lg text-ink-muted leading-relaxed max-w-2xl">
             Explore all 14 symposium competitions across on-stage presentations and technical coding labs.
             Review venue waypoints, evaluation rules, and coordinator contacts.
           </p>
@@ -92,13 +92,13 @@ export default function EventsPage() {
         {/* Filter & Search Bar */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
           {/* Category Filter Chips */}
-          <div className="inline-flex items-center p-1 rounded-[8px] bg-surface-raised border border-border gap-1 overflow-x-auto">
+          <div className="inline-flex items-center p-1 rounded-[8px] bg-surface border border-border gap-1 overflow-x-auto no-scrollbar">
             <button
               onClick={() => setCategoryFilter("ALL")}
-              className={`min-h-[38px] px-3.5 rounded-[6px] text-xs font-semibold transition-all cursor-pointer ${
+              className={`min-h-[38px] px-3.5 rounded-[6px] text-sm font-semibold whitespace-nowrap transition-all cursor-pointer ${
                 categoryFilter === "ALL"
-                  ? "bg-surface text-ink border border-border shadow-xs"
-                  : "text-ink-muted hover:text-ink hover:bg-surface/40"
+                  ? "bg-accent text-accent-ink border border-transparent"
+                  : "text-ink-muted border border-transparent hover:text-ink hover:bg-surface-raised"
               }`}
             >
               All Events ({events.length})
@@ -106,25 +106,25 @@ export default function EventsPage() {
 
             <button
               onClick={() => setCategoryFilter("ON_STAGE")}
-              className={`min-h-[38px] px-3.5 rounded-[6px] text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+              className={`min-h-[38px] px-3.5 rounded-[6px] text-sm font-semibold whitespace-nowrap flex items-center gap-1.5 transition-all cursor-pointer ${
                 categoryFilter === "ON_STAGE"
-                  ? "bg-surface text-ink border border-border shadow-xs"
-                  : "text-ink-muted hover:text-ink hover:bg-surface/40"
+                  ? "bg-accent text-accent-ink border border-transparent"
+                  : "text-ink-muted border border-transparent hover:text-ink hover:bg-surface-raised"
               }`}
             >
-              <Theater className="w-3.5 h-3.5 text-accent shrink-0" />
+              <Theater className="w-3.5 h-3.5 shrink-0" />
               On-Stage ({onStageCount})
             </button>
 
             <button
               onClick={() => setCategoryFilter("OFF_STAGE")}
-              className={`min-h-[38px] px-3.5 rounded-[6px] text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+              className={`min-h-[38px] px-3.5 rounded-[6px] text-sm font-semibold whitespace-nowrap flex items-center gap-1.5 transition-all cursor-pointer ${
                 categoryFilter === "OFF_STAGE"
-                  ? "bg-surface text-ink border border-border shadow-xs"
-                  : "text-ink-muted hover:text-ink hover:bg-surface/40"
+                  ? "bg-accent text-accent-ink border border-transparent"
+                  : "text-ink-muted border border-transparent hover:text-ink hover:bg-surface-raised"
               }`}
             >
-              <Laptop className="w-3.5 h-3.5 text-accent shrink-0" />
+              <Laptop className="w-3.5 h-3.5 shrink-0" />
               Off-Stage ({offStageCount})
             </button>
           </div>
@@ -146,7 +146,7 @@ export default function EventsPage() {
             {[1, 2, 3, 4, 5, 6].map((n) => (
               <div
                 key={n}
-                className="h-64 rounded-[12px] bg-surface-raised border border-border animate-pulse"
+                className="h-64 rounded-2xl bg-surface border border-border shadow-card animate-pulse"
               />
             ))}
           </div>

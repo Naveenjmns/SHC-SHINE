@@ -102,7 +102,7 @@ export default function RegisteredEventsList({ registrations }: RegisteredEvents
               </div>
 
               {reg.event.hasPrelims && (
-                <div className="text-[11px] text-amber-700 dark:text-amber-300 font-medium">
+                <div className="text-[11px] text-warning-ink font-medium">
                   Prelims: {reg.event.prelimsVenue || "Lab 3"}
                   {reg.event.prelimsDateTime && ` at ${formatTimeSafe(reg.event.prelimsDateTime)}`}
                 </div>

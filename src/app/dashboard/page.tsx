@@ -60,7 +60,7 @@ export default function StudentDashboardPage() {
 
   if (status === "loading" || loading) {
     return (
-      <div className="min-h-screen bg-surface flex items-center justify-center">
+      <div className="min-h-screen bg-canvas flex items-center justify-center">
         <div className="w-8 h-8 rounded-full border-2 border-accent border-t-transparent animate-spin" />
       </div>
     );
@@ -75,21 +75,21 @@ export default function StudentDashboardPage() {
   const nextEvent: DashboardEvent | null = upcomingEvents[0] || null;
 
   return (
-    <div className="min-h-screen bg-surface text-ink flex flex-col">
+    <div className="min-h-screen bg-canvas text-ink flex flex-col">
       <Navbar />
 
       <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 pt-28 pb-16 space-y-8">
         {/* Student Portal Header */}
-        <div className="p-5 rounded-[12px] bg-surface-raised border border-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="space-y-1">
+        <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4">
+          <div className="space-y-2">
             <div className="flex items-center gap-2">
               <Badge variant="accent">STUDENT PORTAL</Badge>
               <span className="text-xs text-ink-muted">SHINE 2026</span>
             </div>
-            <h1 className="text-xl sm:text-2xl font-bold font-display text-ink">
+            <h1 className="text-2xl sm:text-3xl font-bold text-ink">
               Welcome, {session?.user?.name || pass?.name || "Delegate"}
             </h1>
-            <p className="text-xs text-ink-muted flex items-center gap-2">
+            <p className="text-sm text-ink-muted flex items-center gap-2">
               <Building2 className="w-3.5 h-3.5 text-ink-subtle" />
               <span>{delegation?.collegeName || session?.user?.college || "Sacred Heart College"}</span>
             </p>

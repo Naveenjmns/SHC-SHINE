@@ -81,7 +81,7 @@ export default function FoodTokenCard({ foodPass, diningVenue }: FoodTokenCardPr
       >
         <div className="p-4 flex flex-col items-center justify-center text-center space-y-4">
           {foodPass.foodQrData ? (
-            <div className="w-48 h-48 bg-white p-3 rounded-[8px] border border-border shadow-xs flex items-center justify-center">
+            <div className="w-48 h-48 bg-surface p-3 rounded-[8px] border border-border flex items-center justify-center">
               <Image
                 src={foodPass.foodQrData}
                 alt={`Food Token ${foodPass.foodTokenCode}`}

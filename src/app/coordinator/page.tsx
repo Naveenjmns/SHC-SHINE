@@ -94,10 +94,10 @@ export default function CoordinatorDashboard() {
 
   if (status === "loading" || loading) {
     return (
-      <main className="dash-layout flex items-center justify-center p-8">
+      <main className="dash-layout min-h-screen bg-canvas flex items-center justify-center p-8">
         <div className="text-center">
-          <div className="w-10 h-10 border-3 border-orange-500/20 border-t-orange-600 rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-xs font-semibold text-slate-500">Loading coordinator portal...</p>
+          <div className="w-10 h-10 border-3 border-accent-muted border-t-accent rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-sm font-medium text-ink-muted">Loading coordinator portal...</p>
         </div>
       </main>
     );
@@ -119,9 +119,9 @@ export default function CoordinatorDashboard() {
   const festInitial = (festName?.[0] || "S").toUpperCase();
 
   return (
-    <main className="dash-layout flex flex-col min-h-screen">
+    <main className="dash-layout flex flex-col min-h-screen bg-canvas text-ink">
       {/* Calm Light Navigation */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-20">
+      <header className="bg-surface border-b border-border sticky top-0 z-20">
         <div className="container-shine py-3.5 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link href="/" className="flex items-center gap-2">
@@ -132,16 +132,16 @@ export default function CoordinatorDashboard() {
                   className="h-8 w-auto max-w-[40px] object-contain shrink-0"
                 />
               ) : (
-                <div className="w-8 h-8 rounded-lg bg-orange-600 flex items-center justify-center text-white font-black text-base shadow-sm shrink-0">
+                <div className="w-8 h-8 rounded-[8px] bg-surface-inverse flex items-center justify-center text-white font-bold text-base shrink-0">
                   {festInitial}
                 </div>
               )}
-              <span className="font-extrabold text-slate-900 tracking-tight text-base">
-                {festName} <span className="text-orange-600">{festEdition}</span>
+              <span className="font-bold text-ink tracking-tight text-base">
+                {festName} <span className="text-accent">{festEdition}</span>
               </span>
             </Link>
-            <span className="text-slate-300">/</span>
-            <span className="text-xs font-bold text-amber-800 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-md">
+            <span className="text-border-strong">/</span>
+            <span className="pill-badge">
               Coordinator Console
             </span>
           </div>
@@ -149,7 +149,7 @@ export default function CoordinatorDashboard() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => setShowCheckInModal(true)}
-              className="tap-target px-3.5 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 rounded-lg transition-colors flex items-center gap-1.5 shadow-sm cursor-pointer"
+              className="tap-target px-3.5 py-1.5 text-xs font-semibold text-accent-ink bg-accent hover:bg-accent-hover rounded-[8px] transition-colors flex items-center gap-1.5 cursor-pointer"
             >
               <QrCode className="w-3.5 h-3.5" />
               <span>QR Check-in</span>
@@ -157,28 +157,28 @@ export default function CoordinatorDashboard() {
             {session?.user?.role === "ADMIN" && (
               <Link
                 href="/admin"
-                className="tap-target px-3 py-1.5 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+                className="tap-target px-3 py-1.5 text-xs font-semibold text-ink bg-surface border border-border hover:border-accent hover:text-accent rounded-[8px] transition-colors"
               >
                 Switch to Admin Panel →
               </Link>
             )}
             <Link
               href="/leaderboard"
-              className="tap-target px-3 py-1.5 text-xs font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 rounded-lg transition-colors flex items-center gap-1.5"
+              className="tap-target px-3 py-1.5 text-xs font-semibold text-ink bg-surface border border-border hover:border-accent hover:text-accent rounded-[8px] transition-colors flex items-center gap-1.5"
             >
-              <Trophy className="w-3.5 h-3.5 text-amber-600" />
+              <Trophy className="w-3.5 h-3.5 text-gold" />
               Stage Results
             </Link>
             <Link
               href="/profile"
-              className="tap-target px-3 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-lg transition-colors flex items-center gap-1.5 shadow-2xs"
+              className="tap-target px-3 py-1.5 text-xs font-semibold text-ink bg-surface border border-border hover:border-accent hover:text-accent rounded-[8px] transition-colors flex items-center gap-1.5"
             >
-              <User className="w-3.5 h-3.5 text-slate-500" />
+              <User className="w-3.5 h-3.5 text-ink-muted" />
               <span>My Profile</span>
             </Link>
             <button
               onClick={() => signOut({ callbackUrl: "/" })}
-              className="tap-target px-3 py-1.5 text-xs font-medium text-slate-500 hover:text-rose-600 transition-colors"
+              className="tap-target px-3 py-1.5 text-xs font-medium text-ink-muted hover:text-danger transition-colors"
             >
               Sign Out
             </button>
@@ -189,23 +189,23 @@ export default function CoordinatorDashboard() {
       {/* Main Body */}
       <div className="container-shine py-8 flex-1">
         {/* Banner */}
-        <div className="dash-card p-6 sm:p-8 mb-8">
+        <div className="mb-8">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 block mb-1">
+              <span className="eyebrow block mb-1">
                 Faculty & Student Coordinator Desk
               </span>
-              <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+              <h1 className="text-2xl sm:text-3xl font-bold text-ink tracking-tight">
                 {session?.user?.name || "Event Coordinator"}
               </h1>
-              <p className="text-xs text-slate-500 mt-0.5">
+              <p className="text-sm text-ink-muted mt-1">
                 {session?.user?.email} • Manage participant check-ins and enter official competition awards.
               </p>
             </div>
 
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-right">
-              <div className="text-[11px] font-bold text-amber-900 uppercase">Total Assigned</div>
-              <div className="text-xl font-black text-amber-900 tabular-nums">
+            <div className="bg-surface border border-border shadow-card rounded-2xl px-4 py-3 text-right">
+              <div className="text-xs font-medium text-ink-muted">Total Assigned</div>
+              <div className="text-xl font-bold text-ink tabular-nums">
                 {events.length} Event(s)
               </div>
             </div>
@@ -214,30 +214,30 @@ export default function CoordinatorDashboard() {
 
         {/* Metrics Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <div className="dash-card p-5 border-l-4 border-l-slate-400">
-            <div className="text-xs font-bold text-slate-500 uppercase">Assigned Events</div>
-            <div className="text-3xl font-black text-slate-900 mt-1 tabular-nums">
+          <div className="dash-card p-5">
+            <div className="text-xs font-medium text-ink-muted">Assigned Events</div>
+            <div className="text-3xl font-bold text-ink mt-1 tabular-nums">
               {events.length}
             </div>
           </div>
 
-          <div className="dash-card p-5 border-l-4 border-l-orange-500">
-            <div className="text-xs font-bold text-slate-500 uppercase">Total Registrations</div>
-            <div className="text-3xl font-black text-slate-900 mt-1 tabular-nums">
+          <div className="dash-card p-5">
+            <div className="text-xs font-medium text-ink-muted">Total Registrations</div>
+            <div className="text-3xl font-bold text-ink mt-1 tabular-nums">
               {totalRegistrations}
             </div>
           </div>
 
-          <div className="dash-card p-5 border-l-4 border-l-emerald-500">
-            <div className="text-xs font-bold text-slate-500 uppercase">Confirmed</div>
-            <div className="text-3xl font-black text-emerald-600 mt-1 tabular-nums">
+          <div className="dash-card p-5">
+            <div className="text-xs font-medium text-ink-muted">Confirmed</div>
+            <div className="text-3xl font-bold text-success mt-1 tabular-nums">
               {totalConfirmed}
             </div>
           </div>
 
-          <div className="dash-card p-5 border-l-4 border-l-amber-500">
-            <div className="text-xs font-bold text-slate-500 uppercase">Needs Action (Pending)</div>
-            <div className="text-3xl font-black text-amber-600 mt-1 tabular-nums">
+          <div className="dash-card p-5">
+            <div className="text-xs font-medium text-ink-muted">Needs Action (Pending)</div>
+            <div className="text-3xl font-bold text-warning mt-1 tabular-nums">
               {totalPending}
             </div>
           </div>
@@ -245,17 +245,17 @@ export default function CoordinatorDashboard() {
 
         {/* Events Cards */}
         <div>
-          <h2 className="text-lg font-bold text-slate-900 mb-4">
+          <h2 className="text-lg font-bold text-ink mb-4">
             Your Assigned Competitions
           </h2>
 
           {events.length === 0 ? (
             <div className="dash-card p-12 text-center max-w-md mx-auto">
-              <FolderOpen className="w-10 h-10 text-slate-400 mx-auto mb-3" />
-              <h3 className="text-base font-bold text-slate-900 mb-1">
+              <FolderOpen className="w-10 h-10 text-ink-subtle mx-auto mb-3" />
+              <h3 className="text-base font-bold text-ink mb-1">
                 No Events Assigned Yet
               </h3>
-              <p className="text-xs text-slate-500">
+              <p className="text-sm text-ink-muted">
                 You do not currently have any events linked to your coordinator account. Contact the administrator to assign events.
               </p>
             </div>
@@ -268,11 +268,11 @@ export default function CoordinatorDashboard() {
                 return (
                   <div
                     key={ev.id}
-                    className="dash-card p-6 flex flex-col justify-between border-t-4 border-t-slate-800"
+                    className="dash-card p-6 flex flex-col justify-between"
                   >
                     <div>
                       <div className="flex justify-between items-center gap-2 mb-3">
-                        <span className="text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded bg-slate-100 text-slate-700 inline-flex items-center gap-1.5">
+                        <span className="pill-badge">
                           {ev.category === "ON_STAGE" ? (
                             <>
                               <Theater className="w-3.5 h-3.5" />
@@ -285,27 +285,27 @@ export default function CoordinatorDashboard() {
                             </>
                           )}
                         </span>
-                        <span className="text-xs font-bold text-slate-800 tabular-nums">
+                        <span className="text-xs font-semibold text-ink-muted tabular-nums">
                           Fee: ₹{ev.fee}
                         </span>
                       </div>
 
-                      <h3 className="text-xl font-bold text-slate-900 mb-2">
+                      <h3 className="text-xl font-bold text-ink mb-2">
                         {ev.name}
                       </h3>
 
-                      <div className="space-y-1 text-xs text-slate-500 mb-6">
+                      <div className="space-y-1 text-xs text-ink-muted mb-6">
                         {ev.venue && (
                           <div className="flex items-center gap-1.5">
-                            <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                            <span>Venue: <strong className="text-slate-800">{ev.venue}</strong></span>
+                            <MapPin className="w-3.5 h-3.5 text-ink-subtle shrink-0" />
+                            <span>Venue: <strong className="text-ink">{ev.venue}</strong></span>
                           </div>
                         )}
                         <div className="flex items-center gap-1.5">
-                          <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                          <Clock className="w-3.5 h-3.5 text-ink-subtle shrink-0" />
                           <span>
                             Schedule:{" "}
-                            <strong className="text-slate-800 tabular-nums">
+                            <strong className="text-ink tabular-nums">
                               {new Date(ev.dateTime).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
                             </strong>
                           </span>
@@ -313,18 +313,18 @@ export default function CoordinatorDashboard() {
                       </div>
 
                       {/* Attendee Progress Bar */}
-                      <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-6">
+                      <div className="bg-surface-raised rounded-xl p-4 mb-6">
                         <div className="flex justify-between text-xs font-bold mb-2">
-                          <span className="text-slate-600">Total Registered:</span>
-                          <span className="text-slate-900 tabular-nums">{ev._count.registrations}</span>
+                          <span className="text-ink-muted">Total Registered:</span>
+                          <span className="text-ink tabular-nums">{ev._count.registrations}</span>
                         </div>
                         <div className="flex gap-4 text-xs">
-                          <span className="text-emerald-700 font-semibold inline-flex items-center gap-1">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                          <span className="text-success-ink font-semibold inline-flex items-center gap-1">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-success" />
                             <span>{confirmedCount} Confirmed</span>
                           </span>
-                          <span className="text-amber-700 font-semibold inline-flex items-center gap-1">
-                            <Clock className="w-3.5 h-3.5 text-amber-600" />
+                          <span className="text-warning-ink font-semibold inline-flex items-center gap-1">
+                            <Clock className="w-3.5 h-3.5 text-warning" />
                             <span>{pendingCount} Pending Triage</span>
                           </span>
                         </div>
@@ -333,7 +333,7 @@ export default function CoordinatorDashboard() {
 
                     <Link
                       href={`/coordinator/${ev.id}`}
-                      className="tap-target w-full bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition-colors"
+                      className="tap-target w-full bg-accent hover:bg-accent-hover text-accent-ink text-sm font-semibold rounded-[8px] flex items-center justify-center gap-2 transition-colors"
                     >
                       Manage Registrations & Results →
                     </Link>

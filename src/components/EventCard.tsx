@@ -94,7 +94,7 @@ export default function EventCard(props: EventCardProps) {
         <CardHeader>
           <div className="flex items-center justify-between gap-2">
             <Badge
-              variant={props.category === "ON_STAGE" ? "confirmed" : "neutral"}
+              variant={props.category === "ON_STAGE" ? "accent" : "neutral"}
               size="sm"
             >
               {props.category === "ON_STAGE" ? "On-Stage" : "Off-Stage"}
@@ -114,16 +114,16 @@ export default function EventCard(props: EventCardProps) {
           </CardDescription>
         </CardHeader>
 
-        <CardContent className="space-y-2 pt-2 text-xs text-ink-muted">
-          <div className="flex items-center gap-1.5">
-            <Clock className="w-3.5 h-3.5 text-accent shrink-0" />
+        <CardContent className="space-y-2 pt-2 text-sm text-ink-muted">
+          <div className="flex items-center gap-2 tabular-nums">
+            <Clock className="w-4 h-4 text-ink-subtle shrink-0" />
             <span>
               {props.dateTime ? formatTimeSafe(props.dateTime) : "10:30 AM"}
             </span>
           </div>
 
-          <div className="flex items-center gap-1.5">
-            <MapPin className="w-3.5 h-3.5 text-accent shrink-0" />
+          <div className="flex items-center gap-2">
+            <MapPin className="w-4 h-4 text-ink-subtle shrink-0" />
             <span className="truncate">{props.venue || "Main Auditorium"}</span>
           </div>
         </CardContent>

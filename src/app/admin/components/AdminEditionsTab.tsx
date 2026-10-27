@@ -37,12 +37,12 @@ export default function AdminEditionsTab({
 }: AdminEditionsTabProps) {
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[var(--border)]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border">
         <div>
-          <h2 className="text-base sm:text-lg font-bold text-[var(--ink)]">
+          <h2 className="text-base sm:text-lg font-bold text-ink">
             Event Editions Architecture
           </h2>
-          <p className="text-xs text-[var(--ink-muted)]">
+          <p className="text-xs text-ink-muted">
             Manage annual editions (e.g. SHINE 2026, SHINE 2027). Only 1 edition serves live traffic.
           </p>
         </div>
@@ -63,14 +63,14 @@ export default function AdminEditionsTab({
         {editions.map((ed) => (
           <div
             key={ed.id}
-            className={`bg-[var(--surface)] border rounded-xl p-5 relative transition-all ${
+            className={`bg-surface border rounded-2xl shadow-card p-5 relative transition-all ${
               ed.isActive
-                ? "border-[var(--accent)] ring-1 ring-[var(--accent)]/30"
-                : "border-[var(--border)]"
+                ? "border-accent ring-1 ring-accent/30"
+                : "border-border"
             }`}
           >
             {ed.isActive && (
-              <span className="absolute top-4 right-4 bg-[var(--accent)] text-[var(--accent-ink)] text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full">
+              <span className="absolute top-4 right-4 bg-accent text-accent-ink text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full">
                 Active
               </span>
             )}
@@ -83,38 +83,38 @@ export default function AdminEditionsTab({
                   className="h-10 w-auto max-w-[44px] object-contain shrink-0"
                 />
               ) : (
-                <div className="w-10 h-10 rounded-lg bg-[var(--surface-raised)] border border-[var(--border)] flex items-center justify-center font-bold text-sm text-[var(--accent)] shrink-0">
+                <div className="w-10 h-10 rounded-[8px] bg-surface-raised border border-border flex items-center justify-center font-bold text-sm text-accent shrink-0">
                   {(ed.name?.charAt(0) || "S").toUpperCase()}
                 </div>
               )}
               <div>
-                <h3 className="text-base font-bold text-[var(--ink)]">
+                <h3 className="text-base font-bold text-ink">
                   {ed.name} {ed.edition}
                 </h3>
-                <span className="text-xs text-[var(--ink-muted)] font-mono">
+                <span className="text-xs text-ink-muted font-mono">
                   Slug: {ed.slug}
                 </span>
               </div>
             </div>
 
             {ed.tagline && (
-              <p className="text-xs text-[var(--ink-muted)] italic mb-4 font-medium">
+              <p className="text-xs text-ink-muted italic mb-4 font-medium">
                 "{ed.tagline}"
               </p>
             )}
 
-            <div className="space-y-1.5 text-xs text-[var(--ink-muted)] mb-5">
+            <div className="space-y-1.5 text-xs text-ink-muted mb-5">
               <p className="flex items-center gap-1.5">
-                <MapPin className="w-3.5 h-3.5 text-[var(--ink-muted)] shrink-0" />
+                <MapPin className="w-3.5 h-3.5 text-ink-muted shrink-0" />
                 <span>Venue: {ed.venue || "College Campus"}</span>
               </p>
               <p className="flex items-center gap-1.5">
-                <Layers className="w-3.5 h-3.5 text-[var(--ink-muted)] shrink-0" />
+                <Layers className="w-3.5 h-3.5 text-ink-muted shrink-0" />
                 <span>Competitions: {ed._count?.events || 0} events</span>
               </p>
             </div>
 
-            <div className="pt-3 border-t border-[var(--border)] flex items-center justify-between gap-2">
+            <div className="pt-3 border-t border-border flex items-center justify-between gap-2">
               {!ed.isActive ? (
                 <Button
                   variant="outline"
@@ -126,7 +126,7 @@ export default function AdminEditionsTab({
                   Set as Active
                 </Button>
               ) : (
-                <span className="text-xs text-emerald-700 dark:text-emerald-400 font-semibold flex items-center gap-1">
+                <span className="text-xs text-success-ink font-semibold flex items-center gap-1">
                   <CheckCircle2 className="w-3.5 h-3.5" />
                   Serving Live
                 </span>
@@ -136,7 +136,7 @@ export default function AdminEditionsTab({
                 variant="ghost"
                 size="sm"
                 onClick={() => onSelectEditionForEdit(ed)}
-                className="text-xs text-[var(--ink-muted)] hover:text-[var(--ink)]"
+                className="text-xs text-ink-muted hover:text-ink"
               >
                 Configure →
               </Button>

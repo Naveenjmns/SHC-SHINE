@@ -65,7 +65,7 @@ export function DropdownMenu({
         <div
           role="menu"
           aria-orientation="vertical"
-          className={`absolute z-popover mt-1.5 min-w-[200px] p-1 rounded-[8px] bg-surface border border-border-strong animate-in fade-in zoom-in-95 duration-100 ${
+          className={`absolute z-popover mt-1.5 min-w-[200px] p-1.5 rounded-xl bg-surface border border-border animate-in fade-in zoom-in-95 duration-100 ${
             align === "right" ? "right-0" : "left-0"
           }`}
           style={{ boxShadow: "var(--shadow-popover)" }}

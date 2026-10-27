@@ -59,7 +59,10 @@ export function formatTimeSafe(
   const d = parseDateSafe(input);
   if (!d) return "—";
   try {
-    const opts: Intl.DateTimeFormatOptions = { timeZone: "Asia/Kolkata", ...options };
+    const opts: Intl.DateTimeFormatOptions = {
+      timeZone: "Asia/Kolkata",
+      ...(options ?? { hour: "numeric", minute: "2-digit" }),
+    };
     const res = d.toLocaleTimeString(locale, opts);
     return res.replace(/\s?(am|pm)/i, (match) => " " + match.trim().toUpperCase());
   } catch {

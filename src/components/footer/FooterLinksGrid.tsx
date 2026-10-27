@@ -27,38 +27,38 @@ export default function FooterLinksGrid({
     <>
       {/* Col 2: Navigation Links */}
       <div>
-        <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-3">
+        <h4 className="text-xs font-semibold text-ink-muted uppercase tracking-[0.08em] mb-4">
           Quick Links
         </h4>
-        <ul className="space-y-2 text-xs">
+        <ul className="space-y-3 text-sm">
           <li>
-            <Link href="/#about" className="text-stone-400 hover:text-white transition-colors">
+            <Link href="/#about" className="text-ink font-medium hover:text-accent transition-colors">
               About {eventName}
             </Link>
           </li>
           <li>
-            <Link href="/events" className="text-stone-400 hover:text-white transition-colors">
+            <Link href="/events" className="text-ink font-medium hover:text-accent transition-colors">
               All Competitions
             </Link>
           </li>
           <li>
-            <Link href="/#schedule" className="text-stone-400 hover:text-white transition-colors">
+            <Link href="/#schedule" className="text-ink font-medium hover:text-accent transition-colors">
               Schedule & Timeline
             </Link>
           </li>
           <li>
             <Link
               href="/leaderboard"
-              className="text-[#D9A441] hover:text-amber-300 font-semibold transition-colors inline-flex items-center gap-1.5"
+              className="text-ink font-medium hover:text-accent transition-colors inline-flex items-center gap-1.5"
             >
-              <Trophy className="w-3.5 h-3.5" />
+              <Trophy className="w-3.5 h-3.5 text-gold" />
               <span>Live Stage Results</span>
             </Link>
           </li>
           <li>
             <Link
               href="/register"
-              className="text-[#FF6B1A] hover:text-orange-400 font-semibold transition-colors"
+              className="text-accent font-semibold hover:text-accent-hover transition-colors"
             >
               Online Registration
             </Link>
@@ -67,9 +67,9 @@ export default function FooterLinksGrid({
             <button
               type="button"
               onClick={onOpenAboutModal}
-              className="text-stone-400 hover:text-white transition-colors inline-flex items-center gap-1.5 cursor-pointer pt-0.5"
+              className="text-ink font-medium hover:text-accent transition-colors inline-flex items-center gap-1.5 cursor-pointer pt-0.5"
             >
-              <Info className="w-3.5 h-3.5 text-[#FF6B1A]" />
+              <Info className="w-3.5 h-3.5" />
               <span>About the App</span>
             </button>
           </li>
@@ -78,25 +78,25 @@ export default function FooterLinksGrid({
 
       {/* Col 3: Fest Arenas */}
       <div>
-        <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-3">
+        <h4 className="text-xs font-semibold text-ink-muted uppercase tracking-[0.08em] mb-4">
           Fest Arenas
         </h4>
-        <ul className="space-y-2 text-xs">
+        <ul className="space-y-3 text-sm">
           <li>
             <Link
               href="/events?category=ON_STAGE"
-              className="text-stone-400 hover:text-white transition-colors inline-flex items-center gap-1.5"
+              className="text-ink font-medium hover:text-accent transition-colors inline-flex items-center gap-1.5"
             >
-              <Theater className="w-3.5 h-3.5 text-[#FF6B1A] shrink-0" />
+              <Theater className="w-3.5 h-3.5 text-ink-muted shrink-0" />
               <span>On-Stage Competitions</span>
             </Link>
           </li>
           <li>
             <Link
               href="/events?category=OFF_STAGE"
-              className="text-stone-400 hover:text-white transition-colors inline-flex items-center gap-1.5"
+              className="text-ink font-medium hover:text-accent transition-colors inline-flex items-center gap-1.5"
             >
-              <Laptop className="w-3.5 h-3.5 text-[#D9A441] shrink-0" />
+              <Laptop className="w-3.5 h-3.5 text-ink-muted shrink-0" />
               <span>Off-Stage Technical Arenas</span>
             </Link>
           </li>
@@ -105,21 +105,21 @@ export default function FooterLinksGrid({
 
       {/* Col 4: Reach Us */}
       <div>
-        <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-3">
+        <h4 className="text-xs font-semibold text-ink-muted uppercase tracking-[0.08em] mb-4">
           Reach Us
         </h4>
-        <div className="space-y-1.5 text-xs text-stone-400 leading-relaxed">
-          <div className="text-white font-semibold">{institutionName}</div>
-          <div className="text-[11px]">{location}</div>
+        <div className="space-y-2 text-sm text-ink-muted leading-relaxed">
+          <div className="text-ink font-semibold">{institutionName}</div>
+          <div>{location}</div>
           <div className="pt-1">
             Email:{" "}
-            <a href={`mailto:${contactEmail}`} className="text-stone-300 hover:text-white font-medium">
+            <a href={`mailto:${contactEmail}`} className="text-ink hover:text-accent font-medium">
               {contactEmail}
             </a>
           </div>
           <div>
             Phone:{" "}
-            <a href={`tel:${contactPhone}`} className="text-stone-300 hover:text-white font-medium">
+            <a href={`tel:${contactPhone}`} className="text-ink hover:text-accent font-medium">
               {contactPhone}
             </a>
           </div>
@@ -130,7 +130,7 @@ export default function FooterLinksGrid({
                 href={websiteUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[var(--accent)] hover:underline"
+                className="text-accent hover:underline"
               >
                 {websiteUrl}
               </a>

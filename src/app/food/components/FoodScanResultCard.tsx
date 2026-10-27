@@ -54,38 +54,38 @@ export default function FoodScanResultCard({
   const isError = popup.status === "unpaid" || popup.status === "not_found" || popup.status === "error";
 
   const getStatusColorClass = () => {
-    if (isSuccess) return "border-emerald-300 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20";
-    if (isEligible) return "border-amber-400 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-950/20";
-    if (isAlreadyClaimed) return "border-amber-300 dark:border-amber-800 bg-amber-50/40 dark:bg-amber-950/15";
-    return "border-rose-300 dark:border-rose-800 bg-rose-50/50 dark:bg-rose-950/20";
+    if (isSuccess) return "border-success-border bg-success-surface";
+    if (isEligible) return "border-warning-border bg-warning-surface";
+    if (isAlreadyClaimed) return "border-warning-border bg-warning-surface";
+    return "border-danger-border bg-danger-surface";
   };
 
   return (
     <div
-      className={`border rounded-xl p-5 relative transition-all ${getStatusColorClass()}`}
+      className={`border rounded-2xl shadow-card p-5 relative transition-all ${getStatusColorClass()}`}
       role="region"
       aria-label="Scan Result"
     >
       <button
         onClick={onDismiss}
         aria-label="Dismiss scan result"
-        className="absolute top-4 right-4 p-1 rounded-md text-[var(--ink-muted)] hover:text-[var(--ink)] hover:bg-[var(--surface-raised)] transition-colors"
+        className="absolute top-4 right-4 p-1 rounded-[8px] text-ink-muted hover:text-ink hover:bg-surface-raised transition-colors"
       >
         <X className="w-4 h-4" />
       </button>
 
       {/* Header */}
       <div className="flex items-start gap-3 pr-8">
-        {isSuccess && <CheckCircle2 className="w-6 h-6 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />}
-        {isEligible && <AlertCircle className="w-6 h-6 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />}
-        {isAlreadyClaimed && <AlertTriangle className="w-6 h-6 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />}
-        {isError && <XCircle className="w-6 h-6 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />}
+        {isSuccess && <CheckCircle2 className="w-6 h-6 text-success shrink-0 mt-0.5" />}
+        {isEligible && <AlertCircle className="w-6 h-6 text-warning shrink-0 mt-0.5" />}
+        {isAlreadyClaimed && <AlertTriangle className="w-6 h-6 text-warning shrink-0 mt-0.5" />}
+        {isError && <XCircle className="w-6 h-6 text-danger shrink-0 mt-0.5" />}
 
         <div>
-          <h3 className="text-base font-semibold text-[var(--ink)]">
+          <h3 className="text-base font-semibold text-ink">
             {popup.title}
           </h3>
-          <p className="text-xs text-[var(--ink-muted)] mt-0.5 leading-relaxed">
+          <p className="text-xs text-ink-muted mt-0.5 leading-relaxed">
             {popup.message}
           </p>
         </div>
@@ -95,20 +95,20 @@ export default function FoodScanResultCard({
       {popup.foodPreference && (
         <div className="my-4">
           <div
-            className={`p-3.5 rounded-lg border flex items-center justify-between ${
+            className={`p-3.5 rounded-xl border flex items-center justify-between ${
               popup.foodPreference === "VEG"
-                ? "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200"
-                : "bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-200"
+                ? "bg-success-surface border-success-border text-success-ink"
+                : "bg-warning-surface border-warning-border text-warning-ink"
             }`}
           >
             <div className="flex items-center gap-2.5">
               {popup.foodPreference === "VEG" ? (
-                <Leaf className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <Leaf className="w-5 h-5 text-success shrink-0" />
               ) : (
-                <Utensils className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />
+                <Utensils className="w-5 h-5 text-warning shrink-0" />
               )}
               <div>
-                <span className="text-[10px] uppercase font-semibold tracking-wider opacity-75 block">
+                <span className="text-[11px] font-semibold opacity-80 block">
                   Catering Choice
                 </span>
                 <span className="text-base font-bold tracking-tight">
@@ -116,7 +116,7 @@ export default function FoodScanResultCard({
                 </span>
               </div>
             </div>
-            <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-[var(--surface)] border border-[var(--border)]">
+            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-surface border border-border">
               {popup.foodPreference === "VEG" ? "Pure Veg" : "Non-Veg"}
             </span>
           </div>
@@ -125,12 +125,12 @@ export default function FoodScanResultCard({
 
       {/* Manual Approve or Reject Action (Auto-Claim is OFF) */}
       {isEligible && popup.tokenCode && (
-        <div className="my-3 p-3.5 rounded-lg bg-[var(--surface)] border border-[var(--border)] space-y-3">
+        <div className="my-3 p-3.5 rounded-xl bg-surface border border-border space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-[var(--ink)]">
+            <span className="text-xs font-semibold text-ink">
               Approval Required
             </span>
-            <span className="text-[11px] text-[var(--ink-muted)]">
+            <span className="text-[11px] text-ink-muted">
               Auto-claim mode off
             </span>
           </div>
@@ -150,7 +150,7 @@ export default function FoodScanResultCard({
               size="sm"
               loading={actionLoading}
               onClick={() => onRejectClaim(popup.name || "Participant")}
-              className="w-full text-rose-600 hover:text-rose-700 dark:text-rose-400"
+              className="w-full text-danger hover:text-danger-ink"
             >
               <XCircle className="w-4 h-4 mr-1.5" />
               Decline
@@ -161,29 +161,29 @@ export default function FoodScanResultCard({
 
       {/* Delegate Info */}
       {popup.name && (
-        <div className="bg-[var(--surface)] border border-[var(--border)] rounded-lg p-3.5 space-y-2 text-xs">
+        <div className="bg-surface border border-border rounded-xl p-3.5 space-y-2 text-xs">
           <div className="flex items-center justify-between">
-            <span className="text-[var(--ink-muted)]">Delegate:</span>
-            <span className="font-semibold text-[var(--ink)]">{popup.name}</span>
+            <span className="text-ink-muted">Delegate:</span>
+            <span className="font-semibold text-ink">{popup.name}</span>
           </div>
           {popup.college && (
             <div className="flex items-center justify-between">
-              <span className="text-[var(--ink-muted)]">Institution:</span>
-              <span className="font-medium text-[var(--ink)] text-right truncate max-w-[200px]">
+              <span className="text-ink-muted">Institution:</span>
+              <span className="font-medium text-ink text-right truncate max-w-[200px]">
                 {popup.college}
               </span>
             </div>
           )}
           {popup.tokenCode && (
-            <div className="flex items-center justify-between font-mono text-[11px]">
-              <span className="text-[var(--ink-muted)]">Token Code:</span>
-              <span className="text-[var(--accent)] font-semibold">{popup.tokenCode}</span>
+            <div className="flex items-center justify-between text-[11px]">
+              <span className="text-ink-muted">Token Code:</span>
+              <span className="font-mono text-accent font-semibold">{popup.tokenCode}</span>
             </div>
           )}
           {popup.claimedAt && (
             <div className="flex items-center justify-between text-[11px]">
-              <span className="text-[var(--ink-muted)]">Previously Issued:</span>
-              <span className="font-medium text-[var(--ink)]">
+              <span className="text-ink-muted">Previously Issued:</span>
+              <span className="font-medium text-ink">
                 {new Date(popup.claimedAt).toLocaleTimeString("en-IN", {
                   hour: "2-digit",
                   minute: "2-digit",
@@ -196,7 +196,7 @@ export default function FoodScanResultCard({
 
       {/* Bottom Actions: Switch Preference or Undo */}
       {popup.tokenCode && (
-        <div className="mt-4 pt-3 border-t border-[var(--border)] flex flex-wrap items-center justify-between gap-2">
+        <div className="mt-4 pt-3 border-t border-border flex flex-wrap items-center justify-between gap-2">
           {popup.foodPreference && mealOptions !== "VEG_ONLY" && (
             <Button
               variant="secondary"
@@ -219,7 +219,7 @@ export default function FoodScanResultCard({
               size="sm"
               loading={actionLoading}
               onClick={() => onUndoClaim(popup.tokenCode!)}
-              className="text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30"
+              className="text-danger hover:bg-danger-surface"
             >
               <RotateCcw className="w-3.5 h-3.5 mr-1" />
               Undo Claim

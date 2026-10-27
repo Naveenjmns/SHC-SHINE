@@ -69,8 +69,8 @@ export default function DataDisplayPreviewMatrix() {
   return (
     <div className="space-y-8">
       {/* Badges & Status Pills */}
-      <div className="p-5 border border-border rounded-[12px] bg-surface space-y-4">
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-ink-muted">
+      <div className="p-6 border border-border rounded-2xl bg-surface shadow-card space-y-4">
+        <h3 className="eyebrow">
           StatusPill & Badge Primitives (Paired with Icons)
         </h3>
         <div className="flex flex-wrap items-center gap-2.5">
@@ -87,8 +87,8 @@ export default function DataDisplayPreviewMatrix() {
       </div>
 
       {/* Tabs & Table */}
-      <div className="p-5 border border-border rounded-[12px] bg-surface space-y-4">
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-ink-muted">
+      <div className="p-6 border border-border rounded-2xl bg-surface shadow-card space-y-4">
+        <h3 className="eyebrow">
           Tabs & Data Table
         </h3>
         <Tabs defaultValue="all">
@@ -223,16 +223,16 @@ export default function DataDisplayPreviewMatrix() {
             </div>
             <CardTitle>Interactive Card Primitive</CardTitle>
             <CardDescription>
-              Cards feature 12px panel radii and 1px hairline borders. Drop-shadows are strictly zero.
+              Cards use the 16px radius, a 1px hairline border and the blue-tinted shadow-card elevation.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <p className="text-xs text-ink-muted">
-              Hover to preview the subtle interactive border feedback.
+              Hover to preview the border-strong and shadow-elevated lift.
             </p>
           </CardContent>
           <CardFooter>
-            <span className="text-xs font-mono text-ink-muted">10:30 AM — 01:00 PM</span>
+            <span className="text-xs tabular-nums text-ink-muted">10:30 AM — 01:00 PM</span>
             <Button size="sm" onClick={() => setModalOpen(true)}>
               Open Modal
             </Button>
@@ -263,12 +263,12 @@ export default function DataDisplayPreviewMatrix() {
       >
         <div className="space-y-4 text-sm text-ink">
           <p className="text-xs text-ink-muted">
-            Modals utilize <code className="font-mono text-accent">--radius-panel</code> (12px),
-            <code className="font-mono text-accent">--shadow-modal</code>, and a dark scrim backdrop.
+            Modals utilize <code className="font-mono text-accent">--radius-feature</code> (24px),
+            <code className="font-mono text-accent">--shadow-modal</code>, and a translucent navy scrim backdrop.
           </p>
           <Input label="Event Room Name" defaultValue="Kamarajar Arangam Main Stage" />
           <DialogFooter>
-            <Button variant="secondary" size="sm" onClick={() => setModalOpen(false)}>
+            <Button variant="outline" size="sm" onClick={() => setModalOpen(false)}>
               Cancel
             </Button>
             <Button
@@ -304,7 +304,7 @@ export default function DataDisplayPreviewMatrix() {
           />
           <Checkbox label="Only verified badges" defaultChecked />
           <div className="pt-4 flex justify-end gap-2">
-            <Button variant="secondary" size="sm" onClick={() => setSheetOpen(false)}>
+            <Button variant="outline" size="sm" onClick={() => setSheetOpen(false)}>
               Reset
             </Button>
             <Button

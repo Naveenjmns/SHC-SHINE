@@ -50,13 +50,13 @@ export default function AdminBrandingTab({
 }: AdminBrandingTabProps) {
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[var(--border)]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border">
         <div>
-          <h2 className="text-base sm:text-lg font-bold text-[var(--ink)] flex items-center gap-2">
-            <Palette className="w-5 h-5 text-[var(--accent)]" />
+          <h2 className="text-base sm:text-lg font-bold text-ink flex items-center gap-2">
+            <Palette className="w-5 h-5 text-accent" />
             <span>Branding &amp; Content Management</span>
           </h2>
-          <p className="text-xs text-[var(--ink-muted)]">
+          <p className="text-xs text-ink-muted">
             Configure fest hero copy, event logo, rules, awards, and theme colors dynamically.
           </p>
         </div>
@@ -77,14 +77,14 @@ export default function AdminBrandingTab({
         {/* Left Column: Identity & Theme */}
         <div className="space-y-6">
           {/* Event Identity */}
-          <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-5 space-y-4">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--ink)] pb-2 border-b border-[var(--border)]">
+          <div className="bg-surface border border-border rounded-2xl shadow-card p-5 space-y-4">
+            <h3 className="text-xs font-semibold text-ink pb-2 border-b border-border">
               1. Fest Edition Identity
             </h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-semibold text-[var(--ink-muted)] mb-1">
+                <label className="block text-xs font-semibold text-ink-muted mb-1">
                   Fest Name
                 </label>
                 <Input
@@ -94,7 +94,7 @@ export default function AdminBrandingTab({
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-[var(--ink-muted)] mb-1">
+                <label className="block text-xs font-semibold text-ink-muted mb-1">
                   Edition
                 </label>
                 <Input
@@ -106,7 +106,7 @@ export default function AdminBrandingTab({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-[var(--ink-muted)] mb-1">
+              <label className="block text-xs font-semibold text-ink-muted mb-1">
                 Fest Tagline
               </label>
               <Input
@@ -119,7 +119,7 @@ export default function AdminBrandingTab({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-semibold text-[var(--ink-muted)] mb-1">
+                <label className="block text-xs font-semibold text-ink-muted mb-1">
                   Prize Pool Text
                 </label>
                 <Input
@@ -130,7 +130,7 @@ export default function AdminBrandingTab({
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-[var(--ink-muted)] mb-1">
+                <label className="block text-xs font-semibold text-ink-muted mb-1">
                   Expected Delegates
                 </label>
                 <Input
@@ -143,7 +143,7 @@ export default function AdminBrandingTab({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-[var(--ink-muted)] mb-1">
+              <label className="block text-xs font-semibold text-ink-muted mb-1">
                 Delegate Registration Fee (₹)
               </label>
               <Input
@@ -157,12 +157,12 @@ export default function AdminBrandingTab({
 
             {/* Event Logo */}
             <div>
-              <label className="block text-xs font-semibold text-[var(--ink-muted)] mb-1">
+              <label className="block text-xs font-semibold text-ink-muted mb-1">
                 Fest Logo
               </label>
               <div className="flex items-center gap-3">
-                <label className="cursor-pointer inline-flex items-center gap-2 px-3 py-1.5 border border-[var(--border)] rounded-lg text-xs font-semibold hover:bg-[var(--surface-raised)] transition bg-[var(--surface)]">
-                  <Upload className="w-3.5 h-3.5 text-[var(--accent)]" />
+                <label className="cursor-pointer inline-flex items-center gap-2 px-3 py-1.5 border border-border rounded-[8px] text-xs font-semibold hover:bg-surface-raised transition bg-surface">
+                  <Upload className="w-3.5 h-3.5 text-accent" />
                   <span>Upload Logo</span>
                   <input
                     type="file"
@@ -171,7 +171,7 @@ export default function AdminBrandingTab({
                     onChange={(e) => handleFileUpload("logoUrl", e)}
                   />
                 </label>
-                <span className="text-xs text-[var(--ink-muted)]">or specify path:</span>
+                <span className="text-xs text-ink-muted">or specify path:</span>
               </div>
               <Input
                 value={brandingForm.logoUrl}
@@ -202,24 +202,24 @@ export default function AdminBrandingTab({
         {/* Right Column: Rules, Stage Mode & Timeline */}
         <div className="space-y-6">
           {/* Stage Mode in Student Portal Toggle */}
-          <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-5 space-y-3">
-            <div className="flex items-center justify-between pb-2 border-b border-[var(--border)]">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--ink)] flex items-center gap-2">
-                <Trophy className="w-4 h-4 text-[var(--accent)]" />
+          <div className="bg-surface border border-border rounded-2xl shadow-card p-5 space-y-3">
+            <div className="flex items-center justify-between pb-2 border-b border-border">
+              <h3 className="text-xs font-semibold text-ink flex items-center gap-2">
+                <Trophy className="w-4 h-4 text-accent" />
                 <span>Student Portal Stage Mode (Podium Results)</span>
               </h3>
               <span
                 className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
                   brandingForm.showStageModeInStudentPortal
-                    ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300"
-                    : "bg-[var(--surface-raised)] text-[var(--ink-muted)]"
+                    ? "bg-success-surface text-success-ink"
+                    : "bg-surface-raised text-ink-muted"
                 }`}
               >
                 {brandingForm.showStageModeInStudentPortal ? "Published" : "Hidden"}
               </span>
             </div>
 
-            <p className="text-xs text-[var(--ink-muted)]">
+            <p className="text-xs text-ink-muted">
               Controls whether delegates see live winner podiums and final rankings in their dashboard.
             </p>
 
@@ -237,14 +237,14 @@ export default function AdminBrandingTab({
           </div>
 
           {/* Rules and Guidelines */}
-          <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-5 space-y-4">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--ink)] pb-2 border-b border-[var(--border)] flex items-center gap-2">
-              <FileText className="w-4 h-4 text-[var(--accent)]" />
+          <div className="bg-surface border border-border rounded-2xl shadow-card p-5 space-y-4">
+            <h3 className="text-xs font-semibold text-ink pb-2 border-b border-border flex items-center gap-2">
+              <FileText className="w-4 h-4 text-accent" />
               <span>Symposium Guidelines &amp; Rules Cards</span>
             </h3>
 
             <div>
-              <label className="block text-xs font-semibold text-[var(--ink-muted)] mb-1">
+              <label className="block text-xs font-semibold text-ink-muted mb-1">
                 Card 1: Eligibility Title
               </label>
               <Input
@@ -261,7 +261,7 @@ export default function AdminBrandingTab({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-[var(--ink-muted)] mb-1">
+              <label className="block text-xs font-semibold text-ink-muted mb-1">
                 Card 2: Reporting &amp; Timings Title
               </label>
               <Input
@@ -278,7 +278,7 @@ export default function AdminBrandingTab({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-[var(--ink-muted)] mb-1">
+              <label className="block text-xs font-semibold text-ink-muted mb-1">
                 Card 3: Championship Title
               </label>
               <Input

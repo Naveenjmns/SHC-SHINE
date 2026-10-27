@@ -32,7 +32,7 @@ export default function StudentPassCard({ pass, collegeName }: StudentPassCardPr
           >
             {pass.eventCheckedIn ? "Desk Verified" : "Awaiting Verification"}
           </Badge>
-          <span className="text-xs font-mono font-bold text-accent">PASS</span>
+          <span className="text-xs font-semibold text-accent">PASS</span>
         </div>
         <CardTitle className="text-base">Digital Event Pass</CardTitle>
         <CardDescription className="text-xs truncate">
@@ -44,7 +44,7 @@ export default function StudentPassCard({ pass, collegeName }: StudentPassCardPr
         {/* QR Code Container */}
         <div className="p-4 rounded-[8px] bg-surface-raised border border-border flex flex-col items-center justify-center text-center space-y-2">
           {pass.qrData ? (
-            <div className="w-36 h-36 bg-white p-2 rounded-[6px] border border-border shadow-xs flex items-center justify-center">
+            <div className="w-36 h-36 bg-surface p-2 rounded-[8px] border border-border flex items-center justify-center">
               <Image
                 src={pass.qrData}
                 alt={`QR code for ${pass.badgeCode}`}

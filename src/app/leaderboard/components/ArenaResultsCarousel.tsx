@@ -114,7 +114,7 @@ export default function ArenaResultsCarousel({
     <div className="max-w-6xl mx-auto text-center space-y-6">
       {/* Category & Pagination Pill */}
       <div className="flex items-center justify-center gap-3">
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[var(--surface)] text-[var(--accent)] border border-[var(--border)] text-xs font-bold uppercase tracking-wider shadow-2xs">
+        <div className="pill-badge">
           {currentEvent.category === "ON_STAGE" ? (
             <>
               <Theater className="w-3.5 h-3.5" />
@@ -128,7 +128,7 @@ export default function ArenaResultsCarousel({
           )}
         </div>
 
-        <span className="text-xs font-semibold text-[var(--ink-muted)] px-2.5 py-0.5 rounded-full bg-[var(--surface)] border border-[var(--border)]">
+        <span className="text-xs font-semibold text-ink-muted tabular-nums px-3 py-1 rounded-full bg-surface border border-border">
           {currentIndex + 1} of {totalEvents}
         </span>
       </div>
@@ -138,20 +138,20 @@ export default function ArenaResultsCarousel({
         <button
           type="button"
           onClick={onPrev}
-          className="p-2 sm:p-2.5 rounded-xl bg-[var(--surface)] border border-[var(--border)] hover:border-[var(--accent)] text-[var(--ink)] hover:text-[var(--accent)] shadow-2xs transition-colors cursor-pointer shrink-0"
+          className="p-2 sm:p-2.5 rounded-[8px] bg-surface border border-border hover:border-accent text-ink hover:text-accent shadow-card transition-colors cursor-pointer shrink-0"
           title="Previous Competition (Left Arrow key)"
         >
           <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
         </button>
 
-        <h2 className="text-2xl sm:text-4xl md:text-5xl font-bold text-[var(--ink)] tracking-tight leading-tight flex-1 text-center">
+        <h2 className="text-2xl sm:text-4xl md:text-5xl font-bold text-ink tracking-tight leading-tight flex-1 text-center">
           {currentEvent.name}
         </h2>
 
         <button
           type="button"
           onClick={onNext}
-          className="p-2 sm:p-2.5 rounded-xl bg-[var(--surface)] border border-[var(--border)] hover:border-[var(--accent)] text-[var(--ink)] hover:text-[var(--accent)] shadow-2xs transition-colors cursor-pointer shrink-0"
+          className="p-2 sm:p-2.5 rounded-[8px] bg-surface border border-border hover:border-accent text-ink hover:text-accent shadow-card transition-colors cursor-pointer shrink-0"
           title="Next Competition (Right Arrow key)"
         >
           <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
@@ -159,8 +159,8 @@ export default function ArenaResultsCarousel({
       </div>
 
       {/* Venue Room */}
-      <p className="text-xs sm:text-sm font-semibold text-[var(--ink-muted)] flex items-center justify-center gap-1.5 pb-2">
-        <MapPin className="w-4 h-4 text-[#D9A441]" />
+      <p className="text-sm sm:text-base font-medium text-ink-muted flex items-center justify-center gap-1.5 pb-2">
+        <MapPin className="w-4 h-4 text-accent" />
         <span>{currentEvent.venue || "Sacred Heart College Campus"}</span>
       </p>
 

@@ -32,14 +32,14 @@ export default function ProfileDetailsCard({
   saving,
 }: ProfileDetailsCardProps) {
   return (
-    <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-6 shadow-xs space-y-5">
-      <div className="flex items-center justify-between pb-3 border-b border-[var(--border)]">
+    <div className="bg-surface border border-border rounded-2xl p-6 shadow-card space-y-5">
+      <div className="flex items-center justify-between pb-3 border-b border-border">
         <div>
-          <h3 className="text-sm font-bold text-[var(--ink)] flex items-center gap-2">
-            <User className="w-4 h-4 text-[var(--accent)]" />
+          <h3 className="text-sm font-bold text-ink flex items-center gap-2">
+            <User className="w-4 h-4 text-accent" />
             <span>Personal Information</span>
           </h3>
-          <p className="text-xs text-[var(--ink-muted)]">
+          <p className="text-xs text-ink-muted">
             Manage your personal profile details and meal preference.
           </p>
         </div>
@@ -49,7 +49,7 @@ export default function ProfileDetailsCard({
         {/* Name & Email */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-semibold text-[var(--ink)] mb-1">
+            <label className="block text-xs font-semibold text-ink mb-1">
               Full Name *
             </label>
             <Input
@@ -61,15 +61,15 @@ export default function ProfileDetailsCard({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-[var(--ink)] mb-1">
+            <label className="block text-xs font-semibold text-ink mb-1">
               Email Address
             </label>
             <Input
               disabled
               value={email}
-              className="opacity-70 bg-[var(--surface-raised)] cursor-not-allowed"
+              className="opacity-70 bg-surface-raised cursor-not-allowed"
             />
-            <span className="text-[10px] text-[var(--ink-muted)]">
+            <span className="text-[10px] text-ink-muted">
               Account email cannot be modified directly.
             </span>
           </div>
@@ -78,7 +78,7 @@ export default function ProfileDetailsCard({
         {/* Phone & College */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-semibold text-[var(--ink)] mb-1">
+            <label className="block text-xs font-semibold text-ink mb-1">
               Mobile Number
             </label>
             <Input
@@ -90,7 +90,7 @@ export default function ProfileDetailsCard({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-[var(--ink)] mb-1">
+            <label className="block text-xs font-semibold text-ink mb-1">
               Institution / College
             </label>
             <Input
@@ -103,41 +103,41 @@ export default function ProfileDetailsCard({
 
         {/* Meal Preference Toggle */}
         <div>
-          <label className="block text-xs font-semibold text-[var(--ink)] mb-1.5 flex items-center gap-1.5">
-            <Utensils className="w-3.5 h-3.5 text-[var(--accent)]" />
+          <label className="block text-xs font-semibold text-ink mb-1.5 flex items-center gap-1.5">
+            <Utensils className="w-3.5 h-3.5 text-accent" />
             <span>Festival Meal Preference</span>
           </label>
           <div className="grid grid-cols-2 gap-2 max-w-sm">
             <button
               type="button"
               onClick={() => setFoodPreference("VEG")}
-              className={`py-2 px-3 rounded-lg text-xs font-semibold border flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
+              className={`py-2 px-3 rounded-[8px] text-xs font-semibold border flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
                 foodPreference === "VEG"
-                  ? "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-500 text-emerald-700 dark:text-emerald-300 shadow-xs"
-                  : "bg-[var(--surface)] border-[var(--border)] text-[var(--ink-muted)] hover:text-[var(--ink)]"
+                  ? "bg-success-surface border-success-border text-success-ink"
+                  : "bg-surface border-border text-ink-muted hover:text-ink"
               }`}
             >
-              <Leaf className="w-3.5 h-3.5 text-emerald-600" />
+              <Leaf className="w-3.5 h-3.5 text-success" />
               <span>Vegetarian</span>
             </button>
 
             <button
               type="button"
               onClick={() => setFoodPreference("NON_VEG")}
-              className={`py-2 px-3 rounded-lg text-xs font-semibold border flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
+              className={`py-2 px-3 rounded-[8px] text-xs font-semibold border flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
                 foodPreference === "NON_VEG"
-                  ? "bg-amber-50 dark:bg-amber-950/40 border-amber-500 text-amber-700 dark:text-amber-300 shadow-xs"
-                  : "bg-[var(--surface)] border-[var(--border)] text-[var(--ink-muted)] hover:text-[var(--ink)]"
+                  ? "bg-warning-surface border-warning-border text-warning-ink"
+                  : "bg-surface border-border text-ink-muted hover:text-ink"
               }`}
             >
-              <Drumstick className="w-3.5 h-3.5 text-amber-600" />
+              <Drumstick className="w-3.5 h-3.5 text-warning" />
               <span>Non-Vegetarian</span>
             </button>
           </div>
         </div>
 
         {/* Submit */}
-        <div className="flex justify-end pt-2 border-t border-[var(--border)]">
+        <div className="flex justify-end pt-2 border-t border-border">
           <Button variant="primary" size="sm" type="submit" loading={saving}>
             Save Profile Details
           </Button>

@@ -118,7 +118,7 @@ export function TabsList({
       ref={listRef}
       role="tablist"
       onKeyDown={handleKeyDown}
-      className={`inline-flex items-center p-1 rounded-[8px] bg-surface-raised border border-border gap-1 overflow-x-auto max-w-full ${className}`}
+      className={`inline-flex items-center p-1 rounded-[10px] bg-surface-raised gap-1 overflow-x-auto max-w-full ${className}`}
       {...props}
     >
       {children}
@@ -149,10 +149,10 @@ export function TabsTrigger({
       aria-selected={isSelected}
       aria-controls={`tabpanel-${value}`}
       onClick={() => context.setActiveTab(value)}
-      className={`min-h-[44px] sm:min-h-[36px] px-3.5 py-1.5 rounded-[6px] text-xs font-semibold select-none transition-all flex items-center justify-center gap-1.5 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+      className={`min-h-[44px] sm:min-h-[36px] px-3.5 py-1.5 rounded-[8px] text-sm font-semibold select-none transition-all flex items-center justify-center gap-1.5 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-accent ${
         isSelected
-          ? "bg-surface text-ink border border-border shadow-xs"
-          : "text-ink-muted hover:text-ink hover:bg-surface/50 border border-transparent"
+          ? "bg-surface text-accent shadow-card"
+          : "text-ink-muted hover:text-ink"
       } ${className}`}
       {...props}
     >

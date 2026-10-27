@@ -138,10 +138,10 @@ export default function ProfilePage() {
 
   if (loading && !profile) {
     return (
-      <div className="min-h-screen bg-[var(--surface-raised)] flex items-center justify-center p-6">
+      <div className="min-h-screen bg-canvas flex items-center justify-center p-6">
         <div className="flex flex-col items-center gap-3">
-          <RefreshCw className="w-8 h-8 animate-spin text-[var(--accent)]" />
-          <p className="text-xs font-semibold text-[var(--ink-muted)] uppercase tracking-wider">
+          <RefreshCw className="w-8 h-8 animate-spin text-accent" />
+          <p className="text-sm font-medium text-ink-muted">
             Loading Account Profile...
           </p>
         </div>
@@ -159,27 +159,27 @@ export default function ProfilePage() {
       : "/dashboard";
 
   return (
-    <div className="min-h-screen bg-[var(--surface-raised)] flex flex-col justify-between">
+    <div className="min-h-screen bg-canvas text-ink flex flex-col justify-between">
       {/* Top Header */}
-      <header className="bg-[var(--surface)] border-b border-[var(--border)] sticky top-0 z-20">
+      <header className="bg-surface border-b border-border sticky top-0 z-20">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-2.5 flex items-center justify-between">
           <Link
             href={roleDashboardLink}
-            className="text-xs font-semibold text-[var(--ink-muted)] hover:text-[var(--ink)] flex items-center gap-1.5"
+            className="text-xs font-semibold text-ink-muted hover:text-ink flex items-center gap-1.5"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Dashboard</span>
           </Link>
 
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-[var(--ink)]">
+            <span className="text-xs font-bold text-ink">
               {profile?.name}
             </span>
             <Button
               variant="ghost"
               size="sm"
               onClick={() => signOut({ callbackUrl: "/login" })}
-              className="text-xs text-[var(--ink-muted)] hover:text-rose-600 gap-1.5"
+              className="text-xs text-ink-muted hover:text-danger gap-1.5"
             >
               <LogOut className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Sign Out</span>
@@ -189,7 +189,14 @@ export default function ProfilePage() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 w-full flex-1 space-y-6">
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-10 w-full flex-1 space-y-6">
+        <div className="space-y-1">
+          <h1 className="text-2xl sm:text-3xl font-bold text-ink">My Profile</h1>
+          <p className="text-sm text-ink-muted">
+            Manage your account details, meal preference, and password.
+          </p>
+        </div>
+
         {/* Role Summary */}
         {profile && (
           <ProfileRoleSummaryCard

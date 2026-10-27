@@ -45,7 +45,7 @@ export default function AdminNewEditionModal({
     <Modal isOpen={isOpen} onClose={onClose} title="Create New Event Edition">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-xs font-semibold text-[var(--ink-muted)] mb-1">
+          <label className="block text-xs font-semibold text-ink-muted mb-1">
             Fest Title *
           </label>
           <Input
@@ -56,7 +56,7 @@ export default function AdminNewEditionModal({
           />
         </div>
         <div>
-          <label className="block text-xs font-semibold text-[var(--ink-muted)] mb-1">
+          <label className="block text-xs font-semibold text-ink-muted mb-1">
             Edition Tag / Year *
           </label>
           <Input
@@ -67,7 +67,7 @@ export default function AdminNewEditionModal({
           />
         </div>
         <div>
-          <label className="block text-xs font-semibold text-[var(--ink-muted)] mb-1">
+          <label className="block text-xs font-semibold text-ink-muted mb-1">
             Tagline
           </label>
           <Input

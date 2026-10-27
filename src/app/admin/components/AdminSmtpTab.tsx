@@ -61,13 +61,13 @@ export default function AdminSmtpTab({
 }: AdminSmtpTabProps) {
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[var(--border)]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border">
         <div>
-          <h2 className="text-base sm:text-lg font-bold text-[var(--ink)] flex items-center gap-2">
-            <Mail className="w-5 h-5 text-[var(--accent)]" />
+          <h2 className="text-base sm:text-lg font-bold text-ink flex items-center gap-2">
+            <Mail className="w-5 h-5 text-accent" />
             <span>SMTP Mail Service &amp; Announcements</span>
           </h2>
-          <p className="text-xs text-[var(--ink-muted)]">
+          <p className="text-xs text-ink-muted">
             Configure SMTP credentials, manage quota triggers, and dispatch broadcast notifications.
           </p>
         </div>
@@ -85,29 +85,29 @@ export default function AdminSmtpTab({
       </div>
 
       {/* Action Triggers Grid */}
-      <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-5 space-y-4">
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--ink)] pb-2 border-b border-[var(--border)] flex items-center justify-between">
+      <div className="bg-surface border border-border rounded-2xl shadow-card p-5 space-y-4">
+        <h3 className="text-xs font-semibold text-ink pb-2 border-b border-border flex items-center justify-between">
           <span>Automated Email Triggers</span>
-          <span className="text-[10px] text-[var(--ink-muted)] font-normal">
+          <span className="text-[10px] text-ink-muted font-normal">
             Status: {emailTriggers.emailServiceEnabled ? "Enabled" : "Paused"}
           </span>
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {/* Desk Payment Approval */}
-          <div className="p-3 bg-[var(--surface-raised)] border border-[var(--border)] rounded-lg text-xs flex flex-col justify-between space-y-2">
+          <div className="p-3 bg-surface-raised border border-border rounded-2xl text-xs flex flex-col justify-between space-y-2">
             <div>
               <div className="flex items-center justify-between">
-                <span className="font-semibold text-[var(--ink)]">Desk Payment Approval</span>
+                <span className="font-semibold text-ink">Desk Payment Approval</span>
                 <span
                   className={`text-[10px] font-semibold px-2 py-0.5 rounded ${
-                    emailTriggers.sendOnApproval ? "bg-emerald-50 text-emerald-700" : "bg-[var(--surface)] text-[var(--ink-muted)]"
+                    emailTriggers.sendOnApproval ? "bg-success-surface text-success-ink" : "bg-surface text-ink-muted"
                   }`}
                 >
                   {emailTriggers.sendOnApproval ? "Active" : "Off"}
                 </span>
               </div>
-              <p className="text-[11px] text-[var(--ink-muted)] mt-1">
+              <p className="text-[11px] text-ink-muted mt-1">
                 Delivers official QR badge &amp; food pass upon desk verification.
               </p>
             </div>
@@ -123,19 +123,19 @@ export default function AdminSmtpTab({
           </div>
 
           {/* Team Lead Consolidated Dossier */}
-          <div className="p-3 bg-[var(--surface-raised)] border border-[var(--border)] rounded-lg text-xs flex flex-col justify-between space-y-2">
+          <div className="p-3 bg-surface-raised border border-border rounded-2xl text-xs flex flex-col justify-between space-y-2">
             <div>
               <div className="flex items-center justify-between">
-                <span className="font-semibold text-[var(--ink)]">Team Lead Dossier</span>
+                <span className="font-semibold text-ink">Team Lead Dossier</span>
                 <span
                   className={`text-[10px] font-semibold px-2 py-0.5 rounded ${
-                    emailTriggers.sendOnTeamLeadApproval ? "bg-emerald-50 text-emerald-700" : "bg-[var(--surface)] text-[var(--ink-muted)]"
+                    emailTriggers.sendOnTeamLeadApproval ? "bg-success-surface text-success-ink" : "bg-surface text-ink-muted"
                   }`}
                 >
                   {emailTriggers.sendOnTeamLeadApproval ? "Active" : "Off"}
                 </span>
               </div>
-              <p className="text-[11px] text-[var(--ink-muted)] mt-1">
+              <p className="text-[11px] text-ink-muted mt-1">
                 Consolidated pass links and token list to delegation in-charge.
               </p>
             </div>
@@ -151,19 +151,19 @@ export default function AdminSmtpTab({
           </div>
 
           {/* Registration Notice */}
-          <div className="p-3 bg-[var(--surface-raised)] border border-[var(--border)] rounded-lg text-xs flex flex-col justify-between space-y-2">
+          <div className="p-3 bg-surface-raised border border-border rounded-2xl text-xs flex flex-col justify-between space-y-2">
             <div>
               <div className="flex items-center justify-between">
-                <span className="font-semibold text-[var(--ink)]">Initial Registration</span>
+                <span className="font-semibold text-ink">Initial Registration</span>
                 <span
                   className={`text-[10px] font-semibold px-2 py-0.5 rounded ${
-                    emailTriggers.sendOnRegistration ? "bg-emerald-50 text-emerald-700" : "bg-[var(--surface)] text-[var(--ink-muted)]"
+                    emailTriggers.sendOnRegistration ? "bg-success-surface text-success-ink" : "bg-surface text-ink-muted"
                   }`}
                 >
                   {emailTriggers.sendOnRegistration ? "Active" : "Disabled (Saves Quota)"}
                 </span>
               </div>
-              <p className="text-[11px] text-[var(--ink-muted)] mt-1">
+              <p className="text-[11px] text-ink-muted mt-1">
                 Notice immediately upon web submission before spot fee payment.
               </p>
             </div>
@@ -183,13 +183,13 @@ export default function AdminSmtpTab({
       {/* Grid: Server Config & Broadcast */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* SMTP Server Configuration */}
-        <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-5 space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-[var(--border)]">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--ink)] flex items-center gap-2">
-              <Server className="w-4 h-4 text-[var(--accent)]" />
+        <div className="bg-surface border border-border rounded-2xl shadow-card p-5 space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-border">
+            <h3 className="text-xs font-semibold text-ink flex items-center gap-2">
+              <Server className="w-4 h-4 text-accent" />
               <span>SMTP Host Settings</span>
             </h3>
-            <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-[var(--surface-raised)] text-[var(--ink-muted)]">
+            <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-surface-raised text-ink-muted">
               {smtpForm.host ? "Configured" : "Unset"}
             </span>
           </div>
@@ -197,7 +197,7 @@ export default function AdminSmtpTab({
           <form onSubmit={handleSaveSmtp} className="space-y-3">
             <div className="grid grid-cols-3 gap-2">
               <div className="col-span-2">
-                <label className="block text-[11px] font-medium text-[var(--ink-muted)] mb-1">Host *</label>
+                <label className="block text-[11px] font-medium text-ink-muted mb-1">Host *</label>
                 <Input
                   required
                   value={smtpForm.host}
@@ -207,18 +207,18 @@ export default function AdminSmtpTab({
                 />
               </div>
               <div>
-                <label className="block text-[11px] font-medium text-[var(--ink-muted)] mb-1">Port</label>
+                <label className="block text-[11px] font-medium text-ink-muted mb-1">Port</label>
                 <Input
                   disabled
                   value="465 (SSL)"
-                  className="text-xs h-8 font-mono bg-[var(--surface-raised)] cursor-not-allowed"
+                  className="text-xs h-8 font-mono bg-surface-raised cursor-not-allowed"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div>
-                <label className="block text-[11px] font-medium text-[var(--ink-muted)] mb-1">Username / Email *</label>
+                <label className="block text-[11px] font-medium text-ink-muted mb-1">Username / Email *</label>
                 <Input
                   required
                   value={smtpForm.user}
@@ -228,8 +228,8 @@ export default function AdminSmtpTab({
                 />
               </div>
               <div>
-                <label className="block text-[11px] font-medium text-[var(--ink-muted)] mb-1">
-                  App Password {smtpForm.hasPassword && <span className="text-emerald-600">(Saved)</span>}
+                <label className="block text-[11px] font-medium text-ink-muted mb-1">
+                  App Password {smtpForm.hasPassword && <span className="text-success">(Saved)</span>}
                 </label>
                 <Input
                   type="password"
@@ -243,7 +243,7 @@ export default function AdminSmtpTab({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div>
-                <label className="block text-[11px] font-medium text-[var(--ink-muted)] mb-1">From Sender Name</label>
+                <label className="block text-[11px] font-medium text-ink-muted mb-1">From Sender Name</label>
                 <Input
                   value={smtpForm.fromName}
                   onChange={(e) => setSmtpForm({ ...smtpForm, fromName: e.target.value })}
@@ -252,7 +252,7 @@ export default function AdminSmtpTab({
                 />
               </div>
               <div>
-                <label className="block text-[11px] font-medium text-[var(--ink-muted)] mb-1">From Sender Email</label>
+                <label className="block text-[11px] font-medium text-ink-muted mb-1">From Sender Email</label>
                 <Input
                   type="email"
                   value={smtpForm.fromEmail}
@@ -269,8 +269,8 @@ export default function AdminSmtpTab({
           </form>
 
           {/* Test connection */}
-          <div className="pt-3 border-t border-[var(--border)] space-y-2">
-            <label className="block text-[11px] font-medium text-[var(--ink-muted)]">
+          <div className="pt-3 border-t border-border space-y-2">
+            <label className="block text-[11px] font-medium text-ink-muted">
               Send Test Email
             </label>
             <div className="flex gap-2">
@@ -293,7 +293,7 @@ export default function AdminSmtpTab({
               </Button>
             </div>
             {smtpTestResult && (
-              <p className={`text-xs ${smtpTestResult.success ? "text-emerald-600" : "text-rose-600"}`}>
+              <p className={`text-xs ${smtpTestResult.success ? "text-success" : "text-danger"}`}>
                 {smtpTestResult.message}
               </p>
             )}
@@ -301,26 +301,26 @@ export default function AdminSmtpTab({
         </div>
 
         {/* Broadcast Announcement Form */}
-        <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-5 space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-[var(--border)]">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--ink)] flex items-center gap-2">
-              <Send className="w-4 h-4 text-[var(--accent)]" />
+        <div className="bg-surface border border-border rounded-2xl shadow-card p-5 space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-border">
+            <h3 className="text-xs font-semibold text-ink flex items-center gap-2">
+              <Send className="w-4 h-4 text-accent" />
               <span>Broadcast Announcement</span>
             </h3>
-            <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-[var(--surface-raised)] text-[var(--ink-muted)]">
+            <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-surface-raised text-ink-muted">
               Direct Mailer
             </span>
           </div>
 
           <form onSubmit={handleSendBroadcast} className="space-y-3">
             <div>
-              <label className="block text-[11px] font-medium text-[var(--ink-muted)] mb-1">
+              <label className="block text-[11px] font-medium text-ink-muted mb-1">
                 Audience *
               </label>
               <select
                 value={broadcastForm.targetAudience}
                 onChange={(e) => setBroadcastForm({ ...broadcastForm, targetAudience: e.target.value })}
-                className="w-full px-2.5 py-1 text-xs border border-[var(--border)] rounded-lg bg-[var(--surface)] text-[var(--ink)] font-medium h-8 outline-none"
+                className="w-full px-2.5 py-1 text-xs border border-border rounded-[8px] bg-surface text-ink font-medium h-8 outline-none"
               >
                 <option value="ALL">All Registered Delegates</option>
                 <option value="EVENT">Specific Competition Delegates</option>
@@ -329,14 +329,14 @@ export default function AdminSmtpTab({
 
             {broadcastForm.targetAudience === "EVENT" && (
               <div>
-                <label className="block text-[11px] font-medium text-[var(--ink-muted)] mb-1">
+                <label className="block text-[11px] font-medium text-ink-muted mb-1">
                   Select Event *
                 </label>
                 <select
                   required
                   value={broadcastForm.targetEventId}
                   onChange={(e) => setBroadcastForm({ ...broadcastForm, targetEventId: e.target.value })}
-                  className="w-full px-2.5 py-1 text-xs border border-[var(--border)] rounded-lg bg-[var(--surface)] text-[var(--ink)] h-8 outline-none"
+                  className="w-full px-2.5 py-1 text-xs border border-border rounded-[8px] bg-surface text-ink h-8 outline-none"
                 >
                   <option value="">-- Choose Competition --</option>
                   {eventBreakdown.map((ev) => (
@@ -349,7 +349,7 @@ export default function AdminSmtpTab({
             )}
 
             <div>
-              <label className="block text-[11px] font-medium text-[var(--ink-muted)] mb-1">
+              <label className="block text-[11px] font-medium text-ink-muted mb-1">
                 Subject *
               </label>
               <Input
@@ -362,7 +362,7 @@ export default function AdminSmtpTab({
             </div>
 
             <div>
-              <label className="block text-[11px] font-medium text-[var(--ink-muted)] mb-1">
+              <label className="block text-[11px] font-medium text-ink-muted mb-1">
                 Message Content *
               </label>
               <Textarea

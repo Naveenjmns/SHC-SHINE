@@ -25,21 +25,21 @@ export function StatCard({
 }: StatCardProps) {
   return (
     <div
-      className={`p-5 rounded-[12px] bg-surface border border-border space-y-3 ${className}`}
+      className={`p-6 rounded-2xl bg-surface border border-border shadow-card space-y-3 ${className}`}
     >
       <div className="flex items-center justify-between gap-3">
-        <span className="text-xs font-semibold uppercase tracking-wider text-ink-muted truncate">
+        <span className="text-sm font-medium text-ink-muted truncate">
           {label}
         </span>
         {icon && (
-          <div className="w-8 h-8 rounded-[8px] bg-surface-raised border border-border flex items-center justify-center text-ink-muted shrink-0">
+          <div className="w-10 h-10 rounded-[10px] bg-accent-muted flex items-center justify-center text-accent shrink-0">
             {icon}
           </div>
         )}
       </div>
 
       <div className="space-y-1">
-        <div className="text-2xl font-bold font-display text-ink tracking-tight">
+        <div className="text-[2rem] leading-tight font-bold font-display text-ink tabular-nums">
           {value}
         </div>
 

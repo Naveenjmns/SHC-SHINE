@@ -33,7 +33,7 @@ export default function ProfileRoleSummaryCard({
           title: "Executive Fest Administrator",
           description: "Full access to settings, institution branding, editions, and participant registrations.",
           icon: Shield,
-          badgeColor: "bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800",
+          badgeColor: "bg-danger-surface text-danger-ink border-danger-border",
           link: "/admin",
           linkLabel: "Open Executive Console",
         };
@@ -42,7 +42,7 @@ export default function ProfileRoleSummaryCard({
           title: "Arena Event Coordinator",
           description: "Manage delegate check-ins, arena rosters, and score evaluations for your assigned competitions.",
           icon: GraduationCap,
-          badgeColor: "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800",
+          badgeColor: "bg-accent-muted text-accent-strong border-transparent",
           link: "/coordinator",
           linkLabel: "Open Coordinator Hub",
         };
@@ -51,7 +51,7 @@ export default function ProfileRoleSummaryCard({
           title: "Dining Hall & Food Committee",
           description: "Scan meal tokens, track dietary distributions, and monitor catering capacity.",
           icon: Utensils,
-          badgeColor: "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800",
+          badgeColor: "bg-success-surface text-success-ink border-success-border",
           link: "/food",
           linkLabel: "Open Food Scanner Hub",
         };
@@ -60,7 +60,7 @@ export default function ProfileRoleSummaryCard({
           title: "Registered Fest Delegate",
           description: "Access your digital QR pass, view registered arenas, and track your festival schedule.",
           icon: User,
-          badgeColor: "bg-[var(--surface-raised)] text-[var(--ink)] border-[var(--border)]",
+          badgeColor: "bg-surface-raised text-ink border-border",
           link: "/dashboard",
           linkLabel: "Open Student Dashboard",
         };
@@ -71,20 +71,20 @@ export default function ProfileRoleSummaryCard({
   const Icon = meta.icon;
 
   return (
-    <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-6 shadow-xs space-y-4">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[var(--border)]">
+    <div className="bg-surface border border-border rounded-2xl p-6 shadow-card space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border">
         <div className="flex items-start gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[var(--surface-raised)] border border-[var(--border)] flex items-center justify-center shrink-0">
-            <Icon className="w-5 h-5 text-[var(--accent)]" />
+          <div className="w-10 h-10 rounded-xl bg-accent-muted flex items-center justify-center shrink-0">
+            <Icon className="w-5 h-5 text-accent" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-base font-bold text-[var(--ink)]">{meta.title}</h3>
-              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${meta.badgeColor}`}>
+              <h3 className="text-base font-bold text-ink">{meta.title}</h3>
+              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${meta.badgeColor}`}>
                 {role}
               </span>
             </div>
-            <p className="text-xs text-[var(--ink-muted)] mt-0.5 max-w-lg">
+            <p className="text-xs text-ink-muted mt-0.5 max-w-lg">
               {meta.description}
             </p>
           </div>
@@ -101,38 +101,38 @@ export default function ProfileRoleSummaryCard({
       {/* Role specific quick stats */}
       {role === "STUDENT" && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
-          <div className="p-3 bg-[var(--surface-raised)] rounded-xl border border-[var(--border)]">
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--ink-muted)]">
+          <div className="p-3 bg-surface-raised rounded-xl border border-border">
+            <div className="text-xs font-medium text-ink-muted">
               Registered Arenas
             </div>
-            <div className="text-lg font-bold text-[var(--ink)] mt-0.5">
+            <div className="text-lg font-bold tabular-nums text-ink mt-0.5">
               {stats?.totalRegistrations ?? 0}
             </div>
           </div>
 
-          <div className="p-3 bg-[var(--surface-raised)] rounded-xl border border-[var(--border)]">
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--ink-muted)]">
+          <div className="p-3 bg-surface-raised rounded-xl border border-border">
+            <div className="text-xs font-medium text-ink-muted">
               Confirmed Status
             </div>
-            <div className="text-lg font-bold text-emerald-600 mt-0.5">
+            <div className="text-lg font-bold tabular-nums text-success mt-0.5">
               {stats?.confirmedCount ?? 0}
             </div>
           </div>
 
-          <div className="p-3 bg-[var(--surface-raised)] rounded-xl border border-[var(--border)]">
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--ink-muted)]">
+          <div className="p-3 bg-surface-raised rounded-xl border border-border">
+            <div className="text-xs font-medium text-ink-muted">
               Desk Attendance
             </div>
-            <div className="text-lg font-bold text-[var(--ink)] mt-0.5">
+            <div className="text-lg font-bold text-ink mt-0.5">
               {stats?.eventCheckedIn ? "Checked In" : "Pending"}
             </div>
           </div>
 
-          <div className="p-3 bg-[var(--surface-raised)] rounded-xl border border-[var(--border)]">
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--ink-muted)]">
+          <div className="p-3 bg-surface-raised rounded-xl border border-border">
+            <div className="text-xs font-medium text-ink-muted">
               Meal Token
             </div>
-            <div className="text-lg font-bold text-[var(--ink)] mt-0.5">
+            <div className="text-lg font-bold text-ink mt-0.5">
               {stats?.foodTokenClaimed ? "Claimed" : "Available"}
             </div>
           </div>
@@ -141,14 +141,14 @@ export default function ProfileRoleSummaryCard({
 
       {/* Digital QR Badge shortcut for student */}
       {role === "STUDENT" && stats?.badgeCode && (
-        <div className="pt-2 flex items-center justify-between p-3.5 bg-[var(--surface-raised)] rounded-xl border border-[var(--border)]">
+        <div className="pt-2 flex items-center justify-between p-3.5 bg-surface-raised rounded-xl border border-border">
           <div className="flex items-center gap-2.5">
-            <QrCode className="w-5 h-5 text-[var(--accent)]" />
+            <QrCode className="w-5 h-5 text-accent" />
             <div>
-              <div className="text-xs font-bold text-[var(--ink)]">
+              <div className="text-xs font-bold text-ink">
                 Digital Festival ID Badge
               </div>
-              <div className="font-mono text-[11px] text-[var(--ink-muted)]">
+              <div className="font-mono text-[11px] text-ink-muted">
                 {stats.badgeCode}
               </div>
             </div>
@@ -166,17 +166,17 @@ export default function ProfileRoleSummaryCard({
       {/* Awards won if any */}
       {role === "STUDENT" && stats?.wonAwards && stats.wonAwards.length > 0 && (
         <div className="pt-2">
-          <div className="text-xs font-bold text-[var(--ink)] flex items-center gap-1.5 mb-2">
-            <Trophy className="w-4 h-4 text-[#D9A441]" />
+          <div className="text-xs font-bold text-ink flex items-center gap-1.5 mb-2">
+            <Trophy className="w-4 h-4 text-gold" />
             <span>Honors & Awards ({stats.wonAwards.length})</span>
           </div>
           <div className="flex flex-wrap gap-2">
             {stats.wonAwards.map((a: any, idx: number) => (
               <span
                 key={idx}
-                className="px-2.5 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-200 text-xs font-semibold flex items-center gap-1.5"
+                className="px-2.5 py-1 rounded-full bg-gold-muted text-gold-ink text-xs font-semibold flex items-center gap-1.5"
               >
-                <Trophy className="w-3.5 h-3.5 text-[#D9A441]" />
+                <Trophy className="w-3.5 h-3.5 text-gold" />
                 <span>{a.event}: {a.result}</span>
               </span>
             ))}

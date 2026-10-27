@@ -1,5 +1,4 @@
 import React from "react";
-import { Building2, Trophy, Users, Award } from "lucide-react";
 
 interface FestStatsStripProps {
   prizePool?: string;
@@ -13,53 +12,29 @@ export default function FestStatsStrip({
   eventsCount = 14,
 }: FestStatsStripProps) {
   const stats = [
-    {
-      label: "Affiliated Institutions",
-      value: "40+",
-      subtext: "Across Tamil Nadu & South India",
-      icon: <Building2 className="w-5 h-5 text-accent" />,
-    },
-    {
-      label: "Fest Competitions",
-      value: `${eventsCount}`,
-      subtext: "On-Stage & Off-Stage Arenas",
-      icon: <Award className="w-5 h-5 text-accent" />,
-    },
-    {
-      label: "Cash & Trophy Pool",
-      value: prizePool,
-      subtext: "Plus Distinction Certificates",
-      icon: <Trophy className="w-5 h-5 text-gold" />,
-    },
-    {
-      label: "Expected Delegates",
-      value: expectedDelegates,
-      subtext: "UG & PG Tech Innovators",
-      icon: <Users className="w-5 h-5 text-accent" />,
-    },
+    { label: "Affiliated institutions", value: "40+", subtext: "Across Tamil Nadu & South India" },
+    { label: "Fest competitions", value: `${eventsCount}`, subtext: "On-stage & off-stage arenas" },
+    { label: "Cash & trophy pool", value: prizePool, subtext: "Plus distinction certificates" },
+    { label: "Expected delegates", value: expectedDelegates, subtext: "UG & PG tech innovators" },
   ];
 
   return (
-    <section className="max-w-6xl mx-auto px-4 sm:px-6 -mt-8 relative z-20">
-      <div className="rounded-[12px] bg-surface border border-border divide-y sm:divide-y-0 sm:divide-x divide-border grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 overflow-hidden">
-        {stats.map((stat, idx) => (
-          <div key={idx} className="p-5 flex items-start gap-3.5 bg-surface">
-            <div className="w-10 h-10 rounded-[8px] bg-surface-raised border border-border flex items-center justify-center shrink-0">
-              {stat.icon}
-            </div>
-            <div className="space-y-0.5 min-w-0">
-              <div className="text-xl sm:text-2xl font-bold font-display text-ink tracking-tight">
+    <section className="bg-canvas border-y border-border">
+      <div className="container-shine py-12">
+        <p className="text-center text-sm font-medium text-ink-muted mb-8">
+          Trusted by student delegations from across the region
+        </p>
+        <dl className="grid grid-cols-2 lg:grid-cols-4 gap-y-10 gap-x-6">
+          {stats.map((stat) => (
+            <div key={stat.label} className="text-center space-y-1">
+              <dd className="text-4xl sm:text-[2.75rem] leading-none font-bold text-ink tabular-nums">
                 {stat.value}
-              </div>
-              <div className="text-xs font-semibold text-ink truncate">
-                {stat.label}
-              </div>
-              <div className="text-[11px] text-ink-muted truncate">
-                {stat.subtext}
-              </div>
+              </dd>
+              <dt className="text-sm font-semibold text-ink pt-2">{stat.label}</dt>
+              <p className="text-xs text-ink-muted">{stat.subtext}</p>
             </div>
-          </div>
-        ))}
+          ))}
+        </dl>
       </div>
     </section>
   );

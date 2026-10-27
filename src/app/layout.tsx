@@ -1,19 +1,11 @@
 import type { Metadata, Viewport } from "next";
-import { Bricolage_Grotesque, Inter } from "next/font/google";
+import { Manrope } from "next/font/google";
 import "./globals.css";
 
-const bricolage = Bricolage_Grotesque({
-  variable: "--font-display",
+const manrope = Manrope({
+  variable: "--font-brand",
   subsets: ["latin"],
   display: "swap",
-  weight: ["400", "500", "600", "700"],
-});
-
-const inter = Inter({
-  variable: "--font-ui",
-  subsets: ["latin"],
-  display: "swap",
-  weight: ["400", "500", "600"],
 });
 
 export const viewport: Viewport = {
@@ -22,7 +14,7 @@ export const viewport: Viewport = {
   maximumScale: 5,
   userScalable: true,
   viewportFit: "cover",
-  themeColor: "#FF6B1A",
+  themeColor: "#F8F9FB",
 };
 
 export const metadata: Metadata = {
@@ -89,7 +81,7 @@ export default async function RootLayout({
   return (
     <html
       lang="en"
-      className={`${bricolage.variable} ${inter.variable} h-full antialiased`}
+      className={`${manrope.variable} h-full antialiased`}
     >
       <head>
         <ThemeInjector
@@ -98,7 +90,7 @@ export default async function RootLayout({
           initialBg={activeEdition?.themeBgColor}
         />
       </head>
-      <body className="min-h-full flex flex-col bg-surface text-ink font-sans">
+      <body className="min-h-full flex flex-col bg-canvas text-ink font-sans">
         <AuthProvider>
           <ToastProvider>
             {children}
