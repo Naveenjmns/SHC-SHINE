@@ -1,174 +1,9 @@
 import prisma from "@/lib/prisma";
 import { unstable_cache } from "next/cache";
+import { DEFAULT_EDITION_CONFIG, type ActiveEditionConfig } from "./editionDefaults";
 
-export interface ActiveEditionConfig {
-  id: string;
-  name: string;
-  edition: string;
-  slug: string;
-  isActive: boolean;
-  status: string;
-  tagline: string | null;
-  metadataText: string | null;
-  description: string | null;
-  venue: string | null;
-  startDate: Date | null;
-  endDate: Date | null;
-  logoUrl: string | null;
-  secondaryLogoUrl: string | null;
-  faviconUrl: string | null;
-  heroBgUrl: string | null;
-  primaryCtaText: string | null;
-  primaryCtaLink: string | null;
-  themePrimaryAccent: string | null;
-  themeSecondaryAccent: string | null;
-  themeBgColor: string | null;
-
-  // Stage View Header Banner fields (CMS Driven)
-  institutionName: string | null;
-  institutionCrestUrl: string | null;
-  accreditationText: string | null;
-  jubileeBadgeUrl: string | null;
-  hostDepartment: string | null;
-  acronymExpansion: string | null;
-  deptLogoUrl: string | null;
-  stageHeaderBannerUrl: string | null;
-
-  // Reusable Institution & Department Details
-  institutionShortName: string | null;
-  institutionLocation: string | null;
-  institutionAbout: string | null;
-  departmentAbout: string | null;
-  departmentProgram: string | null;
-  contactEmail: string | null;
-  contactPhone: string | null;
-  websiteUrl: string | null;
-
-  // Dining & Catering Configuration
-  diningHallVenue?: string | null;
-  diningFacilityInfo?: string | null;
-  mealOptions?: "BOTH" | "VEG_ONLY" | string;
-
-  participantFee: number;
-  isRegistrationOpen: boolean;
-  registrationClosedNotice: string | null;
-  prizePool?: string | null;
-  expectedDelegates?: string | null;
-  defaultFirstPrize?: string | null;
-  defaultSecondPrize?: string | null;
-  defaultThirdPrize?: string | null;
-  showStageModeInStudentPortal?: boolean;
-
-  // Floor plan & Wayfinding
-  floorPlanUrl?: string | null;
-  waypointGraph?: any;
-
-  // Symposium Rules & Guidelines
-  rulesEligibilityTitle?: string | null;
-  rulesEligibilityText?: string | null;
-  rulesTimingsTitle?: string | null;
-  rulesTimingsText?: string | null;
-  rulesChampionshipTitle?: string | null;
-  rulesChampionshipText?: string | null;
-
-  navItems: {
-    id: string;
-    label: string;
-    url: string;
-    order: number;
-    isEnabled: boolean;
-  }[];
-  scheduleItems?: {
-    id: string;
-    time: string;
-    title: string;
-    venue: string | null;
-    description: string | null;
-    tag: string | null;
-    order: number;
-  }[];
-}
-
-// Fallback configuration matching Sacred Heart College banner
-export const DEFAULT_EDITION_CONFIG: ActiveEditionConfig = {
-  id: "default-shine",
-  name: "SHINE",
-  edition: "2026",
-  slug: "shine-2026",
-  isActive: true,
-  status: "LIVE",
-  tagline: "Where Ideas Begin to Shine",
-  metadataText: "TECHNOLOGY • INNOVATION • CREATIVITY",
-  description:
-    "SHINE 26 is the annual intercollegiate flagship symposium organized by the Department of Computer Applications (PG), Sacred Heart College (Autonomous), Tirupattur.",
-  venue: "SGB Main Auditorium, Sacred Heart College (Autonomous), Tirupattur",
-  startDate: new Date("2026-09-17T09:30:00Z"),
-  endDate: new Date("2026-09-17T18:00:00Z"),
-  logoUrl: null,
-  secondaryLogoUrl: null,
-  faviconUrl: null,
-  heroBgUrl: null,
-  primaryCtaText: "EXPLORE SHINE →",
-  primaryCtaLink: "#events",
-  themePrimaryAccent: "#FF6B1A",
-  themeSecondaryAccent: "#D9A441",
-  themeBgColor: "#FAF8F5",
-
-  // Stage Banner Fallbacks
-  institutionName: "SACRED HEART COLLEGE (AUTONOMOUS), TIRUPATTUR",
-  institutionCrestUrl: null,
-  accreditationText: "Accredited by NAAC (5th Cycle - Under RAF) with a CGPA of 3.53/4 at 'A++' Grade, Affiliated to Thiruvalluvar University Tirupattur - 635 601",
-  jubileeBadgeUrl: null,
-  hostDepartment: "DEPARTMENT OF COMPUTER APPLICATIONS(PG)",
-  acronymExpansion: "SACRED HEART INFORMATICS NETWORK FOR ENTERPRISES",
-  deptLogoUrl: null,
-  stageHeaderBannerUrl: null,
-
-  // Reusable Institution & Department Details
-  institutionShortName: "SHC",
-  institutionLocation: "Tirupattur — 635 601, Tamil Nadu",
-  institutionAbout: "Premier institution recognized with NAAC accreditation, providing world-class infrastructure, research excellence, and academic distinction.",
-  departmentAbout: "Nurturing top-tier engineers, developers, and technical leaders through state-of-the-art labs, hands-on curricula, and hackathons.",
-  departmentProgram: "MCA Program",
-  contactEmail: "shine@shctpt.edu",
-  contactPhone: "+91 4175 240464",
-  websiteUrl: null,
-
-  diningHallVenue: "SGB Quadrangle Dining Hall",
-  diningFacilityInfo: "Sacred Heart College (Autonomous)",
-  mealOptions: "BOTH",
-
-  participantFee: 0,
-  isRegistrationOpen: true,
-  registrationClosedNotice: "Registrations for this edition are currently closed. Please contact the event coordinators for queries.",
-  prizePool: "₹25K+",
-  expectedDelegates: "500+",
-  defaultFirstPrize: "Cash Prize - 1000Rs + Certificate",
-  defaultSecondPrize: "Cash Prize - 750Rs + Certificate",
-  defaultThirdPrize: "Cash Prize - 500Rs + Certificate",
-  showStageModeInStudentPortal: false,
-  floorPlanUrl: "/uploads/campus-floorplan.svg",
-  waypointGraph: null,
-
-  rulesEligibilityTitle: "Eligibility & Registration",
-  rulesEligibilityText:
-    "Open to all bona fide UG and PG students of Computer Science, Applications, IT, and related engineering disciplines with valid college ID cards.",
-  rulesTimingsTitle: "Reporting & Timings",
-  rulesTimingsText:
-    "Participants must report at the registration desk by 09:00 AM sharp on Sep 17, 2026. Spot registrations close at 10:30 AM.",
-  rulesChampionshipTitle: "Overall Championship",
-  rulesChampionshipText:
-    "The institution securing maximum cumulative points across both On-Stage and Off-Stage events will be crowned the SHINE Overall Champions.",
-
-  navItems: [
-    { id: "1", label: "About", url: "#about", order: 1, isEnabled: true },
-    { id: "2", label: "Schedule", url: "#schedule", order: 2, isEnabled: true },
-    { id: "3", label: "Events", url: "#events", order: 3, isEnabled: true },
-    { id: "4", label: "Rules", url: "#rules", order: 4, isEnabled: true },
-    { id: "5", label: "Stage View", url: "/leaderboard", order: 5, isEnabled: true },
-  ],
-  scheduleItems: [],
-};
+export { DEFAULT_EDITION_CONFIG, festTitle } from "./editionDefaults";
+export type { ActiveEditionConfig } from "./editionDefaults";
 
 async function fetchActiveEditionFromDb(): Promise<ActiveEditionConfig> {
   try {
@@ -289,6 +124,8 @@ async function fetchActiveEditionFromDb(): Promise<ActiveEditionConfig> {
       showStageModeInStudentPortal: showStageModeInStudentPortal !== undefined ? showStageModeInStudentPortal : false,
       floorPlanUrl: (active as any).floorPlanUrl || DEFAULT_EDITION_CONFIG.floorPlanUrl,
       waypointGraph: (active as any).waypointGraph || null,
+      campusLatitude: active.campusLatitude ?? null,
+      campusLongitude: active.campusLongitude ?? null,
 
       rulesEligibilityTitle:
         rulesEligibilityTitle || DEFAULT_EDITION_CONFIG.rulesEligibilityTitle,

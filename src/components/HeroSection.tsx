@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import ParticleField from "@/components/ParticleField";
-import { ActiveEditionConfig } from "@/lib/eventService";
+import { ActiveEditionConfig, DEFAULT_EDITION_CONFIG, festTitle } from "@/lib/editionDefaults";
 import { Sparkles, Calendar, MapPin, ArrowRight, ShieldCheck } from "lucide-react";
 
 interface HeroSectionProps {
@@ -9,15 +9,16 @@ interface HeroSectionProps {
 }
 
 export default function HeroSection({ edition }: HeroSectionProps) {
-  const eventName = edition?.name || "SHINE";
-  const editionYear = edition?.edition || "2026";
-  const tagline = edition?.tagline || "Where Ideas Begin to Shine";
+  const eventName = edition?.name || DEFAULT_EDITION_CONFIG.name;
+  const editionYear = edition?.edition || DEFAULT_EDITION_CONFIG.edition;
+  const fullTitle = festTitle(edition);
+  const tagline = edition?.tagline || DEFAULT_EDITION_CONFIG.tagline;
   const metadataText = edition?.metadataText || "TECHNOLOGY • INNOVATION • CREATIVITY";
-  const acronymExpansion = edition?.acronymExpansion || "SACRED HEART INFORMATICS NETWORK FOR ENTERPRISES";
-  const primaryCtaText = edition?.primaryCtaText || "EXPLORE SHINE →";
-  const primaryCtaLink = edition?.primaryCtaLink || "#events";
-  const logoUrl = edition?.logoUrl;
-  const venue = edition?.venue || "SGB Main Auditorium, Sacred Heart College (Autonomous), Tirupattur";
+  const acronymExpansion = edition?.acronymExpansion || DEFAULT_EDITION_CONFIG.acronymExpansion;
+  const primaryCtaText = edition?.primaryCtaText || DEFAULT_EDITION_CONFIG.primaryCtaText || "EXPLORE EVENTS →";
+  const primaryCtaLink = edition?.primaryCtaLink || DEFAULT_EDITION_CONFIG.primaryCtaLink || "#events";
+  const logoUrl = edition?.logoUrl || DEFAULT_EDITION_CONFIG.logoUrl;
+  const institutionLabel = edition?.institutionShortName || edition?.institutionName;
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-[#FAF8F5] pt-24 pb-20 border-b border-[#1C1917]/10">
@@ -42,7 +43,7 @@ export default function HeroSection({ edition }: HeroSectionProps) {
               <div className="absolute inset-0 rounded-full bg-radial from-[#FF6B1A]/35 via-[#D9A441]/20 to-transparent blur-2xl transform scale-125 pointer-events-none" />
               <img
                 src={logoUrl}
-                alt={`${eventName} ${editionYear} Logo`}
+                alt={`${fullTitle} Logo`}
                 width={768}
                 height={512}
                 loading="eager"
@@ -65,7 +66,7 @@ export default function HeroSection({ edition }: HeroSectionProps) {
                 className="flex items-center gap-2 text-xs md:text-sm font-extrabold uppercase tracking-widest text-[var(--fest-ember)] mt-4"
               >
                 <Sparkles className="w-4 h-4 text-[var(--fest-gold)]" />
-                <span>{edition?.institutionShortName || edition?.institutionName || "College"} • Symposium</span>
+                <span>{institutionLabel ? `${institutionLabel} • Symposium` : "Symposium"}</span>
               </div>
             </div>
           )}
@@ -77,12 +78,17 @@ export default function HeroSection({ edition }: HeroSectionProps) {
             className="text-fluid-hero font-extrabold text-[#1C1917] tracking-tight"
             style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
           >
-            <span className="hero-wordmark-gradient">{eventName}</span>{" "}
-            <span className="text-[#1C1917] font-light">{editionYear}</span>
+            <span className="hero-wordmark-gradient">{eventName}</span>
+            {editionYear && (
+              <>
+                {" "}
+                <span className="text-[#1C1917] font-light">{editionYear}</span>
+              </>
+            )}
           </h1>
         </div>
 
-        {/* Acronym Expansion right under SHINE 26 */}
+        {/* Acronym Expansion right under the fest title */}
         {acronymExpansion && (
           <div className="mb-5 md:mb-6 animate-stage-title px-2">
             <span className="inline-block px-3.5 sm:px-4 py-1.5 rounded-full bg-gradient-to-r from-[#FF6B1A]/10 via-[#D9A441]/15 to-[#FF6B1A]/10 border border-[#D9A441]/30 text-[10px] sm:text-xs md:text-sm font-extrabold text-[#D97706] tracking-wider sm:tracking-[0.15em] uppercase shadow-2xs break-words max-w-[92vw]">

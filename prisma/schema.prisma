@@ -55,50 +55,50 @@ model User {
 
 model EventEdition {
   id                   String   @id @default(cuid())
-  name                 String   @default("SHINE")
-  edition              String   @default("2026")
+  name                 String   @default("College Fest")
+  edition              String   @default("")
   slug                 String   @unique
   isActive             Boolean  @default(true)
   status               String   @default("LIVE") // DRAFT, UPCOMING, LIVE, COMPLETED
-  tagline              String?  @default("Where Ideas Begin to Shine")
+  tagline              String?
   metadataText         String?  @default("TECHNOLOGY • INNOVATION • CREATIVITY")
-  description          String?  @default("SHINE is the annual flagship intercollegiate symposium organized by the Dept. of Computer Applications (PG), Sacred Heart College (Autonomous).")
-  venue                String?  @default("SGB Main Auditorium, Sacred Heart College, Tirupattur")
+  description          String?
+  venue                String?
   startDate            DateTime?
   endDate              DateTime?
   logoUrl              String?
   secondaryLogoUrl     String?
   faviconUrl           String?
   heroBgUrl            String?
-  primaryCtaText       String?  @default("EXPLORE SHINE →")
+  primaryCtaText       String?
   primaryCtaLink       String?  @default("#events")
   themePrimaryAccent   String?  @default("#FF6B1A")
   themeSecondaryAccent String?  @default("#D9A441")
   themeBgColor         String?  @default("#FAF8F5")
 
   // Stage View College Header Banner (CMS Driven)
-  institutionName      String?  @default("SACRED HEART COLLEGE (AUTONOMOUS), TIRUPATTUR")
+  institutionName      String?
   institutionCrestUrl  String?
-  accreditationText    String?  @default("Accredited by NAAC (5th Cycle - Under RAF) with a CGPA of 3.53/4 at 'A++' Grade, Affiliated to Thiruvalluvar University Tirupattur - 635 601")
+  accreditationText    String?
   jubileeBadgeUrl      String?
-  hostDepartment       String?  @default("DEPARTMENT OF COMPUTER APPLICATIONS (PG)")
-  acronymExpansion     String?  @default("SACRED HEART INFORMATICS NETWORK FOR ENTERPRISES")
+  hostDepartment       String?
+  acronymExpansion     String?
   deptLogoUrl          String?
   stageHeaderBannerUrl String?
 
   // Reusable Institution & Department Details
-  institutionShortName String?  @default("SHC")
-  institutionLocation  String?  @default("Tirupattur — 635 601, Tamil Nadu")
-  institutionAbout     String?  @default("Premier institution recognized with NAAC accreditation, providing world-class infrastructure, research excellence, and academic distinction.")
+  institutionShortName String?
+  institutionLocation  String?
+  institutionAbout     String?
   departmentAbout      String?  @default("Nurturing top-tier engineers, developers, and technical leaders through state-of-the-art labs, hands-on curricula, and hackathons.")
-  departmentProgram    String?  @default("MCA Program")
-  contactEmail         String?  @default("shine@shctpt.edu")
-  contactPhone         String?  @default("+91 4175 240464")
+  departmentProgram    String?
+  contactEmail         String?
+  contactPhone         String?
   websiteUrl           String?
 
   // Dining & Catering Configuration
-  diningHallVenue      String?  @default("SGB Quadrangle Dining Hall")
-  diningFacilityInfo   String?  @default("Sacred Heart College (Autonomous)")
+  diningHallVenue      String?
+  diningFacilityInfo   String?
   mealOptions          String   @default("BOTH") // "BOTH" (Veg + Non-Veg) | "VEG_ONLY" (Pure Veg Only)
 
   participantFee            Float    @default(0)
@@ -109,11 +109,11 @@ model EventEdition {
 
   // Symposium Rules & Guidelines
   rulesEligibilityTitle     String?  @default("Eligibility & Registration")
-  rulesEligibilityText      String?  @default("Open to all bona fide UG and PG students of Computer Science, Applications, IT, and related engineering disciplines with valid college ID cards.")
+  rulesEligibilityText      String?
   rulesTimingsTitle         String?  @default("Reporting & Timings")
-  rulesTimingsText          String?  @default("Participants must report at the registration desk by 09:00 AM sharp on Sep 17, 2026. Spot registrations close at 10:30 AM.")
+  rulesTimingsText          String?
   rulesChampionshipTitle    String?  @default("Overall Championship")
-  rulesChampionshipText     String?  @default("The institution securing maximum cumulative points across both On-Stage and Off-Stage events will be crowned the SHINE Overall Champions.")
+  rulesChampionshipText     String?
 
   // Default Competition Awards (Dynamic for Leaderboard)
   defaultFirstPrize         String?  @default("Cash Prize + Trophy + Certificate")
@@ -125,6 +125,8 @@ model EventEdition {
 
   // Indoor Venue Floor Plan & Navigation
   floorPlanUrl                 String?  @default("/uploads/campus-floorplan.svg")
+  campusLatitude               Float? // optional campus GPS position for the outdoor proximity check
+  campusLongitude              Float?
   waypointGraph                Json?
 
 

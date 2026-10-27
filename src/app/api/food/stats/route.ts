@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { mealEligibleMemberWhere } from "@/lib/eligibility";
+import { DEFAULT_EDITION_CONFIG } from "@/lib/eventService";
 
 export const dynamic = "force-dynamic";
 
@@ -116,9 +117,9 @@ export async function GET(req: NextRequest) {
         },
       },
       edition: activeEdition || {
-        diningHallVenue: "SGB Quadrangle Dining Hall",
-        diningFacilityInfo: "Sacred Heart College (Autonomous)",
-        mealOptions: "BOTH",
+        diningHallVenue: DEFAULT_EDITION_CONFIG.diningHallVenue,
+        diningFacilityInfo: DEFAULT_EDITION_CONFIG.diningFacilityInfo,
+        mealOptions: DEFAULT_EDITION_CONFIG.mealOptions,
       },
       recentClaims,
     });

@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { safeJson } from "@/lib/safeFetch";
 import { isSafeRelativePath } from "@/lib/validators";
+import { festTitle } from "@/lib/editionDefaults";
 
 function LoginForm() {
   const router = useRouter();
@@ -34,6 +35,22 @@ function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [eventTitle, setEventTitle] = useState(() => festTitle(null));
+
+  useEffect(() => {
+    let isMounted = true;
+    fetch("/api/edition/active")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (isMounted && data?.success && data?.edition) {
+          setEventTitle(festTitle(data.edition));
+        }
+      })
+      .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (emailParam && !email) {
@@ -108,7 +125,7 @@ function LoginForm() {
             className="text-2xl sm:text-3xl font-extrabold text-[#1C1917] tracking-tight"
             style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
           >
-            Sign In to <span className="hero-wordmark-gradient">SHINE 26</span>
+            Sign In to <span className="hero-wordmark-gradient">{eventTitle}</span>
           </h1>
           <p className="text-xs sm:text-sm text-[#78716C] mt-1.5 leading-relaxed max-w-xs mx-auto">
             Access your verified delegate badge, event registrations, or coordination desk.

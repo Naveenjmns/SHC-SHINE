@@ -96,7 +96,7 @@ export default function ProfileDetailsCard({
               Institution / College
             </label>
             <Input
-              placeholder="e.g. Loyola College (Autonomous)"
+              placeholder="e.g. Your College Name"
               value={college}
               onChange={(e) => setCollege(e.target.value)}
             />

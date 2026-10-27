@@ -53,7 +53,7 @@ export default function ColorMatrix() {
       <div>
         <h2 className="text-xl font-bold text-ink">1. Color Tokens & WCAG AA Contrast</h2>
         <p className="text-sm text-ink-muted mt-1">
-          Single accent palette (#FF6B1A SHINE Orange), stone neutral ramp, and strict semantic roles.
+          Single accent palette (#FF6B1A Ember Orange), stone neutral ramp, and strict semantic roles.
         </p>
       </div>
 

@@ -43,7 +43,7 @@ export default function AdminEditionsTab({
             Event Editions Architecture
           </h2>
           <p className="text-xs text-[var(--ink-muted)]">
-            Manage annual editions (e.g. SHINE 2026, SHINE 2027). Only 1 edition serves live traffic.
+            Manage annual editions (e.g. TechFest 2027, TechFest 2028). Only 1 edition serves live traffic.
           </p>
         </div>
 

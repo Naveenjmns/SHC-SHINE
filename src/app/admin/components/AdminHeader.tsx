@@ -5,14 +5,17 @@ import Link from "next/link";
 import { signOutAndClearCache } from "@/lib/signOutAndClearCache";
 import { LogOut, QrCode, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui";
+import { DEFAULT_EDITION_CONFIG } from "@/lib/editionDefaults";
 
 interface AdminHeaderProps {
+  festName?: string;
   editionNumber?: string;
   onOpenCheckIn: () => void;
 }
 
 export default function AdminHeader({
-  editionNumber = "26",
+  festName = DEFAULT_EDITION_CONFIG.name,
+  editionNumber = "",
   onOpenCheckIn,
 }: AdminHeaderProps) {
   return (
@@ -20,7 +23,8 @@ export default function AdminHeader({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Link href="/" className="font-semibold text-sm tracking-tight text-[var(--ink)]">
-            SHINE <span className="text-[var(--accent)]">{editionNumber}</span>
+            {festName}
+            {editionNumber && <span className="text-[var(--accent)]"> {editionNumber}</span>}
           </Link>
           <span className="text-[var(--border)]">/</span>
           <span className="text-xs font-semibold text-[var(--ink)] px-2 py-0.5 rounded-md bg-[var(--surface-raised)] border border-[var(--border)]">

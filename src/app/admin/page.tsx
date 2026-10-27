@@ -17,6 +17,7 @@ import PrintableQrModal from "@/components/PrintableQrModal";
 import InteractiveFloorPlanModal from "@/components/InteractiveFloorPlanModal";
 import { downloadEventParticipantsCSV } from "@/lib/exportEventCsv";
 import { useAdminData } from "./hooks/useAdminData";
+import { DEFAULT_EDITION_CONFIG, festTitle } from "@/lib/editionDefaults";
 import AdminHeader from "./components/AdminHeader";
 import AdminOverviewTab from "./components/AdminOverviewTab";
 import AdminRegistrationsTab from "./components/AdminRegistrationsTab";
@@ -157,7 +158,8 @@ export default function AdminOverviewPage() {
   return (
     <main className="min-h-screen bg-[var(--surface-raised)] flex flex-col">
       <AdminHeader
-        editionNumber={activeEdition?.edition || "26"}
+        festName={activeEdition?.name || DEFAULT_EDITION_CONFIG.name}
+        editionNumber={activeEdition?.edition || ""}
         onOpenCheckIn={() => setShowCheckInModal(true)}
       />
 
@@ -355,7 +357,7 @@ export default function AdminOverviewPage() {
         isOpen={showPrintableQrModal}
         onClose={() => setShowPrintableQrModal(false)}
         waypoints={graphData.nodes}
-        editionName={activeEdition ? `${activeEdition.name} ${activeEdition.edition}` : "SHINE 26"}
+        editionName={activeEdition ? festTitle(activeEdition) : undefined}
       />
 
       <InteractiveFloorPlanModal

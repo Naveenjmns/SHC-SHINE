@@ -19,9 +19,19 @@ import { Button } from "@/components/ui";
 interface AboutAppModalProps {
   isOpen: boolean;
   onClose: () => void;
+  /** Fest display name from the active edition (e.g. festTitle(edition)) */
+  eventName?: string | null;
+  hostDepartment?: string | null;
+  institutionName?: string | null;
 }
 
-export default function AboutAppModal({ isOpen, onClose }: AboutAppModalProps) {
+export default function AboutAppModal({
+  isOpen,
+  onClose,
+  eventName,
+  hostDepartment,
+  institutionName,
+}: AboutAppModalProps) {
   if (!isOpen) return null;
 
   return (
@@ -44,7 +54,7 @@ export default function AboutAppModal({ isOpen, onClose }: AboutAppModalProps) {
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-base font-bold text-[var(--ink)]">
-                  SHINE Platform OS
+                  {eventName ? `${eventName} Platform OS` : "Fest Platform OS"}
                 </h3>
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[var(--surface-raised)] text-[var(--accent)] border border-[var(--border)]">
                   v2.0
@@ -130,8 +140,12 @@ export default function AboutAppModal({ isOpen, onClose }: AboutAppModalProps) {
         {/* Institution Attribution */}
         <div className="p-3.5 rounded-xl bg-[var(--surface-raised)] border border-[var(--border)] flex items-center justify-between gap-3 text-xs">
           <div>
-            <div className="font-bold text-[var(--ink)]">Department of Computer Applications (PG)</div>
-            <div className="text-[11px] text-[var(--ink-muted)]">Sacred Heart College (Autonomous), Tirupattur</div>
+            {hostDepartment && (
+              <div className="font-bold text-[var(--ink)]">{hostDepartment}</div>
+            )}
+            {institutionName && (
+              <div className="text-[11px] text-[var(--ink-muted)]">{institutionName}</div>
+            )}
           </div>
           <Button variant="secondary" size="sm" onClick={onClose} className="text-xs shrink-0">
             Close

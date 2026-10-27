@@ -12,7 +12,7 @@ const TYPE_SCALE = [
     tracking: "+0.01em",
     weight: "font-medium (500)",
     role: "Table headers, badge text, timestamps, captions",
-    sample: "SACRED HEART COLLEGE • SHINE 2026 EVENT MANAGEMENT PLATFORM",
+    sample: "YOUR COLLEGE • YOUR FEST EVENT MANAGEMENT PLATFORM",
     isDisplay: false,
   },
   {
@@ -84,7 +84,7 @@ const TYPE_SCALE = [
     tracking: "-0.03em",
     weight: "font-bold (700)",
     role: "Public landing section titles, auditorium stats",
-    sample: "Sacred Heart College Fest 2026",
+    sample: "Your College Fest",
     isDisplay: true,
   },
   {
@@ -96,7 +96,7 @@ const TYPE_SCALE = [
     tracking: "-0.04em",
     weight: "font-bold (700)",
     role: "Public hero headline (solid accent color, 0 gradient)",
-    sample: "SHINE 2026",
+    sample: "Your Fest",
     isDisplay: true,
   },
 ];
@@ -133,7 +133,7 @@ export default function TypographyMatrix() {
           <div className="text-xs font-mono text-ink-muted uppercase">Tabular Numbers</div>
           <div className="text-lg font-mono font-medium text-ink mt-1">ui-monospace</div>
           <div className="text-xs text-ink-subtle mt-1">
-            Monospace numerals for scores, registration badges (SHINE26-DEMO-RAHUL), and timestamps.
+            Monospace numerals for scores, registration badges (FEST-DEMO-RAHUL), and timestamps.
           </div>
         </div>
       </div>

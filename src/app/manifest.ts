@@ -1,15 +1,27 @@
 import type { MetadataRoute } from "next";
+import { getActiveEdition, festTitle } from "@/lib/eventService";
 
-export default function manifest(): MetadataRoute.Manifest {
+// Built from the active edition at request time (manifests are otherwise cached at build time)
+export const dynamic = "force-dynamic";
+
+export default async function manifest(): Promise<MetadataRoute.Manifest> {
+  let edition: Awaited<ReturnType<typeof getActiveEdition>> | null = null;
+  try {
+    edition = await getActiveEdition();
+  } catch {
+    // Neutral defaults below
+  }
+  const title = festTitle(edition);
+  const host = [edition?.hostDepartment, edition?.institutionName].filter(Boolean).join(", ");
+
   return {
-    name: "SHINE 26 — Sacred Heart College Fest",
-    short_name: "SHINE 26",
-    description:
-      "Premier Intercollegiate Fest & Event Management Platform — Department of Computer Applications (PG), Sacred Heart College (Autonomous), Tirupattur.",
+    name: edition?.institutionShortName ? `${title} — ${edition.institutionShortName}` : title,
+    short_name: title,
+    description: `Intercollegiate fest & event management platform${host ? ` — ${host}` : ""}.`,
     start_url: "/",
     display: "standalone",
-    background_color: "#FAF8F5",
-    theme_color: "#FF6B1A",
+    background_color: edition?.themeBgColor || "#FAF8F5",
+    theme_color: edition?.themePrimaryAccent || "#FF6B1A",
     orientation: "any",
     scope: "/",
     lang: "en-IN",

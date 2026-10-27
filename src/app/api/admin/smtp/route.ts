@@ -45,7 +45,7 @@ export async function GET() {
           user: process.env.SMTP_USER || gmailUser || "",
           hasPassword: !!process.env.SMTP_PASSWORD,
           fromEmail: process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER || gmailUser || "",
-          fromName: process.env.SMTP_FROM_NAME || "Event Coordination Team",
+          fromName: process.env.SMTP_FROM_NAME || "",
           replyTo: process.env.SMTP_REPLY_TO || "",
         },
       });
@@ -104,7 +104,8 @@ export async function POST(req: NextRequest) {
       secure: true,
       user: nextUser,
       fromEmail: fromEmail || existing?.fromEmail || nextUser,
-      fromName: fromName || existing?.fromName || "Event Coordination Team",
+      // Empty = use "<Fest title> Organizing Committee" from the active edition when sending
+      fromName: fromName ?? existing?.fromName ?? "",
       replyTo: replyTo === undefined ? existing?.replyTo ?? null : replyTo || null,
     };
 

@@ -1,4 +1,4 @@
-// SHINE 26 Event Platform — High-Performance Service Worker
+// Event Platform — High-Performance Service Worker
 // v3: purge caches from earlier versions that stored authenticated pages
 const CACHE_NAME = "shine26-cache-v4";
 

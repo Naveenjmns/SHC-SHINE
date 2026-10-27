@@ -14,6 +14,7 @@ import RegisteredEventsList from "./components/RegisteredEventsList";
 import { Button, Badge } from "@/components/ui";
 import { LogOut, User, Building2, MapPin } from "lucide-react";
 import { safeJson } from "@/lib/safeFetch";
+import { festTitle } from "@/lib/editionDefaults";
 
 export default function StudentDashboardPage() {
   const { data: session, status } = useSession();
@@ -91,15 +92,17 @@ export default function StudentDashboardPage() {
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <Badge variant="accent">STUDENT PORTAL</Badge>
-              <span className="text-xs text-ink-muted">SHINE 2026</span>
+              <span className="text-xs text-ink-muted">{festTitle(editionInfo)}</span>
             </div>
             <h1 className="text-xl sm:text-2xl font-bold font-display text-ink">
               Welcome, {session?.user?.name || pass?.name || "Delegate"}
             </h1>
-            <p className="text-xs text-ink-muted flex items-center gap-2">
-              <Building2 className="w-3.5 h-3.5 text-ink-subtle" />
-              <span>{delegation?.collegeName || session?.user?.college || "Sacred Heart College"}</span>
-            </p>
+            {(delegation?.collegeName || session?.user?.college) && (
+              <p className="text-xs text-ink-muted flex items-center gap-2">
+                <Building2 className="w-3.5 h-3.5 text-ink-subtle" />
+                <span>{delegation?.collegeName || session?.user?.college}</span>
+              </p>
+            )}
           </div>
 
           <div className="flex items-center gap-2 self-end sm:self-center">

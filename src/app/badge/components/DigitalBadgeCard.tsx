@@ -85,12 +85,16 @@ export default function DigitalBadgeCard({
       <div className="bg-[var(--surface-raised)] border-b border-[var(--border)] p-6 relative">
         <div className="flex justify-between items-start gap-4">
           <div>
-            <div className="text-[11px] font-semibold text-[var(--accent)] tracking-wider uppercase mb-0.5">
-              {fest.institutionName || "Sacred Heart College (Autonomous)"}
-            </div>
-            <div className="text-[10px] text-[var(--ink-muted)] uppercase tracking-wider font-medium mb-2">
-              {fest.departmentName || "Department of Computer Applications (PG)"}
-            </div>
+            {fest.institutionName && (
+              <div className="text-[11px] font-semibold text-[var(--accent)] tracking-wider uppercase mb-0.5">
+                {fest.institutionName}
+              </div>
+            )}
+            {fest.departmentName && (
+              <div className="text-[10px] text-[var(--ink-muted)] uppercase tracking-wider font-medium mb-2">
+                {fest.departmentName}
+              </div>
+            )}
 
             <h1 className="text-2xl font-bold tracking-tight text-[var(--ink)] flex items-baseline gap-2">
               <span>{fest.name}</span>

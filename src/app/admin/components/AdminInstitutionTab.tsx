@@ -72,7 +72,7 @@ export default function AdminInstitutionTab({
             <Input
               value={brandingForm.institutionName}
               onChange={(e) => setBrandingForm({ ...brandingForm, institutionName: e.target.value })}
-              placeholder="e.g. Sacred Heart College (Autonomous), Tirupattur"
+              placeholder="e.g. Example College of Arts & Science"
               className="text-xs"
             />
           </div>
@@ -85,7 +85,7 @@ export default function AdminInstitutionTab({
               <Input
                 value={brandingForm.institutionShortName}
                 onChange={(e) => setBrandingForm({ ...brandingForm, institutionShortName: e.target.value })}
-                placeholder="e.g. SHC"
+                placeholder="e.g. ECAS"
                 className="text-xs"
               />
             </div>
@@ -96,7 +96,7 @@ export default function AdminInstitutionTab({
               <Input
                 value={brandingForm.institutionLocation}
                 onChange={(e) => setBrandingForm({ ...brandingForm, institutionLocation: e.target.value })}
-                placeholder="e.g. Tirupattur — 635 601, Tamil Nadu"
+                placeholder="e.g. City — PIN code, State"
                 className="text-xs"
               />
             </div>
@@ -104,13 +104,13 @@ export default function AdminInstitutionTab({
 
           <div>
             <label className="block text-xs font-semibold text-[var(--ink-muted)] mb-1">
-              NAAC Accreditation &amp; University Affiliation
+              Accreditation &amp; University Affiliation
             </label>
             <Textarea
               rows={2}
               value={brandingForm.accreditationText}
               onChange={(e) => setBrandingForm({ ...brandingForm, accreditationText: e.target.value })}
-              placeholder="e.g. Accredited by NAAC with 'A++' Grade, Affiliated to Thiruvalluvar University"
+              placeholder="e.g. Accredited with 'A' Grade, Affiliated to Example University"
               className="text-xs"
             />
           </div>
@@ -180,7 +180,7 @@ export default function AdminInstitutionTab({
               <Input
                 value={brandingForm.hostDepartment}
                 onChange={(e) => setBrandingForm({ ...brandingForm, hostDepartment: e.target.value })}
-                placeholder="e.g. Department of Computer Applications (PG)"
+                placeholder="e.g. Department of Physics"
                 className="text-xs"
               />
             </div>
@@ -191,7 +191,7 @@ export default function AdminInstitutionTab({
               <Input
                 value={brandingForm.departmentProgram}
                 onChange={(e) => setBrandingForm({ ...brandingForm, departmentProgram: e.target.value })}
-                placeholder="e.g. MCA Program"
+                placeholder="e.g. Postgraduate Program"
                 className="text-xs"
               />
             </div>
@@ -278,11 +278,43 @@ export default function AdminInstitutionTab({
               <Input
                 value={brandingForm.diningHallVenue}
                 onChange={(e) => setBrandingForm({ ...brandingForm, diningHallVenue: e.target.value })}
-                placeholder="e.g. SGB Dining Hall"
+                placeholder="e.g. Main Dining Hall"
                 className="text-xs"
               />
             </div>
           </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-[var(--ink-muted)] mb-1">Campus latitude</label>
+              <Input
+                type="number"
+                step="any"
+                min={-90}
+                max={90}
+                value={brandingForm.campusLatitude ?? ""}
+                onChange={(e) => setBrandingForm({ ...brandingForm, campusLatitude: e.target.value })}
+                placeholder="e.g. 12.9716"
+                className="text-xs font-mono"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-[var(--ink-muted)] mb-1">Campus longitude</label>
+              <Input
+                type="number"
+                step="any"
+                min={-180}
+                max={180}
+                value={brandingForm.campusLongitude ?? ""}
+                onChange={(e) => setBrandingForm({ ...brandingForm, campusLongitude: e.target.value })}
+                placeholder="e.g. 77.5946"
+                className="text-xs font-mono"
+              />
+            </div>
+          </div>
+          <p className="text-[11px] text-[var(--ink-muted)] -mt-2">
+            Used for the floor plan&apos;s &quot;distance to campus&quot; check. Leave empty to disable.
+          </p>
 
           {/* Catering Policy */}
           <div className="space-y-2 pt-2">

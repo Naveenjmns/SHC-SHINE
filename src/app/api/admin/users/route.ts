@@ -6,6 +6,7 @@ import bcrypt from "bcryptjs";
 import { Role } from "@prisma/client";
 import { logActivity } from "@/lib/activityLogger";
 import { isValidEmail, isValidPhone } from "@/lib/validators";
+import { getActiveEdition } from "@/lib/eventService";
 
 // GET /api/admin/users - List users with filters
 export async function GET(req: Request) {
@@ -134,13 +135,15 @@ export async function POST(req: Request) {
     }
 
     const passwordHash = await bcrypt.hash(password.trim(), 10);
+    // Staff accounts default to the host institution configured on the active edition (if any)
+    const hostInstitution = college?.trim() ? null : (await getActiveEdition()).institutionName?.trim() || null;
 
     const newUser = await prisma.user.create({
       data: {
         name: name.trim(),
         email: normalizedEmail,
         phone: phone ? phone.trim() : null,
-        college: college ? college.trim() : "Sacred Heart College (Autonomous)",
+        college: college?.trim() || hostInstitution,
         role: role as Role,
         passwordHash,
       },

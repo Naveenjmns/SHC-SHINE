@@ -112,7 +112,7 @@ export default function AdminBrandingTab({
               <Input
                 value={brandingForm.tagline}
                 onChange={(e) => setBrandingForm({ ...brandingForm, tagline: e.target.value })}
-                placeholder="Where Ideas Begin to Shine"
+                placeholder="e.g. Where Ideas Take Flight"
                 className="text-xs"
               />
             </div>

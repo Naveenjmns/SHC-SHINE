@@ -4,6 +4,8 @@ import { useEffect, useState, useMemo } from "react";
 import { X, Printer, QrCode, Filter } from "lucide-react";
 import QRCode from "qrcode";
 import type { WaypointNode } from "@/lib/wayfinding";
+import { festTitle } from "@/lib/editionDefaults";
+import { safeJson } from "@/lib/safeFetch";
 
 interface PrintableQrModalProps {
   isOpen: boolean;
@@ -26,10 +28,34 @@ export default function PrintableQrModal({
   isOpen,
   onClose,
   waypoints,
-  editionName = "SHINE 2026",
-  institutionName = "Sacred Heart College (Autonomous), Tirupattur",
+  editionName,
+  institutionName,
 }: PrintableQrModalProps) {
   const [qrItems, setQrItems] = useState<QrItem[]>([]);
+  const [fetchedEdition, setFetchedEdition] = useState<{
+    name?: string | null;
+    edition?: string | null;
+    institutionName?: string | null;
+  } | null>(null);
+
+  // Fall back to the active edition for branding when the caller does not pass it
+  const needsEdition = !editionName || !institutionName;
+  useEffect(() => {
+    if (!isOpen || !needsEdition) return;
+    let isMounted = true;
+    fetch("/api/edition/active")
+      .then((res) => safeJson(res, { success: false, edition: null }))
+      .then((data) => {
+        if (isMounted && data?.edition) setFetchedEdition(data.edition);
+      })
+      .catch((err) => console.warn("Could not load active edition:", err));
+    return () => {
+      isMounted = false;
+    };
+  }, [isOpen, needsEdition]);
+
+  const displayEditionName = editionName?.trim() || festTitle(fetchedEdition);
+  const displayInstitutionName = institutionName?.trim() || fetchedEdition?.institutionName?.trim() || "";
   const [filter, setFilter] = useState<"ALL" | "HALLS" | "AMENITIES">("ALL");
   const generating = waypoints.length > 0 && qrItems.length === 0;
 
@@ -40,10 +66,7 @@ export default function PrintableQrModal({
     let isMounted = true;
 
     async function buildQrs() {
-      const origin =
-        typeof window !== "undefined"
-          ? window.location.origin
-          : "https://shine.shctpt.edu";
+      const origin = typeof window !== "undefined" ? window.location.origin : "";
 
       const items: QrItem[] = [];
 
@@ -256,11 +279,13 @@ export default function PrintableQrModal({
               >
                 {/* Header branding on card */}
                 <div className="w-full border-b border-stone-200 pb-2">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-stone-500 block">
-                    {institutionName}
-                  </span>
+                  {displayInstitutionName && (
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-stone-500 block">
+                      {displayInstitutionName}
+                    </span>
+                  )}
                   <span className="text-xs font-black uppercase tracking-tight text-[#FF6B1A]">
-                    {editionName} • Indoor Wayfinding
+                    {displayEditionName} • Indoor Wayfinding
                   </span>
                 </div>
 

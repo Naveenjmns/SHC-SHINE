@@ -5,12 +5,20 @@ import { X, Theater, Laptop, MapPin, Clock, Trophy, GraduationCap, Users } from 
 import { Button, Input } from "@/components/ui";
 import { CoordinatorUser, EventItem } from "./AdminEventsTable";
 
-function toLocalDatetime(dateVal?: Date | string | null, fallback = "2026-10-15T10:00"): string {
+function toLocalDatetime(dateVal?: Date | string | null, fallback = ""): string {
   if (!dateVal) return fallback;
   const d = new Date(dateVal);
   if (isNaN(d.getTime())) return fallback;
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+/** Default slot for a new event: the edition's start day (or today) at the given hour */
+function defaultEventSlot(festStartDate: string | null | undefined, hour: number): string {
+  const parsed = festStartDate ? new Date(festStartDate) : null;
+  const day = parsed && !isNaN(parsed.getTime()) ? parsed : new Date();
+  day.setHours(hour, 0, 0, 0);
+  return toLocalDatetime(day);
 }
 
 interface AdminEventFormModalProps {
@@ -21,6 +29,8 @@ interface AdminEventFormModalProps {
   studentCoordinators: CoordinatorUser[];
   floorPlanZones: { id: string; label: string }[];
   centralizedPrizes: { first: string; second: string; third: string };
+  /** Active edition start date, used to pre-fill new events */
+  festStartDate?: string | null;
   onSave: (payload: any) => Promise<void>;
   saving: boolean;
 }
@@ -33,6 +43,7 @@ export default function AdminEventFormModal({
   studentCoordinators,
   floorPlanZones,
   centralizedPrizes,
+  festStartDate,
   onSave,
   saving,
 }: AdminEventFormModalProps) {
@@ -43,9 +54,9 @@ export default function AdminEventFormModal({
   const [capacity, setCapacity] = useState("");
   const [venue, setVenue] = useState("");
   const [venueZoneId, setVenueZoneId] = useState("");
-  const [dateTime, setDateTime] = useState("2026-10-15T10:00");
+  const [dateTime, setDateTime] = useState(() => defaultEventSlot(festStartDate, 10));
   const [hasPrelims, setHasPrelims] = useState(false);
-  const [prelimsDateTime, setPrelimsDateTime] = useState("2026-10-15T09:00");
+  const [prelimsDateTime, setPrelimsDateTime] = useState(() => defaultEventSlot(festStartDate, 9));
   const [prelimsVenue, setPrelimsVenue] = useState("");
   const [prelimsVenueZoneId, setPrelimsVenueZoneId] = useState("");
   const [prelimsRules, setPrelimsRules] = useState("");
@@ -68,9 +79,9 @@ export default function AdminEventFormModal({
       setCapacity(editingEvent.capacity ? String(editingEvent.capacity) : "");
       setVenue(editingEvent.venue || "");
       setVenueZoneId(editingEvent.venueZoneId || "");
-      setDateTime(toLocalDatetime(editingEvent.dateTime));
+      setDateTime(toLocalDatetime(editingEvent.dateTime, defaultEventSlot(festStartDate, 10)));
       setHasPrelims(Boolean(editingEvent.hasPrelims));
-      setPrelimsDateTime(toLocalDatetime(editingEvent.prelimsDateTime, "2026-10-15T09:00"));
+      setPrelimsDateTime(toLocalDatetime(editingEvent.prelimsDateTime, defaultEventSlot(festStartDate, 9)));
       setPrelimsVenue(editingEvent.prelimsVenue || "");
       setPrelimsVenueZoneId(editingEvent.prelimsVenueZoneId || "");
       setPrelimsRules(editingEvent.prelimsRules || "");
@@ -91,9 +102,9 @@ export default function AdminEventFormModal({
       setCapacity("");
       setVenue("");
       setVenueZoneId("");
-      setDateTime("2026-10-15T10:00");
+      setDateTime(defaultEventSlot(festStartDate, 10));
       setHasPrelims(false);
-      setPrelimsDateTime("2026-10-15T09:00");
+      setPrelimsDateTime(defaultEventSlot(festStartDate, 9));
       setPrelimsVenue("");
       setPrelimsVenueZoneId("");
       setPrelimsRules("");
@@ -107,7 +118,7 @@ export default function AdminEventFormModal({
       setStudentCoordEmail("");
       setStudentCoordPhone("");
     }
-  }, [editingEvent, centralizedPrizes]);
+  }, [editingEvent, centralizedPrizes, festStartDate]);
 
   if (!isOpen) return null;
 

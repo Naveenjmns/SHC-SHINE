@@ -4,7 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { generateEventPassQr, generateFoodTokenQr } from "@/lib/badgeService";
 import { getAppOrigin } from "@/lib/security";
-import { getActiveEdition } from "@/lib/eventService";
+import { getActiveEdition, DEFAULT_EDITION_CONFIG } from "@/lib/eventService";
 
 export async function GET(req: Request) {
   try {
@@ -187,12 +187,12 @@ export async function GET(req: Request) {
       edition: {
         startDate: activeEdition.startDate,
         participantFee: activeEdition.participantFee ?? 0,
-        institutionName: activeEdition.institutionName || "Sacred Heart College (Autonomous)",
-        name: activeEdition.name || "SHINE",
-        edition: activeEdition.edition || "26",
+        institutionName: activeEdition.institutionName || DEFAULT_EDITION_CONFIG.institutionName,
+        name: activeEdition.name || DEFAULT_EDITION_CONFIG.name,
+        edition: activeEdition.edition || DEFAULT_EDITION_CONFIG.edition,
         venue: activeEdition.venue,
         diningHallVenue: activeEdition.diningHallVenue || null,
-        floorPlanUrl: activeEdition.floorPlanUrl || "/uploads/campus-floorplan.svg",
+        floorPlanUrl: activeEdition.floorPlanUrl || DEFAULT_EDITION_CONFIG.floorPlanUrl,
         logoUrl: activeEdition.logoUrl,
         institutionCrestUrl: activeEdition.institutionCrestUrl,
       },

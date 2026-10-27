@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { signOutAndClearCache } from "@/lib/signOutAndClearCache";
-import { ActiveEditionConfig } from "@/lib/eventService";
+import { ActiveEditionConfig, DEFAULT_EDITION_CONFIG, festTitle } from "@/lib/editionDefaults";
 import { Sparkles, User, LogOut, LayoutDashboard, Monitor, Menu, X } from "lucide-react";
 
 interface NavbarProps {
@@ -56,16 +56,11 @@ export default function Navbar({ edition }: NavbarProps) {
     return "Student Portal";
   };
 
-  const eventName = activeEdition?.name || "SHINE";
-  const editionYear = activeEdition?.edition || "2026";
-  const logoUrl = activeEdition?.logoUrl;
-  const navItems = activeEdition?.navItems || [
-    { id: "1", label: "About", url: "#about", order: 1, isEnabled: true },
-    { id: "2", label: "Schedule", url: "#schedule", order: 2, isEnabled: true },
-    { id: "3", label: "Events", url: "#events", order: 3, isEnabled: true },
-    { id: "4", label: "Rules", url: "#rules", order: 4, isEnabled: true },
-    { id: "5", label: "Stage View", url: "/leaderboard", order: 5, isEnabled: true },
-  ];
+  const eventName = activeEdition?.name || DEFAULT_EDITION_CONFIG.name;
+  const editionYear = activeEdition?.edition || DEFAULT_EDITION_CONFIG.edition;
+  const fullTitle = festTitle(activeEdition);
+  const logoUrl = activeEdition?.logoUrl || DEFAULT_EDITION_CONFIG.logoUrl;
+  const navItems = activeEdition?.navItems || DEFAULT_EDITION_CONFIG.navItems;
 
   return (
     <nav
@@ -112,10 +107,15 @@ export default function Navbar({ edition }: NavbarProps) {
               className="text-xl font-extrabold tracking-tight text-[#1C1917] flex items-center gap-1.5"
               style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
             >
-              {eventName}{" "}
-              <span className="hero-wordmark-gradient font-black">
-                {editionYear}
-              </span>
+              {eventName}
+              {editionYear && (
+                <>
+                  {" "}
+                  <span className="hero-wordmark-gradient font-black">
+                    {editionYear}
+                  </span>
+                </>
+              )}
             </span>
             <span className="text-[10px] uppercase font-bold tracking-widest text-[#57534E] block -mt-1 truncate max-w-[150px] sm:max-w-[240px]">
               {activeEdition?.institutionShortName || activeEdition?.institutionName || "College Symposium"}
@@ -238,7 +238,7 @@ export default function Navbar({ edition }: NavbarProps) {
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-orange-600 shrink-0" />
               <div>
-                <div className="font-extrabold">Install SHINE 26 App</div>
+                <div className="font-extrabold">Install {fullTitle} App</div>
                 <div className="text-[10px] text-stone-500 font-normal">Fast offline passes & results</div>
               </div>
             </div>

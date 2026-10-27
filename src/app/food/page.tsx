@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Button, Input } from "@/components/ui";
 import { safeJson } from "@/lib/safeFetch";
+import { DEFAULT_EDITION_CONFIG } from "@/lib/editionDefaults";
 import FoodDistributionStats, {
   FoodStats,
   FoodEditionInfo,
@@ -135,7 +136,13 @@ export default function FoodCoordinatorPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link href="/" className="font-semibold text-sm tracking-tight text-[var(--ink)]">
-              SHINE <span className="text-[var(--accent)]">{edition?.edition || "26"}</span>
+              {edition?.name?.trim() || DEFAULT_EDITION_CONFIG.name}
+              {edition?.edition?.trim() && (
+                <>
+                  {" "}
+                  <span className="text-[var(--accent)]">{edition.edition.trim()}</span>
+                </>
+              )}
             </Link>
             <span className="text-[var(--border)]">/</span>
             <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-[var(--surface-raised)] border border-[var(--border)] text-xs font-semibold text-[var(--ink)]">

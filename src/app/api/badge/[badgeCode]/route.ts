@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { getActiveEdition } from "@/lib/eventService";
+import { getActiveEdition, DEFAULT_EDITION_CONFIG } from "@/lib/eventService";
 import { generateFoodTokenQr, generateEventPassQr } from "@/lib/badgeService";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
@@ -149,14 +149,14 @@ export async function GET(
             studentIncharge: r.event.studentCoordinator?.name || null,
           })),
           fest: {
-            name: liveEdition?.name || "SHINE",
-            edition: liveEdition?.edition || "'26",
-            tagline: liveEdition?.tagline || "National Level Intercollegiate IT Fest",
-            institutionName: liveEdition?.institutionName || "Sacred Heart College (Autonomous)",
-            departmentName: liveEdition?.hostDepartment || "Department of Computer Applications (PG)",
-            venue: liveEdition?.venue || "SGB Main Auditorium, Sacred Heart College (Autonomous), Tirupattur",
-            diningHallVenue: (liveEdition as any)?.diningHallVenue || "SGB Quadrangle Dining Hall",
-            floorPlanUrl: liveEdition?.floorPlanUrl || "/uploads/campus-floorplan.svg",
+            name: liveEdition?.name || DEFAULT_EDITION_CONFIG.name,
+            edition: liveEdition?.edition || DEFAULT_EDITION_CONFIG.edition,
+            tagline: liveEdition?.tagline || DEFAULT_EDITION_CONFIG.tagline,
+            institutionName: liveEdition?.institutionName || DEFAULT_EDITION_CONFIG.institutionName,
+            departmentName: liveEdition?.hostDepartment || DEFAULT_EDITION_CONFIG.hostDepartment,
+            venue: liveEdition?.venue || DEFAULT_EDITION_CONFIG.venue,
+            diningHallVenue: (liveEdition as any)?.diningHallVenue || DEFAULT_EDITION_CONFIG.diningHallVenue,
+            floorPlanUrl: liveEdition?.floorPlanUrl || DEFAULT_EDITION_CONFIG.floorPlanUrl,
             startDate: liveEdition?.startDate || null,
             endDate: liveEdition?.endDate || null,
           },

@@ -1,4 +1,4 @@
-import { ActiveEditionConfig } from "@/lib/eventService";
+import { ActiveEditionConfig, DEFAULT_EDITION_CONFIG, festTitle } from "@/lib/editionDefaults";
 
 interface StageHeaderBannerProps {
   edition?: ActiveEditionConfig;
@@ -12,10 +12,10 @@ export default function StageHeaderBanner({
   showFestLogo = false,
 }: StageHeaderBannerProps) {
   const fullBannerUrl = edition?.stageHeaderBannerUrl;
-  const crestUrl = edition?.institutionCrestUrl || "/uploads/1788791902171_collegelogo-nobg.png";
-  const deptLogoUrl = edition?.deptLogoUrl || "/uploads/1788791911208_mcalogo-nobg.png";
-  const jubileeBadgeUrl = edition?.jubileeBadgeUrl || "/uploads/1788792021326_SHC.png";
-  const festLogoUrl = edition?.logoUrl || "/uploads/1788792011099_SHINE_26_LOGO.png";
+  const crestUrl = edition?.institutionCrestUrl || DEFAULT_EDITION_CONFIG.institutionCrestUrl;
+  const deptLogoUrl = edition?.deptLogoUrl || DEFAULT_EDITION_CONFIG.deptLogoUrl;
+  const jubileeBadgeUrl = edition?.jubileeBadgeUrl || DEFAULT_EDITION_CONFIG.jubileeBadgeUrl;
+  const festLogoUrl = edition?.logoUrl || DEFAULT_EDITION_CONFIG.logoUrl;
 
   // Header Banner ONLY renders if a custom banner image or graphic logos are explicitly uploaded (or forceVisible is true)
   const isBannerUploaded = !!(fullBannerUrl && fullBannerUrl.trim().length > 0);
@@ -30,9 +30,9 @@ export default function StageHeaderBanner({
     return null;
   }
 
-  const institutionName = edition?.institutionName || "SACRED HEART COLLEGE (AUTONOMOUS), TIRUPATTUR";
-  const accreditationText = edition?.accreditationText || "Accredited by NAAC (5th Cycle - Under RAF) with a CGPA of 3.53/4 at 'A++' Grade, Affiliated to Thiruvalluvar University Tirupattur - 635 601";
-  const hostDept = edition?.hostDepartment || "DEPARTMENT OF COMPUTER APPLICATIONS(PG)";
+  const institutionName = edition?.institutionName || DEFAULT_EDITION_CONFIG.institutionName;
+  const accreditationText = edition?.accreditationText || DEFAULT_EDITION_CONFIG.accreditationText;
+  const hostDept = edition?.hostDepartment || DEFAULT_EDITION_CONFIG.hostDepartment;
 
   // Render accreditation in 2 neat lines
   const renderAccreditationText = () => {
@@ -79,7 +79,7 @@ export default function StageHeaderBanner({
       {isBannerUploaded ? (
         <div className="max-w-7xl mx-auto flex justify-center items-center relative z-10 min-h-[100px] sm:min-h-[140px] md:min-h-[180px]">
           <img
-            src={fullBannerUrl}
+            src={fullBannerUrl ?? undefined}
             alt="Stage Header Banner"
             width={1152}
             height={256}
@@ -93,12 +93,12 @@ export default function StageHeaderBanner({
       ) : (
         <div className="max-w-7xl mx-auto flex flex-wrap sm:flex-nowrap items-center justify-center sm:justify-between gap-2 sm:gap-4 relative z-10">
           
-          {/* LEFT ASIDE: Sacred Heart College Crest & SHINE Fest Logo (Between College Logo and College Details) */}
+          {/* LEFT ASIDE: Institution Crest & Fest Logo (Between College Logo and College Details) */}
           <div className="shrink-0 flex items-center justify-center gap-2 sm:gap-3 md:gap-4 min-w-[40px] sm:min-w-[80px] min-h-[40px] sm:min-h-[80px]">
             {crestUrl && (
               <img
                 src={crestUrl}
-                alt="Sacred Heart College Crest"
+                alt={institutionName ? `${institutionName} crest` : "Institution crest"}
                 width={112}
                 height={112}
                 loading="eager"
@@ -112,7 +112,7 @@ export default function StageHeaderBanner({
             {showFestLogo && festLogoUrl && (
               <img
                 src={festLogoUrl}
-                alt={edition?.name || "SHINE Fest Logo"}
+                alt={`${festTitle(edition)} logo`}
                 width={112}
                 height={112}
                 loading="eager"
@@ -126,29 +126,33 @@ export default function StageHeaderBanner({
 
           {/* CENTER: Clean 2-Line Accreditation Text Column (College Details) */}
           <div className="flex-1 min-w-[200px] text-center px-1 sm:px-4">
-            <h2
-              className="text-xs sm:text-xl md:text-2xl lg:text-3xl font-black uppercase tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-[#FF7B2F] via-[#FF6B1A] to-[#D9A441]"
-              style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
-            >
-              {institutionName}
-            </h2>
+            {institutionName && (
+              <h2
+                className="text-xs sm:text-xl md:text-2xl lg:text-3xl font-black uppercase tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-[#FF7B2F] via-[#FF6B1A] to-[#D9A441]"
+                style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
+              >
+                {institutionName}
+              </h2>
+            )}
 
             {renderAccreditationText()}
 
-            <h3
-              className="text-xs sm:text-lg md:text-xl lg:text-2xl font-extrabold uppercase tracking-wider text-[#FF6B1A] drop-shadow-xs"
-              style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
-            >
-              {hostDept}
-            </h3>
+            {hostDept && (
+              <h3
+                className="text-xs sm:text-lg md:text-xl lg:text-2xl font-extrabold uppercase tracking-wider text-[#FF6B1A] drop-shadow-xs"
+                style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
+              >
+                {hostDept}
+              </h3>
+            )}
           </div>
 
-          {/* RIGHT ASIDE: 75th Jubilee Logo & MCA Department Seal */}
+          {/* RIGHT ASIDE: Jubilee / Badge Logo & Department Seal */}
           <div className="shrink-0 flex items-center justify-center gap-2 sm:gap-4 min-h-[32px] sm:min-h-[56px]">
             {jubileeBadgeUrl && (
               <img
                 src={jubileeBadgeUrl}
-                alt="75 Years SHC Jubilee Badge"
+                alt={institutionName ? `${institutionName} badge` : "Institution badge"}
                 width={80}
                 height={80}
                 loading="eager"
@@ -162,7 +166,7 @@ export default function StageHeaderBanner({
             {deptLogoUrl && (
               <img
                 src={deptLogoUrl}
-                alt="MCA Department Logo"
+                alt={hostDept ? `${hostDept} logo` : "Department logo"}
                 width={112}
                 height={112}
                 loading="eager"

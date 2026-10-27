@@ -34,7 +34,7 @@ export default function AdminUserModal({
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [college, setCollege] = useState("Sacred Heart College (Autonomous)");
+  const [college, setCollege] = useState("");
   const [role, setRole] = useState<"STUDENT" | "COORDINATOR" | "FOOD_COORDINATOR" | "ADMIN">("COORDINATOR");
   const [password, setPassword] = useState("");
   const [assignedEventIds, setAssignedEventIds] = useState<string[]>([]);
@@ -54,7 +54,7 @@ export default function AdminUserModal({
       setName("");
       setEmail("");
       setPhone("");
-      setCollege("Sacred Heart College (Autonomous)");
+      setCollege("");
       setRole("COORDINATOR");
       setPassword("");
       setAssignedEventIds([]);
@@ -185,7 +185,7 @@ export default function AdminUserModal({
               <Input
                 required
                 type="email"
-                placeholder="user@shctpt.edu"
+                placeholder="user@college.edu"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
@@ -210,7 +210,7 @@ export default function AdminUserModal({
                 College Affiliation
               </label>
               <Input
-                placeholder="Sacred Heart College (Autonomous)"
+                placeholder="Leave empty for the host institution"
                 value={college}
                 onChange={(e) => setCollege(e.target.value)}
               />

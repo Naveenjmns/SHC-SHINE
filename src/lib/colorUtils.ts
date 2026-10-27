@@ -209,8 +209,8 @@ export interface ThemePreset {
 export const INSTITUTION_THEME_PRESETS: ThemePreset[] = [
   {
     id: "shine-orange",
-    name: "SHINE Solar Ember",
-    institutionType: "Sacred Heart College (Default)",
+    name: "Solar Ember",
+    institutionType: "Default",
     primary: "#FF6B1A",
     secondary: "#D9A441",
     bg: "#FFFFFF",

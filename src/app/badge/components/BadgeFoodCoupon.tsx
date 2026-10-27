@@ -10,7 +10,7 @@ interface BadgeFoodCouponProps {
   foodTokenClaimed: boolean;
   foodClaimedAt?: string | null;
   foodQrData?: string | null;
-  diningHallVenue?: string;
+  diningHallVenue?: string | null;
 }
 
 export default function BadgeFoodCoupon({
@@ -19,7 +19,7 @@ export default function BadgeFoodCoupon({
   foodTokenClaimed,
   foodClaimedAt,
   foodQrData,
-  diningHallVenue = "SGB Quadrangle Dining Hall",
+  diningHallVenue,
 }: BadgeFoodCouponProps) {
   const isVeg = foodPreference === "VEG";
 
@@ -79,9 +79,11 @@ export default function BadgeFoodCoupon({
             {foodTokenCode}
           </div>
 
-          <div className="text-xs text-[var(--ink-muted)]">
-            Venue: <span className="font-medium text-[var(--ink)]">{diningHallVenue}</span>
-          </div>
+          {diningHallVenue && (
+            <div className="text-xs text-[var(--ink-muted)]">
+              Venue: <span className="font-medium text-[var(--ink)]">{diningHallVenue}</span>
+            </div>
+          )}
 
           {/* Claim Status */}
           <div className="pt-1">

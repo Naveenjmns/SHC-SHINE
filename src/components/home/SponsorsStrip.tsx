@@ -2,16 +2,16 @@ import React from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui";
 import { Mail, Phone, MapPin, ArrowRight, ShieldCheck } from "lucide-react";
-import { ActiveEditionConfig } from "@/lib/eventService";
+import { ActiveEditionConfig, DEFAULT_EDITION_CONFIG } from "@/lib/editionDefaults";
 
 interface SponsorsStripProps {
   edition?: ActiveEditionConfig;
 }
 
 export default function SponsorsStrip({ edition }: SponsorsStripProps) {
-  const email = edition?.contactEmail || "shine@shctpt.edu";
-  const phone = edition?.contactPhone || "+91 4175 240464";
-  const location = edition?.institutionLocation || "Tirupattur — 635 601, Tamil Nadu";
+  const email = edition?.contactEmail || DEFAULT_EDITION_CONFIG.contactEmail;
+  const phone = edition?.contactPhone || DEFAULT_EDITION_CONFIG.contactPhone;
+  const location = edition?.institutionLocation || DEFAULT_EDITION_CONFIG.institutionLocation;
 
   return (
     <section className="bg-surface-raised border-y border-border py-16">
@@ -29,24 +29,32 @@ export default function SponsorsStrip({ edition }: SponsorsStripProps) {
               Spot registration is subject to seating availability in respective arena laboratories.
             </p>
 
-            <div className="space-y-2 pt-2 text-xs text-ink-muted">
-              <div className="flex items-center gap-2">
-                <Mail className="w-4 h-4 text-accent shrink-0" />
-                <a href={`mailto:${email}`} className="hover:text-accent transition-colors font-medium">
-                  {email}
-                </a>
+            {(email || phone || location) && (
+              <div className="space-y-2 pt-2 text-xs text-ink-muted">
+                {email && (
+                  <div className="flex items-center gap-2">
+                    <Mail className="w-4 h-4 text-accent shrink-0" />
+                    <a href={`mailto:${email}`} className="hover:text-accent transition-colors font-medium">
+                      {email}
+                    </a>
+                  </div>
+                )}
+                {phone && (
+                  <div className="flex items-center gap-2">
+                    <Phone className="w-4 h-4 text-accent shrink-0" />
+                    <a href={`tel:${phone}`} className="hover:text-accent transition-colors font-medium">
+                      {phone}
+                    </a>
+                  </div>
+                )}
+                {location && (
+                  <div className="flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-accent shrink-0" />
+                    <span>{location}</span>
+                  </div>
+                )}
               </div>
-              <div className="flex items-center gap-2">
-                <Phone className="w-4 h-4 text-accent shrink-0" />
-                <a href={`tel:${phone}`} className="hover:text-accent transition-colors font-medium">
-                  {phone}
-                </a>
-              </div>
-              <div className="flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-accent shrink-0" />
-                <span>{location}</span>
-              </div>
-            </div>
+            )}
           </div>
 
           <div className="p-6 rounded-[12px] bg-surface border border-border space-y-4 text-center sm:text-left flex flex-col sm:flex-row items-center justify-between gap-4">

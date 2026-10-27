@@ -50,7 +50,7 @@ export default function StepInstitutionDetails({
             <div className="sm:col-span-2">
               <Input
                 label="College / Institution Full Name *"
-                placeholder="e.g. Loyola College (Autonomous)"
+                placeholder="e.g. Your College Name"
                 value={formData.collegeName}
                 onChange={(e) => onChange({ collegeName: e.target.value })}
                 error={errors.collegeName}
@@ -60,14 +60,14 @@ export default function StepInstitutionDetails({
 
             <Input
               label="Department / Program"
-              placeholder="e.g. Department of Computer Science (PG)"
+              placeholder="e.g. Department of Your Program"
               value={formData.department}
               onChange={(e) => onChange({ department: e.target.value })}
             />
 
             <Input
               label="Delegation / Team Name (Optional)"
-              placeholder="e.g. Loyola Tech Knights"
+              placeholder="e.g. Tech Knights"
               value={formData.teamName}
               onChange={(e) => onChange({ teamName: e.target.value })}
             />

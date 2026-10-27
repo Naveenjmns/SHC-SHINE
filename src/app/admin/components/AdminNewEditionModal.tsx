@@ -16,8 +16,8 @@ export default function AdminNewEditionModal({
   onClose,
   onEditionCreated,
 }: AdminNewEditionModalProps) {
-  const [name, setName] = useState("SHINE");
-  const [year, setYear] = useState("2027");
+  const [name, setName] = useState("");
+  const [year, setYear] = useState(() => String(new Date().getFullYear()));
   const [tagline, setTagline] = useState("");
   const [creating, setCreating] = useState(false);
   const { toast } = useToast();
@@ -60,6 +60,7 @@ export default function AdminNewEditionModal({
           <Input
             value={name}
             onChange={(e) => setName(e.target.value)}
+            placeholder="e.g. TechFest"
             className="text-xs"
             required
           />

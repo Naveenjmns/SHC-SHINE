@@ -68,7 +68,7 @@ export async function GET() {
   }
 }
 
-// POST: Create a new Event Edition (e.g. SHINE 2027)
+// POST: Create a new Event Edition (e.g. next year's fest)
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -85,37 +85,63 @@ export async function POST(req: NextRequest) {
 
     const slug = `${name.toLowerCase()}-${edition.toLowerCase()}`.replace(/[^a-z0-9-]/g, "-");
 
+    // A new edition is usually the same institution in a new year: carry the institution, venue,
+    // branding and campus details over from the current edition instead of inventing defaults.
+    // Fest-specific copy (dates, rules, prizes) starts empty for the admin to fill in.
+    const previous = await prisma.eventEdition.findFirst({ where: { isActive: true } });
+    const carried = previous
+      ? {
+          venue: previous.venue,
+          institutionName: previous.institutionName,
+          institutionCrestUrl: previous.institutionCrestUrl,
+          accreditationText: previous.accreditationText,
+          jubileeBadgeUrl: previous.jubileeBadgeUrl,
+          hostDepartment: previous.hostDepartment,
+          acronymExpansion: previous.acronymExpansion,
+          deptLogoUrl: previous.deptLogoUrl,
+          institutionShortName: previous.institutionShortName,
+          institutionLocation: previous.institutionLocation,
+          institutionAbout: previous.institutionAbout,
+          departmentAbout: previous.departmentAbout,
+          departmentProgram: previous.departmentProgram,
+          contactEmail: previous.contactEmail,
+          contactPhone: previous.contactPhone,
+          websiteUrl: previous.websiteUrl,
+          diningHallVenue: previous.diningHallVenue,
+          diningFacilityInfo: previous.diningFacilityInfo,
+          mealOptions: previous.mealOptions,
+          floorPlanUrl: previous.floorPlanUrl,
+          campusLatitude: previous.campusLatitude,
+          campusLongitude: previous.campusLongitude,
+          themePrimaryAccent: previous.themePrimaryAccent,
+          themeSecondaryAccent: previous.themeSecondaryAccent,
+          themeBgColor: previous.themeBgColor,
+        }
+      : {};
+
     const newEdition = await prisma.eventEdition.create({
       data: {
+        ...carried,
         name,
         edition,
         slug,
         isActive: !!makeActive,
         status: "LIVE",
-        tagline: tagline || "Where Ideas Begin to Shine",
-        metadataText: metadataText || "TECHNOLOGY • INNOVATION • CREATIVITY",
-        description,
-        venue,
-        logoUrl,
+        tagline: tagline || null,
+        metadataText: metadataText || null,
+        description: description || null,
+        ...(venue ? { venue } : {}),
+        logoUrl: logoUrl || null,
         primaryCtaText: "EXPLORE " + name.toUpperCase() + " →",
         primaryCtaLink: "#events",
-        themePrimaryAccent: "#FF6B1A",
-        themeSecondaryAccent: "#D9A441",
-        themeBgColor: "#FAF8F5",
-        prizePool: body.prizePool || "₹25K+",
-        expectedDelegates: body.expectedDelegates || "500+",
+        prizePool: body.prizePool || null,
+        expectedDelegates: body.expectedDelegates || null,
         rulesEligibilityTitle: body.rulesEligibilityTitle || "Eligibility & Registration",
-        rulesEligibilityText:
-          body.rulesEligibilityText ||
-          "Open to all bona fide UG and PG students of Computer Science, Applications, IT, and related engineering disciplines with valid college ID cards.",
+        rulesEligibilityText: body.rulesEligibilityText || null,
         rulesTimingsTitle: body.rulesTimingsTitle || "Reporting & Timings",
-        rulesTimingsText:
-          body.rulesTimingsText ||
-          "Participants must report at the registration desk by 09:00 AM sharp on Sep 17, 2026. Spot registrations close at 10:30 AM.",
+        rulesTimingsText: body.rulesTimingsText || null,
         rulesChampionshipTitle: body.rulesChampionshipTitle || "Overall Championship",
-        rulesChampionshipText:
-          body.rulesChampionshipText ||
-          "The institution securing maximum cumulative points across both On-Stage and Off-Stage events will be crowned the SHINE Overall Champions.",
+        rulesChampionshipText: body.rulesChampionshipText || null,
       },
     });
 
@@ -238,6 +264,8 @@ export async function PATCH(req: NextRequest) {
       "defaultThirdPrize",
       "showStageModeInStudentPortal",
       "floorPlanUrl",
+      "campusLatitude",
+      "campusLongitude",
       "waypointGraph",
       "status",
     ];
@@ -250,6 +278,10 @@ export async function PATCH(req: NextRequest) {
           sanitizedData[key] = new Date(val);
         } else if (key === "participantFee") {
           sanitizedData[key] = parseFloat(val) || 0;
+        } else if (key === "campusLatitude" || key === "campusLongitude") {
+          const n = val === "" || val === null ? null : Number(val);
+          const limit = key === "campusLatitude" ? 90 : 180;
+          sanitizedData[key] = n !== null && Number.isFinite(n) && Math.abs(n) <= limit ? n : null;
         } else if (key === "isRegistrationOpen" || key === "showStageModeInStudentPortal") {
           sanitizedData[key] = Boolean(val);
         } else if (key === "mealOptions") {

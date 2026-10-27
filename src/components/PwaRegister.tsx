@@ -100,7 +100,7 @@ export default function PwaRegister() {
           <Wifi className="w-4 h-4 text-emerald-400 shrink-0" />
           <div>
             <div className="font-bold text-emerald-300">Connection Restored</div>
-            <div className="text-[11px] text-stone-300">Synced with live SHINE 26 servers.</div>
+            <div className="text-[11px] text-stone-300">Synced with live event servers.</div>
           </div>
         </div>
       )}

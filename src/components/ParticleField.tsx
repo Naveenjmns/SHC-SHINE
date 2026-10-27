@@ -47,7 +47,7 @@ export default function ParticleField({ particleCount = 70 }: ParticleFieldProps
 
     const emberColors = [
       { fill: "#FF4500", glow: "rgba(255, 69, 0, 0.6)" },    // Fiery Orange-Red
-      { fill: "#FF6B1A", glow: "rgba(255, 107, 26, 0.6)" },  // SHINE Ember
+      { fill: "#FF6B1A", glow: "rgba(255, 107, 26, 0.6)" },  // Brand Ember
       { fill: "#FFB000", glow: "rgba(255, 176, 0, 0.5)" },   // Warm Gold Spark
       { fill: "#FFD700", glow: "rgba(255, 215, 0, 0.4)" },   // Golden Flare
       { fill: "#FFF3B0", glow: "rgba(255, 243, 176, 0.5)" },  // Hot Core Spark

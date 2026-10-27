@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import StageHeaderBanner from "@/components/StageHeaderBanner";
-import { ActiveEditionConfig } from "@/lib/eventService";
+import { ActiveEditionConfig, festTitle } from "@/lib/editionDefaults";
 import { safeJson } from "@/lib/safeFetch";
 import ArenaResultsCarousel, { EventWithResults } from "./components/ArenaResultsCarousel";
 import ProjectorControlsBar from "./components/ProjectorControlsBar";
@@ -81,6 +81,13 @@ export default function StageLeaderboardPage() {
   }, [autoRotate, events.length]);
 
   const currentEvent = events[activeEventIndex];
+  const footerMeta = [
+    festTitle(edition),
+    edition?.hostDepartment,
+    edition?.institutionName,
+  ]
+    .filter(Boolean)
+    .join(" • ");
 
   return (
     <main className="min-h-screen flex flex-col justify-between bg-[var(--surface-raised)] text-[var(--ink)] select-none">
@@ -124,7 +131,7 @@ export default function StageLeaderboardPage() {
 
       {/* Subdued Bottom Metadata Strip */}
       <div className="py-3 px-6 text-center border-t border-[var(--border)] bg-[var(--surface)] text-[11px] font-medium text-[var(--ink-muted)]">
-        SHINE 26 • Department of Computer Applications (PG) • Sacred Heart College (Autonomous)
+        {footerMeta}
       </div>
     </main>
   );

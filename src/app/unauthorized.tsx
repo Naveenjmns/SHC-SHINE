@@ -1,8 +1,23 @@
 import Link from "next/link";
 import ErrorPerspectiveStage from "@/components/ErrorPerspectiveStage";
 import { ArrowLeft, KeyRound, LogIn } from "lucide-react";
+import { getActiveEdition, festTitle } from "@/lib/eventService";
 
-export default function Unauthorized() {
+async function loadEditionLabels() {
+  try {
+    const edition = await getActiveEdition();
+    return {
+      title: festTitle(edition),
+      institution: edition.institutionShortName || edition.institutionName || null,
+    };
+  } catch {
+    return { title: festTitle(null), institution: null };
+  }
+}
+
+export default async function Unauthorized() {
+  const { title, institution } = await loadEditionLabels();
+
   return (
     <ErrorPerspectiveStage>
       {/* Fest Status Pill */}
@@ -40,7 +55,7 @@ export default function Unauthorized() {
           className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full text-xs sm:text-sm font-semibold bg-[#FF6B1A] text-white hover:bg-[#E8551F] transition shadow-lg shadow-orange-500/25 min-h-[44px]"
         >
           <LogIn className="w-4 h-4" />
-          <span>Sign In to SHINE</span>
+          <span>Sign In to {title}</span>
         </Link>
 
         <Link
@@ -54,7 +69,7 @@ export default function Unauthorized() {
 
       {/* Footer */}
       <div className="w-full pt-6 mt-4 border-t border-stone-800/80 text-[11px] text-stone-500">
-        SHINE 26 Identity Verification • Sacred Heart College
+        {[`${title} Identity Verification`, institution].filter(Boolean).join(" • ")}
       </div>
     </ErrorPerspectiveStage>
   );

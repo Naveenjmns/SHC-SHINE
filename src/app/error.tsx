@@ -141,7 +141,7 @@ export default function Error({
 
       {/* Footer */}
       <div className="w-full pt-6 mt-6 border-t border-stone-800/80 text-[11px] text-stone-500">
-        Sacred Heart College • SHINE Telemetry Active
+        Event Platform • Telemetry Active
       </div>
     </ErrorPerspectiveStage>
   );

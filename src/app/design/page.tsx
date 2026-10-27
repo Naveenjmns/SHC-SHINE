@@ -75,7 +75,7 @@ export default function DesignSystemPage() {
                 <h1 className="text-base font-bold text-ink">Design System & Token Matrix</h1>
               </div>
               <p className="text-xs text-ink-muted hidden sm:block">
-                SHINE 2026 Single Accent (#FF6B1A) • WCAG AA Verified
+                Single Accent (#FF6B1A) • WCAG AA Verified
               </p>
             </div>
           </div>
@@ -100,7 +100,7 @@ export default function DesignSystemPage() {
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <Layers className="w-5 h-5 text-accent" />
-              <h2 className="text-lg font-bold text-ink">SHINE Design System Architecture</h2>
+              <h2 className="text-lg font-bold text-ink">Design System Architecture</h2>
             </div>
             <p className="text-sm text-ink-muted max-w-2xl">
               Strict 4/8 spacing rhythm, single accent system (#FF6B1A), Bricolage Grotesque display + Inter UI typography,

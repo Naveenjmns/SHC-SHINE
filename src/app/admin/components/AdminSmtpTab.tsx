@@ -247,7 +247,7 @@ export default function AdminSmtpTab({
                 <Input
                   value={smtpForm.fromName}
                   onChange={(e) => setSmtpForm({ ...smtpForm, fromName: e.target.value })}
-                  placeholder="SHINE Coordination"
+                  placeholder="e.g. Fest Organizing Committee"
                   className="text-xs h-8"
                 />
               </div>
@@ -257,7 +257,7 @@ export default function AdminSmtpTab({
                   type="email"
                   value={smtpForm.fromEmail}
                   onChange={(e) => setSmtpForm({ ...smtpForm, fromEmail: e.target.value })}
-                  placeholder="noreply@shctpt.edu"
+                  placeholder="noreply@college.edu"
                   className="text-xs h-8 font-mono"
                 />
               </div>

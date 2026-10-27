@@ -327,7 +327,7 @@ export async function PATCH(req: Request) {
       sendApprovedDelegatePassEmail({
         toEmail: updated.user.email,
         delegateName: updated.user.name,
-        collegeName: updated.delegation?.collegeName || updated.user.college || "SHINE 26",
+        collegeName: updated.delegation?.collegeName || updated.user.college || "Delegation",
         teamName: updated.delegation?.teamName,
         badgeCode: updated.delegationMember.badgeCode,
         foodTokenCode: updated.delegationMember.foodTokenCode,

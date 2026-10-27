@@ -112,7 +112,7 @@ export default function Loading() {
           style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
         >
           <span className="bg-gradient-to-r from-white via-stone-100 to-stone-300 bg-clip-text text-transparent">
-            SHINE
+            COLLEGE
           </span>{" "}
           <span className="bg-gradient-to-r from-[#FF6B1A] via-[#FF8A3D] to-[#D9A441] bg-clip-text text-transparent">
             FEST

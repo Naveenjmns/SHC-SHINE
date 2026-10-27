@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Trophy, FolderOpen, Theater, Laptop, MapPin, Clock, CheckCircle2, QrCode, User } from "lucide-react";
 import { safeJson } from "@/lib/safeFetch";
+import { DEFAULT_EDITION_CONFIG } from "@/lib/editionDefaults";
 import CheckInModal from "@/components/CheckInModal";
 import Footer from "@/components/Footer";
 
@@ -115,9 +116,9 @@ export default function CoordinatorDashboard() {
   );
 
   const coordLogo = edition?.logoUrl || edition?.institutionCrestUrl;
-  const festName = (edition?.name || "SHINE").trim();
-  const festEdition = (edition?.edition || "26").trim();
-  const festInitial = (festName?.[0] || "S").toUpperCase();
+  const festName = edition?.name?.trim() || DEFAULT_EDITION_CONFIG.name;
+  const festEdition = (edition?.edition || DEFAULT_EDITION_CONFIG.edition).trim();
+  const festInitial = festName.charAt(0).toUpperCase();
 
   return (
     <main className="dash-layout flex flex-col min-h-screen">
@@ -138,7 +139,7 @@ export default function CoordinatorDashboard() {
                 </div>
               )}
               <span className="font-extrabold text-slate-900 tracking-tight text-base">
-                {festName} <span className="text-orange-600">{festEdition}</span>
+                {festName}{festEdition && <> <span className="text-orange-600">{festEdition}</span></>}
               </span>
             </Link>
             <span className="text-slate-300">/</span>

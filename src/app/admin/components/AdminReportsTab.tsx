@@ -14,6 +14,7 @@ import {
   Trophy,
 } from "lucide-react";
 import { Button } from "@/components/ui";
+import { festTitle } from "@/lib/editionDefaults";
 
 interface AdminReportsTabProps {
   reportsData: any;
@@ -27,6 +28,7 @@ export default function AdminReportsTab({
   onRefreshReports,
 }: AdminReportsTabProps) {
   const summary = reportsData?.summary;
+  const fileSlug = festTitle({ name: summary?.festName, edition: summary?.festEdition }).replace(/[^A-Za-z0-9]+/g, "_");
 
   const downloadCsv = (filename: string, headers: string[], rows: any[][]) => {
     const csvContent = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
@@ -66,7 +68,7 @@ export default function AdminReportsTab({
       csvCell(s.events.map((e: any) => e.eventName).join("; ")),
     ]);
     downloadCsv(
-      `${summary?.festName || "SHINE"}_Master_Roster.csv`,
+      `${fileSlug}_Master_Roster.csv`,
       headers,
       rows
     );
@@ -95,7 +97,7 @@ export default function AdminReportsTab({
       c.totalFee,
     ]);
     downloadCsv(
-      `${summary?.festName || "SHINE"}_Colleges_Summary.csv`,
+      `${fileSlug}_Colleges_Summary.csv`,
       headers,
       rows
     );
@@ -115,11 +117,13 @@ export default function AdminReportsTab({
             </span>
           </div>
           <h2 className="text-base sm:text-lg font-bold text-[var(--ink)]">
-            {summary?.festName || "SHINE"} {summary?.festEdition || "2026"} — Official Report Hub
+            {festTitle({ name: summary?.festName, edition: summary?.festEdition })} — Official Report Hub
           </h2>
-          <p className="text-xs text-[var(--ink-muted)] mt-0.5">
-            {summary?.institutionName || "College Campus"} · {summary?.hostDepartment || "Department"}
-          </p>
+          {(summary?.institutionName || summary?.hostDepartment) && (
+            <p className="text-xs text-[var(--ink-muted)] mt-0.5">
+              {[summary?.institutionName, summary?.hostDepartment].filter(Boolean).join(" · ")}
+            </p>
+          )}
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">

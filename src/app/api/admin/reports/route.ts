@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { getActiveEdition } from "@/lib/eventService";
+import { getActiveEdition, DEFAULT_EDITION_CONFIG } from "@/lib/eventService";
 import { buildSecureErrorResponse } from "@/lib/security";
 import { classifyResult } from "@/lib/results";
 import { isMealEligible } from "@/lib/eligibility";
@@ -388,21 +388,17 @@ export async function GET(req: Request) {
     const prelimsClearedCount = prelimsProgression.filter((p) => p.clearedToMains).length;
 
     const summaryMetrics = {
-      festName: edition?.name || "SHINE",
-      festEdition: edition?.edition || "2026",
-      tagline: edition?.tagline || "Where Ideas Begin to Shine",
-      institutionName:
-        edition?.institutionName || "SACRED HEART COLLEGE (AUTONOMOUS), TIRUPATTUR",
-      accreditationText:
-        edition?.accreditationText ||
-        "Accredited by NAAC (5th Cycle - Under RAF) with a CGPA of 3.53/4 at 'A++' Grade, Affiliated to Thiruvalluvar University",
-      hostDepartment:
-        edition?.hostDepartment || "DEPARTMENT OF COMPUTER APPLICATIONS (PG)",
-      venue: edition?.venue || "SGB Main Auditorium, Sacred Heart College, Tirupattur",
+      festName: edition?.name || DEFAULT_EDITION_CONFIG.name,
+      festEdition: edition?.edition || DEFAULT_EDITION_CONFIG.edition,
+      tagline: edition?.tagline || DEFAULT_EDITION_CONFIG.tagline,
+      institutionName: edition?.institutionName || DEFAULT_EDITION_CONFIG.institutionName,
+      accreditationText: edition?.accreditationText || DEFAULT_EDITION_CONFIG.accreditationText,
+      hostDepartment: edition?.hostDepartment || DEFAULT_EDITION_CONFIG.hostDepartment,
+      venue: edition?.venue || DEFAULT_EDITION_CONFIG.venue,
       startDate: edition?.startDate,
       endDate: edition?.endDate,
-      contactEmail: edition?.contactEmail || "shine@shctpt.edu",
-      contactPhone: edition?.contactPhone || "+91 4175 240464",
+      contactEmail: edition?.contactEmail || DEFAULT_EDITION_CONFIG.contactEmail,
+      contactPhone: edition?.contactPhone || DEFAULT_EDITION_CONFIG.contactPhone,
       totalEvents: events.length,
       onStageEventsCount: events.filter((e) => e.category === "ON_STAGE").length,
       offStageEventsCount: events.filter((e) => e.category === "OFF_STAGE").length,
@@ -546,9 +542,9 @@ export async function GET(req: Request) {
       report: {
         edition: {
           id: edition?.id || null,
-          name: edition?.name || "SHINE",
-          edition: edition?.edition || "2026",
-          floorPlanUrl: edition?.floorPlanUrl || "/uploads/campus-floorplan.svg",
+          name: edition?.name || DEFAULT_EDITION_CONFIG.name,
+          edition: edition?.edition || DEFAULT_EDITION_CONFIG.edition,
+          floorPlanUrl: edition?.floorPlanUrl || DEFAULT_EDITION_CONFIG.floorPlanUrl,
           waypointGraph: edition?.waypointGraph || null,
         },
         summary: {

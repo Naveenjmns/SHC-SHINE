@@ -181,7 +181,7 @@ export default function AdminScheduleManager({
         </div>
 
         <Input
-          placeholder="Venue (e.g. SGB Main Hall)"
+          placeholder="Venue (e.g. Main Auditorium)"
           value={venue}
           onChange={(e) => setVenue(e.target.value)}
           className="text-xs h-8"

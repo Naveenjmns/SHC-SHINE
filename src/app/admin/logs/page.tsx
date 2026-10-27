@@ -237,10 +237,10 @@ export default function AdminLogsPage() {
           <div className="flex items-center gap-3">
             <Link href="/" className="flex items-center gap-2">
               <span className="w-7 h-7 rounded-lg bg-orange-600 flex items-center justify-center text-white font-black text-sm">
-                S
+                E
               </span>
               <span className="font-extrabold text-sm tracking-tight text-slate-900">
-                SHINE <span className="text-orange-600">ADMIN</span>
+                EVENT <span className="text-orange-600">ADMIN</span>
               </span>
             </Link>
             <span className="text-slate-300">/</span>

@@ -1,15 +1,30 @@
 import Link from "next/link";
 import ErrorPerspectiveStage from "@/components/ErrorPerspectiveStage";
 import { ArrowLeft, Compass, Trophy, Sparkles } from "lucide-react";
+import { getActiveEdition, festTitle } from "@/lib/eventService";
 
-export default function NotFound() {
+async function loadEditionLabels() {
+  try {
+    const edition = await getActiveEdition();
+    return {
+      title: festTitle(edition),
+      institution: edition.institutionShortName || edition.institutionName || null,
+    };
+  } catch {
+    return { title: festTitle(null), institution: null };
+  }
+}
+
+export default async function NotFound() {
+  const { title, institution } = await loadEditionLabels();
+
   return (
     <ErrorPerspectiveStage>
       {/* Fest Status Pill */}
       <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-stone-900/90 border border-stone-800 text-stone-300 mb-6 shadow-sm">
         <span className="w-2 h-2 rounded-full bg-[#FF6B1A] animate-pulse" />
         <span className="tracking-wider uppercase text-[10px] sm:text-[11px]">
-          SHINE 26 • Sacred Heart College
+          {[title, institution].filter(Boolean).join(" • ")}
         </span>
       </div>
 
