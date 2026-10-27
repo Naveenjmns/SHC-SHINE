@@ -47,7 +47,7 @@ export default function AdminEventsPage() {
     setLoading(true);
     try {
       const [eventsRes, coordsRes, zonesRes, edRes] = await Promise.all([
-        fetch("/api/events"),
+        fetch("/api/events?all=1"),
         fetch("/api/admin/users?role=COORDINATOR"),
         fetch("/api/admin/floorplan/zones"),
         fetch("/api/admin/edition"),

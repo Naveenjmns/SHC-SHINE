@@ -139,6 +139,7 @@ export default function StepInstitutionDetails({
               placeholder="Mobile number"
               value={formData.staffInchargePhone}
               onChange={(e) => onChange({ staffInchargePhone: e.target.value })}
+              error={errors.staffInchargePhone}
             />
           </div>
         </div>

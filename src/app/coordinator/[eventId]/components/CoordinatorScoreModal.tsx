@@ -52,11 +52,10 @@ export default function CoordinatorScoreModal({
       const parsedScore = score.trim() !== "" ? parseFloat(score) : null;
       const parsedResult = result !== "NONE" ? result : null;
 
-      const res = await fetch(`/api/events/score`, {
-        method: "POST",
+      const res = await fetch(`/api/coordinator/registrations/${encodeURIComponent(registration.id)}`, {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          registrationId: registration.id,
           score: parsedScore,
           result: parsedResult,
         }),

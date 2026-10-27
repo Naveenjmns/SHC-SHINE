@@ -479,7 +479,9 @@ export function validateGraph(
   for (const zone of zones) {
     // Look for matching entrance waypoint
     const matchingNode = graph.nodes.find(
-      (n) => n.zoneId === zone.id || n.id === `wp-${zone.id}` || n.id.includes(zone.id)
+      // Exact zone match or an id like "wp-<zone>-entrance"; a plain substring match would make
+      // "hall-1" match "wp-hall-10" and report an unreachable room as reachable
+      (n) => n.zoneId === zone.id || n.id === `wp-${zone.id}` || n.id.startsWith(`wp-${zone.id}-`)
     );
 
     if (!matchingNode || !visited.has(matchingNode.id)) {

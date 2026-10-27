@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { mealEligibleMemberWhere } from "@/lib/eligibility";
 
 export const dynamic = "force-dynamic";
 
@@ -18,13 +19,9 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Only count members whose delegation is PAID (eligible for meals)
+    // Count exactly the members the food desk will serve (shared eligibility rule)
     const paidDelegates = await prisma.delegationMember.findMany({
-      where: {
-        delegation: {
-          paymentStatus: "PAID",
-        },
-      },
+      where: mealEligibleMemberWhere,
       select: {
         id: true,
         name: true,

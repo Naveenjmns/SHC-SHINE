@@ -15,9 +15,18 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const category = searchParams.get("category");
 
-    const whereClause: { category?: EventCategory } = {};
+    const whereClause: { category?: EventCategory; OR?: Array<{ editionId: string | null }> } = {};
     if (category && (category === "ON_STAGE" || category === "OFF_STAGE")) {
       whereClause.category = category as EventCategory;
+    }
+
+    // Public lists (events page, registration form) show only the active edition, matching the
+    // homepage and what /api/register accepts. Admin screens pass ?all=1 to manage every edition.
+    if (searchParams.get("all") !== "1") {
+      const activeEdition = await getActiveEdition();
+      if (activeEdition?.id && activeEdition.id !== "default-shine") {
+        whereClause.OR = [{ editionId: activeEdition.id }, { editionId: null }];
+      }
     }
 
     const events = await prisma.event.findMany({
@@ -84,7 +93,11 @@ export async function GET(req: Request) {
       { success: true, events },
       {
         headers: {
-          "Cache-Control": "public, max-age=5, s-maxage=15, stale-while-revalidate=59",
+          // Admin (?all=1) lists are re-fetched right after edits, so they must not be served stale
+          "Cache-Control":
+            searchParams.get("all") === "1"
+              ? "no-store"
+              : "public, max-age=5, s-maxage=15, stale-while-revalidate=59",
         },
       }
     );

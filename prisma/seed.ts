@@ -22,10 +22,19 @@ const RegistrationStatus = {
 const prisma = new PrismaClient();
 
 async function main() {
-  // SECURITY: Demo accounts use publicly documented passwords — never create them in production
-  if (process.env.NODE_ENV === "production" && process.env.ALLOW_DEMO_SEED !== "true") {
+  // SECURITY: This seed wipes every table and creates demo accounts with publicly documented
+  // passwords. NODE_ENV is rarely set for a manual `npm run seed`, so also refuse any database
+  // that is not on this machine unless the operator explicitly opts in.
+  let dbHost = "";
+  try {
+    dbHost = new URL(process.env.DATABASE_URL || "").hostname;
+  } catch {
+    // Unparseable URL: treated as non-local below
+  }
+  const isLocalDb = ["localhost", "127.0.0.1", "::1", "[::1]"].includes(dbHost);
+  if ((process.env.NODE_ENV === "production" || !isLocalDb) && process.env.ALLOW_DEMO_SEED !== "true") {
     throw new Error(
-      "Refusing to create demo accounts with known passwords in production. Set ALLOW_DEMO_SEED=true only for a throwaway environment."
+      `Refusing to wipe and seed database host "${dbHost || "unknown"}". This deletes ALL data and creates demo accounts with known passwords. Set ALLOW_DEMO_SEED=true only for a throwaway environment.`
     );
   }
   console.log("🌱 Starting database seed for SHINE Reusable Platform...");

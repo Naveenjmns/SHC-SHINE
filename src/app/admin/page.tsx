@@ -74,6 +74,15 @@ export default function AdminOverviewPage() {
     detectedZones,
     loadingZones,
     uploadingFloorPlan,
+    handleUploadField,
+    handleUploadFloorPlan,
+    handleScanZones,
+    handleAddNavItem,
+    handleDeleteNavItem,
+    handleToggleNavItem,
+    handleAddScheduleItem,
+    handleDeleteScheduleItem,
+    handleResetData,
     handleSaveBranding,
     handleToggleRegistration,
     handleToggleStageMode,
@@ -90,7 +99,6 @@ export default function AdminOverviewPage() {
   const [showCheckInModal, setShowCheckInModal] = useState(false);
   const [showPrintableQrModal, setShowPrintableQrModal] = useState(false);
   const [showInteractiveModal, setShowInteractiveModal] = useState(false);
-  const [showResetModal, setShowResetModal] = useState(false);
   const [showNewEditionModal, setShowNewEditionModal] = useState(false);
 
   const handleDownloadSingleCSV = async (eventId: string, eventName: string) => {
@@ -194,7 +202,7 @@ export default function AdminOverviewPage() {
             saving={saving}
             onToggleRegistration={handleToggleRegistration}
             onOpenCheckIn={() => setShowCheckInModal(true)}
-            onOpenResetModal={() => setShowResetModal(true)}
+            onOpenResetModal={handleResetData}
             onDownloadEventCSV={handleDownloadSingleCSV}
             onDownloadAllEventCSVs={handleDownloadAllCSVs}
             downloadingEventId={downloadingEventId}
@@ -233,15 +241,7 @@ export default function AdminOverviewPage() {
           <AdminInstitutionTab
             brandingForm={brandingForm}
             setBrandingForm={setBrandingForm}
-            handleFileUpload={async (field, e) => {
-              const file = e.target.files?.[0];
-              if (!file) return;
-              const fd = new FormData();
-              fd.append("file", file);
-              const res = await fetch("/api/upload", { method: "POST", body: fd });
-              const d = await res.json();
-              if (d.url) setBrandingForm((prev: any) => ({ ...prev, [field]: d.url }));
-            }}
+            handleFileUpload={handleUploadField}
             handleSaveBranding={handleSaveBranding}
             saving={saving}
           />
@@ -253,15 +253,7 @@ export default function AdminOverviewPage() {
             setBrandingForm={setBrandingForm}
             activeEdition={activeEdition}
             saving={saving}
-            handleFileUpload={async (field, e) => {
-              const file = e.target.files?.[0];
-              if (!file) return;
-              const fd = new FormData();
-              fd.append("file", file);
-              const res = await fetch("/api/upload", { method: "POST", body: fd });
-              const d = await res.json();
-              if (d.url) setBrandingForm((prev: any) => ({ ...prev, [field]: d.url }));
-            }}
+            handleFileUpload={handleUploadField}
             handleSaveBranding={handleSaveBranding}
             handleToggleStageMode={handleToggleStageMode}
             onColorChange={(p, s, b) => {
@@ -272,26 +264,11 @@ export default function AdminOverviewPage() {
                 themeBgColor: b,
               }));
             }}
-            onAddNavItem={async (label, url) => {
-              const updated = [...(activeEdition?.navItems || []), { id: `nav-${Date.now()}`, label, url, order: 0, isEnabled: true }];
-              setBrandingForm((prev: any) => ({ ...prev, navItems: updated }));
-            }}
-            onDeleteNavItem={async (id) => {
-              const updated = (activeEdition?.navItems || []).filter((n: any) => n.id !== id);
-              setBrandingForm((prev: any) => ({ ...prev, navItems: updated }));
-            }}
-            onToggleNavItem={async (id, isEnabled) => {
-              const updated = (activeEdition?.navItems || []).map((n: any) => (n.id === id ? { ...n, isEnabled } : n));
-              setBrandingForm((prev: any) => ({ ...prev, navItems: updated }));
-            }}
-            onAddScheduleItem={async (item) => {
-              const updated = [...(activeEdition?.scheduleItems || []), { ...item, id: `sched-${Date.now()}`, order: 0 }];
-              setBrandingForm((prev: any) => ({ ...prev, scheduleItems: updated }));
-            }}
-            onDeleteScheduleItem={async (id) => {
-              const updated = (activeEdition?.scheduleItems || []).filter((s: any) => s.id !== id);
-              setBrandingForm((prev: any) => ({ ...prev, scheduleItems: updated }));
-            }}
+            onAddNavItem={handleAddNavItem}
+            onDeleteNavItem={handleDeleteNavItem}
+            onToggleNavItem={handleToggleNavItem}
+            onAddScheduleItem={handleAddScheduleItem}
+            onDeleteScheduleItem={handleDeleteScheduleItem}
           />
         )}
 
@@ -299,19 +276,11 @@ export default function AdminOverviewPage() {
           <AdminFloorplanTab
             floorPlanUrl={brandingForm.floorPlanUrl || "/uploads/campus-floorplan.svg"}
             onChangeFloorPlanUrl={(url) => setBrandingForm((prev: any) => ({ ...prev, floorPlanUrl: url }))}
-            onUploadSvg={async (e) => {
-              const file = e.target.files?.[0];
-              if (!file) return;
-              const fd = new FormData();
-              fd.append("file", file);
-              const res = await fetch("/api/upload", { method: "POST", body: fd });
-              const d = await res.json();
-              if (d.url) setBrandingForm((prev: any) => ({ ...prev, floorPlanUrl: d.url }));
-            }}
+            onUploadSvg={handleUploadFloorPlan}
             uploading={uploadingFloorPlan}
             detectedZones={detectedZones}
             loadingZones={loadingZones}
-            onScanZones={() => {}}
+            onScanZones={handleScanZones}
             graphData={graphData}
             setGraphData={setGraphData}
             onSaveGraph={handleSaveGraph}

@@ -43,7 +43,7 @@ export default function AdminUsersPage() {
     try {
       const [usersRes, eventsRes] = await Promise.all([
         fetch("/api/admin/users"),
-        fetch("/api/events"),
+        fetch("/api/events?all=1"),
       ]);
       const data = await safeJson(usersRes, { success: false, users: [] });
       if (data.success && data.users) {
@@ -94,7 +94,7 @@ export default function AdminUsersPage() {
     try {
       const isEdit = Boolean(payload.id);
       const url = isEdit ? `/api/admin/users/${payload.id}` : "/api/admin/users";
-      const method = isEdit ? "PATCH" : "POST";
+      const method = isEdit ? "PUT" : "POST";
 
       const res = await fetch(url, {
         method,

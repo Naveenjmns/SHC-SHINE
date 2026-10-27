@@ -1,5 +1,6 @@
 "use client";
 
+import { csvCell } from "@/lib/csv";
 import { useEffect, useState, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
@@ -358,20 +359,20 @@ export default function AdminReportsPage() {
 
     const rows = data.masterStudentRoster.map((s, idx) => [
       idx + 1,
-      `"${s.name.replace(/"/g, '""')}"`,
-      `"${s.email}"`,
-      `"${s.phone}"`,
-      `"${s.college.replace(/"/g, '""')}"`,
-      `"${(s.department || "").replace(/"/g, '""')}"`,
-      `"${(s.teamName || "").replace(/"/g, '""')}"`,
+      csvCell(s.name),
+      csvCell(s.email),
+      csvCell(s.phone),
+      csvCell(s.college),
+      csvCell((s.department || "")),
+      csvCell((s.teamName || "")),
       s.isTeamLead ? "YES" : "NO",
       s.foodPreference === "NON_VEG" ? "NON-VEGETARIAN" : "VEGETARIAN",
-      `"${s.badgeCode || "—"}"`,
-      `"${s.foodTokenCode || "—"}"`,
+      csvCell(s.badgeCode || "—"),
+      csvCell(s.foodTokenCode || "—"),
       s.attended ? "PRESENT" : "ABSENT",
-      `"${s.checkedInAt ? new Date(s.checkedInAt).toLocaleString() : "—"}"`,
+      csvCell(s.checkedInAt ? new Date(s.checkedInAt).toLocaleString() : "—"),
       s.events.length,
-      `"${s.events.map((e) => e.eventName).join("; ")}"`,
+      csvCell(s.events.map((e) => e.eventName).join("; ")),
     ]);
 
     const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
@@ -401,20 +402,20 @@ export default function AdminReportsPage() {
 
     const rows = data.prelimsProgression.map((p, idx) => [
       idx + 1,
-      `"${p.eventName.replace(/"/g, '""')}"`,
+      csvCell(p.eventName),
       p.eventCategory,
-      `"${(p.prelimsVenue || "").replace(/"/g, '""')}"`,
-      `"${p.prelimsDateTime ? new Date(p.prelimsDateTime).toLocaleString() : "—"}"`,
-      `"${p.studentName.replace(/"/g, '""')}"`,
-      `"${p.studentEmail}"`,
-      `"${p.studentPhone}"`,
-      `"${p.collegeName.replace(/"/g, '""')}"`,
+      csvCell((p.prelimsVenue || "")),
+      csvCell(p.prelimsDateTime ? new Date(p.prelimsDateTime).toLocaleString() : "—"),
+      csvCell(p.studentName),
+      csvCell(p.studentEmail),
+      csvCell(p.studentPhone),
+      csvCell(p.collegeName),
       p.prelimsStatus,
       p.prelimsScore ?? "—",
-      `"${(p.prelimsNotes || "").replace(/"/g, '""')}"`,
+      csvCell((p.prelimsNotes || "")),
       p.clearedToMains ? "QUALIFIED" : "ELIMINATED / PENDING",
       p.mainsScore ?? "—",
-      `"${(p.finalResult || "").replace(/"/g, '""')}"`,
+      csvCell((p.finalResult || "")),
     ]);
 
     const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
@@ -438,13 +439,13 @@ export default function AdminReportsPage() {
 
     const rows = data.finalResults.map((r, idx) => [
       idx + 1,
-      `"${r.eventName.replace(/"/g, '""')}"`,
+      csvCell(r.eventName),
       r.eventCategory,
-      `"${r.result.replace(/"/g, '""')}"`,
+      csvCell(r.result),
       r.rank === 99 ? "Mention" : `${r.rank}`,
-      `"${r.studentName.replace(/"/g, '""')}"`,
-      `"${r.studentEmail}"`,
-      `"${r.collegeName.replace(/"/g, '""')}"`,
+      csvCell(r.studentName),
+      csvCell(r.studentEmail),
+      csvCell(r.collegeName),
       r.score ?? "—",
     ]);
 
@@ -480,21 +481,21 @@ export default function AdminReportsPage() {
 
     const rows = data.events.map((ev, idx) => [
       idx + 1,
-      `"${ev.name.replace(/"/g, '""')}"`,
+      csvCell(ev.name),
       ev.category,
-      `"${ev.venue.replace(/"/g, '""')}"`,
-      `"${new Date(ev.dateTime).toLocaleString()}"`,
+      csvCell(ev.venue),
+      csvCell(new Date(ev.dateTime).toLocaleString()),
       ev.fee,
       ev.capacity ?? "Unlimited",
       ev.hasPrelims ? "YES" : "NO",
-      `"${(ev.prelimsVenue || "").replace(/"/g, '""')}"`,
-      `"${ev.prelimsDateTime ? new Date(ev.prelimsDateTime).toLocaleString() : "—"}"`,
-      `"${ev.staffCoordinator.name.replace(/"/g, '""')}"`,
-      `"${ev.staffCoordinator.email}"`,
-      `"${ev.staffCoordinator.phone}"`,
-      `"${ev.studentCoordinator.name.replace(/"/g, '""')}"`,
-      `"${ev.studentCoordinator.email}"`,
-      `"${ev.studentCoordinator.phone}"`,
+      csvCell((ev.prelimsVenue || "")),
+      csvCell(ev.prelimsDateTime ? new Date(ev.prelimsDateTime).toLocaleString() : "—"),
+      csvCell(ev.staffCoordinator.name),
+      csvCell(ev.staffCoordinator.email),
+      csvCell(ev.staffCoordinator.phone),
+      csvCell(ev.studentCoordinator.name),
+      csvCell(ev.studentCoordinator.email),
+      csvCell(ev.studentCoordinator.phone),
       ev.registrationsCount,
       ev.attendedCount,
       ev.prelimsCount,
@@ -522,7 +523,7 @@ export default function AdminReportsPage() {
 
     const rows = data.championshipLeaderboard.map((c, idx) => [
       idx + 1,
-      `"${c.collegeName.replace(/"/g, '""')}"`,
+      csvCell(c.collegeName),
       c.goldCount,
       c.silverCount,
       c.bronzeCount,
@@ -553,14 +554,14 @@ export default function AdminReportsPage() {
 
     const rows = data.cateringRoster.map((r, idx) => [
       idx + 1,
-      `"${r.name.replace(/"/g, '""')}"`,
-      `"${r.collegeName.replace(/"/g, '""')}"`,
+      csvCell(r.name),
+      csvCell(r.collegeName),
       r.foodPreference === "NON_VEG" ? "NON-VEGETARIAN (🍗)" : "VEGETARIAN (🥗)",
-      `"${r.foodTokenCode}"`,
-      `"${r.badgeCode}"`,
+      csvCell(r.foodTokenCode),
+      csvCell(r.badgeCode),
       r.foodTokenClaimed ? "SERVED" : "PENDING",
-      `"${r.foodClaimedAt ? new Date(r.foodClaimedAt).toLocaleString() : "—"}"`,
-      `"${r.foodClaimedBy || "—"}"`,
+      csvCell(r.foodClaimedAt ? new Date(r.foodClaimedAt).toLocaleString() : "—"),
+      csvCell(r.foodClaimedBy || "—"),
     ]);
 
     const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");

@@ -19,7 +19,7 @@ export interface DelegationInfo {
   department: string;
   teamName: string;
   teamLeadName: string;
-  teamLeadPhone: string;
+  teamLeadPhone: string | null;
   staffInchargeName: string | null;
   staffInchargePhone: string | null;
   paymentStatus: string;
@@ -32,6 +32,7 @@ export interface FestInfo {
   institutionName: string;
   departmentName: string;
   venue: string;
+  diningHallVenue?: string | null;
   floorPlanUrl?: string | null;
   startDate: string;
   endDate: string | null;

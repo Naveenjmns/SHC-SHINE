@@ -79,6 +79,8 @@ export async function PATCH(
       prelimsScore?: number | null;
       prelimsNotes?: string | null;
       attended?: boolean;
+      checkedInAt?: Date | null;
+      checkedInBy?: string | null;
     } = {};
 
     // Only Admin can update main registration approval status
@@ -113,6 +115,17 @@ export async function PATCH(
     }
     if (attended !== undefined) {
       updateData.attended = Boolean(attended);
+      updateData.checkedInAt = updateData.attended ? new Date() : null;
+      updateData.checkedInBy = updateData.attended ? session.user.name || session.user.email || "Coordinator" : null;
+    }
+
+    // Attendance and podium results only make sense for approved entries
+    const effectiveStatus = updateData.status ?? registration.status;
+    if (effectiveStatus !== RegistrationStatus.CONFIRMED && (updateData.attended || updateData.result)) {
+      return NextResponse.json(
+        { success: false, message: "Only approved (CONFIRMED) registrations can be marked present or given a result." },
+        { status: 400 }
+      );
     }
 
     const updated = await prisma.registration.update({
@@ -121,7 +134,8 @@ export async function PATCH(
     });
 
     // Record activity logs
-    if (status && status !== registration.status) {
+    // Log only changes that were actually applied (non-admins cannot change status)
+    if (updateData.status && updateData.status !== registration.status) {
       const actionType =
         status === "CONFIRMED"
           ? "REGISTRATION_APPROVED"

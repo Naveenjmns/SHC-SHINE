@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { generateBadgeCode, generateFoodTokenCode, generateEventPassQr, generateFoodTokenQr } from "@/lib/badgeService";
+import { generateEventPassQr, generateFoodTokenQr } from "@/lib/badgeService";
 import { getAppOrigin } from "@/lib/security";
 import { getActiveEdition } from "@/lib/eventService";
 
@@ -73,7 +73,7 @@ export async function GET(req: Request) {
     // SECURITY: match by email only — phone numbers are user-editable in the profile,
     // so a phone match would let a student claim another delegate's pass.
     let member = await prisma.delegationMember.findFirst({
-      where: { email: user.email.toLowerCase().trim() },
+      where: { email: { equals: user.email.toLowerCase().trim(), mode: "insensitive" } },
       include: {
         delegation: {
           include: {
@@ -86,69 +86,9 @@ export async function GET(req: Request) {
 
     const origin = getAppOrigin(req);
 
-    // If student has no DelegationMember record yet, auto-create one linked to active edition
-    if (!member) {
-      const activeEdition = await getActiveEdition();
-      const editionYear = activeEdition?.edition || "2026";
-      const badgeCode = generateBadgeCode(editionYear);
-      const foodTokenCode = generateFoodTokenCode();
-      const verifyUrl = `${origin}/badge/${badgeCode}`;
-
-      const qrData = await generateEventPassQr({
-        badgeCode,
-        name: user.name,
-        college: user.college || "",
-        verifyUrl,
-      });
-
-      const foodQrData = await generateFoodTokenQr({
-        foodTokenCode,
-        badgeCode,
-        name: user.name,
-      });
-
-      // Find or create default delegation
-      let delegation = await prisma.delegation.findFirst({
-        where: {
-          teamLeadEmail: user.email.toLowerCase().trim(),
-        },
-        include: { members: true },
-      });
-
-      if (!delegation && activeEdition.id) {
-        delegation = await prisma.delegation.create({
-          data: {
-            editionId: activeEdition.id,
-            collegeName: user.college || "Individual Participant",
-            teamName: `${user.name}'s Contingent`,
-            teamLeadName: user.name,
-            teamLeadEmail: user.email.toLowerCase().trim(),
-            teamLeadPhone: user.phone || "+91 9876543210",
-            totalFee: activeEdition.participantFee || 0,
-            paymentStatus: (activeEdition.participantFee || 0) === 0 ? "PAID" : "PENDING",
-          },
-          include: { members: true },
-        });
-      }
-
-      if (delegation) {
-        member = await prisma.delegationMember.create({
-          data: {
-            delegationId: delegation.id,
-            name: user.name,
-            email: user.email.toLowerCase().trim(),
-            phone: user.phone || "+91 9876543210",
-            isTeamLead: true,
-            badgeCode,
-            foodTokenCode,
-            foodPreference: (user as any).foodPreference || "VEG",
-            qrData,
-            foodQrData,
-          },
-          include: { delegation: { include: { members: true } } },
-        });
-      }
-    } else {
+    // SECURITY: never create a pass on read. Passes (and meal tokens) are only issued through
+    // /api/register, otherwise any logged-in account, staff included, would get a redeemable token.
+    if (member) {
       // Generate QR codes if missing
       if (!member.qrData || !member.foodQrData) {
         const verifyUrl = `${origin}/badge/${member.badgeCode}`;
@@ -246,11 +186,12 @@ export async function GET(req: Request) {
       delegation: delegationInfo,
       edition: {
         startDate: activeEdition.startDate,
-        participantFee: activeEdition.participantFee || 200,
+        participantFee: activeEdition.participantFee ?? 0,
         institutionName: activeEdition.institutionName || "Sacred Heart College (Autonomous)",
         name: activeEdition.name || "SHINE",
         edition: activeEdition.edition || "26",
         venue: activeEdition.venue,
+        diningHallVenue: activeEdition.diningHallVenue || null,
         floorPlanUrl: activeEdition.floorPlanUrl || "/uploads/campus-floorplan.svg",
         logoUrl: activeEdition.logoUrl,
         institutionCrestUrl: activeEdition.institutionCrestUrl,

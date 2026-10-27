@@ -109,8 +109,10 @@ async function runReminderSweep(options?: ReminderCheckOptions): Promise<Reminde
         (eventTime >= windowStart && eventTime <= windowEnd);
 
       if (isMainEventUpcoming) {
+        // Rejected entries must not be told to report; pending ones may still pay at the desk
         const registrationWhere: any = {
           eventId: event.id,
+          status: { not: "REJECTED" },
         };
         if (!options?.forceAll) {
           registrationWhere.reminderSentAt = null;
@@ -261,6 +263,7 @@ async function runReminderSweep(options?: ReminderCheckOptions): Promise<Reminde
           const prelimsRegWhere: any = {
             eventId: event.id,
             isPrelimsParticipant: true,
+            status: { not: "REJECTED" },
           };
           if (!options?.forceAll) {
             prelimsRegWhere.prelimsReminderSentAt = null;

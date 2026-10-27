@@ -192,7 +192,7 @@ export default function AdminBrandingTab({
 
           {/* Navigation Links */}
           <AdminNavItemsEditor
-            navItems={activeEdition.navItems || []}
+            navItems={activeEdition?.navItems || []}
             onAddNavItem={onAddNavItem}
             onDeleteNavItem={onDeleteNavItem}
             onToggleNavItem={onToggleNavItem}
@@ -297,7 +297,7 @@ export default function AdminBrandingTab({
 
           {/* Schedule Manager */}
           <AdminScheduleManager
-            scheduleItems={activeEdition.scheduleItems || []}
+            scheduleItems={activeEdition?.scheduleItems || []}
             onAddScheduleItem={onAddScheduleItem}
             onDeleteScheduleItem={onDeleteScheduleItem}
           />

@@ -3,7 +3,7 @@ import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import bcrypt from "bcryptjs";
-import { Role } from "@prisma/client";
+import { Prisma, Role } from "@prisma/client";
 import { logActivity } from "@/lib/activityLogger";
 import { isValidEmail, isValidPhone } from "@/lib/validators";
 
@@ -120,47 +120,39 @@ export async function PUT(
       updateData.passwordHash = await bcrypt.hash(password.trim(), 10);
     }
 
+    const previous = await prisma.user.findUnique({ where: { id }, select: { role: true } });
+    if (!previous) {
+      return NextResponse.json({ success: false, message: "User not found." }, { status: 404 });
+    }
+
     const updated = await prisma.user.update({
       where: { id },
       data: updateData,
     });
 
-    const targetRole = updateData.role || updated.role;
+    // Clears only this user's own coordinator columns so co-coordinators on the same event are kept
+    const unlinkFromEvents = (extraWhere: Prisma.EventWhereInput = {}) =>
+      Promise.all(
+        (["coordinatorId", "staffCoordinatorId", "studentCoordinatorId"] as const).map((field) =>
+          prisma.event.updateMany({ where: { ...extraWhere, [field]: id }, data: { [field]: null } })
+        )
+      );
 
-    // Manage coordinator event assignments if assignedEventIds is provided or if role changed away from COORDINATOR
-    if (targetRole !== "COORDINATOR") {
-      // If no longer a coordinator, clear event coordinator links
-      await prisma.event.updateMany({
-        where: {
-          OR: [{ coordinatorId: id }, { staffCoordinatorId: id }, { studentCoordinatorId: id }],
-        },
-        data: {
-          coordinatorId: null,
-          staffCoordinatorId: null,
-          studentCoordinatorId: null,
-        },
-      });
-    } else if (assignedEventIds !== undefined && Array.isArray(assignedEventIds)) {
+    if (previous.role === "COORDINATOR" && updated.role !== "COORDINATOR") {
+      // Demoted from coordinator: drop the event assignments that came with the role
+      await unlinkFromEvents();
+    } else if (updated.role === "COORDINATOR" && Array.isArray(assignedEventIds)) {
       // Unlink events not in the selected list
-      await prisma.event.updateMany({
-        where: {
-          OR: [{ coordinatorId: id }, { staffCoordinatorId: id }, { studentCoordinatorId: id }],
-          NOT: { id: { in: assignedEventIds } },
-        },
-        data: {
-          coordinatorId: null,
-          staffCoordinatorId: null,
-          studentCoordinatorId: null,
-        },
-      });
+      await unlinkFromEvents({ NOT: { id: { in: assignedEventIds } } });
 
-      // Link newly selected events
+      // Link newly selected events that this user is not already attached to in any slot
       if (assignedEventIds.length > 0) {
         await prisma.event.updateMany({
-          where: { id: { in: assignedEventIds } },
-          data: {
-            coordinatorId: id,
+          where: {
+            id: { in: assignedEventIds },
+            NOT: { OR: [{ coordinatorId: id }, { staffCoordinatorId: id }, { studentCoordinatorId: id }] },
           },
+          data: { coordinatorId: id },
         });
       }
     }

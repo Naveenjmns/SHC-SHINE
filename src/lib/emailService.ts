@@ -128,8 +128,9 @@ export function buildNodemailerTransport(config: SmtpConfig) {
     greetingTimeout: 15000,   // 15 seconds
     socketTimeout: 20000,     // 20 seconds
     tls: {
-      // Allow cloud container outbound TLS without strict rejection on intermediate certs
-      rejectUnauthorized: false,
+      // SECURITY: Verify the SMTP server certificate, otherwise anyone on the network path can
+      // capture the SMTP credentials. Only relax this for a self-signed relay you control.
+      rejectUnauthorized: process.env.SMTP_ALLOW_INSECURE_TLS !== "true",
     },
   } as any);
 }

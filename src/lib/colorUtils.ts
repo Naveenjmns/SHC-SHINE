@@ -149,6 +149,10 @@ export function deriveAccentPalette(
   };
 }
 
+export function isHexColor(value: unknown): value is string {
+  return typeof value === "string" && /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(value.trim());
+}
+
 /**
  * Generates the CSS rule string to apply to :root and [data-theme="dark"]
  * Zero decorative gradients, zero glowing drop-shadows.
@@ -158,6 +162,10 @@ export function generateThemeCss(
   secondaryAccent: string = "#D9A441",
   bgColor: string = "#FFFFFF"
 ): string {
+  // SECURITY: The output is injected into a <style> tag, so only plain hex colours may pass through
+  primaryAccent = isHexColor(primaryAccent) ? primaryAccent : "#FF6B1A";
+  secondaryAccent = isHexColor(secondaryAccent) ? secondaryAccent : "#D9A441";
+  bgColor = isHexColor(bgColor) ? bgColor : "#FFFFFF";
   const palette = deriveAccentPalette(primaryAccent, secondaryAccent, bgColor);
 
   return `

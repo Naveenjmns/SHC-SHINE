@@ -1,5 +1,6 @@
 "use client";
 
+import { csvCell } from "@/lib/csv";
 import React from "react";
 import Link from "next/link";
 import {
@@ -54,15 +55,15 @@ export default function AdminReportsTab({
     ];
     const rows = reportsData.masterStudentRoster.map((s: any, idx: number) => [
       idx + 1,
-      `"${s.name.replace(/"/g, '""')}"`,
-      `"${s.email}"`,
-      `"${s.phone}"`,
-      `"${s.college.replace(/"/g, '""')}"`,
-      `"${(s.department || "").replace(/"/g, '""')}"`,
+      csvCell(s.name),
+      csvCell(s.email),
+      csvCell(s.phone),
+      csvCell(s.college),
+      csvCell((s.department || "")),
       s.isTeamLead ? "YES" : "NO",
-      `"${s.badgeCode || "-"}"`,
+      csvCell(s.badgeCode || "-"),
       s.attended ? "PRESENT" : "ABSENT",
-      `"${s.events.map((e: any) => e.eventName).join("; ")}"`,
+      csvCell(s.events.map((e: any) => e.eventName).join("; ")),
     ]);
     downloadCsv(
       `${summary?.festName || "SHINE"}_Master_Roster.csv`,
@@ -72,7 +73,7 @@ export default function AdminReportsTab({
   };
 
   const handleDownloadCollegesSummary = () => {
-    if (!reportsData?.collegesSummary) return;
+    if (!reportsData?.delegations) return;
     const headers = [
       "S.No",
       "College Name",
@@ -83,15 +84,15 @@ export default function AdminReportsTab({
       "Payment Status",
       "Total Fee",
     ];
-    const rows = reportsData.collegesSummary.map((c: any, idx: number) => [
+    const rows = reportsData.delegations.map((c: any, idx: number) => [
       idx + 1,
-      `"${c.collegeName.replace(/"/g, '""')}"`,
-      `"${(c.teamLeadName || "").replace(/"/g, '""')}"`,
-      `"${c.teamLeadPhone || ""}"`,
-      c.totalStudents,
-      c.attendedStudents,
+      csvCell(c.collegeName),
+      csvCell((c.teamLeadName || "")),
+      csvCell(c.teamLeadPhone || ""),
+      c.memberCount,
+      c.checkedInCount,
       c.paymentStatus,
-      c.totalAmount,
+      c.totalFee,
     ]);
     downloadCsv(
       `${summary?.festName || "SHINE"}_Colleges_Summary.csv`,
@@ -233,7 +234,7 @@ export default function AdminReportsTab({
                     College Delegations Summary
                   </span>
                   <span className="text-[10px] font-mono bg-[var(--surface)] border border-[var(--border)] px-1.5 py-0.5 rounded text-[var(--ink-muted)]">
-                    {reportsData.collegesSummary?.length || 0} colleges
+                    {reportsData.delegations?.length || 0} colleges
                   </span>
                 </div>
                 <p className="text-[11px] text-[var(--ink-muted)]">

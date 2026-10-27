@@ -96,14 +96,16 @@ export async function POST(req: NextRequest) {
       where: { id: "default" },
     });
 
+    // Fields left out of the request keep their saved value (a partial save must not blank them)
+    const nextUser = user ?? existing?.user ?? "";
     const dataToSave: any = {
-      host: host || "",
+      host: host ?? existing?.host ?? "",
       port: 465,
       secure: true,
-      user: user || "",
-      fromEmail: fromEmail || user || "",
-      fromName: fromName || "Event Coordination Team",
-      replyTo: replyTo || null,
+      user: nextUser,
+      fromEmail: fromEmail || existing?.fromEmail || nextUser,
+      fromName: fromName || existing?.fromName || "Event Coordination Team",
+      replyTo: replyTo === undefined ? existing?.replyTo ?? null : replyTo || null,
     };
 
     if (emailTriggers) {

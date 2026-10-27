@@ -71,13 +71,14 @@ function LoginForm() {
           // ignore session fetch error
         }
 
+        // Route by the account's real role only (guessing from words in the email sent e.g. a
+        // coordinator with "food" in their address to /food, which then bounced them away)
         let target = "/dashboard";
-        const normalizedInput = email.toLowerCase().trim();
-        if (role === "ADMIN" || normalizedInput.includes("admin")) {
+        if (role === "ADMIN") {
           target = "/admin";
-        } else if (role === "FOOD_COORDINATOR" || normalizedInput.includes("food")) {
+        } else if (role === "FOOD_COORDINATOR") {
           target = "/food";
-        } else if (role === "COORDINATOR" || normalizedInput.includes("coord")) {
+        } else if (role === "COORDINATOR") {
           target = "/coordinator";
         }
         window.location.href = target;

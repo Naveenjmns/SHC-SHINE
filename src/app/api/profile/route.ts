@@ -4,7 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import bcrypt from "bcryptjs";
 import { logActivity } from "@/lib/activityLogger";
-import { isValidPhone } from "@/lib/validators";
+import { isValidPhone, sanitizeToTenDigitPhone } from "@/lib/validators";
 
 export async function GET() {
   try {
@@ -58,13 +58,11 @@ export async function GET() {
           },
           orderBy: { createdAt: "desc" },
         }),
+        // SECURITY: Match the pass by the account email only. Phone numbers are user-editable,
+        // so matching on phone would let a student pull another delegate's badge and meal token.
         prisma.delegationMember.findFirst({
-          where: {
-            OR: [
-              { email: user.email.toLowerCase().trim() },
-              ...(user.phone ? [{ phone: user.phone.trim() }] : []),
-            ],
-          },
+          where: { email: { equals: user.email.toLowerCase().trim(), mode: "insensitive" } },
+          orderBy: { createdAt: "desc" },
           include: {
             delegation: {
               select: {
@@ -239,7 +237,20 @@ export async function PATCH(req: Request) {
             { status: 400 }
           );
         }
-        updateData.phone = trimmedPhone;
+        // SECURITY: Phone login only works when a number identifies exactly one account, so a
+        // number already in use must not be claimable by someone else (it would lock them out).
+        const phoneLast10 = sanitizeToTenDigitPhone(trimmedPhone);
+        const phoneOwner = await prisma.user.findFirst({
+          where: { id: { not: existingUser.id }, phone: { endsWith: phoneLast10 } },
+          select: { id: true },
+        });
+        if (phoneOwner) {
+          return NextResponse.json(
+            { success: false, message: "This mobile number is already linked to another account." },
+            { status: 409 }
+          );
+        }
+        updateData.phone = phoneLast10;
       } else {
         updateData.phone = null;
       }

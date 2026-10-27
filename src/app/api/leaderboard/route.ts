@@ -2,41 +2,9 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getActiveEdition } from "@/lib/eventService";
 import { buildSecureErrorResponse } from "@/lib/security";
+import { parseRank } from "@/lib/results";
 
 export const dynamic = "force-dynamic";
-
-function parseRank(resultStr: string | null | undefined): 1 | 2 | 3 | null {
-  if (!resultStr) return null;
-  const lower = resultStr.toLowerCase().trim();
-  if (
-    lower.includes("1st") ||
-    lower.includes("first") ||
-    lower.includes("gold") ||
-    lower.includes("champion") ||
-    lower === "1"
-  ) {
-    return 1;
-  }
-  if (
-    lower.includes("2nd") ||
-    lower.includes("second") ||
-    lower.includes("silver") ||
-    lower.includes("runner") ||
-    lower === "2"
-  ) {
-    return 2;
-  }
-  if (
-    lower.includes("3rd") ||
-    lower.includes("third") ||
-    lower.includes("bronze") ||
-    lower.includes("finalist") ||
-    lower === "3"
-  ) {
-    return 3;
-  }
-  return null;
-}
 
 export interface PodiumTeam {
   rank: 1 | 2 | 3;
@@ -58,8 +26,10 @@ export async function GET() {
       where: edition.id && edition.id !== "default-shine" ? { editionId: edition.id } : {},
       include: {
         registrations: {
+          // Only approved entries can appear on the podium
           where: {
             result: { not: null },
+            status: "CONFIRMED",
           },
           include: {
             user: {
@@ -116,15 +86,16 @@ export async function GET() {
             (edition as any)?.defaultThirdPrize ||
             "Distinction Certificate";
 
-          // Group registrations by team/delegation to avoid multiple entries for teammates
+          // Group teammates who share a placing; a college with entrants at different ranks
+          // (e.g. 1st and 3rd in an individual event) keeps both podium entries
           const groups = new Map<string, typeof e.registrations>();
 
           for (const r of e.registrations) {
-            if (!r.result) continue;
             const rank = parseRank(r.result);
+            if (!rank) continue;
             const delId = r.delegationId || r.delegation?.id;
             const col = r.delegation?.collegeName || r.user.college || "Independent";
-            const groupKey = delId ? `del_${delId}` : `col_${col}_rank_${rank || r.result}`;
+            const groupKey = delId ? `del_${delId}_rank_${rank}` : `col_${col}_rank_${rank}`;
 
             if (!groups.has(groupKey)) {
               groups.set(groupKey, []);

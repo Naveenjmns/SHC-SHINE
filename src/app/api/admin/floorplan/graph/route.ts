@@ -19,8 +19,8 @@ async function loadActiveFloorPlanSvg(): Promise<string> {
   const floorPlanUrl = activeEdition?.floorPlanUrl || "/uploads/campus-floorplan.svg";
   const filename = path.basename(floorPlanUrl);
 
-  // Check filesystem first
-  const localPath = path.join(process.cwd(), "public", floorPlanUrl.replace(/^\//, ""));
+  // Check filesystem first. SECURITY: basename only, so a stored URL cannot escape public/uploads
+  const localPath = path.join(process.cwd(), "public", "uploads", filename);
   if (fs.existsSync(localPath)) {
     return fs.readFileSync(localPath, "utf-8");
   }

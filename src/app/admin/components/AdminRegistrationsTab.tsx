@@ -18,7 +18,7 @@ export interface RegistrationRecord {
     name: string;
     email: string;
     phone: string;
-    collegeName: string;
+    college: string | null;
     regNo: string;
   };
   event: {
@@ -36,7 +36,7 @@ export interface RegistrationRecord {
     teamLeadPhone: string;
     staffInchargeName: string | null;
     paymentStatus: string;
-    totalAmount: number;
+    totalFee: number;
   } | null;
   delegationMember?: {
     id: string;
@@ -204,7 +204,7 @@ export default function AdminRegistrationsTab({
                     <span className="text-[11px] text-[var(--ink-muted)]">{reg.user.email}</span>
                   </td>
                   <td className="py-2.5 px-3 text-[var(--ink)]">
-                    {reg.delegation?.collegeName || reg.user.collegeName}
+                    {reg.delegation?.collegeName || reg.user.college || "Individual"}
                   </td>
                   <td className="py-2.5 px-3 text-[var(--ink)]">{reg.event.name}</td>
                   <td className="py-2.5 px-3">

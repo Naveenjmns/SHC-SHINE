@@ -7,6 +7,10 @@ export function playScannerTone(type: "success" | "warning" | "error") {
     if (!AudioCtx) return;
     const ctx = new AudioCtx();
     const osc = ctx.createOscillator();
+    // Browsers cap open AudioContexts; release this one once its tone has played
+    osc.onended = () => {
+      ctx.close().catch(() => {});
+    };
     const gain = ctx.createGain();
     osc.connect(gain);
     gain.connect(ctx.destination);

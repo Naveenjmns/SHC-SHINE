@@ -1,5 +1,7 @@
 "use client";
 
+import { useToast } from "@/components/ToastProvider";
+import { safeJson } from "@/lib/safeFetch";
 import React, { useState } from "react";
 import { Modal, Input, Button } from "@/components/ui";
 
@@ -18,12 +20,13 @@ export default function AdminNewEditionModal({
   const [year, setYear] = useState("2027");
   const [tagline, setTagline] = useState("");
   const [creating, setCreating] = useState(false);
+  const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setCreating(true);
     try {
-      const res = await fetch("/api/admin/editions", {
+      const res = await fetch("/api/admin/edition", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -32,10 +35,16 @@ export default function AdminNewEditionModal({
           tagline: tagline.trim() || undefined,
         }),
       });
-      if (res.ok) {
+      const data = await safeJson(res, { success: false });
+      if (res.ok && data.success) {
+        toast.success(`${name.trim()} ${year.trim()} created.`);
         onClose();
         onEditionCreated();
+      } else {
+        toast.error(data.error || data.message || "Failed to create edition.");
       }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to create edition.");
     } finally {
       setCreating(false);
     }

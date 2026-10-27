@@ -14,6 +14,7 @@ interface ProfileDetailsCardProps {
   setCollege: (v: string) => void;
   foodPreference: "VEG" | "NON_VEG";
   setFoodPreference: (v: "VEG" | "NON_VEG") => void;
+  foodPreferenceLocked?: boolean;
   onSave: (e: React.FormEvent) => Promise<void>;
   saving: boolean;
 }
@@ -28,6 +29,7 @@ export default function ProfileDetailsCard({
   setCollege,
   foodPreference,
   setFoodPreference,
+  foodPreferenceLocked = false,
   onSave,
   saving,
 }: ProfileDetailsCardProps) {
@@ -111,7 +113,8 @@ export default function ProfileDetailsCard({
             <button
               type="button"
               onClick={() => setFoodPreference("VEG")}
-              className={`py-2 px-3 rounded-lg text-xs font-semibold border flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
+              disabled={foodPreferenceLocked}
+              className={`py-2 px-3 rounded-lg text-xs font-semibold border flex items-center justify-center gap-1.5 transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 ${
                 foodPreference === "VEG"
                   ? "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-500 text-emerald-700 dark:text-emerald-300 shadow-xs"
                   : "bg-[var(--surface)] border-[var(--border)] text-[var(--ink-muted)] hover:text-[var(--ink)]"
@@ -124,7 +127,8 @@ export default function ProfileDetailsCard({
             <button
               type="button"
               onClick={() => setFoodPreference("NON_VEG")}
-              className={`py-2 px-3 rounded-lg text-xs font-semibold border flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
+              disabled={foodPreferenceLocked}
+              className={`py-2 px-3 rounded-lg text-xs font-semibold border flex items-center justify-center gap-1.5 transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 ${
                 foodPreference === "NON_VEG"
                   ? "bg-amber-50 dark:bg-amber-950/40 border-amber-500 text-amber-700 dark:text-amber-300 shadow-xs"
                   : "bg-[var(--surface)] border-[var(--border)] text-[var(--ink-muted)] hover:text-[var(--ink)]"
@@ -134,6 +138,11 @@ export default function ProfileDetailsCard({
               <span>Non-Vegetarian</span>
             </button>
           </div>
+          {foodPreferenceLocked && (
+            <p className="mt-1.5 text-[11px] text-[var(--ink-muted)]">
+              Your meal preference is fixed after registration. Contact the food desk to change it.
+            </p>
+          )}
         </div>
 
         {/* Submit */}

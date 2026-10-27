@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Vendored Playwright browser binaries (git-ignored), not project source
+    ".playwright-browsers/**",
   ]),
 ]);
 

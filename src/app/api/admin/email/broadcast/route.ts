@@ -32,9 +32,17 @@ export async function POST(req: NextRequest) {
     // Collect recipient students
     let recipients: { email: string; name: string }[] = [];
 
-    if (targetAudience === "EVENT" && targetEventId) {
+    if (targetAudience === "EVENT" && !targetEventId) {
+      // Never fall through to "everyone" when an event-specific send is missing its event
+      return NextResponse.json(
+        { success: false, error: "Select the event whose participants should receive this broadcast." },
+        { status: 400 }
+      );
+    }
+
+    if (targetAudience === "EVENT") {
       const registrations = await prisma.registration.findMany({
-        where: { eventId: targetEventId },
+        where: { eventId: targetEventId, status: { not: "REJECTED" } },
         include: {
           user: {
             select: { email: true, name: true },
@@ -52,8 +60,12 @@ export async function POST(req: NextRequest) {
 
       recipients = Array.from(emailMap.entries()).map(([email, name]) => ({ email, name }));
     } else {
-      // All registered students (or all students in the database)
+      // All non-rejected participants of the active edition
       const registrations = await prisma.registration.findMany({
+        where: {
+          status: { not: "REJECTED" },
+          ...(activeEdition.id && activeEdition.id !== "default-shine" ? { event: { editionId: activeEdition.id } } : {}),
+        },
         include: {
           user: {
             select: { email: true, name: true },

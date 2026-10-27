@@ -15,9 +15,10 @@ import BadgeFoodCoupon from "../components/BadgeFoodCoupon";
 interface BadgeData {
   badgeCode: string;
   name: string;
-  email: string;
-  phone: string;
-  foodTokenCode: string;
+  isOwnerView?: boolean;
+  email: string | null;
+  phone: string | null;
+  foodTokenCode: string | null;
   foodPreference?: "VEG" | "NON_VEG";
   foodTokenClaimed: boolean;
   foodClaimedAt?: string | null;
@@ -203,8 +204,8 @@ export default function BadgeDetailPage() {
         <DigitalBadgeCard
           badgeCode={badge.badgeCode}
           name={badge.name}
-          email={badge.email}
-          phone={badge.phone}
+          email={badge.email ?? ""}
+          phone={badge.phone ?? ""}
           qrData={badge.qrData}
           eventCheckedIn={badge.eventCheckedIn}
           eventCheckedInAt={badge.eventCheckedInAt}
@@ -235,15 +236,25 @@ export default function BadgeDetailPage() {
           />
         </div>
 
-        {/* Meal Coupon */}
-        <BadgeFoodCoupon
-          foodTokenCode={badge.foodTokenCode}
-          foodPreference={badge.foodPreference}
-          foodTokenClaimed={badge.foodTokenClaimed}
-          foodClaimedAt={badge.foodClaimedAt}
-          foodQrData={badge.foodQrData}
-          diningHallVenue={badge.fest.venue}
-        />
+        {/* Meal Coupon: the token is only returned to the pass owner or desk staff */}
+        {badge.foodTokenCode ? (
+          <BadgeFoodCoupon
+            foodTokenCode={badge.foodTokenCode}
+            foodPreference={badge.foodPreference}
+            foodTokenClaimed={badge.foodTokenClaimed}
+            foodClaimedAt={badge.foodClaimedAt}
+            foodQrData={badge.foodQrData}
+            diningHallVenue={badge.fest.diningHallVenue || badge.fest.venue}
+          />
+        ) : (
+          <div className="no-print rounded-xl border border-border bg-surface p-4 text-sm text-ink-muted">
+            The meal token is private.{" "}
+            <Link href="/login" className="font-semibold text-accent underline">
+              Log in
+            </Link>{" "}
+            as this delegate to view it.
+          </div>
+        )}
       </div>
 
       {/* Wayfinding Modal */}

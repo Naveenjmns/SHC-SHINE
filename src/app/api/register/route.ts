@@ -248,6 +248,42 @@ export async function POST(req: Request) {
       );
     }
 
+    // Competitions that have already started cannot take new entries
+    const now = Date.now();
+    const startedEvent = eventsInDb.find((e) => e.dateTime && new Date(e.dateTime).getTime() <= now);
+    if (startedEvent) {
+      return NextResponse.json(
+        { success: false, message: `Registration for "${startedEvent.name}" has closed because the competition has already started.` },
+        { status: 400 }
+      );
+    }
+
+    // Capacity: count active (non-rejected) entries plus the ones in this submission
+    const requestedPerEvent = new Map<string, number>();
+    for (const m of members) for (const id of m.eventIds) requestedPerEvent.set(id, (requestedPerEvent.get(id) || 0) + 1);
+    const cappedEvents = eventsInDb.filter((e) => e.capacity !== null && e.capacity !== undefined && e.capacity > 0);
+    // `pending` = entries not yet written (before the transaction) or 0 (inside it, already written)
+    const findFullEvent = async (db: Pick<typeof prisma, "registration">, countPending: boolean) => {
+      for (const ev of cappedEvents) {
+        const taken = await db.registration.count({
+          where: { eventId: ev.id, status: { not: RegistrationStatus.REJECTED } },
+        });
+        const pending = countPending ? requestedPerEvent.get(ev.id) || 0 : 0;
+        if (taken + pending > ev.capacity!) return { ev, remaining: Math.max(0, ev.capacity! - taken) };
+      }
+      return null;
+    };
+    const fullBefore = await findFullEvent(prisma, true);
+    if (fullBefore) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: `"${fullBefore.ev.name}" has only ${fullBefore.remaining} place(s) left. Please choose another competition or reduce entries.`,
+        },
+        { status: 409 }
+      );
+    }
+
     // SECURITY: Public registration must never attach to, or set credentials on, staff accounts.
     // This also blocks pre-registering an event coordinator's email to inherit their event access.
     const memberEmails = members.map((m) => m.email.toLowerCase().trim());
@@ -268,6 +304,32 @@ export async function POST(req: Request) {
       return NextResponse.json(
         { success: false, message: "One of the delegate email addresses belongs to a staff account and cannot be used for delegate registration." },
         { status: 400 }
+      );
+    }
+
+    // SECURITY: The public form is unauthenticated, so it must never take over an existing participant.
+    // Reject emails that already hold a pass in this edition or are already entered in a selected event.
+    const existingUserIds = existingUsers.map((u) => u.id);
+    const [alreadyMember, alreadyRegistered] = await Promise.all([
+      prisma.delegationMember.findFirst({
+        where: { email: { in: memberEmails, mode: "insensitive" }, delegation: { editionId } },
+        select: { email: true },
+      }),
+      existingUserIds.length > 0
+        ? prisma.registration.findFirst({
+            where: { userId: { in: existingUserIds }, eventId: { in: allEventIds } },
+            select: { user: { select: { email: true } } },
+          })
+        : Promise.resolve(null),
+    ]);
+    const duplicateEmail = alreadyMember?.email || alreadyRegistered?.user.email;
+    if (duplicateEmail) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: `"${duplicateEmail}" is already registered for this edition. Please log in to the student portal to view the existing pass, or contact the organisers to change events.`,
+        },
+        { status: 409 }
       );
     }
 
@@ -404,9 +466,9 @@ export async function POST(req: Request) {
           for (const evId of m.eventIds) {
             const ev = eventMap.get(evId)!;
             const isPrelimsNominated = ev.hasPrelims && Array.isArray(m.prelimsEventIds) && m.prelimsEventIds.includes(ev.id);
-            await tx.registration.upsert({
-              where: { userId_eventId: { userId: user.id, eventId: ev.id } },
-              create: {
+            // Plain create: an existing (userId, eventId) row is rejected above and must never be re-pointed
+            await tx.registration.create({
+              data: {
                 userId: user.id,
                 eventId: ev.id,
                 delegationId: delegation.id,
@@ -415,15 +477,15 @@ export async function POST(req: Request) {
                 isPrelimsParticipant: isPrelimsNominated,
                 prelimsStatus: isPrelimsNominated ? "PENDING" : null,
               },
-              update: {
-                delegationId: delegation.id,
-                delegationMemberId: memberRecord.id,
-                isPrelimsParticipant: isPrelimsNominated,
-                prelimsStatus: isPrelimsNominated ? "PENDING" : null,
-              },
             });
           }
           memberRecords.push(memberRecord);
+        }
+
+        // Re-check capacity inside the transaction so concurrent submissions cannot overfill an event
+        const fullAfter = await findFullEvent(tx, false);
+        if (fullAfter) {
+          throw Object.assign(new Error("EVENT_FULL"), { code: "EVENT_FULL", eventName: fullAfter.ev.name });
         }
         return { delegation, memberRecords };
       },
@@ -452,7 +514,7 @@ export async function POST(req: Request) {
           venueZoneId: ev.venueZoneId || null,
           venueZoneLabel: zoneLabel,
           mapUrl: ev.venueZoneId ? `${origin}/loc/${ev.venueZoneId}` : `${origin}/events`,
-          time: ev.dateTime ? new Date(ev.dateTime).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) : null,
+          time: ev.dateTime ? new Date(ev.dateTime).toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit" }) : null,
           staffCoordinator: ev.staffCoordinator?.name || ev.coordinator?.name || null,
           studentCoordinator: ev.studentCoordinator?.name || null,
         });
@@ -587,6 +649,19 @@ export async function POST(req: Request) {
       delegates: registeredDelegates,
     });
   } catch (error: any) {
+    // Unique violation from a concurrent submission with the same email / event
+    if (error?.code === "EVENT_FULL") {
+      return NextResponse.json(
+        { success: false, message: `"${error.eventName}" just filled up. Please choose another competition.` },
+        { status: 409 }
+      );
+    }
+    if (error?.code === "P2002") {
+      return NextResponse.json(
+        { success: false, message: "One of these delegates was just registered by another submission. Please log in to view the existing pass." },
+        { status: 409 }
+      );
+    }
     // SECURITY: Never expose internal error details to the client
     const secureError = buildSecureErrorResponse(
       error,

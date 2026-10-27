@@ -6,6 +6,7 @@ import { logActivity } from "@/lib/activityLogger";
 import { buildSecureErrorResponse } from "@/lib/security";
 
 import { extractLookupCode } from "@/lib/cameraScanner";
+import { isMealEligible } from "@/lib/eligibility";
 
 export const dynamic = "force-dynamic";
 
@@ -146,10 +147,7 @@ export async function GET(req: NextRequest) {
     });
     const assignedEventIds = new Set(userAssignedEvents.map((e) => e.id));
 
-    const isApproved =
-      member.delegation.paymentStatus === "PAID" ||
-      member.delegation.paymentStatus === "VERIFIED" ||
-      member.registrations.some((r) => r.status === "CONFIRMED");
+    const isApproved = isMealEligible(member.delegation.paymentStatus, member.registrations);
 
     const allEventsAttended = member.registrations.length > 0 && member.registrations.every((r) => r.attended);
 
@@ -300,10 +298,7 @@ export async function POST(req: NextRequest) {
       }
 
       // Approval & Payment Guard: Must be approved and paid at registration desk
-      const isApproved =
-        member.delegation.paymentStatus === "PAID" ||
-        member.delegation.paymentStatus === "VERIFIED" ||
-        member.registrations.some((r) => r.status === "CONFIRMED");
+      const isApproved = isMealEligible(member.delegation.paymentStatus, member.registrations);
 
       if (!isApproved) {
         return NextResponse.json(
@@ -386,7 +381,7 @@ export async function POST(req: NextRequest) {
             isExpired: true,
             message: `QR Code Expired / Already Scanned: ${member.name} (${member.delegation.collegeName}) was already checked in for "${targetEvent.name}" on ${
               reg.checkedInAt
-                ? new Date(reg.checkedInAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })
+                ? new Date(reg.checkedInAt).toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit" })
                 : "earlier today"
             } by ${reg.checkedInBy || "Coordinator"}. This single-use QR pass has expired.`,
           },
@@ -566,10 +561,7 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      const isApproved =
-        member.delegation.paymentStatus === "PAID" ||
-        member.delegation.paymentStatus === "VERIFIED" ||
-        member.registrations.some((r) => r.status === "CONFIRMED");
+      const isApproved = isMealEligible(member.delegation.paymentStatus, member.registrations);
 
       if (!isApproved) {
         return NextResponse.json(
@@ -593,7 +585,7 @@ export async function POST(req: NextRequest) {
             foodPreference: (member as any).foodPreference || "VEG",
             message: `QR Token Expired / Already Redeemed: Food token was ALREADY claimed by ${member.name} (${member.delegation.collegeName}) on ${
               member.foodClaimedAt
-                ? new Date(member.foodClaimedAt).toLocaleTimeString("en-IN", {
+                ? new Date(member.foodClaimedAt).toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata",
                     hour: "2-digit",
                     minute: "2-digit",
                   })

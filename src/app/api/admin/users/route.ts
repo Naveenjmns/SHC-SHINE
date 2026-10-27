@@ -97,7 +97,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { name, email, phone, college, role, password } = body;
+    const { name, email, phone, college, role, password, assignedEventIds } = body;
 
     if (!name || !email || !password || !role) {
       return NextResponse.json(
@@ -154,6 +154,14 @@ export async function POST(req: Request) {
         createdAt: true,
       },
     });
+
+    // Attach the events chosen in the create form (previously dropped silently)
+    if (newUser.role === "COORDINATOR" && Array.isArray(assignedEventIds) && assignedEventIds.length > 0) {
+      await prisma.event.updateMany({
+        where: { id: { in: assignedEventIds.filter((x: unknown) => typeof x === "string") } },
+        data: { coordinatorId: newUser.id },
+      });
+    }
 
     await logActivity({
       action: "USER_CREATED",

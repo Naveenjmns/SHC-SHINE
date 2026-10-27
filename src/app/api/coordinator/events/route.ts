@@ -16,10 +16,18 @@ export async function GET() {
       where: isAdmin
         ? {}
         : {
+            // Same assignment rule as the event detail & check-in APIs: by account id or by the
+            // coordinator email entered on the event form
             OR: [
               { staffCoordinatorId: session.user.id },
               { studentCoordinatorId: session.user.id },
               { coordinatorId: session.user.id },
+              ...(session.user.email
+                ? [
+                    { staffCoordinatorEmail: { equals: session.user.email, mode: "insensitive" as const } },
+                    { studentCoordinatorEmail: { equals: session.user.email, mode: "insensitive" as const } },
+                  ]
+                : []),
             ],
           },
       include: {

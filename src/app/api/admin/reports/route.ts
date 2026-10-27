@@ -4,6 +4,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getActiveEdition } from "@/lib/eventService";
 import { buildSecureErrorResponse } from "@/lib/security";
+import { classifyResult } from "@/lib/results";
+import { isMealEligible } from "@/lib/eligibility";
 
 export const dynamic = "force-dynamic";
 
@@ -51,6 +53,8 @@ export async function GET(req: Request) {
             select: { id: true, name: true, email: true, phone: true, college: true },
           },
           registrations: {
+            // Rejected entries are not part of the fest: keep them out of totals, roster and results
+            where: { status: { not: "REJECTED" } },
             include: {
               user: {
                 select: { id: true, name: true, email: true, phone: true, college: true },
@@ -74,6 +78,7 @@ export async function GET(req: Request) {
               delegationMember: {
                 select: {
                   id: true,
+                  phone: true,
                   badgeCode: true,
                   foodTokenCode: true,
                   foodPreference: true,
@@ -114,6 +119,7 @@ export async function GET(req: Request) {
             select: {
               id: true,
               eventId: true,
+              delegationMemberId: true,
               status: true,
               result: true,
               score: true,
@@ -169,7 +175,7 @@ export async function GET(req: Request) {
             userId: u.id,
             name: u.name,
             email: u.email,
-            phone: u.phone || member?.foodTokenCode || "—",
+            phone: u.phone || member?.phone || "—",
             college: del?.collegeName || u.college || "Independent",
             department: del?.department || null,
             teamName: del?.teamName || null,
@@ -280,18 +286,11 @@ export async function GET(req: Request) {
 
     events.forEach((ev) => {
       ev.registrations.forEach((reg) => {
-        if (reg.result && reg.result.trim().length > 0) {
-          const res = reg.result.trim();
-          const lower = res.toLowerCase();
-
-          let rank = 99;
-          if (lower.includes("1st") || lower.includes("first") || lower.includes("winner") || lower.includes("gold")) {
-            rank = 1;
-          } else if (lower.includes("2nd") || lower.includes("second") || lower.includes("runner") || lower.includes("silver")) {
-            rank = 2;
-          } else if (lower.includes("3rd") || lower.includes("third") || lower.includes("bronze")) {
-            rank = 3;
-          }
+        // Only approved entries with a real award count (shared rules with the public leaderboard)
+        const classified = classifyResult(reg.result);
+        if (reg.status === "CONFIRMED" && classified.kind !== "none") {
+          const res = reg.result!.trim();
+          const rank = classified.kind === "podium" ? classified.rank : 99;
 
           finalResults.push({
             registrationId: reg.id,
@@ -479,16 +478,17 @@ export async function GET(req: Request) {
     });
 
     // 7. Construct Catering & Food Committee Breakdown
-    const allPaidDelegates = delegations
-      .filter((d) => d.paymentStatus === "PAID")
-      .flatMap((d) =>
-        d.members.map((m) => ({
+    // Same eligibility rule as the food desk: paid delegation or an approved own registration
+    const allPaidDelegates = delegations.flatMap((d) =>
+      d.members
+        .filter((m) => isMealEligible(d.paymentStatus, d.registrations.filter((r) => r.delegationMemberId === m.id)))
+        .map((m) => ({
           ...m,
           collegeName: d.collegeName,
           teamLeadName: d.teamLeadName,
           teamLeadPhone: d.teamLeadPhone,
         }))
-      );
+    );
 
     let totalVegRequested = 0;
     let totalVegClaimed = 0;

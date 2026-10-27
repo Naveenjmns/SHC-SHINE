@@ -179,7 +179,7 @@ export default function InteractiveFloorPlanModal({
   // 2. Center and highlight target room once SVG is rendered
   const focusZone = useCallback((zoneId: string, zoomLevel = 1.6) => {
     if (!svgWrapperRef.current || !containerRef.current) return;
-    const targetEl = svgWrapperRef.current.querySelector(`#${zoneId}`) as SVGGraphicsElement | null;
+    const targetEl = svgWrapperRef.current.querySelector(`#${CSS.escape(zoneId)}`) as SVGGraphicsElement | null;
     if (!targetEl || typeof targetEl.getBBox !== "function") return;
 
     try {
@@ -244,7 +244,7 @@ export default function InteractiveFloorPlanModal({
     });
 
     if (activeZone) {
-      const targetShape = wrapper.querySelector(`#${activeZone}`);
+      const targetShape = wrapper.querySelector(`#${CSS.escape(activeZone)}`);
       if (targetShape) {
         targetShape.classList.add("pulse-room");
       }
@@ -349,7 +349,7 @@ export default function InteractiveFloorPlanModal({
     // 1. Locate starting waypoint coordinates
     let startX = 100;
     let startY = 500;
-    const startNodeEl = svg.querySelector(`#${userWaypointId}`) as SVGCircleElement | null;
+    const startNodeEl = svg.querySelector(`#${CSS.escape(userWaypointId)}`) as SVGCircleElement | null;
     if (startNodeEl) {
       const cx = startNodeEl.getAttribute("cx") || startNodeEl.getAttribute("x");
       const cy = startNodeEl.getAttribute("cy") || startNodeEl.getAttribute("y");

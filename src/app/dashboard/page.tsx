@@ -20,6 +20,8 @@ export default function StudentDashboardPage() {
   const router = useRouter();
 
   const [loading, setLoading] = useState(true);
+  // Reference time for "Up Next", captured once per visit (render must stay pure)
+  const [pageOpenedAt] = useState(() => Date.now());
   const [registrations, setRegistrations] = useState<any[]>([]);
   const [pass, setPass] = useState<any | null>(null);
   const [delegation, setDelegation] = useState<any | null>(null);
@@ -67,10 +69,14 @@ export default function StudentDashboardPage() {
     );
   }
 
-  // Find the earliest upcoming registered event
+  // Earliest registered event that has not finished yet. Events have no end time, so one stays
+  // "live" for a grace window after it starts and then drops off the card.
+  const LIVE_GRACE_MS = 3 * 60 * 60 * 1000;
+  const cutoff = pageOpenedAt - LIVE_GRACE_MS;
   const upcomingEvents = registrations
+    .filter((r) => r.status !== "REJECTED")
     .map((r) => r.event)
-    .filter(Boolean)
+    .filter((ev) => ev && new Date(ev.dateTime).getTime() > cutoff)
     .sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime());
 
   const nextEvent: DashboardEvent | null = upcomingEvents[0] || null;
