@@ -50,6 +50,9 @@
   "overrides": {
     "next-auth": {
       "nodemailer": "$nodemailer"
+    },
+    "@prisma/config": {
+      "deepmerge-ts": "^8.0.2"
     }
   }
 }
