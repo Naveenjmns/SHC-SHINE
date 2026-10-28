@@ -37,12 +37,12 @@ export const Radio = forwardRef<HTMLInputElement, RadioProps>(
         {(label || description) && (
           <div className="space-y-0.5">
             {label && (
-              <div className="text-sm font-medium text-ink leading-tight">
+              <div className="text-[15px] font-medium text-ink leading-tight">
                 {label}
               </div>
             )}
             {description && (
-              <div className="text-xs text-ink-muted leading-normal">
+              <div className="text-sm text-ink-muted leading-normal">
                 {description}
               </div>
             )}

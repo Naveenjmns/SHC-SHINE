@@ -19,49 +19,57 @@ export default function AdminHeader({
   onOpenCheckIn,
 }: AdminHeaderProps) {
   return (
-    <header className="bg-[var(--surface)] border-b border-[var(--border)] sticky top-0 z-20">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Link href="/" className="font-semibold text-sm tracking-tight text-[var(--ink)]">
-            {festName}
-            {editionNumber && <span className="text-[var(--accent)]"> {editionNumber}</span>}
-          </Link>
-          <span className="text-[var(--border)]">/</span>
-          <span className="text-xs font-semibold text-[var(--ink)] px-2 py-0.5 rounded-md bg-[var(--surface-raised)] border border-[var(--border)]">
-            Executive Console
+    <header className="bg-surface/95 backdrop-blur-md border-b border-border sticky top-0 z-30">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
+        <Link href="/" className="flex items-center gap-2.5 min-w-0 min-h-[44px]">
+          {festName && (
+            <span
+              aria-hidden="true"
+              className="w-8 h-8 rounded-[8px] bg-accent text-accent-ink flex items-center justify-center font-bold shrink-0"
+            >
+              {festName.trim().charAt(0).toUpperCase()}
+            </span>
+          )}
+          <span className="leading-tight min-w-0">
+            <span className="block text-base font-bold text-ink truncate">
+              {festName}
+              {editionNumber && <span className="text-accent"> {editionNumber}</span>}
+            </span>
+            <span className="block text-xs font-medium text-ink-muted truncate">Admin console</span>
           </span>
-        </div>
+        </Link>
 
-        <div className="flex items-center gap-2">
-          <Link href="/design" target="_blank" className="hidden sm:inline-flex">
-            <Button variant="ghost" size="sm" className="text-xs text-[var(--ink-muted)] gap-1">
-              <span>Design System</span>
-              <ExternalLink className="w-3 h-3" />
-            </Button>
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+          <Link
+            href="/design"
+            target="_blank"
+            className="hidden lg:inline-flex items-center gap-1.5 px-3 min-h-[40px] rounded-[8px] text-sm font-semibold text-ink-muted hover:text-ink hover:bg-surface-raised transition-colors"
+          >
+            Design system
+            <ExternalLink className="w-3.5 h-3.5" />
           </Link>
 
           <Button
             variant="outline"
             size="sm"
             onClick={onOpenCheckIn}
-            className="text-xs gap-1.5"
+            leftIcon={<QrCode className="text-accent" />}
+            aria-label="Open check-in hub"
           >
-            <QrCode className="w-3.5 h-3.5 text-[var(--accent)]" />
-            <span className="hidden sm:inline">Check-In Hub</span>
+            <span className="hidden sm:inline">Check-in hub</span>
           </Button>
 
-          <Button
-            variant="ghost"
-            size="sm"
+          <button
+            type="button"
             onClick={() => signOutAndClearCache({ callbackUrl: "/login" })}
-            className="text-xs text-[var(--ink-muted)] hover:text-rose-600"
-            title="Sign Out"
+            title="Sign out"
+            aria-label="Sign out"
+            className="w-11 h-11 flex items-center justify-center rounded-[8px] text-ink-muted hover:text-danger hover:bg-surface-raised transition-colors cursor-pointer"
           >
-            <LogOut className="w-3.5 h-3.5" />
-          </Button>
+            <LogOut className="w-5 h-5" />
+          </button>
         </div>
       </div>
     </header>
   );
 }
-

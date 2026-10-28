@@ -72,9 +72,9 @@ model EventEdition {
   heroBgUrl            String?
   primaryCtaText       String?
   primaryCtaLink       String?  @default("#events")
-  themePrimaryAccent   String?  @default("#FF6B1A")
+  themePrimaryAccent   String?  @default("#006BFF")
   themeSecondaryAccent String?  @default("#D9A441")
-  themeBgColor         String?  @default("#FAF8F5")
+  themeBgColor         String?  @default("#F8F9FB")
 
   // Stage View College Header Banner (CMS Driven)
   institutionName      String?

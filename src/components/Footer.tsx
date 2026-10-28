@@ -54,8 +54,8 @@ export default function Footer({ edition: initialEdition }: FooterProps) {
   const startDate = edition?.startDate || DEFAULT_EDITION_CONFIG.startDate;
 
   return (
-    <footer className="border-t border-[#1C1917] bg-[#1C1917] text-stone-300 text-xs">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <footer className="border-t border-border bg-canvas text-ink-muted text-[15px]">
+      <div className="container-shine py-16">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
           {/* Col 1: Logo & Mission */}
           <div>
@@ -71,27 +71,27 @@ export default function Footer({ edition: initialEdition }: FooterProps) {
                   className="h-8 w-auto object-contain"
                 />
               ) : (
-                <div className="w-8 h-8 rounded-lg bg-[var(--accent)] flex items-center justify-center text-[var(--accent-ink)] font-bold text-base">
+                <div className="w-8 h-8 rounded-[8px] bg-accent flex items-center justify-center text-accent-ink font-bold text-base">
                   {eventName.charAt(0)}
                 </div>
               )}
-              <span className="text-base font-bold text-white tracking-tight">
+              <span className="text-lg font-bold text-ink">
                 {eventName}
                 {editionYear && (
                   <>
                     {" "}
-                    <span className="text-[var(--accent)]">{editionYear}</span>
+                    <span className="text-accent">{editionYear}</span>
                   </>
                 )}
               </span>
             </Link>
             {description && (
-              <p className="leading-relaxed mb-3 text-stone-400 text-xs max-w-sm">
+              <p className="leading-relaxed mb-4 text-ink-muted text-[15px] max-w-sm">
                 {description}
               </p>
             )}
             {startDate && (
-              <div className="text-[var(--accent)] font-semibold text-xs">
+              <div className="pill-badge">
                 {new Date(startDate).toLocaleDateString("en-US", {
                   weekday: "long",
                   month: "long",
@@ -115,7 +115,7 @@ export default function Footer({ edition: initialEdition }: FooterProps) {
         </div>
 
         {/* Bottom Bar */}
-        <div className="mt-10 pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-stone-400">
+        <div className="mt-12 pt-6 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-ink-muted">
           <div>
             © {new Date().getFullYear()} {organizer || fullTitle}. All rights reserved.
           </div>
@@ -123,17 +123,17 @@ export default function Footer({ edition: initialEdition }: FooterProps) {
             <button
               type="button"
               onClick={() => setShowAboutModal(true)}
-              className="text-stone-300 hover:text-white font-medium transition-colors flex items-center gap-1.5 cursor-pointer"
+              className="text-ink hover:text-accent font-medium transition-colors flex items-center gap-1.5 cursor-pointer"
             >
-              <Info className="w-3.5 h-3.5 text-[var(--accent)]" />
+              <Info className="w-3.5 h-3.5" />
               <span>About the App</span>
             </button>
             <span>•</span>
-            <Link href="/login" className="hover:text-white transition-colors">
+            <Link href="/login" className="text-ink font-medium hover:text-accent transition-colors">
               Portal Login
             </Link>
             <span>•</span>
-            <span className="text-stone-500">{eventName} Symposium OS</span>
+            <span>{eventName} Symposium OS</span>
           </div>
         </div>
       </div>

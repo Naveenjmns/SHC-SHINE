@@ -185,17 +185,17 @@ export default function AdminEventsPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[var(--surface-raised)] flex flex-col">
+    <main className="min-h-screen bg-canvas flex flex-col">
       {/* Sticky Header */}
-      <header className="bg-[var(--surface)] border-b border-[var(--border)] sticky top-0 z-20">
+      <header className="bg-surface border-b border-border sticky top-0 z-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link href="/admin" className="font-semibold text-xs text-[var(--ink-muted)] hover:text-[var(--ink)] flex items-center gap-1.5">
+            <Link href="/admin" className="font-semibold text-sm text-ink-muted hover:text-ink flex items-center gap-1.5">
               <ArrowLeft className="w-3.5 h-3.5" />
               <span>Admin Console</span>
             </Link>
-            <span className="text-[var(--border)]">/</span>
-            <span className="text-xs font-semibold text-[var(--ink)]">
+            <span className="text-border">/</span>
+            <span className="text-sm font-semibold text-ink">
               Arenas & Competitions ({events.length})
             </span>
           </div>
@@ -206,9 +206,9 @@ export default function AdminEventsPage() {
               size="sm"
               onClick={handleDownloadAll}
               disabled={downloadingId === "ALL"}
-              className="text-xs gap-1.5 hidden sm:inline-flex"
+              className="text-sm gap-1.5 hidden sm:inline-flex"
             >
-              <Download className="w-3.5 h-3.5 text-[var(--accent)]" />
+              <Download className="w-3.5 h-3.5 text-accent" />
               <span>Export All CSVs</span>
             </Button>
 
@@ -219,7 +219,7 @@ export default function AdminEventsPage() {
                 setEditingEvent(null);
                 setFormModalOpen(true);
               }}
-              className="text-xs gap-1.5"
+              className="text-sm gap-1.5"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>New Competition</span>
@@ -232,16 +232,16 @@ export default function AdminEventsPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full space-y-5">
         {/* Search & Filter Bar */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-1 bg-[var(--surface)] border border-[var(--border)] p-1 rounded-xl">
+          <div className="flex items-center gap-1 bg-surface border border-border p-1 rounded-[8px]">
             {(["ALL", "ON_STAGE", "OFF_STAGE"] as const).map((cat) => (
               <button
                 key={cat}
                 type="button"
                 onClick={() => setCategoryFilter(cat)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                className={`px-3 py-1.5 rounded-[8px] text-sm font-semibold transition-colors cursor-pointer ${
                   categoryFilter === cat
-                    ? "bg-[var(--surface-raised)] text-[var(--accent)] shadow-xs"
-                    : "text-[var(--ink-muted)] hover:text-[var(--ink)]"
+                    ? "bg-surface-raised text-accent"
+                    : "text-ink-muted hover:text-ink"
                 }`}
               >
                 {cat === "ALL" ? "All Arenas" : cat === "ON_STAGE" ? "On-Stage" : "Off-Stage"}
@@ -250,21 +250,21 @@ export default function AdminEventsPage() {
           </div>
 
           <div className="relative w-full sm:w-72">
-            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--ink-muted)]" />
+            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />
             <input
               type="text"
               placeholder="Search competitions, venues..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full h-9 pl-9 pr-3 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-xs text-[var(--ink)] focus:outline-none focus:border-[var(--accent)]"
+              className="w-full h-9 pl-9 pr-3 rounded-[8px] border border-border bg-surface text-sm text-ink focus:outline-none focus:border-accent"
             />
           </div>
         </div>
 
         {/* Competitions Table */}
         {loading ? (
-          <div className="py-20 text-center text-xs text-[var(--ink-muted)] flex flex-col items-center gap-2">
-            <RefreshCw className="w-6 h-6 animate-spin text-[var(--accent)]" />
+          <div className="py-20 text-center text-sm text-ink-muted flex flex-col items-center gap-2">
+            <RefreshCw className="w-6 h-6 animate-spin text-accent" />
             <span>Loading fest competitions...</span>
           </div>
         ) : (

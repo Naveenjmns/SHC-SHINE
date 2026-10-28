@@ -116,9 +116,9 @@ export const DEFAULT_EDITION_CONFIG: ActiveEditionConfig = {
   heroBgUrl: null,
   primaryCtaText: "EXPLORE EVENTS →",
   primaryCtaLink: "#events",
-  themePrimaryAccent: "#FF6B1A",
+  themePrimaryAccent: "#006BFF",
   themeSecondaryAccent: "#D9A441",
-  themeBgColor: "#FAF8F5",
+  themeBgColor: "#F8F9FB",
 
   institutionName: null,
   institutionCrestUrl: null,

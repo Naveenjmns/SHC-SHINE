@@ -63,9 +63,9 @@ async function main() {
       endDate: new Date("2026-10-15T18:00:00Z"),
       primaryCtaText: "EXPLORE SHINE →",
       primaryCtaLink: "#events",
-      themePrimaryAccent: "#FF6B1A",
+      themePrimaryAccent: "#006BFF",
       themeSecondaryAccent: "#D9A441",
-      themeBgColor: "#FAF8F5",
+      themeBgColor: "#F8F9FB",
       floorPlanUrl: "/uploads/campus-floorplan.svg",
     },
   });

@@ -51,7 +51,7 @@ const variantStyles: Record<BadgeVariant, { classes: string; defaultIcon: ReactN
     defaultIcon: <Lock className="w-3.5 h-3.5 text-ink-subtle shrink-0" />,
   },
   accent: {
-    classes: "bg-accent-muted text-accent border-accent/25 font-semibold",
+    classes: "bg-accent-muted text-accent-strong border-transparent font-semibold",
     defaultIcon: null,
   },
   gold: {
@@ -59,7 +59,7 @@ const variantStyles: Record<BadgeVariant, { classes: string; defaultIcon: ReactN
     defaultIcon: <Award className="w-3.5 h-3.5 text-gold shrink-0" />,
   },
   neutral: {
-    classes: "bg-surface-raised text-ink border-border",
+    classes: "bg-surface-raised text-ink-muted border-transparent",
     defaultIcon: null,
   },
   info: {
@@ -69,8 +69,8 @@ const variantStyles: Record<BadgeVariant, { classes: string; defaultIcon: ReactN
 };
 
 const sizeStyles: Record<BadgeSize, string> = {
-  sm: "h-6 px-2 text-[11px] gap-1",
-  md: "h-7 px-2.5 text-xs gap-1.5",
+  sm: "h-6 px-2.5 text-xs gap-1",
+  md: "h-8 px-3 text-[13px] gap-1.5",
 };
 
 export function Badge({
@@ -93,7 +93,7 @@ export function Badge({
       {...props}
     >
       {renderedIcon}
-      <span>{children}</span>
+      <span className="contents">{children}</span>
     </span>
   );
 }

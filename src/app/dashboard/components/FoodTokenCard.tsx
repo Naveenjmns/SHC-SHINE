@@ -41,7 +41,7 @@ export default function FoodTokenCard({ foodPass, diningVenue }: FoodTokenCardPr
           </div>
           <CardTitle className="text-base">Lunch Coupon & Token</CardTitle>
           {diningVenue && (
-            <CardDescription className="text-xs truncate">
+            <CardDescription className="text-sm truncate">
               {diningVenue}
             </CardDescription>
           )}
@@ -50,8 +50,8 @@ export default function FoodTokenCard({ foodPass, diningVenue }: FoodTokenCardPr
         <CardContent className="space-y-3 pt-1">
           <div className="p-3 rounded-[8px] bg-surface-raised border border-border flex items-center justify-between">
             <div>
-              <div className="text-[11px] text-ink-muted">Token Code:</div>
-              <div className="font-mono text-xs font-bold text-accent">
+              <div className="text-xs text-ink-muted">Token Code:</div>
+              <div className="font-mono text-sm font-bold text-accent">
                 {foodPass.foodTokenCode}
               </div>
             </div>
@@ -66,7 +66,7 @@ export default function FoodTokenCard({ foodPass, diningVenue }: FoodTokenCardPr
             </Button>
           </div>
 
-          <div className="flex items-center gap-1.5 text-[11px] text-ink-subtle">
+          <div className="flex items-center gap-1.5 text-xs text-ink-subtle">
             <Clock className="w-3 h-3 text-accent shrink-0" />
             <span>Serving Window: 01:00 PM — 02:30 PM</span>
           </div>
@@ -83,7 +83,7 @@ export default function FoodTokenCard({ foodPass, diningVenue }: FoodTokenCardPr
       >
         <div className="p-4 flex flex-col items-center justify-center text-center space-y-4">
           {foodPass.foodQrData ? (
-            <div className="w-48 h-48 bg-white p-3 rounded-[8px] border border-border shadow-xs flex items-center justify-center">
+            <div className="w-48 h-48 bg-surface p-3 rounded-[8px] border border-border flex items-center justify-center">
               <Image
                 src={foodPass.foodQrData}
                 alt={`Food Token ${foodPass.foodTokenCode}`}
@@ -99,7 +99,7 @@ export default function FoodTokenCard({ foodPass, diningVenue }: FoodTokenCardPr
           )}
 
           <div className="space-y-1">
-            <div className="font-mono text-sm font-bold text-ink">
+            <div className="font-mono text-[15px] font-bold text-ink">
               {foodPass.foodTokenCode}
             </div>
             <Badge

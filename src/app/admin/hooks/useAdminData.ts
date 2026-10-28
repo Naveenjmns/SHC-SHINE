@@ -8,10 +8,16 @@ import type { RegistrationRecord, CollegeGroup } from "../components/AdminRegist
 import type { EventEditionItem } from "../components/AdminEditionsTab";
 import type { WaypointNode, WaypointEdge } from "@/lib/wayfinding";
 import { downloadEventParticipantsCSV } from "@/lib/exportEventCsv";
+import { resolveEditionTheme } from "@/lib/colorUtils";
 import { DEFAULT_EDITION_CONFIG } from "@/lib/editionDefaults";
 
 // Form state for the Branding / Institution tabs, built from one edition record
 function formFromEdition(ed: EventEditionItem) {
+  const theme = resolveEditionTheme(
+    ed.themePrimaryAccent || DEFAULT_EDITION_CONFIG.themePrimaryAccent,
+    ed.themeSecondaryAccent || DEFAULT_EDITION_CONFIG.themeSecondaryAccent,
+    ed.themeBgColor || DEFAULT_EDITION_CONFIG.themeBgColor
+  );
   return {
     name: ed.name || DEFAULT_EDITION_CONFIG.name,
     edition: ed.edition || DEFAULT_EDITION_CONFIG.edition,
@@ -22,9 +28,10 @@ function formFromEdition(ed: EventEditionItem) {
     logoUrl: ed.logoUrl || "",
     primaryCtaText: ed.primaryCtaText || DEFAULT_EDITION_CONFIG.primaryCtaText || "",
     primaryCtaLink: ed.primaryCtaLink || DEFAULT_EDITION_CONFIG.primaryCtaLink || "",
-    themePrimaryAccent: ed.themePrimaryAccent || DEFAULT_EDITION_CONFIG.themePrimaryAccent || "",
-    themeSecondaryAccent: ed.themeSecondaryAccent || DEFAULT_EDITION_CONFIG.themeSecondaryAccent || "",
-    themeBgColor: ed.themeBgColor || DEFAULT_EDITION_CONFIG.themeBgColor || "",
+    // Legacy orange defaults resolve to the current system palette
+    themePrimaryAccent: theme.primary,
+    themeSecondaryAccent: theme.secondary,
+    themeBgColor: theme.bg,
     institutionName: ed.institutionName || "",
     institutionShortName: ed.institutionShortName || "",
     institutionLocation: ed.institutionLocation || "",
@@ -243,6 +250,19 @@ export function useAdminData() {
     }
     return data;
   };
+
+  // Live-preview theme edits across the console (ThemeInjector listens for this)
+  useEffect(() => {
+    window.dispatchEvent(
+      new CustomEvent("shine:theme-update", {
+        detail: {
+          primary: brandingForm.themePrimaryAccent,
+          secondary: brandingForm.themeSecondaryAccent,
+          bg: brandingForm.themeBgColor,
+        },
+      })
+    );
+  }, [brandingForm.themePrimaryAccent, brandingForm.themeSecondaryAccent, brandingForm.themeBgColor]);
 
   const handleSaveBranding = async () => {
     setSaving(true);

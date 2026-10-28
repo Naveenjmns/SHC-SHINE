@@ -81,7 +81,7 @@ export function Pagination({
             type="button"
             onClick={() => onPageChange(p)}
             aria-current={isCurrent ? "page" : undefined}
-            className={`min-h-[44px] min-w-[44px] sm:min-h-[36px] sm:min-w-[36px] px-3 rounded-[8px] text-xs font-semibold flex items-center justify-center transition-colors cursor-pointer ${
+            className={`min-h-[44px] min-w-[44px] sm:min-h-[36px] sm:min-w-[36px] px-3 rounded-[8px] text-sm font-semibold flex items-center justify-center transition-colors cursor-pointer ${
               isCurrent
                 ? "bg-accent text-accent-ink border border-accent"
                 : "border border-border bg-surface text-ink hover:bg-surface-raised"

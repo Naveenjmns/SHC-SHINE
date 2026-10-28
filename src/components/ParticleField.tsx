@@ -46,11 +46,11 @@ export default function ParticleField({ particleCount = 70 }: ParticleFieldProps
     window.addEventListener("resize", handleResize);
 
     const emberColors = [
-      { fill: "#FF4500", glow: "rgba(255, 69, 0, 0.6)" },    // Fiery Orange-Red
-      { fill: "#FF6B1A", glow: "rgba(255, 107, 26, 0.6)" },  // Brand Ember
-      { fill: "#FFB000", glow: "rgba(255, 176, 0, 0.5)" },   // Warm Gold Spark
-      { fill: "#FFD700", glow: "rgba(255, 215, 0, 0.4)" },   // Golden Flare
-      { fill: "#FFF3B0", glow: "rgba(255, 243, 176, 0.5)" },  // Hot Core Spark
+      { fill: "#006BFF", glow: "rgba(0, 107, 255, 0.4)" },    // Signal Blue
+      { fill: "#0099FF", glow: "rgba(0, 153, 255, 0.4)" },    // Blob Cyan
+      { fill: "#476788", glow: "rgba(71, 103, 136, 0.35)" },  // Slate
+      { fill: "#B4C7DB", glow: "rgba(180, 199, 219, 0.4)" },  // Hairline Strong
+      { fill: "#0B3558", glow: "rgba(11, 53, 88, 0.35)" },    // Ink Navy
     ];
 
     const createEmber = (initialY?: number): FlameEmber => {
@@ -85,8 +85,8 @@ export default function ParticleField({ particleCount = 70 }: ParticleFieldProps
       time += 0.016;
       ctx.clearRect(0, 0, width, height);
 
-      // Draw ultra-faint golden circuit geometry grid once per frame efficiently
-      ctx.strokeStyle = "rgba(217, 164, 65, 0.035)";
+      // Draw ultra-faint navy circuit geometry grid once per frame efficiently
+      ctx.strokeStyle = "rgba(11, 53, 88, 0.035)";
       ctx.lineWidth = 1;
       const gridSize = 100;
 

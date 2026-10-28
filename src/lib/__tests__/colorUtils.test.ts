@@ -1,6 +1,8 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 import {
+  INK_NAVY,
+  resolveEditionTheme,
   parseHexColor,
   rgbToHex,
   hexToRgba,
@@ -21,7 +23,7 @@ describe("Color Utilities & WCAG AA Validation", () => {
     assert.deepEqual(parseHexColor("#000"), { r: 0, g: 0, b: 0 });
     assert.deepEqual(parseHexColor("#FF6B1A"), { r: 255, g: 107, b: 26 });
     // Fallback for invalid hex
-    assert.deepEqual(parseHexColor("invalid"), { r: 255, g: 107, b: 26 });
+    assert.deepEqual(parseHexColor("invalid"), { r: 0, g: 107, b: 255 });
   });
 
   test("rgbToHex converts RGB values with proper clamping", () => {
@@ -73,18 +75,18 @@ describe("Color Utilities & WCAG AA Validation", () => {
   });
 
   test("getContrastSafeInk picks highest contrast foreground text", () => {
-    // SHINE Orange #FF6B1A requires dark text for WCAG AA compliance (6.94:1 vs 2.85:1 with white)
+    // SHINE Orange #FF6B1A requires navy ink for WCAG AA compliance
     const orangeInk = getContrastSafeInk("#FF6B1A");
-    assert.equal(orangeInk, "#0C0A09");
+    assert.notEqual(orangeInk, "#FFFFFF");
     assert.ok(getContrastRatio(orangeInk, "#FF6B1A") >= 4.5);
 
     // Gold #D9A441 is lighter, requires dark text for WCAG compliance
     const goldInk = getContrastSafeInk("#D9A441");
-    assert.equal(goldInk, "#0C0A09");
+    assert.equal(goldInk, INK_NAVY);
 
     // Pure white requires dark text
     const whiteInk = getContrastSafeInk("#FFFFFF");
-    assert.equal(whiteInk, "#0C0A09");
+    assert.equal(whiteInk, INK_NAVY);
 
     // Pure black requires white text
     const blackInk = getContrastSafeInk("#000000");
@@ -109,9 +111,9 @@ describe("Color Utilities & WCAG AA Validation", () => {
     const palette = deriveAccentPalette("#FF6B1A", "#D9A441");
     assert.equal(palette.accent, "#FF6B1A");
     assert.equal(palette.gold, "#D9A441");
-    assert.equal(palette.accentInk, "#0C0A09");
-    assert.equal(palette.goldInk, "#0C0A09");
-    assert.ok(palette.accentMuted.startsWith("rgba("));
+    assert.ok(getContrastRatio(palette.accentInk, "#FF6B1A") >= 4.5);
+    assert.equal(palette.goldInk, INK_NAVY);
+    assert.ok(palette.accentMuted.startsWith("#"));
     assert.ok(palette.goldMuted.startsWith("rgba("));
   });
 
@@ -119,9 +121,29 @@ describe("Color Utilities & WCAG AA Validation", () => {
     const css = generateThemeCss("#FF6B1A", "#D9A441", "#FFFFFF");
     assert.ok(css.includes("--accent: #FF6B1A"));
     assert.ok(css.includes("--gold: #D9A441"));
-    assert.ok(css.includes("--accent-ink: #0C0A09"));
+    assert.ok(css.includes("--accent-ink: #0A0A0A"));
     assert.ok(!css.includes("linear-gradient"));
     assert.ok(!css.includes("box-shadow: 0 0"));
+  });
+
+  test("resolveEditionTheme maps untouched legacy defaults to the v3 palette", () => {
+    assert.deepEqual(resolveEditionTheme("#FF6B1A", "#D9A441", "#FAF8F5"), {
+      primary: "#006BFF",
+      secondary: "#D9A441",
+      bg: "#F8F9FB",
+    });
+    assert.equal(resolveEditionTheme("#ff6b1a", null, null).primary, "#006BFF");
+    assert.deepEqual(resolveEditionTheme(null, null, null), {
+      primary: "#006BFF",
+      secondary: "#D9A441",
+      bg: "#F8F9FB",
+    });
+  });
+
+  test("resolveEditionTheme keeps deliberately chosen palettes", () => {
+    // The Solar Ember preset saves orange on white — must not be overridden
+    assert.equal(resolveEditionTheme("#FF6B1A", "#D9A441", "#FFFFFF").primary, "#FF6B1A");
+    assert.equal(resolveEditionTheme("#059669", "#D9A441", "#FAF8F5").primary, "#059669");
   });
 
   test("INSTITUTION_THEME_PRESETS all have valid contrast ink colors", () => {

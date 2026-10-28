@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Clock, Flame, Radio, Sparkles } from "lucide-react";
+import { Clock, Radio } from "lucide-react";
 import { parseDateSafe, formatDateSafe, formatTimeSafe } from "@/lib/dateUtils";
 
 interface CountdownTimerProps {
@@ -82,10 +82,10 @@ export default function CountdownTimer({
 
   if (!hasValidTarget) {
     return (
-      <div className="w-full max-w-3xl mx-auto my-8 animate-fade-in">
+      <div className="w-full">
         <div className="flex items-center justify-center gap-2 text-center px-2">
-          <Clock className="w-4 h-4 text-[#FF6B1A] shrink-0" />
-          <span className="text-xs sm:text-sm font-extrabold uppercase tracking-[0.1em] sm:tracking-[0.2em] text-[#FF6B1A]">
+          <Clock className="w-4 h-4 text-accent shrink-0" />
+          <span className="text-[15px] font-semibold text-ink-muted">
             {eventDateText || "Date to be announced"}
           </span>
         </div>
@@ -95,101 +95,64 @@ export default function CountdownTimer({
 
   if (timeLeft.isLive) {
     return (
-      <div className="w-full max-w-2xl mx-auto my-8 animate-fade-in">
-        <div className="relative overflow-hidden bg-gradient-to-r from-[#FF6B1A] via-[#D9A441] to-[#FF6B1A] p-6 sm:p-8 rounded-3xl shadow-lg shadow-orange-500/20 text-white text-center border border-white/30">
-          <div className="flex items-center justify-center gap-3 mb-2">
-            <span className="relative flex h-4 w-4">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75" />
-              <span className="relative inline-flex rounded-full h-4 w-4 bg-emerald-500 border-2 border-white" />
-            </span>
-            <span className="text-xs font-extrabold uppercase tracking-widest bg-black/25 px-3.5 py-1 rounded-full border border-white/30">
-              Live Now
-            </span>
-          </div>
-          <h3
-            className="text-2xl sm:text-4xl md:text-5xl font-black tracking-tight flex items-center justify-center gap-2"
-            style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
-          >
-            <Flame className="w-7 h-7 sm:w-9 sm:h-9 text-amber-200 animate-pulse" />
-            <span>EVENT IS LIVE!</span>
-          </h3>
-          <p className="text-xs sm:text-sm font-medium opacity-95 mt-2">
-            {eventName || "The event"} is officially underway ({displayDateText})
-          </p>
+      <div className="w-full rounded-2xl bg-accent text-accent-ink p-6 text-center">
+        <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-sm font-semibold">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-white" />
+          </span>
+          Live now
         </div>
+        <h3 className="mt-3 text-2xl sm:text-3xl font-bold text-accent-ink flex items-center justify-center gap-2">
+          <Radio className="w-6 h-6 shrink-0" />
+          {eventName ? `${eventName} is underway` : "The fest is underway"}
+        </h3>
+        <p className="text-[15px] opacity-90 mt-1">Started {displayDateText}</p>
       </div>
     );
   }
 
+  const units = [
+    { label: "Days", value: timeLeft.days },
+    { label: "Hours", value: timeLeft.hours },
+    { label: "Mins", value: timeLeft.minutes },
+    { label: "Secs", value: timeLeft.seconds },
+  ];
+
   return (
-    <div className="w-full max-w-3xl mx-auto my-8 animate-fade-in">
-      {/* Sub-header title with TO GO */}
-      <div className="flex flex-wrap items-center justify-center gap-2 mb-6 text-center px-2">
-        <span className="relative flex h-2.5 w-2.5">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#FF6B1A] opacity-75" />
-          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#FF6B1A]" />
-        </span>
-        <span className="text-xs sm:text-sm font-extrabold uppercase tracking-[0.1em] sm:tracking-[0.2em] text-[#FF6B1A] flex flex-wrap items-center justify-center gap-1.5">
-          <span>{displayDateText}</span>
-          <span className="text-[#1C1917] font-black bg-[#D9A441]/20 px-2 py-0.5 rounded-md border border-[#D9A441]/30">
-            TO GO
-          </span>
-        </span>
+    <div className="w-full" aria-live="off">
+      <div className="flex items-center justify-between gap-2 mb-3">
+        <span className="text-[15px] font-semibold text-ink">Starts in</span>
+        <span className="text-sm font-medium text-ink-muted tabular-nums">{displayDateText}</span>
       </div>
 
-      {/* 4 Soft Cream Theme Countdown Cards */}
-      <div className="grid grid-cols-4 gap-2 sm:gap-4 md:gap-6 px-1 sm:px-2">
-        {/* DAYS */}
-        <div className="fest-card !p-2.5 sm:!p-4 md:!p-6 text-center border-2 border-[#1C1917]/10 bg-white shadow-sm hover:border-[#FF6B1A]/40 transition-all duration-300 transform hover:-translate-y-1">
-          <div
-            className="text-xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-[#1C1917] tabular-nums tracking-tight"
-            style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
-          >
-            {formatTwoDigits(timeLeft.days)}
-          </div>
-          <div className="text-[9px] sm:text-xs md:text-sm font-extrabold uppercase tracking-[0.1em] sm:tracking-[0.2em] text-[#57534E] mt-1">
-            DAYS
-          </div>
-        </div>
-
-        {/* HOURS */}
-        <div className="fest-card !p-2.5 sm:!p-4 md:!p-6 text-center border-2 border-[#1C1917]/10 bg-white shadow-sm hover:border-[#FF6B1A]/40 transition-all duration-300 transform hover:-translate-y-1">
-          <div
-            className="text-xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-[#1C1917] tabular-nums tracking-tight"
-            style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
-          >
-            {formatTwoDigits(timeLeft.hours)}
-          </div>
-          <div className="text-[9px] sm:text-xs md:text-sm font-extrabold uppercase tracking-[0.1em] sm:tracking-[0.2em] text-[#57534E] mt-1">
-            HOURS
-          </div>
-        </div>
-
-        {/* MINS */}
-        <div className="fest-card !p-2.5 sm:!p-4 md:!p-6 text-center border-2 border-[#1C1917]/10 bg-white shadow-sm hover:border-[#FF6B1A]/40 transition-all duration-300 transform hover:-translate-y-1">
-          <div
-            className="text-xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-[#1C1917] tabular-nums tracking-tight"
-            style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
-          >
-            {formatTwoDigits(timeLeft.minutes)}
-          </div>
-          <div className="text-[9px] sm:text-xs md:text-sm font-extrabold uppercase tracking-[0.1em] sm:tracking-[0.2em] text-[#57534E] mt-1">
-            MINS
-          </div>
-        </div>
-
-        {/* SECS */}
-        <div className="fest-card !p-2.5 sm:!p-4 md:!p-6 text-center border-2 border-[#FF6B1A]/30 bg-[#FF6B1A]/5 shadow-sm hover:border-[#FF6B1A]/60 transition-all duration-300 transform hover:-translate-y-1">
-          <div
-            className="text-xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-[#FF6B1A] tabular-nums tracking-tight animate-pulse"
-            style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
-          >
-            {formatTwoDigits(timeLeft.seconds)}
-          </div>
-          <div className="text-[9px] sm:text-xs md:text-sm font-extrabold uppercase tracking-[0.1em] sm:tracking-[0.2em] text-[#FF6B1A] mt-1">
-            SECS
-          </div>
-        </div>
+      <div className="grid grid-cols-4 gap-2">
+        {units.map((unit, idx) => {
+          const isSeconds = idx === units.length - 1;
+          return (
+            <div
+              key={unit.label}
+              className={`rounded-[10px] py-3 text-center ${
+                isSeconds ? "bg-accent text-accent-ink" : "bg-surface-raised text-ink"
+              }`}
+            >
+              <div
+                className="text-2xl sm:text-3xl font-bold tabular-nums leading-none"
+                style={{ fontFamily: "var(--font-sans)" }}
+                suppressHydrationWarning
+              >
+                {mounted ? formatTwoDigits(unit.value) : "--"}
+              </div>
+              <div
+                className={`text-xs font-semibold mt-1.5 ${
+                  isSeconds ? "text-accent-ink/85" : "text-ink-muted"
+                }`}
+              >
+                {unit.label}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

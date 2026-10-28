@@ -87,22 +87,22 @@ export function Modal({
     <dialog
       ref={dialogRef}
       onClick={handleBackdropClick}
-      className={`fixed inset-0 z-modal m-auto p-0 bg-transparent backdrop:bg-black/60 backdrop:backdrop-blur-xs outline-none w-full ${maxWidthStyles[maxWidth]} px-4 sm:px-0`}
+      className={`fixed inset-0 z-modal m-auto p-0 bg-transparent backdrop:bg-[#0b3558]/50 backdrop:backdrop-blur-xs outline-none w-full ${maxWidthStyles[maxWidth]} px-4 sm:px-0`}
     >
       <div
-        className="w-full bg-surface border border-border-strong rounded-[12px] overflow-hidden animate-in fade-in zoom-in-95 duration-150 flex flex-col max-h-[90vh]"
+        className="w-full bg-surface border border-border rounded-3xl overflow-hidden animate-in fade-in zoom-in-95 duration-150 flex flex-col max-h-[90vh]"
         style={{ boxShadow: "var(--shadow-modal)" }}
       >
         {(title || showCloseButton) && (
-          <div className="p-5 pb-3 border-b border-border flex items-start justify-between gap-4 shrink-0 bg-surface">
+          <div className="px-6 pt-6 pb-4 border-b border-border flex items-start justify-between gap-4 shrink-0 bg-surface">
             <div>
               {title && (
-                <h3 className="text-lg font-bold text-ink leading-tight">
+                <h3 className="text-xl font-bold text-ink leading-tight">
                   {title}
                 </h3>
               )}
               {description && (
-                <p className="text-xs text-ink-muted mt-1">{description}</p>
+                <p className="text-[15px] text-ink-muted mt-1">{description}</p>
               )}
             </div>
 
@@ -119,7 +119,7 @@ export function Modal({
           </div>
         )}
 
-        <div className="p-5 overflow-y-auto flex-1">{children}</div>
+        <div className="p-6 overflow-y-auto flex-1">{children}</div>
       </div>
     </dialog>
   );

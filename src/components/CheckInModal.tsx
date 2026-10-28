@@ -166,7 +166,7 @@ export default function CheckInModal({
           </div>
 
           {searchError && (
-            <div className="p-4 rounded-[8px] bg-danger-surface border border-danger-border text-xs text-danger-ink flex items-start gap-2.5">
+            <div className="p-4 rounded-2xl bg-danger-surface border border-danger-border text-[15px] text-danger-ink flex items-start gap-2.5">
               <AlertCircle className="w-4 h-4 text-danger shrink-0 mt-0.5" />
               <div>{searchError}</div>
             </div>

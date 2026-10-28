@@ -21,9 +21,9 @@ export default function GlobalError({
         <style>{`
           * { box-sizing: border-box; margin: 0; padding: 0; }
           body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #0A0908;
-            color: #F8FAFC;
+            font-family: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #F8F9FB;
+            color: #0B3558;
             min-height: 100vh;
             min-height: 100dvh;
             display: flex;
@@ -37,8 +37,8 @@ export default function GlobalError({
             position: fixed;
             inset: 0;
             background-image: 
-              linear-gradient(to right, rgba(255,255,255,0.06) 1px, transparent 1px),
-              linear-gradient(to bottom, rgba(255,255,255,0.06) 1px, transparent 1px);
+              linear-gradient(to right, rgba(11,53,88,0.06) 1px, transparent 1px),
+              linear-gradient(to bottom, rgba(11,53,88,0.06) 1px, transparent 1px);
             background-size: 32px 32px;
             transform: perspective(600px) rotateX(60deg) translateY(-80px) scale(2.2);
             transform-origin: top center;
@@ -51,38 +51,35 @@ export default function GlobalError({
             max-width: 480px;
             width: 100%;
             text-align: center;
-            background: rgba(18, 16, 15, 0.85);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
+            background: #FFFFFF;
             padding: 36px 24px;
             border-radius: 24px;
-            border: 1px solid rgba(255,255,255,0.1);
-            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.8);
+            border: 1px solid #D4E0ED;
+            box-shadow: rgba(71, 103, 136, 0.04) 0px 4px 5px 0px, rgba(71, 103, 136, 0.03) 0px 8px 15px 0px, rgba(71, 103, 136, 0.08) 0px 30px 50px 0px;
           }
           .badge {
             display: inline-block;
             padding: 4px 12px;
             border-radius: 9999px;
             font-size: 11px;
-            font-weight: 700;
+            font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 0.15em;
-            background: rgba(244, 63, 94, 0.15);
-            color: #FB7185;
-            border: 1px solid rgba(244, 63, 94, 0.3);
+            letter-spacing: 0.08em;
+            background: #FDF2F2;
+            color: #9B1C1C;
+            border: 1px solid #FBD5D5;
             margin-bottom: 18px;
           }
           h1 {
-            font-family: Georgia, serif;
             font-size: clamp(28px, 6vw, 40px);
-            font-weight: 400;
-            line-height: 1.15;
-            color: #FFFFFF;
+            font-weight: 700;
+            line-height: 1.2;
+            color: #0B3558;
             margin-bottom: 12px;
           }
           p {
             font-size: clamp(13px, 3.5vw, 15px);
-            color: #A1A1AA;
+            color: #476788;
             line-height: 1.6;
             margin-bottom: 24px;
           }
@@ -98,12 +95,12 @@ export default function GlobalError({
             }
           }
           .btn-primary {
-            background-color: #FF6B1A;
+            background-color: #006BFF;
             color: #FFFFFF;
             border: none;
             padding: 12px 24px;
-            border-radius: 9999px;
-            font-size: 13px;
+            border-radius: 8px;
+            font-size: 14px;
             font-weight: 600;
             cursor: pointer;
             text-decoration: none;
@@ -113,14 +110,14 @@ export default function GlobalError({
             align-items: center;
             justify-content: center;
           }
-          .btn-primary:hover { opacity: 0.9; }
+          .btn-primary:hover { background-color: #0058D6; }
           .btn-secondary {
-            background: rgba(255, 255, 255, 0.08);
-            color: #E4E4E7;
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            background: #FFFFFF;
+            color: #0B3558;
+            border: 1px solid #D4E0ED;
             padding: 12px 24px;
-            border-radius: 9999px;
-            font-size: 13px;
+            border-radius: 8px;
+            font-size: 14px;
             font-weight: 600;
             cursor: pointer;
             text-decoration: none;
@@ -129,12 +126,12 @@ export default function GlobalError({
             align-items: center;
             justify-content: center;
           }
-          .btn-secondary:hover { background: rgba(255, 255, 255, 0.12); }
+          .btn-secondary:hover { border-color: #006BFF; color: #006BFF; }
           .digest {
             margin-top: 20px;
             font-family: monospace;
             font-size: 11px;
-            color: #71717A;
+            color: #56708D;
             word-break: break-all;
           }
         `}</style>

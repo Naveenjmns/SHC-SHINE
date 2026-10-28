@@ -151,22 +151,22 @@ export default function AdminEventFormModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-150">
-      <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl max-w-3xl w-full p-6 shadow-xl max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0b3558]/50 backdrop-blur-xs animate-in fade-in duration-150">
+      <div className="bg-surface border border-border rounded-3xl max-w-3xl w-full p-6 shadow-modal max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-[var(--border)] shrink-0">
+        <div className="flex items-center justify-between pb-3 border-b border-border shrink-0">
           <div>
-            <h3 className="text-base font-bold text-[var(--ink)]">
+            <h3 className="text-base font-bold text-ink">
               {editingEvent ? `Edit Competition: ${editingEvent.name}` : "Create New Competition"}
             </h3>
-            <p className="text-xs text-[var(--ink-muted)]">
+            <p className="text-sm text-ink-muted">
               Configure event arena specifications, reporting venues, and coordinators.
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-1 rounded-lg text-[var(--ink-muted)] hover:text-[var(--ink)] hover:bg-[var(--surface-raised)] transition-colors"
+            className="p-1 rounded-[8px] text-ink-muted hover:text-ink hover:bg-surface-raised transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -177,7 +177,7 @@ export default function AdminEventFormModal({
           {/* Basic Info */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-[var(--ink)] mb-1">
+              <label className="block text-sm font-semibold text-ink mb-1">
                 Competition Name *
               </label>
               <Input
@@ -190,17 +190,17 @@ export default function AdminEventFormModal({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-[var(--ink)] mb-1">
+              <label className="block text-sm font-semibold text-ink mb-1">
                 Category *
               </label>
               <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
                   onClick={() => setCategory("ON_STAGE")}
-                  className={`py-2 px-3 rounded-lg text-xs font-semibold border flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
+                  className={`py-2 px-3 rounded-[8px] text-sm font-semibold border flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
                     category === "ON_STAGE"
-                      ? "bg-[var(--surface-raised)] border-[var(--accent)] text-[var(--accent)]"
-                      : "bg-[var(--surface)] border-[var(--border)] text-[var(--ink-muted)]"
+                      ? "bg-surface-raised border-accent text-accent"
+                      : "bg-surface border-border text-ink-muted"
                   }`}
                 >
                   <Theater className="w-3.5 h-3.5" />
@@ -209,10 +209,10 @@ export default function AdminEventFormModal({
                 <button
                   type="button"
                   onClick={() => setCategory("OFF_STAGE")}
-                  className={`py-2 px-3 rounded-lg text-xs font-semibold border flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
+                  className={`py-2 px-3 rounded-[8px] text-sm font-semibold border flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
                     category === "OFF_STAGE"
-                      ? "bg-[var(--surface-raised)] border-[var(--accent)] text-[var(--accent)]"
-                      : "bg-[var(--surface)] border-[var(--border)] text-[var(--ink-muted)]"
+                      ? "bg-surface-raised border-accent text-accent"
+                      : "bg-surface border-border text-ink-muted"
                   }`}
                 >
                   <Laptop className="w-3.5 h-3.5" />
@@ -225,7 +225,7 @@ export default function AdminEventFormModal({
           {/* Venue, Zone, and Schedule */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-[var(--ink)] mb-1">
+              <label className="block text-sm font-semibold text-ink mb-1">
                 Reporting Venue
               </label>
               <Input
@@ -237,13 +237,13 @@ export default function AdminEventFormModal({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-[var(--ink)] mb-1">
+              <label className="block text-sm font-semibold text-ink mb-1">
                 Floor Plan Zone
               </label>
               <select
                 value={venueZoneId}
                 onChange={(e) => setVenueZoneId(e.target.value)}
-                className="w-full h-9 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--ink)] px-2.5 text-xs focus:outline-none focus:border-[var(--accent)]"
+                className="w-full h-9 rounded-[8px] border border-border bg-surface text-ink px-2.5 text-sm focus:outline-none focus:border-accent"
               >
                 <option value="">-- Link to Zone (Optional) --</option>
                 {floorPlanZones.map((z) => (
@@ -255,7 +255,7 @@ export default function AdminEventFormModal({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-[var(--ink)] mb-1">
+              <label className="block text-sm font-semibold text-ink mb-1">
                 Date & Time
               </label>
               <Input
@@ -267,9 +267,9 @@ export default function AdminEventFormModal({
           </div>
 
           {/* Staff Coordinator */}
-          <div className="p-3.5 bg-[var(--surface-raised)] border border-[var(--border)] rounded-xl space-y-2.5">
-            <div className="text-xs font-bold text-[var(--ink)] flex items-center gap-1.5">
-              <GraduationCap className="w-4 h-4 text-[var(--accent)]" />
+          <div className="p-3.5 bg-surface-raised border border-border rounded-2xl space-y-2.5">
+            <div className="text-sm font-bold text-ink flex items-center gap-1.5">
+              <GraduationCap className="w-4 h-4 text-accent" />
               <span>Staff Coordinator (Faculty Incharge)</span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -294,9 +294,9 @@ export default function AdminEventFormModal({
           </div>
 
           {/* Student Coordinator */}
-          <div className="p-3.5 bg-[var(--surface-raised)] border border-[var(--border)] rounded-xl space-y-2.5">
-            <div className="text-xs font-bold text-[var(--ink)] flex items-center gap-1.5">
-              <Users className="w-4 h-4 text-[var(--accent)]" />
+          <div className="p-3.5 bg-surface-raised border border-border rounded-2xl space-y-2.5">
+            <div className="text-sm font-bold text-ink flex items-center gap-1.5">
+              <Users className="w-4 h-4 text-accent" />
               <span>Student Coordinator</span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -323,7 +323,7 @@ export default function AdminEventFormModal({
           {/* Description & Rules */}
           <div className="space-y-3">
             <div>
-              <label className="block text-xs font-semibold text-[var(--ink)] mb-1">
+              <label className="block text-sm font-semibold text-ink mb-1">
                 Brief Description
               </label>
               <textarea
@@ -331,12 +331,12 @@ export default function AdminEventFormModal({
                 placeholder="Short summary displayed on public cards..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--ink)] p-2.5 text-xs focus:outline-none focus:border-[var(--accent)]"
+                className="w-full rounded-[8px] border border-border bg-surface text-ink p-2.5 text-sm focus:outline-none focus:border-accent"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-[var(--ink)] mb-1">
+              <label className="block text-sm font-semibold text-ink mb-1">
                 Rules & Regulations
               </label>
               <textarea
@@ -344,13 +344,13 @@ export default function AdminEventFormModal({
                 placeholder="Competition guidelines and constraints..."
                 value={rules}
                 onChange={(e) => setRules(e.target.value)}
-                className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--ink)] p-2.5 text-xs font-mono focus:outline-none focus:border-[var(--accent)]"
+                className="w-full rounded-[8px] border border-border bg-surface text-ink p-2.5 text-sm font-mono focus:outline-none focus:border-accent"
               />
             </div>
           </div>
 
           {/* Action Footer */}
-          <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[var(--border)] shrink-0">
+          <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-border shrink-0">
             <Button variant="secondary" size="sm" type="button" onClick={onClose}>
               Cancel
             </Button>

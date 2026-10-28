@@ -128,12 +128,12 @@ function createRoomLabelTexture(
   const padX = 24 * dpr;
   const padY = 14 * dpr;
 
-  ctx.font = `bold ${fontSize}px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+  ctx.font = `bold ${fontSize}px Manrope, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
   const mainMetrics = ctx.measureText(label);
 
   let subMetricsWidth = 0;
   if (isAssigned) {
-    ctx.font = `bold ${subFontSize}px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+    ctx.font = `bold ${subFontSize}px Manrope, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
     subMetricsWidth = ctx.measureText("★ ASSIGNED").width;
   }
 
@@ -151,16 +151,16 @@ function createRoomLabelTexture(
   drawRoundedRect(ctx, 2, 2, canvasWidth - 4, canvasHeight - 4, radius);
 
   if (isHighlighted) {
-    ctx.fillStyle = "#FF6B1A";
+    ctx.fillStyle = "#006BFF";
     ctx.fill();
     ctx.lineWidth = 3 * dpr;
     ctx.strokeStyle = "#FFFFFF";
     ctx.stroke();
   } else {
-    ctx.fillStyle = "rgba(11, 10, 10, 0.90)";
+    ctx.fillStyle = "#FFFFFF";
     ctx.fill();
     ctx.lineWidth = 2 * dpr;
-    ctx.strokeStyle = "rgba(75, 85, 99, 0.85)";
+    ctx.strokeStyle = "#D4E0ED";
     ctx.stroke();
   }
 
@@ -168,16 +168,16 @@ function createRoomLabelTexture(
   ctx.textBaseline = "middle";
 
   if (isAssigned) {
-    ctx.font = `bold ${fontSize}px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
-    ctx.fillStyle = "#FFFFFF";
+    ctx.font = `bold ${fontSize}px Manrope, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+    ctx.fillStyle = isHighlighted ? "#FFFFFF" : "#0B3558";
     ctx.fillText(label, canvasWidth / 2, padY + fontSize * 0.45);
 
-    ctx.font = `bold ${subFontSize}px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
-    ctx.fillStyle = isHighlighted ? "#FEF08A" : "#FBBF24";
+    ctx.font = `bold ${subFontSize}px Manrope, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+    ctx.fillStyle = isHighlighted ? "#E6F0FF" : "#006BFF";
     ctx.fillText("★ ASSIGNED", canvasWidth / 2, canvasHeight - padY - subFontSize * 0.45);
   } else {
-    ctx.font = `bold ${fontSize}px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
-    ctx.fillStyle = isHighlighted ? "#FFFFFF" : "#E2E8F0";
+    ctx.font = `bold ${fontSize}px Manrope, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+    ctx.fillStyle = isHighlighted ? "#FFFFFF" : "#0B3558";
     ctx.fillText(label, canvasWidth / 2, canvasHeight / 2);
   }
 
@@ -208,7 +208,7 @@ function createYouAreHereTexture(): { texture: THREE.CanvasTexture; aspect: numb
   const padY = 12 * dpr;
   const text = "YOU ARE HERE";
 
-  ctx.font = `900 ${fontSize}px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace`;
+  ctx.font = `bold ${fontSize}px Manrope, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
   const metrics = ctx.measureText(text);
 
   const canvasWidth = Math.ceil(metrics.width + padX * 2);
@@ -223,17 +223,17 @@ function createYouAreHereTexture(): { texture: THREE.CanvasTexture; aspect: numb
   ctx.beginPath();
   drawRoundedRect(ctx, 2, 2, canvasWidth - 4, canvasHeight - 4, radius);
 
-  ctx.fillStyle = "rgba(11, 10, 10, 0.95)";
+  ctx.fillStyle = "#0B3558";
   ctx.fill();
 
   ctx.lineWidth = 2.5 * dpr;
-  ctx.strokeStyle = "#00E5FF";
+  ctx.strokeStyle = "#E55CFF";
   ctx.stroke();
 
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.font = `900 ${fontSize}px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace`;
-  ctx.fillStyle = "#00E5FF";
+  ctx.font = `bold ${fontSize}px Manrope, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+  ctx.fillStyle = "#FFFFFF";
   ctx.fillText(text, canvasWidth / 2, canvasHeight / 2);
 
   ctx.restore();
@@ -360,7 +360,7 @@ function YouAreHereBeacon({ position }: { position: THREE.Vector3 }) {
         rotation={[-Math.PI / 2, 0, 0]}
       >
         <ringGeometry args={[2.5, 4.5, 32]} />
-        <meshBasicMaterial color="#00E5FF" transparent opacity={0.7} />
+        <meshBasicMaterial color="#E55CFF" transparent opacity={0.7} />
       </mesh>
       <mesh
         ref={rippleRing2Ref}
@@ -368,7 +368,7 @@ function YouAreHereBeacon({ position }: { position: THREE.Vector3 }) {
         rotation={[-Math.PI / 2, 0, 0]}
       >
         <ringGeometry args={[2.5, 4.5, 32]} />
-        <meshBasicMaterial color="#00E5FF" transparent opacity={0.7} />
+        <meshBasicMaterial color="#E55CFF" transparent opacity={0.7} />
       </mesh>
 
       {/* Floating Animated Pin Pointer */}
@@ -377,8 +377,8 @@ function YouAreHereBeacon({ position }: { position: THREE.Vector3 }) {
         <mesh position={[0, 0, 0]} rotation={[Math.PI, 0, 0]}>
           <coneGeometry args={[2.2, 5.5, 16]} />
           <meshStandardMaterial
-            color="#00E5FF"
-            emissive="#00E5FF"
+            color="#E55CFF"
+            emissive="#E55CFF"
             emissiveIntensity={1.4}
             roughness={0.2}
             metalness={0.3}
@@ -389,8 +389,8 @@ function YouAreHereBeacon({ position }: { position: THREE.Vector3 }) {
         <mesh position={[0, 3.8, 0]}>
           <sphereGeometry args={[2.2, 16, 16]} />
           <meshStandardMaterial
-            color="#00E5FF"
-            emissive="#00E5FF"
+            color="#E55CFF"
+            emissive="#E55CFF"
             emissiveIntensity={1.6}
             roughness={0.1}
           />
@@ -565,12 +565,12 @@ function Venue3DScene({
       {/* Ground Floor Plate */}
       <mesh position={[0, -0.6, 0]} receiveShadow>
         <boxGeometry args={[plateWidth, 1, plateHeight]} />
-        <meshStandardMaterial color="#0B0A0A" roughness={0.9} metalness={0.1} />
+        <meshStandardMaterial color="#F0F3F8" roughness={0.9} metalness={0.1} />
       </mesh>
 
       {/* Grid Pattern on Ground */}
       <gridHelper
-        args={[Math.max(plateWidth, plateHeight), 50, "#FF6B1A", "#1C1917"]}
+        args={[Math.max(plateWidth, plateHeight), 50, "#B4C7DB", "#D4E0ED"]}
         position={[0, 0.02, 0]}
       />
 
@@ -580,12 +580,12 @@ function Venue3DScene({
         const isSelected = room.id === selectedZoneId;
         const isHighlighted = isAssigned || isSelected;
 
-        let baseColor = room.color || "#1E293B";
-        if (!room.color) {
-          if (room.type === "corridor") baseColor = "#18181B";
-          else if (room.type === "amenity") baseColor = "#0E7490";
-          else if (room.type === "hall") baseColor = "#334155";
-        }
+        // v3 palette: white buildings on pebble ground with hairline-tinted secondary volumes.
+        // (Source SVG fills are dark-blueprint colors, so they are intentionally not reused here.)
+        let baseColor = "#E6EDF5";
+        if (room.type === "corridor") baseColor = "#D4E0ED";
+        else if (room.type === "amenity") baseColor = "#F0F3F8";
+        else if (room.type === "hall") baseColor = "#FFFFFF";
 
         const yOffset = (room.floor - 1) * 20;
 
@@ -611,8 +611,8 @@ function Venue3DScene({
               {isHighlighted ? (
                 <meshStandardMaterial
                   ref={isAssigned ? pulseMaterialRef : undefined}
-                  color="#FF6B1A"
-                  emissive="#FF6B1A"
+                  color="#006BFF"
+                  emissive="#006BFF"
                   emissiveIntensity={0.8}
                   roughness={0.3}
                   metalness={0.2}
@@ -661,8 +661,8 @@ function Venue3DScene({
           <mesh>
             <tubeGeometry args={[routeCurve, 64, 1.2, 8, false]} />
             <meshStandardMaterial
-              color="#FF6B1A"
-              emissive="#FF6B1A"
+              color="#006BFF"
+              emissive="#006BFF"
               emissiveIntensity={1.5}
               roughness={0.2}
             />
@@ -673,7 +673,7 @@ function Venue3DScene({
             <sphereGeometry args={[2.2, 16, 16]} />
             <meshStandardMaterial
               color="#FFFFFF"
-              emissive="#FFE5D4"
+              emissive="#E6F0FF"
               emissiveIntensity={1.8}
             />
           </mesh>
@@ -857,13 +857,13 @@ export default function Venue3D({
 
   if (!webGLSupported) {
     return (
-      <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-[#0B0A0A] text-stone-200 space-y-4">
-        <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center">
+      <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-canvas text-ink space-y-4">
+        <div className="w-12 h-12 rounded-2xl bg-warning-surface border border-warning-border text-warning flex items-center justify-center">
           <Info className="w-6 h-6" />
         </div>
         <div>
-          <h3 className="text-base font-bold text-white mb-1">3D Graphics Hardware Acceleration Unavailable</h3>
-          <p className="text-xs text-stone-400 max-w-sm">
+          <h3 className="text-base font-bold text-ink mb-1">3D Graphics Hardware Acceleration Unavailable</h3>
+          <p className="text-sm text-ink-muted max-w-sm">
             Your browser or device does not have WebGL acceleration enabled. Switching back to high-resolution 2D blueprint.
           </p>
         </div>
@@ -871,7 +871,7 @@ export default function Venue3D({
           <button
             type="button"
             onClick={onFallback2D}
-            className="px-4 py-2 rounded-xl bg-[#FF6B1A] hover:bg-[#E8551F] text-white text-xs font-bold transition"
+            className="px-4 py-2 rounded-[8px] bg-accent hover:bg-accent-hover text-accent-ink text-sm font-semibold transition"
           >
             Switch to 2D Blueprint
           </button>
@@ -881,7 +881,7 @@ export default function Venue3D({
   }
 
   return (
-    <div className="relative w-full h-full bg-[#0B0A0A] overflow-hidden select-none">
+    <div className="relative w-full h-full bg-canvas overflow-hidden select-none">
       {/* 3D Canvas */}
       <Canvas
         shadows
@@ -892,7 +892,7 @@ export default function Venue3D({
           near: 1,
           far: 5000,
         }}
-        style={{ background: "#0B0A0A" }}
+        style={{ background: "#F8F9FB" }}
       >
         <Venue3DScene
           rooms={rooms}
@@ -913,18 +913,18 @@ export default function Venue3D({
       {/* Floating 3D Navigation Overlay */}
       <div className="absolute top-4 left-4 z-20 flex items-center gap-2">
         {/* Floor Level Selector */}
-        <div className="flex items-center p-1 bg-[#141212]/90 backdrop-blur-md border border-stone-800 rounded-xl text-xs font-semibold shadow-xl">
-          <span className="text-[10px] uppercase font-bold text-stone-400 px-2 flex items-center gap-1">
-            <Layers className="w-3 h-3 text-[#FF6B1A]" />
+        <div className="flex items-center p-1 bg-surface border border-border rounded-[8px] text-sm font-semibold shadow-popover">
+          <span className="eyebrow text-xs px-2 flex items-center gap-1">
+            <Layers className="w-3 h-3 text-accent" />
             <span>Floor:</span>
           </span>
           <button
             type="button"
             onClick={() => setActiveFloor("ALL")}
-            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition ${
+            className={`px-2.5 py-1 rounded-[6px] text-sm font-semibold transition ${
               activeFloor === "ALL"
-                ? "bg-[#FF6B1A] text-white"
-                : "text-stone-400 hover:text-white"
+                ? "bg-accent text-accent-ink"
+                : "text-ink-muted hover:text-ink hover:bg-surface-raised"
             }`}
           >
             All
@@ -932,10 +932,10 @@ export default function Venue3D({
           <button
             type="button"
             onClick={() => setActiveFloor(1)}
-            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition ${
+            className={`px-2.5 py-1 rounded-[6px] text-sm font-semibold transition ${
               activeFloor === 1
-                ? "bg-[#FF6B1A] text-white"
-                : "text-stone-400 hover:text-white"
+                ? "bg-accent text-accent-ink"
+                : "text-ink-muted hover:text-ink hover:bg-surface-raised"
             }`}
           >
             Floor 1
@@ -943,10 +943,10 @@ export default function Venue3D({
           <button
             type="button"
             onClick={() => setActiveFloor(2)}
-            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition ${
+            className={`px-2.5 py-1 rounded-[6px] text-sm font-semibold transition ${
               activeFloor === 2
-                ? "bg-[#FF6B1A] text-white"
-                : "text-stone-400 hover:text-white"
+                ? "bg-accent text-accent-ink"
+                : "text-ink-muted hover:text-ink hover:bg-surface-raised"
             }`}
           >
             Floor 2
@@ -956,7 +956,7 @@ export default function Venue3D({
 
       {/* Interaction Hint in bottom right */}
       <div className="absolute bottom-4 right-4 z-20 pointer-events-none hidden sm:block">
-        <div className="bg-[#141212]/90 backdrop-blur-md border border-stone-800/80 px-3 py-1.5 rounded-xl text-[10px] text-stone-400 font-mono shadow-xl flex items-center gap-2">
+        <div className="bg-surface border border-border px-3 py-1.5 rounded-[8px] text-xs text-ink-muted shadow-popover flex items-center gap-2">
           <span>Rotate: Left Click + Drag</span>
           <span>•</span>
           <span>Pan: Right Click + Drag</span>

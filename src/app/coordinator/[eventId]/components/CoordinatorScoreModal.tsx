@@ -108,7 +108,7 @@ export default function CoordinatorScoreModal({
         />
 
         <DialogFooter>
-          <Button variant="secondary" size="sm" onClick={onClose}>
+          <Button variant="outline" size="sm" onClick={onClose}>
             Cancel
           </Button>
 

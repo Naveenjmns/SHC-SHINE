@@ -10,7 +10,7 @@ export const Table = forwardRef<
   HTMLTableElement,
   TableHTMLAttributes<HTMLTableElement>
 >(({ className = "", ...props }, ref) => (
-  <div className="w-full overflow-x-auto rounded-[12px] border border-border bg-surface">
+  <div className="w-full overflow-x-auto rounded-2xl border border-border bg-surface shadow-card">
     <table
       ref={ref}
       className={`w-full caption-bottom text-sm border-collapse ${className}`}
@@ -26,7 +26,7 @@ export const TableHeader = forwardRef<
 >(({ className = "", ...props }, ref) => (
   <thead
     ref={ref}
-    className={`border-b border-border bg-surface-raised/80 select-none text-xs font-semibold text-ink-muted uppercase tracking-wider ${className}`}
+    className={`border-b border-border bg-canvas select-none text-xs font-semibold text-ink-muted uppercase tracking-wider ${className}`}
     {...props}
   />
 ));
@@ -65,7 +65,7 @@ export const TableRow = forwardRef<HTMLTableRowElement, TableRowProps>(
     <tr
       ref={ref}
       className={`transition-colors ${
-        interactive ? "hover:bg-surface-raised/40" : ""
+        interactive ? "hover:bg-canvas" : ""
       } ${className}`}
       {...props}
     />

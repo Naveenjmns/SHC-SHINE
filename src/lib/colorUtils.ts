@@ -4,6 +4,51 @@
  * variants, and generates CSS variables for dynamic EventEdition themes.
  */
 
+export const INK_NAVY = "#0B3558";
+export const DEFAULT_PRIMARY_ACCENT = "#006BFF";
+export const DEFAULT_SECONDARY_ACCENT = "#D9A441";
+export const DEFAULT_BG_COLOR = "#F8F9FB";
+
+export interface EditionTheme {
+  primary: string;
+  secondary: string;
+  bg: string;
+}
+
+const LEGACY_DEFAULT_PRIMARY = "#FF6B1A";
+const LEGACY_DEFAULT_BG = "#FAF8F5";
+
+/**
+ * Resolves an edition's stored theme into the colors to apply.
+ * Editions created before the v3 redesign carry the untouched orange defaults
+ * (#FF6B1A primary on #FAF8F5 background); those fall back to the system palette.
+ * An admin who deliberately picks the orange preset saves a different background,
+ * so their choice is kept.
+ */
+export function resolveEditionTheme(
+  primary?: string | null,
+  secondary?: string | null,
+  bg?: string | null
+): EditionTheme {
+  const isLegacyDefault =
+    primary?.trim().toUpperCase() === LEGACY_DEFAULT_PRIMARY &&
+    (!bg || bg.trim().toUpperCase() === LEGACY_DEFAULT_BG);
+
+  if (isLegacyDefault) {
+    return {
+      primary: DEFAULT_PRIMARY_ACCENT,
+      secondary: secondary || DEFAULT_SECONDARY_ACCENT,
+      bg: DEFAULT_BG_COLOR,
+    };
+  }
+
+  return {
+    primary: primary || DEFAULT_PRIMARY_ACCENT,
+    secondary: secondary || DEFAULT_SECONDARY_ACCENT,
+    bg: bg || DEFAULT_BG_COLOR,
+  };
+}
+
 export interface RgbColor {
   r: number;
   g: number;
@@ -22,7 +67,7 @@ export function parseHexColor(hex: string): RgbColor {
       .join("");
   }
   if (clean.length !== 6) {
-    return { r: 255, g: 107, b: 26 }; // Fallback to #FF6B1A
+    return { r: 0, g: 107, b: 255 }; // Fallback to #006BFF
   }
   const num = parseInt(clean, 16);
   return {
@@ -83,8 +128,10 @@ export function isContrastSafe(textColor: string, bgColor: string, minRatio: num
  */
 export function getContrastSafeInk(bgHex: string): string {
   const contrastWithWhite = getContrastRatio("#FFFFFF", bgHex);
-  const contrastWithBlack = getContrastRatio("#0C0A09", bgHex);
-  return contrastWithWhite >= contrastWithBlack ? "#FFFFFF" : "#0C0A09";
+  const contrastWithNavy = getContrastRatio(INK_NAVY, bgHex);
+  if (contrastWithWhite >= contrastWithNavy) return "#FFFFFF";
+  // Prefer navy ink, but fall back to carbon when navy misses WCAG AA
+  return contrastWithNavy >= 4.5 ? INK_NAVY : "#0A0A0A";
 }
 
 export function darkenColor(hex: string, percent: number): string {
@@ -105,6 +152,7 @@ export interface DerivedAccentPalette {
   accentActive: string;
   accentMuted: string;
   accentInk: string;
+  accentStrong: string;
   gold: string;
   goldHover: string;
   goldMuted: string;
@@ -116,8 +164,8 @@ export interface DerivedAccentPalette {
  * Auto-derives all required token variants for primary and secondary accents.
  */
 export function deriveAccentPalette(
-  primaryHex: string = "#FF6B1A",
-  secondaryHex: string = "#D9A441",
+  primaryHex: string = DEFAULT_PRIMARY_ACCENT,
+  secondaryHex: string = DEFAULT_SECONDARY_ACCENT,
   bgHex?: string
 ): DerivedAccentPalette {
   const primaryRgb = parseHexColor(primaryHex);
@@ -126,8 +174,9 @@ export function deriveAccentPalette(
   // If primary accent is very light, hover should darken; if dark, hover should lighten
   const accentHover = primaryLum > 0.4 ? darkenColor(primaryHex, 10) : lightenColor(primaryHex, 10);
   const accentActive = primaryLum > 0.4 ? darkenColor(primaryHex, 18) : darkenColor(primaryHex, 10);
-  const accentMuted = hexToRgba(primaryHex, 0.10);
+  const accentMuted = lightenColor(primaryHex, 90);
   const accentInk = getContrastSafeInk(primaryHex);
+  const accentStrong = darkenColor(primaryHex, 27);
 
   const secondaryRgb = parseHexColor(secondaryHex);
   const secondaryLum = calculateLuminance(secondaryRgb.r, secondaryRgb.g, secondaryRgb.b);
@@ -141,6 +190,7 @@ export function deriveAccentPalette(
     accentActive,
     accentMuted,
     accentInk,
+    accentStrong,
     gold: secondaryHex,
     goldHover,
     goldMuted,
@@ -158,23 +208,25 @@ export function isHexColor(value: unknown): value is string {
  * Zero decorative gradients, zero glowing drop-shadows.
  */
 export function generateThemeCss(
-  primaryAccent: string = "#FF6B1A",
-  secondaryAccent: string = "#D9A441",
-  bgColor: string = "#FFFFFF"
+  primaryAccent: string = DEFAULT_PRIMARY_ACCENT,
+  secondaryAccent: string = DEFAULT_SECONDARY_ACCENT,
+  bgColor: string = DEFAULT_BG_COLOR
 ): string {
   // SECURITY: The output is injected into a <style> tag, so only plain hex colours may pass through
-  primaryAccent = isHexColor(primaryAccent) ? primaryAccent : "#FF6B1A";
-  secondaryAccent = isHexColor(secondaryAccent) ? secondaryAccent : "#D9A441";
-  bgColor = isHexColor(bgColor) ? bgColor : "#FFFFFF";
+  primaryAccent = isHexColor(primaryAccent) ? primaryAccent : DEFAULT_PRIMARY_ACCENT;
+  secondaryAccent = isHexColor(secondaryAccent) ? secondaryAccent : DEFAULT_SECONDARY_ACCENT;
+  bgColor = isHexColor(bgColor) ? bgColor : DEFAULT_BG_COLOR;
   const palette = deriveAccentPalette(primaryAccent, secondaryAccent, bgColor);
 
+  // Doubled :root outranks the base tokens regardless of stylesheet load order
   return `
-    :root {
+    :root:root {
       --accent: ${palette.accent};
       --accent-hover: ${palette.accentHover};
       --accent-active: ${palette.accentActive};
       --accent-muted: ${palette.accentMuted};
       --accent-ink: ${palette.accentInk};
+      --accent-strong: ${palette.accentStrong};
 
       --gold: ${palette.gold};
       --gold-hover: ${palette.goldHover};
@@ -208,9 +260,18 @@ export interface ThemePreset {
 
 export const INSTITUTION_THEME_PRESETS: ThemePreset[] = [
   {
+    id: "signal-blue",
+    name: "Signal Blue",
+    institutionType: "Default",
+    primary: "#006BFF",
+    secondary: "#D9A441",
+    bg: "#F8F9FB",
+    description: "Navy ink on cool marble with a single vivid blue action",
+  },
+  {
     id: "shine-orange",
     name: "Solar Ember",
-    institutionType: "Default",
+    institutionType: "Classic",
     primary: "#FF6B1A",
     secondary: "#D9A441",
     bg: "#FFFFFF",

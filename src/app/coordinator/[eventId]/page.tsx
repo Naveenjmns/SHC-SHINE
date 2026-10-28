@@ -125,7 +125,7 @@ export default function CoordinatorEventDeskPage({
 
   if (status === "loading" || loading) {
     return (
-      <div className="min-h-screen bg-surface flex items-center justify-center">
+      <div className="min-h-screen bg-canvas flex items-center justify-center">
         <div className="w-8 h-8 rounded-full border-2 border-accent border-t-transparent animate-spin" />
       </div>
     );
@@ -146,16 +146,16 @@ export default function CoordinatorEventDeskPage({
   });
 
   return (
-    <div className="min-h-screen bg-surface text-ink flex flex-col">
+    <div className="min-h-screen bg-canvas text-ink flex flex-col">
       <Navbar />
 
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 pt-28 pb-16 space-y-6">
         {/* Header Bar */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-border pb-5">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2">
           <div className="flex items-center gap-3">
             <Link
               href="/coordinator"
-              className="p-2 rounded-[8px] border border-border hover:bg-surface-raised text-ink-muted hover:text-ink transition-colors"
+              className="p-2 rounded-[8px] border border-border bg-surface hover:border-accent text-ink-muted hover:text-accent transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
             </Link>
@@ -164,9 +164,9 @@ export default function CoordinatorEventDeskPage({
                 <Badge variant={event?.category === "ON_STAGE" ? "confirmed" : "neutral"} size="sm">
                   {event?.category === "ON_STAGE" ? "On-Stage" : "Off-Stage"}
                 </Badge>
-                <h1 className="text-xl font-bold font-display text-ink truncate">{event?.name}</h1>
+                <h1 className="text-2xl sm:text-3xl font-bold text-ink truncate">{event?.name}</h1>
               </div>
-              <div className="text-xs text-ink-muted flex items-center gap-2 mt-0.5">
+              <div className="text-[15px] text-ink-muted flex items-center gap-2 mt-1">
                 <MapPin className="w-3.5 h-3.5 text-accent" />
                 <span>{event?.venue || "Main Auditorium"}</span>
               </div>

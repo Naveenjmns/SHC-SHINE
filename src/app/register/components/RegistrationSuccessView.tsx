@@ -36,30 +36,30 @@ export default function RegistrationSuccessView({ delegation }: RegistrationSucc
   return (
     <div className="max-w-3xl mx-auto space-y-6 animate-in fade-in duration-200">
       {/* Success Banner */}
-      <Card className="p-6 text-center space-y-3 bg-surface border-success-border">
+      <Card className="p-8 text-center space-y-3 rounded-3xl">
         <div className="w-12 h-12 rounded-full bg-success-surface border border-success-border flex items-center justify-center mx-auto text-success">
           <CheckCircle2 className="w-6 h-6" />
         </div>
 
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold font-display text-ink">
+          <h1 className="text-2xl sm:text-3xl font-bold text-ink">
             {isPaymentPending ? "Registration Received" : "Registration Confirmed!"}
           </h1>
-          <p className="text-xs text-ink-muted max-w-md mx-auto">
+          <p className="text-[15px] text-ink-muted max-w-md mx-auto">
             {isPaymentPending
               ? `Your delegation is registered. Pay the fee of ₹${delegation.totalFee} at the registration desk to activate the passes below.`
               : "Your delegation has been registered. Digital QR passes have been generated below."}
           </p>
         </div>
 
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-surface-raised border border-border text-xs font-mono text-ink-muted">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-surface-raised border border-border text-sm font-mono text-ink-muted">
           <span>Delegation ID:</span>
           <span className="font-bold text-accent">{delegation.id}</span>
         </div>
       </Card>
 
       {/* College Info */}
-      <Card className="p-4 flex items-center justify-between text-xs">
+      <Card className="p-5 flex items-center justify-between gap-3 text-[15px]">
         <div className="flex items-center gap-2.5">
           <Building2 className="w-4 h-4 text-accent shrink-0" />
           <div>
@@ -80,17 +80,17 @@ export default function RegistrationSuccessView({ delegation }: RegistrationSucc
 
       {/* Delegates Badges List */}
       <div className="space-y-3">
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-ink-muted">
+        <h3 className="text-[15px] font-semibold text-ink">
           Delegate Badges & QR Tokens ({delegation.members.length})
         </h3>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {delegation.members.map((member, idx) => (
-            <Card key={member.id} className="p-4 space-y-3">
+            <Card key={member.id} className="p-5 space-y-3">
               <div className="flex items-start justify-between gap-2">
                 <div className="space-y-0.5">
-                  <div className="font-bold text-sm text-ink">{member.name}</div>
-                  <div className="text-xs text-ink-muted truncate">{member.email}</div>
+                  <div className="font-bold text-[15px] text-ink">{member.name}</div>
+                  <div className="text-sm text-ink-muted truncate">{member.email}</div>
                 </div>
 
                 <Badge
@@ -101,7 +101,7 @@ export default function RegistrationSuccessView({ delegation }: RegistrationSucc
                 </Badge>
               </div>
 
-              <div className="p-2.5 rounded-[6px] bg-surface-raised border border-border space-y-1 font-mono text-xs">
+              <div className="p-2.5 rounded-[8px] bg-surface-raised space-y-1 font-mono text-sm">
                 <div className="flex justify-between">
                   <span className="text-ink-subtle">Badge:</span>
                   <span className="font-bold text-ink">{member.badgeCode}</span>
@@ -123,7 +123,7 @@ export default function RegistrationSuccessView({ delegation }: RegistrationSucc
                   </Button>
                 </Link>
 
-                <span className="text-[11px] text-ink-subtle">Delegate #{idx + 1}</span>
+                <span className="text-xs text-ink-subtle">Delegate #{idx + 1}</span>
               </div>
             </Card>
           ))}
@@ -133,7 +133,7 @@ export default function RegistrationSuccessView({ delegation }: RegistrationSucc
       {/* Bottom Nav */}
       <div className="pt-4 flex items-center justify-between">
         <Link href="/">
-          <Button variant="secondary" size="md">
+          <Button variant="outline" size="md">
             Return to Homepage
           </Button>
         </Link>

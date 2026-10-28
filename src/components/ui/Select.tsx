@@ -40,7 +40,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
         {label && (
           <label
             htmlFor={selectId}
-            className="block text-xs font-semibold text-ink select-none"
+            className="block text-sm font-semibold text-ink select-none"
           >
             {label}
           </label>
@@ -59,10 +59,10 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
                 ? `${selectId}-helper`
                 : undefined
             }
-            className={`w-full h-11 pl-3 pr-10 rounded-[8px] bg-surface text-ink text-sm appearance-none transition-all border outline-none cursor-pointer ${
+            className={`w-full h-12 pl-3 pr-10 rounded-[8px] bg-surface text-ink text-base appearance-none transition-all border outline-none cursor-pointer ${
               hasError
-                ? "border-danger focus:ring-2 focus:ring-danger"
-                : "border-border hover:border-border-strong focus:border-transparent focus:ring-2 focus:ring-accent"
+                ? "border-danger focus:ring-4 focus:ring-danger/15"
+                : "border-border hover:border-border-strong focus:border-accent focus:ring-4 focus:ring-accent/15"
             } ${
               disabled
                 ? "opacity-50 bg-surface-sunken cursor-not-allowed pointer-events-none"
@@ -90,13 +90,13 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
         </div>
 
         {hasError && (
-          <p id={`${selectId}-error`} className="text-xs text-danger font-medium">
+          <p id={`${selectId}-error`} className="text-sm text-danger font-medium">
             {error}
           </p>
         )}
 
         {!hasError && helperText && (
-          <p id={`${selectId}-helper`} className="text-xs text-ink-muted">
+          <p id={`${selectId}-helper`} className="text-sm text-ink-muted">
             {helperText}
           </p>
         )}

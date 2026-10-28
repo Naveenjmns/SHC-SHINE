@@ -225,7 +225,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-surface text-ink flex flex-col">
+    <div className="min-h-screen bg-canvas text-ink flex flex-col">
       <Navbar />
 
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 pt-28 pb-16">

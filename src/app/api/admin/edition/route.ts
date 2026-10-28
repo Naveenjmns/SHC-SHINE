@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { logActivity } from "@/lib/activityLogger";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { isHexColor } from "@/lib/colorUtils";
 
 export const dynamic = "force-dynamic";
@@ -392,6 +392,7 @@ export async function PATCH(req: NextRequest) {
       },
     });
 
+    revalidateTag("active-edition", { expire: 0 });
     revalidatePath("/", "layout");
     revalidatePath("/");
     revalidatePath("/badge", "layout");

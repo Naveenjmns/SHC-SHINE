@@ -142,20 +142,20 @@ export default function AdminUsersPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[var(--surface-raised)] flex flex-col">
+    <main className="min-h-screen bg-canvas flex flex-col">
       {/* Sticky Header */}
-      <header className="bg-[var(--surface)] border-b border-[var(--border)] sticky top-0 z-20">
+      <header className="bg-surface border-b border-border sticky top-0 z-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link
               href="/admin"
-              className="font-semibold text-xs text-[var(--ink-muted)] hover:text-[var(--ink)] flex items-center gap-1.5"
+              className="font-semibold text-sm text-ink-muted hover:text-ink flex items-center gap-1.5"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               <span>Admin Console</span>
             </Link>
-            <span className="text-[var(--border)]">/</span>
-            <span className="text-xs font-semibold text-[var(--ink)]">
+            <span className="text-border">/</span>
+            <span className="text-sm font-semibold text-ink">
               Users & Delegations ({users.length})
             </span>
           </div>
@@ -167,7 +167,7 @@ export default function AdminUsersPage() {
               setSelectedUser(null);
               setModalOpen(true);
             }}
-            className="text-xs gap-1.5"
+            className="text-sm gap-1.5"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Add Account</span>
@@ -179,7 +179,7 @@ export default function AdminUsersPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full space-y-5">
         {/* Filters */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-1 bg-[var(--surface)] border border-[var(--border)] p-1 rounded-xl overflow-x-auto">
+          <div className="flex items-center gap-1 bg-surface border border-border p-1 rounded-[8px] overflow-x-auto">
             {[
               { id: "ALL", label: "All Roles" },
               { id: "STUDENT", label: "Students" },
@@ -191,10 +191,10 @@ export default function AdminUsersPage() {
                 key={tab.id}
                 type="button"
                 onClick={() => setRoleFilter(tab.id)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap ${
+                className={`px-3 py-1.5 rounded-[8px] text-sm font-semibold transition-colors cursor-pointer whitespace-nowrap ${
                   roleFilter === tab.id
-                    ? "bg-[var(--surface-raised)] text-[var(--accent)] shadow-xs"
-                    : "text-[var(--ink-muted)] hover:text-[var(--ink)]"
+                    ? "bg-surface-raised text-accent"
+                    : "text-ink-muted hover:text-ink"
                 }`}
               >
                 {tab.label}
@@ -203,21 +203,21 @@ export default function AdminUsersPage() {
           </div>
 
           <div className="relative w-full sm:w-72">
-            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--ink-muted)]" />
+            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />
             <input
               type="text"
               placeholder="Search by name, email, college..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full h-9 pl-9 pr-3 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-xs text-[var(--ink)] focus:outline-none focus:border-[var(--accent)]"
+              className="w-full h-9 pl-9 pr-3 rounded-[8px] border border-border bg-surface text-sm text-ink focus:outline-none focus:border-accent"
             />
           </div>
         </div>
 
         {/* Users Table */}
         {loading ? (
-          <div className="py-20 text-center text-xs text-[var(--ink-muted)] flex flex-col items-center gap-2">
-            <RefreshCw className="w-6 h-6 animate-spin text-[var(--accent)]" />
+          <div className="py-20 text-center text-sm text-ink-muted flex flex-col items-center gap-2">
+            <RefreshCw className="w-6 h-6 animate-spin text-accent" />
             <span>Loading user accounts...</span>
           </div>
         ) : (

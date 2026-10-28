@@ -5,6 +5,7 @@ import React, {
   useContext,
   useState,
   useCallback,
+  useMemo,
   ReactNode,
 } from "react";
 import { CheckCircle2, AlertCircle, AlertTriangle, Info, X } from "lucide-react";
@@ -85,12 +86,22 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const toastMethods = {
-    success: (msg: string, title?: string) => addToast("success", msg, title),
-    error: (msg: string, title?: string) => addToast("error", msg, title),
-    warning: (msg: string, title?: string) => addToast("warning", msg, title),
-    info: (msg: string, title?: string) => addToast("info", msg, title),
-  };
+  // Stable identity: consumers list `toast` in hook deps, so a fresh object
+  // per render would re-run their effects every time a toast appears.
+  const toastMethods = useMemo(
+    () => ({
+      success: (msg: string, title?: string) => addToast("success", msg, title),
+      error: (msg: string, title?: string) => addToast("error", msg, title),
+      warning: (msg: string, title?: string) => addToast("warning", msg, title),
+      info: (msg: string, title?: string) => addToast("info", msg, title),
+    }),
+    [addToast]
+  );
+
+  const contextValue = useMemo(
+    () => ({ toast: toastMethods, confirmAction }),
+    [toastMethods, confirmAction]
+  );
 
   const toastIcon = {
     success: <CheckCircle2 className="w-4 h-4 text-success shrink-0" />,
@@ -107,7 +118,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <ToastContext.Provider value={{ toast: toastMethods, confirmAction }}>
+    <ToastContext.Provider value={contextValue}>
       {children}
 
       {/* Floating Toast Stack */}
@@ -119,16 +130,16 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           <div
             key={item.id}
             role="status"
-            className={`pointer-events-auto flex items-start gap-3 p-4 rounded-[12px] border ${
+            className={`pointer-events-auto flex items-start gap-3 p-4 rounded-2xl border ${
               toastBorder[item.type]
             } animate-in slide-in-from-top-3 duration-200`}
             style={{ boxShadow: "var(--shadow-popover)" }}
           >
             <div className="shrink-0 mt-0.5">{toastIcon[item.type]}</div>
 
-            <div className="flex-1 text-xs leading-relaxed">
+            <div className="flex-1 text-sm leading-relaxed">
               {item.title && (
-                <div className="font-semibold text-sm mb-0.5 text-ink">
+                <div className="font-semibold text-[15px] mb-0.5 text-ink">
                   {item.title}
                 </div>
               )}
@@ -149,9 +160,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
       {/* Confirmation Modal */}
       {confirmModal && confirmModal.isOpen && (
-        <div className="fixed inset-0 z-modal flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-modal flex items-center justify-center p-4 bg-[#0b3558]/50 backdrop-blur-xs animate-in fade-in duration-150">
           <div
-            className="w-full max-w-md bg-surface rounded-[12px] p-6 border border-border-strong animate-in zoom-in-95 duration-150 space-y-4"
+            className="w-full max-w-md bg-surface rounded-3xl p-6 border border-border animate-in zoom-in-95 duration-150 space-y-4"
             role="dialog"
             aria-modal="true"
             style={{ boxShadow: "var(--shadow-modal)" }}
@@ -174,7 +185,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 <h3 className="text-base font-bold text-ink leading-tight">
                   {confirmModal.options.title}
                 </h3>
-                <div className="text-xs text-ink-muted leading-relaxed whitespace-pre-line">
+                <div className="text-sm text-ink-muted leading-relaxed whitespace-pre-line">
                   {confirmModal.options.message}
                 </div>
               </div>
@@ -184,14 +195,14 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               <button
                 type="button"
                 onClick={() => handleConfirmClose(false)}
-                className="h-10 px-4 rounded-[8px] text-xs font-semibold text-ink bg-surface-raised hover:bg-surface-sunken border border-border transition-colors cursor-pointer"
+                className="h-10 px-4 rounded-[8px] text-sm font-semibold text-ink bg-surface-raised hover:bg-surface-sunken border border-border transition-colors cursor-pointer"
               >
                 {confirmModal.options.cancelText || "Cancel"}
               </button>
               <button
                 type="button"
                 onClick={() => handleConfirmClose(true)}
-                className={`h-10 px-4 rounded-[8px] text-xs font-semibold transition-colors cursor-pointer ${
+                className={`h-10 px-4 rounded-[8px] text-sm font-semibold transition-colors cursor-pointer ${
                   confirmModal.options.isDestructive
                     ? "bg-danger hover:bg-danger/90 text-white"
                     : "bg-accent hover:bg-accent-hover text-accent-ink"
