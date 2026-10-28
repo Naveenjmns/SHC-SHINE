@@ -27,9 +27,9 @@ export default function AdminEventsPage() {
   const [studentCoordinators, setStudentCoordinators] = useState<CoordinatorUser[]>([]);
   const [floorPlanZones, setFloorPlanZones] = useState<{ id: string; label: string }[]>([]);
   const [centralizedPrizes, setCentralizedPrizes] = useState({
-    first: "Cash Prize + Trophy + Certificate",
-    second: "Cash Prize + Merit Certificate",
-    third: "Distinction Certificate",
+    first: "",
+    second: "",
+    third: "",
   });
 
   // Active edition start date: the default day pre-filled for new events
@@ -83,9 +83,9 @@ export default function AdminEventsPage() {
       if (edData.success && edData.edition) {
         setFestStartDate(edData.edition.startDate || null);
         setCentralizedPrizes({
-          first: edData.edition.defaultFirstPrize || "Cash Prize + Trophy + Certificate",
-          second: edData.edition.defaultSecondPrize || "Cash Prize + Merit Certificate",
-          third: edData.edition.defaultThirdPrize || "Distinction Certificate",
+          first: edData.edition.defaultFirstPrize || "",
+          second: edData.edition.defaultSecondPrize || "",
+          third: edData.edition.defaultThirdPrize || "",
         });
       }
     } catch (err: any) {

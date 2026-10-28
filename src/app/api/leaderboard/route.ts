@@ -9,12 +9,12 @@ export const dynamic = "force-dynamic";
 export interface PodiumTeam {
   rank: 1 | 2 | 3;
   positionTitle: string;
-  collegeName: string;
+  collegeName: string | null;
   teamName: string | null;
   participants: string[];
   score: number | null;
   result: string;
-  award: string;
+  award: string | null;
 }
 
 export async function GET() {
@@ -72,19 +72,13 @@ export async function GET() {
         success: true,
         edition,
         events: events.map((e) => {
-          // Dynamic awards configured by the admin (per event or edition defaults)
-          const firstPrize =
-            (e as any).firstPrize ||
-            (edition as any)?.defaultFirstPrize ||
-            "Cash Prize + Trophy + Certificate";
-          const secondPrize =
-            (e as any).secondPrize ||
-            (edition as any)?.defaultSecondPrize ||
-            "Cash Prize + Merit Certificate";
-          const thirdPrize =
-            (e as any).thirdPrize ||
-            (edition as any)?.defaultThirdPrize ||
-            "Distinction Certificate";
+          // Awards configured by the admin (per event, else edition defaults); null hides the prize line
+          const firstPrize: string | null =
+            (e as any).firstPrize || (edition as any)?.defaultFirstPrize || null;
+          const secondPrize: string | null =
+            (e as any).secondPrize || (edition as any)?.defaultSecondPrize || null;
+          const thirdPrize: string | null =
+            (e as any).thirdPrize || (edition as any)?.defaultThirdPrize || null;
 
           // Group teammates who share a placing; a college with entrants at different ranks
           // (e.g. 1st and 3rd in an individual event) keeps both podium entries
@@ -109,8 +103,7 @@ export async function GET() {
             const rank = parseRank(primary.result);
             if (!rank) continue;
 
-            const collegeName =
-              primary.delegation?.collegeName || primary.user.college || "Independent Institution";
+            const collegeName = primary.delegation?.collegeName || primary.user.college || null;
             const teamName = primary.delegation?.teamName || null;
 
             // Collect distinct student names
@@ -178,14 +171,6 @@ export async function GET() {
             },
             podium,
             teams,
-            results: e.registrations.map((r) => ({
-              id: r.id,
-              result: r.result,
-              user: {
-                name: r.delegationMember?.name || r.user.name,
-                college: r.delegation?.collegeName || r.user.college || "Delegation College",
-              },
-            })),
           };
         }),
       },

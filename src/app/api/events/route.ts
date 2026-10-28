@@ -165,9 +165,6 @@ export async function POST(req: Request) {
 
     const activeEdition = await getActiveEdition();
     const editionId = activeEdition.id && activeEdition.id !== "default-shine" ? activeEdition.id : null;
-    const defaultFirst = (activeEdition as any)?.defaultFirstPrize || "Cash Prize + Trophy + Certificate";
-    const defaultSecond = (activeEdition as any)?.defaultSecondPrize || "Cash Prize + Merit Certificate";
-    const defaultThird = (activeEdition as any)?.defaultThirdPrize || "Distinction Certificate";
 
     // Validate map zone identifiers if provided
     if (venueZoneId) {
@@ -227,9 +224,10 @@ export async function POST(req: Request) {
       },
     });
 
-    const finalFirst = firstPrize !== undefined ? (firstPrize?.trim() || null) : defaultFirst;
-    const finalSecond = secondPrize !== undefined ? (secondPrize?.trim() || null) : defaultSecond;
-    const finalThird = thirdPrize !== undefined ? (thirdPrize?.trim() || null) : defaultThird;
+    // No prize given → null, so the event inherits the edition's default prizes when displayed
+    const finalFirst = firstPrize?.trim() || null;
+    const finalSecond = secondPrize?.trim() || null;
+    const finalThird = thirdPrize?.trim() || null;
 
     try {
       await prisma.$executeRawUnsafe(

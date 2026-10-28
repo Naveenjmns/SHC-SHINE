@@ -28,7 +28,8 @@ interface AdminEventFormModalProps {
   staffCoordinators: CoordinatorUser[];
   studentCoordinators: CoordinatorUser[];
   floorPlanZones: { id: string; label: string }[];
-  centralizedPrizes: { first: string; second: string; third: string };
+  /** Edition default prizes; events without their own prizes inherit these when displayed */
+  centralizedPrizes?: { first: string; second: string; third: string };
   /** Active edition start date, used to pre-fill new events */
   festStartDate?: string | null;
   onSave: (payload: any) => Promise<void>;
@@ -42,7 +43,6 @@ export default function AdminEventFormModal({
   staffCoordinators,
   studentCoordinators,
   floorPlanZones,
-  centralizedPrizes,
   festStartDate,
   onSave,
   saving,
@@ -60,9 +60,10 @@ export default function AdminEventFormModal({
   const [prelimsVenue, setPrelimsVenue] = useState("");
   const [prelimsVenueZoneId, setPrelimsVenueZoneId] = useState("");
   const [prelimsRules, setPrelimsRules] = useState("");
-  const [firstPrize, setFirstPrize] = useState(centralizedPrizes.first);
-  const [secondPrize, setSecondPrize] = useState(centralizedPrizes.second);
-  const [thirdPrize, setThirdPrize] = useState(centralizedPrizes.third);
+  // Per-event prize overrides only; empty means "use the edition's default prizes"
+  const [firstPrize, setFirstPrize] = useState("");
+  const [secondPrize, setSecondPrize] = useState("");
+  const [thirdPrize, setThirdPrize] = useState("");
   const [staffCoordName, setStaffCoordName] = useState("");
   const [staffCoordEmail, setStaffCoordEmail] = useState("");
   const [staffCoordPhone, setStaffCoordPhone] = useState("");
@@ -85,9 +86,9 @@ export default function AdminEventFormModal({
       setPrelimsVenue(editingEvent.prelimsVenue || "");
       setPrelimsVenueZoneId(editingEvent.prelimsVenueZoneId || "");
       setPrelimsRules(editingEvent.prelimsRules || "");
-      setFirstPrize(editingEvent.firstPrize || centralizedPrizes.first);
-      setSecondPrize(editingEvent.secondPrize || centralizedPrizes.second);
-      setThirdPrize(editingEvent.thirdPrize || centralizedPrizes.third);
+      setFirstPrize(editingEvent.firstPrize || "");
+      setSecondPrize(editingEvent.secondPrize || "");
+      setThirdPrize(editingEvent.thirdPrize || "");
       setStaffCoordName(editingEvent.staffCoordinatorName || editingEvent.staffCoordinator?.name || "");
       setStaffCoordEmail(editingEvent.staffCoordinatorEmail || editingEvent.staffCoordinator?.email || "");
       setStaffCoordPhone(editingEvent.staffCoordinatorPhone || editingEvent.staffCoordinator?.phone || "");
@@ -108,9 +109,9 @@ export default function AdminEventFormModal({
       setPrelimsVenue("");
       setPrelimsVenueZoneId("");
       setPrelimsRules("");
-      setFirstPrize(centralizedPrizes.first);
-      setSecondPrize(centralizedPrizes.second);
-      setThirdPrize(centralizedPrizes.third);
+      setFirstPrize("");
+      setSecondPrize("");
+      setThirdPrize("");
       setStaffCoordName("");
       setStaffCoordEmail("");
       setStaffCoordPhone("");
@@ -118,7 +119,7 @@ export default function AdminEventFormModal({
       setStudentCoordEmail("");
       setStudentCoordPhone("");
     }
-  }, [editingEvent, centralizedPrizes, festStartDate]);
+  }, [editingEvent, festStartDate]);
 
   if (!isOpen) return null;
 

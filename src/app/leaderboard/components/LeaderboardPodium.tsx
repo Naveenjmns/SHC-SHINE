@@ -6,12 +6,12 @@ import { Trophy, Medal, Crown, Users } from "lucide-react";
 export interface PodiumTeam {
   rank: 1 | 2 | 3;
   positionTitle: string;
-  collegeName: string;
+  collegeName: string | null;
   teamName: string | null;
   participants: string[];
   score: number | null;
   result: string;
-  award?: string;
+  award?: string | null;
 }
 
 interface LeaderboardPodiumProps {
@@ -41,9 +41,11 @@ export default function LeaderboardPodium({
 
           {second ? (
             <>
-              <h3 className="text-xl sm:text-2xl font-bold text-ink mb-2 leading-tight">
-                {second.collegeName}
-              </h3>
+              {second.collegeName && (
+                <h3 className="text-xl sm:text-2xl font-bold text-ink mb-2 leading-tight">
+                  {second.collegeName}
+                </h3>
+              )}
               {second.teamName && (
                 <p className="text-sm font-semibold text-ink-muted mb-3">
                   Team: {second.teamName}
@@ -100,9 +102,11 @@ export default function LeaderboardPodium({
 
           {first ? (
             <>
-              <h3 className="text-2xl sm:text-3xl font-bold text-ink mb-2 leading-tight">
-                {first.collegeName}
-              </h3>
+              {first.collegeName && (
+                <h3 className="text-2xl sm:text-3xl font-bold text-ink mb-2 leading-tight">
+                  {first.collegeName}
+                </h3>
+              )}
               {first.teamName && (
                 <p className="text-[15px] font-semibold text-ink-muted mb-3">
                   Team: {first.teamName}
@@ -155,9 +159,11 @@ export default function LeaderboardPodium({
 
           {third ? (
             <>
-              <h3 className="text-xl sm:text-2xl font-bold text-ink mb-2 leading-tight">
-                {third.collegeName}
-              </h3>
+              {third.collegeName && (
+                <h3 className="text-xl sm:text-2xl font-bold text-ink mb-2 leading-tight">
+                  {third.collegeName}
+                </h3>
+              )}
               {third.teamName && (
                 <p className="text-sm font-semibold text-ink-muted mb-3">
                   Team: {third.teamName}

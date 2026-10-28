@@ -16,9 +16,9 @@ export interface EventWithResults {
   category: string;
   venue: string | null;
   awards?: {
-    first: string;
-    second: string;
-    third: string;
+    first: string | null;
+    second: string | null;
+    third: string | null;
   };
   podium: {
     first: PodiumTeam | null;
@@ -26,14 +26,6 @@ export interface EventWithResults {
     third: PodiumTeam | null;
   };
   teams?: PodiumTeam[];
-  results?: Array<{
-    id: string;
-    result: string;
-    user: {
-      name: string;
-      college: string | null;
-    };
-  }>;
 }
 
 interface ArenaResultsCarouselProps {
@@ -53,62 +45,11 @@ export default function ArenaResultsCarousel({
   onNext,
   isFullscreen,
 }: ArenaResultsCarouselProps) {
-  const first =
-    currentEvent?.podium?.first ||
-    (() => {
-      const match = currentEvent?.results?.find((r) =>
-        r.result?.toLowerCase().includes("1")
-      );
-      if (!match) return null;
-      return {
-        rank: 1 as const,
-        positionTitle: "1st Place • Champion",
-        collegeName: match.user.college || "Delegation College",
-        teamName: null,
-        participants: [match.user.name],
-        score: null,
-        result: match.result,
-        award: currentEvent?.awards?.first || "Cash Prize + Trophy + Certificate",
-      };
-    })();
-
-  const second =
-    currentEvent?.podium?.second ||
-    (() => {
-      const match = currentEvent?.results?.find((r) =>
-        r.result?.toLowerCase().includes("2")
-      );
-      if (!match) return null;
-      return {
-        rank: 2 as const,
-        positionTitle: "2nd Place • Runner-Up",
-        collegeName: match.user.college || "Delegation College",
-        teamName: null,
-        participants: [match.user.name],
-        score: null,
-        result: match.result,
-        award: currentEvent?.awards?.second || "Cash Prize + Merit Certificate",
-      };
-    })();
-
-  const third =
-    currentEvent?.podium?.third ||
-    (() => {
-      const match = currentEvent?.results?.find((r) =>
-        r.result?.toLowerCase().includes("3")
-      );
-      if (!match) return null;
-      return {
-        rank: 3 as const,
-        positionTitle: "3rd Place • Finalist",
-        collegeName: match.user.college || "Delegation College",
-        teamName: null,
-        participants: [match.user.name],
-        score: null,
-        result: match.result,
-        award: currentEvent?.awards?.third || "Distinction Certificate",
-      };
-    })();
+  // Podium placings come only from the API, which ranks results with the shared
+  // parseRank rules — an empty slot stays empty rather than being guessed here
+  const first = currentEvent?.podium?.first ?? null;
+  const second = currentEvent?.podium?.second ?? null;
+  const third = currentEvent?.podium?.third ?? null;
 
   return (
     <div className="max-w-6xl mx-auto text-center space-y-6">
