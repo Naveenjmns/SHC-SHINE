@@ -24,21 +24,21 @@ export default function RegisterStepper({ currentStep, onStepClick }: RegisterSt
             <div
               key={s.step}
               onClick={() => isCompleted && onStepClick?.(s.step)}
-              className={`p-3 rounded-[8px] border transition-all flex items-center gap-3 ${
+              className={`p-3 sm:p-4 rounded-2xl border transition-colors flex items-center gap-3 ${
                 isCurrent
-                  ? "bg-accent-muted border-accent text-ink"
+                  ? "bg-surface border-accent text-ink shadow-card"
                   : isCompleted
-                  ? "bg-surface-raised border-border text-ink hover:border-border-strong cursor-pointer"
-                  : "bg-surface border-border text-ink-subtle opacity-70"
+                  ? "bg-surface border-border text-ink hover:border-accent cursor-pointer"
+                  : "bg-surface border-border text-ink-subtle"
               }`}
             >
               <div
-                className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-xs font-bold transition-colors ${
+                className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-sm font-bold transition-colors ${
                   isCurrent
                     ? "bg-accent text-accent-ink"
                     : isCompleted
-                    ? "bg-success text-white"
-                    : "bg-surface-sunken text-ink-subtle"
+                    ? "bg-accent-muted text-accent-strong"
+                    : "bg-surface-raised text-ink-subtle"
                 }`}
               >
                 {isCompleted ? <Check className="w-4 h-4" /> : s.step}
@@ -46,13 +46,13 @@ export default function RegisterStepper({ currentStep, onStepClick }: RegisterSt
 
               <div className="min-w-0">
                 <div
-                  className={`text-xs font-semibold truncate ${
-                    isCurrent ? "text-accent font-bold" : "text-ink"
+                  className={`text-[15px] font-semibold truncate ${
+                    isCurrent ? "text-accent font-bold" : isCompleted ? "text-ink" : "text-ink-subtle"
                   }`}
                 >
                   {s.title}
                 </div>
-                <div className="text-[11px] text-ink-muted truncate hidden sm:block">
+                <div className="text-sm text-ink-muted truncate hidden sm:block">
                   {s.subtitle}
                 </div>
               </div>

@@ -114,9 +114,9 @@ export default function BadgeDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[var(--surface-raised)] flex flex-col items-center justify-center p-4">
-        <div className="w-8 h-8 border-2 border-[var(--accent)] border-t-transparent rounded-full animate-spin mb-3" />
-        <p className="text-xs font-semibold text-[var(--ink-muted)] uppercase tracking-wider">
+      <div className="min-h-screen bg-canvas flex flex-col items-center justify-center p-4">
+        <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin mb-3" />
+        <p className="text-[15px] font-semibold text-ink-muted">
           Loading Official Delegate Pass...
         </p>
       </div>
@@ -125,12 +125,12 @@ export default function BadgeDetailPage() {
 
   if (error || !badge) {
     return (
-      <div className="min-h-screen bg-[var(--surface-raised)] flex flex-col items-center justify-center p-4 text-center">
-        <div className="w-12 h-12 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-xl flex items-center justify-center mb-3">
-          <AlertCircle className="w-6 h-6 text-rose-600 dark:text-rose-400" />
+      <div className="min-h-screen bg-canvas flex flex-col items-center justify-center p-4 text-center">
+        <div className="w-12 h-12 bg-danger-surface border border-danger-border rounded-2xl flex items-center justify-center mb-3">
+          <AlertCircle className="w-6 h-6 text-danger" />
         </div>
-        <h1 className="text-lg font-bold text-[var(--ink)] mb-1">Invalid or Expired Badge</h1>
-        <p className="text-xs text-[var(--ink-muted)] max-w-sm mb-5">
+        <h1 className="text-2xl font-bold text-ink mb-2">Invalid or Expired Badge</h1>
+        <p className="text-[15px] text-ink-muted max-w-sm mb-6">
           {error || "The badge code provided does not exist in the fest registry."}
         </p>
         <Link href="/">
@@ -143,17 +143,17 @@ export default function BadgeDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--surface-raised)] text-[var(--ink)] py-8 px-4 sm:px-6">
+    <div className="min-h-screen bg-canvas text-ink py-8 px-4 sm:px-6">
       {/* Print Styles */}
       <style
         dangerouslySetInnerHTML={{
           __html: `
             @media print {
-              body { background: white !important; color: black !important; }
+              body { background: white !important; color: #0B3558 !important; }
               .no-print { display: none !important; }
               .print-badge-wrapper {
                 box-shadow: none !important;
-                border: 2px solid #1C1917 !important;
+                border: 2px solid #0B3558 !important;
                 page-break-inside: avoid;
                 margin: 0 auto;
                 max-width: 500px;
@@ -169,7 +169,7 @@ export default function BadgeDetailPage() {
           variant="outline"
           size="sm"
           onClick={handleBack}
-          className="text-xs gap-1.5"
+          className="text-sm gap-1.5"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Back</span>
@@ -180,7 +180,7 @@ export default function BadgeDetailPage() {
             variant="outline"
             size="sm"
             onClick={handleShare}
-            className="text-xs gap-1.5"
+            className="text-sm gap-1.5"
           >
             <Share2 className="w-3.5 h-3.5" />
             <span>{copied ? "Link Copied!" : "Share Pass"}</span>
@@ -189,7 +189,7 @@ export default function BadgeDetailPage() {
             variant="primary"
             size="sm"
             onClick={handlePrint}
-            className="text-xs gap-1.5"
+            className="text-sm gap-1.5"
           >
             <Printer className="w-3.5 h-3.5" />
             <span>Print Badge</span>
@@ -198,7 +198,7 @@ export default function BadgeDetailPage() {
       </div>
 
       {/* Main Stack */}
-      <div className="max-w-xl mx-auto space-y-4">
+      <div className="max-w-xl mx-auto space-y-5">
         {/* Pass Card */}
         <DigitalBadgeCard
           badgeCode={badge.badgeCode}

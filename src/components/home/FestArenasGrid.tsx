@@ -1,7 +1,7 @@
 import React from "react";
 import Link from "next/link";
-import { Badge, Button } from "@/components/ui";
-import { ArrowRight, Theater, Laptop, MapPin, Clock, Trophy } from "lucide-react";
+import { Button } from "@/components/ui";
+import { ArrowRight, Theater, Laptop, MapPin, ChevronRight } from "lucide-react";
 import { formatTimeSafe } from "@/lib/dateUtils";
 
 interface EventSummary {
@@ -18,110 +18,98 @@ interface FestArenasGridProps {
   events: EventSummary[];
 }
 
+function ArenaPanel({
+  title,
+  description,
+  icon,
+  events,
+  fallbackVenue,
+}: {
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+  events: EventSummary[];
+  fallbackVenue: string;
+}) {
+  return (
+    <div className="feature-panel p-6 sm:p-8 flex flex-col">
+      <div className="flex items-start gap-4">
+        <div className="w-12 h-12 rounded-[12px] bg-accent-muted text-accent flex items-center justify-center shrink-0">
+          {icon}
+        </div>
+        <div className="min-w-0">
+          <h3 className="text-2xl font-bold text-ink">{title}</h3>
+          <p className="text-[15px] text-ink-muted mt-1">{description}</p>
+        </div>
+      </div>
+
+      <ul className="mt-6 divide-y divide-border border-t border-border flex-1">
+        {events.slice(0, 4).map((evt) => (
+          <li key={evt.id}>
+            <Link
+              href={`/events#${evt.id}`}
+              className="group flex items-center justify-between gap-4 py-4 transition-colors"
+            >
+              <div className="min-w-0 space-y-1">
+                <p className="text-base font-semibold text-ink truncate group-hover:text-accent transition-colors">
+                  {evt.name}
+                </p>
+                <p className="flex items-center gap-1.5 text-[15px] text-ink-muted">
+                  <span className="tabular-nums font-medium">{formatTimeSafe(evt.dateTime)}</span>
+                  <span aria-hidden="true">·</span>
+                  <MapPin className="w-3.5 h-3.5 shrink-0" />
+                  <span className="truncate">{evt.venue || fallbackVenue}</span>
+                </p>
+              </div>
+              <ChevronRight className="w-5 h-5 text-ink-disabled group-hover:text-accent shrink-0 transition-colors" />
+            </Link>
+          </li>
+        ))}
+        {events.length === 0 && (
+          <li className="py-6 text-[15px] text-ink-muted">Events will be announced soon.</li>
+        )}
+      </ul>
+    </div>
+  );
+}
+
 export default function FestArenasGrid({ events }: FestArenasGridProps) {
   const onStageEvents = events.filter((e) => e.category === "ON_STAGE");
   const offStageEvents = events.filter((e) => e.category === "OFF_STAGE");
 
   return (
-    <section className="max-w-6xl mx-auto px-4 sm:px-6 py-16 space-y-12">
-      <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4 border-b border-border pb-6">
-        <div className="space-y-1">
-          <Badge variant="accent">COMPETITION ARENAS</Badge>
-          <h2 className="text-2xl sm:text-3xl font-bold font-display text-ink tracking-tight">
-            Flagship Symposium Events
-          </h2>
-          <p className="text-sm text-ink-muted max-w-xl">
-            Compete across live auditorium presentations and technical laboratory challenges.
-          </p>
-        </div>
-
-        <Link href="/events" className="shrink-0">
-          <Button
-            variant="outline"
-            size="sm"
-            rightIcon={<ArrowRight className="w-4 h-4" />}
-          >
-            All Competitions ({events.length})
-          </Button>
-        </Link>
+    <section className="container-shine py-20 lg:py-24">
+      <div className="text-center max-w-2xl mx-auto">
+        <p className="eyebrow">Competition arenas</p>
+        <h2 className="text-fluid-h1 mt-3">Compete where you shine best</h2>
+        <p className="mt-4 text-lg text-ink-muted">
+          Live auditorium presentations and hands-on technical lab challenges, all in one day.
+        </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* On-Stage Arena Column */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 text-ink">
-            <Theater className="w-5 h-5 text-accent" />
-            <h3 className="text-lg font-bold font-display">On-Stage Presentations</h3>
-            <span className="text-xs text-ink-muted font-mono">({onStageEvents.length})</span>
-          </div>
+      <div className="mt-14 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+        <ArenaPanel
+          title="On-stage"
+          description={`${onStageEvents.length} live presentations in front of judges and crowd`}
+          icon={<Theater className="w-6 h-6" />}
+          events={onStageEvents}
+          fallbackVenue="Main Auditorium"
+        />
+        <ArenaPanel
+          title="Off-stage"
+          description={`${offStageEvents.length} technical challenges across the CS labs`}
+          icon={<Laptop className="w-6 h-6" />}
+          events={offStageEvents}
+          fallbackVenue="Computer Science Labs"
+        />
+      </div>
 
-          <div className="space-y-3">
-            {onStageEvents.slice(0, 4).map((evt) => (
-              <div
-                key={evt.id}
-                className="p-4 rounded-[12px] bg-surface border border-border hover:border-border-strong transition-colors flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
-              >
-                <div className="space-y-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <Badge variant="confirmed" size="sm">On-Stage</Badge>
-                    <span className="text-xs font-mono text-ink-muted">
-                      {formatTimeSafe(evt.dateTime)}
-                    </span>
-                  </div>
-                  <h4 className="text-sm font-semibold text-ink truncate">{evt.name}</h4>
-                  <div className="flex items-center gap-1.5 text-xs text-ink-muted">
-                    <MapPin className="w-3.5 h-3.5 text-ink-subtle shrink-0" />
-                    <span className="truncate">{evt.venue || "Main Auditorium"}</span>
-                  </div>
-                </div>
-
-                <Link href={`/events#${evt.id}`} className="shrink-0 self-end sm:self-center">
-                  <Button variant="secondary" size="sm">
-                    Details
-                  </Button>
-                </Link>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Off-Stage Arena Column */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 text-ink">
-            <Laptop className="w-5 h-5 text-accent" />
-            <h3 className="text-lg font-bold font-display">Off-Stage Technical Challenges</h3>
-            <span className="text-xs text-ink-muted font-mono">({offStageEvents.length})</span>
-          </div>
-
-          <div className="space-y-3">
-            {offStageEvents.slice(0, 4).map((evt) => (
-              <div
-                key={evt.id}
-                className="p-4 rounded-[12px] bg-surface border border-border hover:border-border-strong transition-colors flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
-              >
-                <div className="space-y-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <Badge variant="neutral" size="sm">Off-Stage</Badge>
-                    <span className="text-xs font-mono text-ink-muted">
-                      {formatTimeSafe(evt.dateTime)}
-                    </span>
-                  </div>
-                  <h4 className="text-sm font-semibold text-ink truncate">{evt.name}</h4>
-                  <div className="flex items-center gap-1.5 text-xs text-ink-muted">
-                    <MapPin className="w-3.5 h-3.5 text-ink-subtle shrink-0" />
-                    <span className="truncate">{evt.venue || "Computer Science Labs"}</span>
-                  </div>
-                </div>
-
-                <Link href={`/events#${evt.id}`} className="shrink-0 self-end sm:self-center">
-                  <Button variant="secondary" size="sm">
-                    Details
-                  </Button>
-                </Link>
-              </div>
-            ))}
-          </div>
-        </div>
+      <div className="mt-10 flex justify-center">
+        <Link href="/events">
+          <Button variant="outline" size="lg" rightIcon={<ArrowRight className="w-5 h-5" />}>
+            View all {events.length} competitions
+          </Button>
+        </Link>
       </div>
     </section>
   );

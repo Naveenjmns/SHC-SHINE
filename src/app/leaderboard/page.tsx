@@ -83,7 +83,7 @@ export default function StageLeaderboardPage() {
   const currentEvent = events[activeEventIndex];
 
   return (
-    <main className="min-h-screen flex flex-col justify-between bg-[var(--surface-raised)] text-[var(--ink)] select-none">
+    <main className="min-h-screen flex flex-col justify-between bg-canvas text-ink select-none">
       {/* Institutional Stage Header */}
       <StageHeaderBanner edition={edition || undefined} forceVisible showFestLogo />
 
@@ -99,8 +99,8 @@ export default function StageLeaderboardPage() {
       <section className={`my-auto px-4 sm:px-8 w-full ${isFullscreen ? "py-4 sm:py-6" : "py-8 sm:py-12"}`}>
         {loading || !currentEvent ? (
           <div className="text-center py-20">
-            <div className="w-10 h-10 border-2 border-[var(--accent)] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-            <div className="text-base font-semibold text-[var(--ink)]">
+            <div className="w-10 h-10 border-2 border-accent border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+            <div className="text-base font-semibold text-ink">
               Loading live auditorium stage board...
             </div>
           </div>
@@ -123,7 +123,7 @@ export default function StageLeaderboardPage() {
       </section>
 
       {/* Subdued Bottom Metadata Strip */}
-      <div className="py-3 px-6 text-center border-t border-[var(--border)] bg-[var(--surface)] text-[11px] font-medium text-[var(--ink-muted)]">
+      <div className="py-3 px-6 text-center border-t border-border bg-surface text-sm font-medium text-ink-muted">
         SHINE 26 • Department of Computer Applications (PG) • Sacred Heart College (Autonomous)
       </div>
     </main>

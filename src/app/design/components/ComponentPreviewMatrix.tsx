@@ -31,15 +31,16 @@ export default function ComponentPreviewMatrix() {
   return (
     <section className="space-y-10">
       <div>
-        <h2 className="text-xl font-bold text-ink">3. UI Component Library (src/components/ui/)</h2>
-        <p className="text-sm text-ink-muted mt-1">
-          Zero external UI framework dependencies. 100% token-based, 8px control / 12px panel radii,
-          accessible ARIA roles, and mobile touch targets ≥ 44px.
+        <p className="eyebrow">Components</p>
+        <h2 className="text-2xl font-bold text-ink mt-1">5. UI Component Library (src/components/ui/)</h2>
+        <p className="text-[15px] text-ink-muted mt-1">
+          Zero external UI framework dependencies. 100% token-based: 8px controls, 16px cards, 24px modals,
+          blue-tinted elevation, accessible ARIA roles and touch targets of at least 44px.
         </p>
       </div>
 
       {/* Breadcrumbs Preview */}
-      <div className="p-4 rounded-[12px] bg-surface border border-border">
+      <div className="p-4 rounded-2xl bg-surface border border-border shadow-card">
         <Breadcrumbs
           items={[
             { label: "Home", href: "/" },
@@ -51,8 +52,8 @@ export default function ComponentPreviewMatrix() {
 
       {/* StatCards Grid */}
       <div className="space-y-3">
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-ink-muted">
-          StatCard Primitives (Zero Glow, Hairline Borders)
+        <h3 className="eyebrow">
+          StatCard Primitives (Hairline Border, Card Elevation)
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <StatCard
@@ -77,8 +78,8 @@ export default function ComponentPreviewMatrix() {
       </div>
 
       {/* Buttons & Loading States */}
-      <div className="p-5 border border-border rounded-[12px] bg-surface space-y-4">
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-ink-muted">
+      <div className="p-6 border border-border rounded-2xl bg-surface shadow-card space-y-4">
+        <h3 className="eyebrow">
           Button Primitives (Sizes sm/md/lg, Variants & Loading State)
         </h3>
         <div className="flex flex-wrap items-center gap-3">
@@ -94,11 +95,14 @@ export default function ComponentPreviewMatrix() {
           >
             {isBtnLoading ? "Saving..." : "Primary (Click to Load)"}
           </Button>
+          <Button variant="outline" size="md">
+            Outline (pairs with primary)
+          </Button>
+          <Button variant="dark" size="md">
+            Dark (navy)
+          </Button>
           <Button variant="secondary" size="md">
             Secondary
-          </Button>
-          <Button variant="outline" size="md">
-            Outline
           </Button>
           <Button variant="danger" size="md" leftIcon={<Trash2 className="w-4 h-4" />}>
             Danger
@@ -122,8 +126,8 @@ export default function ComponentPreviewMatrix() {
       </div>
 
       {/* Form Controls */}
-      <div className="p-5 border border-border rounded-[12px] bg-surface space-y-4">
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-ink-muted">
+      <div className="p-6 border border-border rounded-2xl bg-surface shadow-card space-y-4">
+        <h3 className="eyebrow">
           Form Controls (Inputs, Select, Checkbox, Radio, Switch)
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

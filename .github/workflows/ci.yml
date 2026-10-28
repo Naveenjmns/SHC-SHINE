@@ -1,0 +1,177 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# Cancel superseded runs for the same branch/PR
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: "24"
+  NEXT_TELEMETRY_DISABLED: "1"
+  # Placeholders so Prisma and NextAuth load during build; no database is contacted.
+  DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci"
+  NEXTAUTH_URL: "http://localhost:3000"
+  NEXTAUTH_SECRET: "ci-placeholder-secret"
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Blocking gates: typecheck, unit tests, production build
+  # ---------------------------------------------------------------------------
+  verify:
+    name: Typecheck, test & build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Restore Next.js build cache
+        uses: actions/cache@v4
+        with:
+          path: .next/cache
+          key: nextjs-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ hashFiles('src/**', 'public/**', 'next.config.ts') }}
+          restore-keys: |
+            nextjs-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-
+
+      - name: Build
+        run: npm run build
+
+  # ---------------------------------------------------------------------------
+  # Reporting gates (non-blocking until the existing backlog is cleared).
+  # To make them blocking, delete the `continue-on-error: true` lines below.
+  # ---------------------------------------------------------------------------
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: ESLint
+        id: eslint
+        run: |
+          set +e
+          npx eslint . -f json -o eslint-report.json
+          code=$?
+          npx eslint . -f stylish > eslint-report.txt
+          echo "exit_code=$code" >> "$GITHUB_OUTPUT"
+          exit $code
+
+      - name: Lint summary
+        if: always()
+        run: |
+          node -e '
+            const fs = require("fs");
+            if (!fs.existsSync("eslint-report.json")) { console.log("No ESLint report produced."); process.exit(0); }
+            const files = JSON.parse(fs.readFileSync("eslint-report.json", "utf8"));
+            let errors = 0, warnings = 0; const rules = {};
+            for (const f of files) for (const m of f.messages) {
+              if (m.severity === 2) { errors++; rules[m.ruleId || "parse"] = (rules[m.ruleId || "parse"] || 0) + 1; }
+              else warnings++;
+            }
+            const top = Object.entries(rules).sort((a, b) => b[1] - a[1]).slice(0, 10)
+              .map(([r, n]) => `| \`${r}\` | ${n} |`).join("\n");
+            const out = [
+              "## ESLint",
+              `**${errors} errors**, ${warnings} warnings` + (errors ? " — non-blocking for now" : " ✅"),
+              "",
+              errors ? "| Rule | Errors |\n|---|---|\n" + top : "",
+            ].join("\n");
+            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, out + "\n");
+          '
+
+      - name: Upload lint report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eslint-report
+          path: |
+            eslint-report.json
+            eslint-report.txt
+          retention-days: 14
+
+  audit:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: npm audit (production dependencies, high and above)
+        run: |
+          set +e
+          npm audit --omit=dev --json > audit-report.json
+          npm audit --omit=dev --audit-level=high
+          code=$?
+          node -e '
+            const fs = require("fs");
+            const r = JSON.parse(fs.readFileSync("audit-report.json", "utf8"));
+            const v = r.metadata?.vulnerabilities || {};
+            const rows = Object.entries(r.vulnerabilities || {})
+              .filter(([, x]) => ["high", "critical"].includes(x.severity))
+              .map(([name, x]) => {
+                const fix = x.fixAvailable === true ? "yes"
+                  : x.fixAvailable ? `${x.fixAvailable.name}@${x.fixAvailable.version}${x.fixAvailable.isSemVerMajor ? " (major)" : ""}`
+                  : "none";
+                return `| ${x.severity} | \`${name}\` | ${fix} |`;
+              }).join("\n");
+            const out = [
+              "## npm audit (production)",
+              `critical: **${v.critical || 0}** · high: **${v.high || 0}** · moderate: ${v.moderate || 0} · low: ${v.low || 0}`,
+              "",
+              rows ? "| Severity | Package | Fix |\n|---|---|---|\n" + rows : "No high or critical advisories ✅",
+            ].join("\n");
+            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, out + "\n");
+          '
+          exit $code
+
+      - name: Upload audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-audit-report
+          path: audit-report.json
+          retention-days: 14

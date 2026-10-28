@@ -1,14 +1,17 @@
 /**
- * SHINE 2026 — Master Design Tokens (Phase 1)
- * Single Accent System (#FF6B1A SHINE Orange), Cool-Neutral Base, WCAG AA Compliant
+ * SHINE 2026 — Master Design Tokens (v3 "Navy ink on cool marble")
+ * Navy ink text, single Signal Blue accent, Cloud canvas with white cards,
+ * hairline borders and blue-tinted elevation. WCAG AA compliant.
  * Tailwind v4 @theme Integration
  */
 
 @theme {
   /* Colors mapped to CSS Custom Properties */
+  --color-canvas: var(--canvas);
   --color-surface: var(--surface);
   --color-surface-raised: var(--surface-raised);
   --color-surface-sunken: var(--surface-sunken);
+  --color-surface-inverse: var(--surface-inverse);
 
   --color-border: var(--border);
   --color-border-muted: var(--border-muted);
@@ -17,12 +20,18 @@
   --color-ink: var(--ink);
   --color-ink-muted: var(--ink-muted);
   --color-ink-subtle: var(--ink-subtle);
+  --color-ink-disabled: var(--ink-disabled);
 
   --color-accent: var(--accent);
   --color-accent-hover: var(--accent-hover);
   --color-accent-active: var(--accent-active);
   --color-accent-muted: var(--accent-muted);
   --color-accent-ink: var(--accent-ink);
+  --color-accent-strong: var(--accent-strong);
+
+  /* Decorative atmosphere only — never for functional UI fills */
+  --color-blob-magenta: var(--blob-magenta);
+  --color-blob-cyan: var(--blob-cyan);
 
   --color-gold: var(--gold);
   --color-gold-hover: var(--gold-hover);
@@ -64,29 +73,35 @@
   --color-status-rejected-border: var(--status-rejected-border);
   --color-status-rejected-text: var(--status-rejected-text);
 
-  /* Typography Fonts */
-  --font-display: var(--font-display, "Bricolage Grotesque", -apple-system, sans-serif);
-  --font-sans: var(--font-ui, "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
-  --font-mono: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace);
+  /* Typography Fonts — one geometric humanist sans (Manrope as Gilroy substitute) */
+  --font-display: var(--font-brand, "Manrope", -apple-system, sans-serif);
+  --font-sans: var(--font-brand, "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
+  --font-mono: var(--font-code, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace);
 
-  /* Fixed 8-Step Typography Scale */
-  --text-xs: 0.75rem;    /* 12px */
-  --text-sm: 0.875rem;   /* 14px */
-  --text-base: 1rem;     /* 16px */
-  --text-lg: 1.125rem;   /* 18px */
+  /* Typography Scale */
+  --text-xs: 0.75rem;    /* 12px caption */
+  --text-sm: 0.875rem;   /* 14px body-sm */
+  --text-base: 1rem;     /* 16px body */
+  --text-lg: 1.125rem;   /* 18px button */
   --text-xl: 1.5rem;     /* 24px */
   --text-2xl: 2rem;      /* 32px */
   --text-3xl: 3rem;      /* 48px */
   --text-4xl: 4rem;      /* 64px */
+  --text-5xl: 4.25rem;   /* 68px heading-lg */
+  --text-6xl: 5rem;      /* 80px display */
 
-  /* Radii */
+  /* Radii — 8px controls, 16px product cards, 24px feature panels */
   --radius-control: 8px;
-  --radius-panel: 12px;
+  --radius-panel: 16px;
+  --radius-feature: 24px;
   --radius-full: 9999px;
 
-  /* Shadows (Only for overlays/popovers/menus/modals) */
-  --shadow-popover: 0 4px 16px -2px rgba(12, 10, 9, 0.08), 0 2px 6px -1px rgba(12, 10, 9, 0.04);
-  --shadow-modal: 0 20px 40px -4px rgba(12, 10, 9, 0.18), 0 8px 16px -2px rgba(12, 10, 9, 0.08);
+  /* Blue-tinted elevation (never neutral black) */
+  --shadow-card: var(--elev-card);
+  --shadow-elevated: var(--elev-elevated);
+  --shadow-button: var(--elev-button);
+  --shadow-popover: var(--elev-popover);
+  --shadow-modal: var(--elev-modal);
 
   /* Responsive Breakpoints */
   --breakpoint-360: 360px;
@@ -103,53 +118,61 @@
    ========================================================================== */
 :root {
   /* Surfaces */
-  --surface: #FFFFFF;
-  --surface-raised: #F5F5F4; /* stone-100 */
-  --surface-sunken: #E7E5E4; /* stone-200 */
+  --canvas: #F8F9FB;          /* Cloud — page background */
+  --surface: #FFFFFF;         /* Paper — cards, panels */
+  --surface-raised: #F0F3F8;  /* Pebble — input fills, hover washes, badges */
+  --surface-sunken: #E6EDF5;
+  --surface-inverse: #0B3558; /* Ink Navy — dark CTAs and inverse sections */
 
   /* Hairline 1px Borders */
-  --border: #E7E5E4; /* stone-200 */
-  --border-muted: #F5F5F4; /* stone-100 */
-  --border-strong: #D6D3D1; /* stone-300 */
+  --border: #D4E0ED;          /* Hairline */
+  --border-muted: #E7EEF6;
+  --border-strong: #B4C7DB;
 
   /* Typography & Ink (WCAG AA Compliant) */
-  --ink: #0C0A09; /* stone-950 near-black body */
-  --ink-muted: #57534E; /* stone-600 — Contrast 5.1:1 on white */
-  --ink-subtle: #78716C; /* stone-500 — Contrast 4.5:1 on white */
+  --ink: #0B3558;             /* Ink Navy — 12.6:1 on white */
+  --ink-muted: #476788;       /* Slate Gray — 5.9:1 on white */
+  --ink-subtle: #56708D;      /* 4.9:1 on white */
+  --ink-disabled: #A6BBD1;    /* Mist Gray — disabled / inactive only */
 
-  /* Accent: Single Primary Accent (#FF6B1A SHINE Orange) */
-  --accent: #FF6B1A;
-  --accent-hover: #E8551F;
-  --accent-active: #CC4414;
-  --accent-muted: rgba(255, 107, 26, 0.10);
-  --accent-ink: #0C0A09;
+  /* Accent: Signal Blue */
+  --accent: #006BFF;
+  --accent-hover: #0058D6;
+  --accent-active: #004EBA;
+  --accent-muted: #E6F0FF;
+  --accent-ink: #FFFFFF;
+  --accent-strong: #004EBA;   /* Deep Cobalt — accent text on muted fills */
 
-  /* Secondary Accent: Gold (#D9A441 - Exclusively for Awards/Trophies) */
+  /* Decorative blobs */
+  --blob-magenta: #E55CFF;
+  --blob-cyan: #0099FF;
+
+  /* Secondary Accent: Gold (exclusively for awards/trophies) */
   --gold: #D9A441;
   --gold-hover: #C59132;
-  --gold-muted: rgba(217, 164, 65, 0.12);
-  --gold-ink: #1C1917;
+  --gold-muted: rgba(217, 164, 65, 0.14);
+  --gold-ink: #0B3558;
 
   /* Semantic Roles */
-  --success: #16A34A;
-  --success-surface: #F0FDF4;
-  --success-border: #BBF7D0;
-  --success-ink: #14532D;
+  --success: #0E9F6E;
+  --success-surface: #ECFDF5;
+  --success-border: #A7F3D0;
+  --success-ink: #065F46;
 
   --warning: #D97706;
   --warning-surface: #FFFBEB;
   --warning-border: #FDE68A;
   --warning-ink: #78350F;
 
-  --danger: #DC2626;
-  --danger-surface: #FEF2F2;
-  --danger-border: #FECACA;
-  --danger-ink: #7F1D1D;
+  --danger: #E02424;
+  --danger-surface: #FDF2F2;
+  --danger-border: #FBD5D5;
+  --danger-ink: #9B1C1C;
 
-  --info: #2563EB;
-  --info-surface: #EFF6FF;
-  --info-border: #BFDBFE;
-  --info-ink: #1E3A8A;
+  --info: #006BFF;
+  --info-surface: #E6F0FF;
+  --info-border: #B8D4FF;
+  --info-ink: #004EBA;
 
   /* Status Colors */
   --status-pending: #D97706;
@@ -157,19 +180,27 @@
   --status-pending-border: #FDE68A;
   --status-pending-text: #78350F;
 
-  --status-confirmed: #16A34A;
-  --status-confirmed-bg: #F0FDF4;
-  --status-confirmed-border: #BBF7D0;
-  --status-confirmed-text: #14532D;
+  --status-confirmed: #0E9F6E;
+  --status-confirmed-bg: #ECFDF5;
+  --status-confirmed-border: #A7F3D0;
+  --status-confirmed-text: #065F46;
 
-  --status-rejected: #DC2626;
-  --status-rejected-bg: #FEF2F2;
-  --status-rejected-border: #FECACA;
-  --status-rejected-text: #7F1D1D;
+  --status-rejected: #E02424;
+  --status-rejected-bg: #FDF2F2;
+  --status-rejected-border: #FBD5D5;
+  --status-rejected-text: #9B1C1C;
+
+  /* Elevation — three-layer, blue-tinted */
+  --elev-card: rgba(71, 103, 136, 0.04) 0px 4px 5px 0px, rgba(71, 103, 136, 0.03) 0px 4px 10px 0px, rgba(71, 103, 136, 0.05) 0px 10px 20px 0px;
+  --elev-elevated: rgba(71, 103, 136, 0.04) 0px 4px 5px 0px, rgba(71, 103, 136, 0.03) 0px 8px 15px 0px, rgba(71, 103, 136, 0.08) 0px 30px 50px 0px;
+  --elev-button: rgba(71, 103, 136, 0.04) 0px 4px 5px 0px, rgba(71, 103, 136, 0.03) 0px 8px 15px 0px, rgba(71, 103, 136, 0.06) 0px 15px 30px 0px;
+  --elev-popover: rgba(71, 103, 136, 0.06) 0px 4px 8px 0px, rgba(71, 103, 136, 0.10) 0px 12px 28px 0px;
+  --elev-modal: rgba(11, 53, 88, 0.08) 0px 8px 16px 0px, rgba(11, 53, 88, 0.16) 0px 30px 60px 0px;
 
   /* Radii */
   --radius-control: 8px;
-  --radius-panel: 12px;
+  --radius-panel: 16px;
+  --radius-feature: 24px;
   --radius-full: 9999px;
 
   /* Motion Tokens (150ms-250ms) */
@@ -190,80 +221,92 @@
 }
 
 /* ==========================================================================
-   Dark Theme (.dark, [data-theme="dark"] — For Workspace Consoles)
+   Dark Theme (.dark, [data-theme="dark"] — Deep navy workspace)
    ========================================================================== */
+/* Root-level forms outrank the injected edition theme (:root:root) */
+:root:root.dark,
+:root:root[data-theme="dark"],
 .dark,
 [data-theme="dark"] {
-  --surface: #121110;
-  --surface-raised: #1C1917; /* stone-900 */
-  --surface-sunken: #0C0A09; /* stone-950 */
+  --canvas: #071E33;
+  --surface: #0A2740;
+  --surface-raised: #0F3250;
+  --surface-sunken: #061829;
+  --surface-inverse: #F0F3F8;
 
-  --border: #292524; /* stone-800 */
-  --border-muted: #1C1917;
-  --border-strong: #44403C; /* stone-700 */
+  --border: #1B4268;
+  --border-muted: #123553;
+  --border-strong: #2A5A85;
 
-  --ink: #FAFAF9; /* stone-50 */
-  --ink-muted: #A8A29E; /* stone-400 — Contrast 6.8:1 on #121110 */
-  --ink-subtle: #78716C; /* stone-500 — Contrast 4.6:1 on #121110 */
+  --ink: #F0F3F8;
+  --ink-muted: #A6BBD1;
+  --ink-subtle: #8AA4C0;
+  --ink-disabled: #476788;
 
-  --accent-muted: rgba(255, 107, 26, 0.16);
+  --accent-muted: rgba(0, 107, 255, 0.18);
+  --accent-strong: #7FB2FF;
 
-  --gold-ink: #FAFAF9;
+  --gold-ink: #F0F3F8;
   --gold-muted: rgba(217, 164, 65, 0.20);
 
-  --success-surface: #052E16;
-  --success-border: #14532D;
-  --success-ink: #BBF7D0;
+  --success-surface: #04261C;
+  --success-border: #065F46;
+  --success-ink: #A7F3D0;
 
-  --warning-surface: #451A03;
+  --warning-surface: #3A1A04;
   --warning-border: #78350F;
   --warning-ink: #FDE68A;
 
-  --danger-surface: #450A0A;
-  --danger-border: #7F1D1D;
-  --danger-ink: #FECACA;
+  --danger-surface: #3B0B0B;
+  --danger-border: #9B1C1C;
+  --danger-ink: #FBD5D5;
 
-  --info-surface: #172554;
-  --info-border: #1E3A8A;
-  --info-ink: #BFDBFE;
+  --info-surface: #0B2A55;
+  --info-border: #1E4A8F;
+  --info-ink: #B8D4FF;
 
-  --status-pending-bg: #451A03;
+  --status-pending-bg: #3A1A04;
   --status-pending-border: #78350F;
   --status-pending-text: #FDE68A;
 
-  --status-confirmed-bg: #052E16;
-  --status-confirmed-border: #14532D;
-  --status-confirmed-text: #BBF7D0;
+  --status-confirmed-bg: #04261C;
+  --status-confirmed-border: #065F46;
+  --status-confirmed-text: #A7F3D0;
 
-  --status-rejected-bg: #450A0A;
-  --status-rejected-border: #7F1D1D;
-  --status-rejected-text: #FECACA;
+  --status-rejected-bg: #3B0B0B;
+  --status-rejected-border: #9B1C1C;
+  --status-rejected-text: #FBD5D5;
 
-  --shadow-popover: 0 4px 20px -2px rgba(0, 0, 0, 0.4);
-  --shadow-modal: 0 24px 48px -4px rgba(0, 0, 0, 0.6);
+  --elev-card: 0 1px 2px rgba(2, 12, 24, 0.4);
+  --elev-elevated: 0 12px 32px rgba(2, 12, 24, 0.5);
+  --elev-button: 0 4px 12px rgba(2, 12, 24, 0.4);
+  --elev-popover: 0 8px 24px rgba(2, 12, 24, 0.55);
+  --elev-modal: 0 30px 60px rgba(2, 12, 24, 0.65);
 }
 
 /* ==========================================================================
    Stage Mode ([data-stage-mode="true"] — 16:9 Projector Theme)
    ========================================================================== */
+:root:root[data-stage-mode="true"],
 [data-stage-mode="true"] {
-  --surface: #080706;
-  --surface-raised: #141210;
-  --surface-sunken: #000000;
+  --canvas: #041526;
+  --surface: #071E33;
+  --surface-raised: #0B2A47;
+  --surface-sunken: #020D18;
 
-  --border: #2C2825;
-  --border-muted: #1A1816;
-  --border-strong: #4A443E;
+  --border: #1B4268;
+  --border-muted: #0F2F4D;
+  --border-strong: #2F6497;
 
   --ink: #FFFFFF;
-  --ink-muted: #D6D3D1;
-  --ink-subtle: #A8A29E;
+  --ink-muted: #C9D7E6;
+  --ink-subtle: #A6BBD1;
 
-  --accent: #FF7728; /* Slightly elevated luminosity for LED stage arrays */
-  --accent-ink: #000000;
+  --accent: #3D8BFF; /* Elevated luminosity for LED stage arrays */
+  --accent-ink: #FFFFFF;
 
   --gold: #F2C94C;
-  --gold-ink: #000000;
+  --gold-ink: #041526;
 }
 
 /* ==========================================================================

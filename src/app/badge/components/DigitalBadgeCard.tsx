@@ -74,46 +74,46 @@ export default function DigitalBadgeCard({
   );
 
   return (
-    <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl shadow-sm overflow-hidden print-badge-wrapper">
+    <div className="bg-surface border border-border rounded-3xl shadow-elevated overflow-hidden print-badge-wrapper">
       {/* Lanyard Slot Simulation */}
-      <div className="h-5 bg-[var(--surface-raised)] border-b border-[var(--border)] flex items-center justify-center">
-        <div className="w-14 h-2 rounded-full bg-[var(--border)]" />
+      <div className="h-5 bg-surface-raised border-b border-border flex items-center justify-center">
+        <div className="w-14 h-2 rounded-full bg-border" />
       </div>
 
       {/* Fest Header Banner */}
-      <div className="bg-[var(--surface-raised)] border-b border-[var(--border)] p-6 relative">
+      <div className="bg-surface-raised border-b border-border p-6 relative">
         <div className="flex justify-between items-start gap-4">
           <div>
-            <div className="text-[11px] font-semibold text-[var(--accent)] tracking-wider uppercase mb-0.5">
+            <div className="eyebrow text-accent mb-0.5">
               {fest.institutionName || "Sacred Heart College (Autonomous)"}
             </div>
-            <div className="text-[10px] text-[var(--ink-muted)] uppercase tracking-wider font-medium mb-2">
+            <div className="text-sm text-ink-muted font-medium mb-2">
               {fest.departmentName || "Department of Computer Applications (PG)"}
             </div>
 
-            <h1 className="text-2xl font-bold tracking-tight text-[var(--ink)] flex items-baseline gap-2">
+            <h1 className="text-2xl font-bold tracking-tight text-ink flex items-baseline gap-2">
               <span>{fest.name}</span>
-              <span className="text-[var(--accent)]">{fest.edition}</span>
+              <span className="text-accent">{fest.edition}</span>
             </h1>
           </div>
 
-          <span className="inline-block px-2.5 py-0.5 rounded-full bg-[var(--surface)] border border-[var(--border)] text-[var(--ink)] text-[10px] font-bold uppercase tracking-wider shrink-0">
+          <span className="inline-block px-2.5 py-0.5 rounded-full bg-surface border border-border text-ink text-sm font-semibold shrink-0">
             Official Pass
           </span>
         </div>
 
-        <div className="mt-4 pt-3 border-t border-[var(--border)] flex flex-wrap items-center gap-y-1 gap-x-4 text-xs text-[var(--ink-muted)]">
+        <div className="mt-4 pt-3 border-t border-border flex flex-wrap items-center gap-y-1 gap-x-4 text-sm text-ink-muted">
           <span className="inline-flex items-center gap-1.5">
-            <Calendar className="w-3.5 h-3.5 text-[var(--accent)]" />
+            <Calendar className="w-3.5 h-3.5 text-accent" />
             <span>{formattedDate}</span>
           </span>
           <span className="inline-flex items-center gap-1.5">
-            <MapPin className="w-3.5 h-3.5 text-[var(--accent)]" />
+            <MapPin className="w-3.5 h-3.5 text-accent" />
             <span>{fest.venue}</span>
             <button
               type="button"
               onClick={onOpenMap}
-              className="px-2 py-0.5 rounded-md bg-[var(--surface)] text-[var(--ink)] text-[10px] font-semibold border border-[var(--border)] hover:border-[var(--accent)] transition-colors cursor-pointer ml-1"
+              className="px-2 py-0.5 rounded-[8px] bg-surface text-ink text-xs font-semibold border border-border hover:border-accent transition-colors cursor-pointer ml-1"
             >
               Floor Plan
             </button>
@@ -127,8 +127,8 @@ export default function DigitalBadgeCard({
           {/* QR Code Container */}
           <div className="shrink-0 flex flex-col items-center">
             <div
-              className={`p-2.5 bg-white border-2 rounded-xl shadow-2xs relative ${
-                !isApproved ? "border-amber-400" : "border-[var(--ink)]"
+              className={`p-2.5 bg-white border-2 rounded-2xl relative ${
+                !isApproved ? "border-warning" : "border-ink"
               }`}
             >
               {qrData ? (
@@ -141,13 +141,13 @@ export default function DigitalBadgeCard({
                   }`}
                 />
               ) : (
-                <div className="w-36 h-36 bg-[var(--surface-raised)] flex items-center justify-center text-xs text-[var(--ink-muted)]">
+                <div className="w-36 h-36 bg-surface-raised flex items-center justify-center text-sm text-ink-muted">
                   QR Unavailable
                 </div>
               )}
               {!isApproved && (
-                <div className="absolute inset-2.5 bg-amber-500/10 rounded-lg flex items-center justify-center pointer-events-none">
-                  <span className="bg-amber-900/90 text-white font-bold text-[9px] px-2 py-0.5 rounded shadow-xs">
+                <div className="absolute inset-2.5 bg-warning/10 rounded-lg flex items-center justify-center pointer-events-none">
+                  <span className="bg-warning-ink text-white font-bold text-xs px-2 py-0.5 rounded-full">
                     AWAITING APPROVAL
                   </span>
                 </div>
@@ -155,7 +155,7 @@ export default function DigitalBadgeCard({
             </div>
 
             <div className="mt-2 text-center">
-              <span className="font-mono text-xs font-bold text-[var(--ink)] tracking-wider">
+              <span className="font-mono text-[15px] font-bold text-ink tracking-wider tabular-nums">
                 {badgeCode}
               </span>
             </div>
@@ -164,20 +164,20 @@ export default function DigitalBadgeCard({
           {/* Delegate Information */}
           <div className="flex-1 w-full space-y-3 text-center sm:text-left">
             <div>
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--ink-muted)]">
+              <div className="text-sm font-medium text-ink-muted">
                 Delegate Name
               </div>
-              <h2 className="text-xl font-bold text-[var(--ink)]">{name}</h2>
+              <h2 className="text-2xl font-bold text-ink">{name}</h2>
             </div>
 
-            <div className="grid grid-cols-1 gap-2 pt-2 border-t border-[var(--border)] text-xs">
+            <div className="grid grid-cols-1 gap-2 pt-2 border-t border-border text-sm">
               <div className="flex items-start gap-2 justify-center sm:justify-start">
-                <Building2 className="w-4 h-4 text-[var(--accent)] shrink-0 mt-0.5" />
+                <Building2 className="w-4 h-4 text-accent shrink-0 mt-0.5" />
                 <div>
-                  <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--ink-muted)]">
+                  <div className="text-sm font-medium text-ink-muted">
                     Institution
                   </div>
-                  <div className="font-semibold text-[var(--ink)]">
+                  <div className="font-semibold text-ink">
                     {delegation.collegeName}
                   </div>
                 </div>
@@ -185,12 +185,12 @@ export default function DigitalBadgeCard({
 
               {delegation.department && (
                 <div className="flex items-start gap-2 justify-center sm:justify-start">
-                  <GraduationCap className="w-4 h-4 text-[var(--accent)] shrink-0 mt-0.5" />
+                  <GraduationCap className="w-4 h-4 text-accent shrink-0 mt-0.5" />
                   <div>
-                    <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--ink-muted)]">
+                    <div className="text-sm font-medium text-ink-muted">
                       Department
                     </div>
-                    <div className="font-medium text-[var(--ink)]">
+                    <div className="font-medium text-ink">
                       {delegation.department}
                     </div>
                   </div>
@@ -199,12 +199,12 @@ export default function DigitalBadgeCard({
 
               {delegation.teamName && (
                 <div className="flex items-start gap-2 justify-center sm:justify-start">
-                  <Users className="w-4 h-4 text-[var(--accent)] shrink-0 mt-0.5" />
+                  <Users className="w-4 h-4 text-accent shrink-0 mt-0.5" />
                   <div>
-                    <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--ink-muted)]">
+                    <div className="text-sm font-medium text-ink-muted">
                       Team Contingent
                     </div>
-                    <div className="font-medium text-[var(--ink)]">
+                    <div className="font-medium text-ink">
                       {delegation.teamName}
                     </div>
                   </div>
@@ -215,19 +215,19 @@ export default function DigitalBadgeCard({
             {/* Check-In Status */}
             <div className="pt-2 flex items-center justify-center sm:justify-start gap-2">
               {eventCheckedIn ? (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-semibold">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-success-surface text-success-ink border border-success-border text-sm font-semibold">
                   <CheckCircle2 className="w-3.5 h-3.5" />
                   <span>Checked In on Campus</span>
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-[var(--ink-muted)] border border-[var(--border)] text-xs font-semibold">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-raised text-ink-muted border border-border text-sm font-semibold">
                   <Clock className="w-3.5 h-3.5" />
                   <span>Awaiting Desk Arrival</span>
                 </span>
               )}
 
               {isApproved && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold border border-emerald-200 dark:border-emerald-800">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-success-surface text-success-ink text-xs font-bold border border-success-border">
                   <ShieldCheck className="w-3 h-3" />
                   <span>Verified Pass</span>
                 </span>

@@ -75,26 +75,26 @@ export default function PwaRegister() {
   return (
     <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 pointer-events-none px-4 w-full max-w-sm">
       {isOffline && (
-        <div className="pointer-events-auto bg-stone-900/95 border border-amber-500/40 text-white px-4 py-2.5 rounded-2xl shadow-xl backdrop-blur-md flex items-center justify-between gap-3 text-xs animate-in fade-in slide-in-from-bottom-2 duration-300">
+        <div className="pointer-events-auto bg-surface border border-warning-border text-ink px-4 py-2.5 rounded-2xl shadow-popover flex items-center justify-between gap-3 text-sm animate-in fade-in slide-in-from-bottom-2 duration-300">
           <div className="flex items-center gap-2.5">
-            <WifiOff className="w-4 h-4 text-amber-400 shrink-0" />
+            <WifiOff className="w-4 h-4 text-warning shrink-0" />
             <div>
-              <div className="font-bold text-amber-300">Offline Mode Active</div>
-              <div className="text-[11px] text-stone-300">Using cached passes & schedule.</div>
+              <div className="font-bold text-warning-ink">Offline Mode Active</div>
+              <div className="text-xs text-ink-muted">Using cached passes & schedule.</div>
             </div>
           </div>
-          <span className="text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded border border-amber-500/30">
+          <span className="text-xs font-semibold bg-warning-surface text-warning-ink px-2 py-0.5 rounded-full border border-warning-border">
             OFFLINE
           </span>
         </div>
       )}
 
       {showOnlineToast && !isOffline && (
-        <div className="pointer-events-auto bg-stone-900/95 border border-emerald-500/40 text-white px-4 py-2.5 rounded-2xl shadow-xl backdrop-blur-md flex items-center gap-2.5 text-xs animate-in fade-in slide-in-from-bottom-2 duration-300">
-          <Wifi className="w-4 h-4 text-emerald-400 shrink-0" />
+        <div className="pointer-events-auto bg-surface border border-success-border text-ink px-4 py-2.5 rounded-2xl shadow-popover flex items-center gap-2.5 text-sm animate-in fade-in slide-in-from-bottom-2 duration-300">
+          <Wifi className="w-4 h-4 text-success shrink-0" />
           <div>
-            <div className="font-bold text-emerald-300">Connection Restored</div>
-            <div className="text-[11px] text-stone-300">Synced with live SHINE 26 servers.</div>
+            <div className="font-bold text-success-ink">Connection Restored</div>
+            <div className="text-xs text-ink-muted">Synced with live SHINE 26 servers.</div>
           </div>
         </div>
       )}

@@ -1,6 +1,5 @@
 import React from "react";
-import { Badge } from "@/components/ui";
-import { Clock, MapPin, Calendar } from "lucide-react";
+import { Clock, MapPin } from "lucide-react";
 
 interface ScheduleItem {
   time: string;
@@ -50,42 +49,37 @@ const DEFAULT_SCHEDULE: ScheduleItem[] = [
 
 export default function ScheduleOverview() {
   return (
-    <section className="max-w-6xl mx-auto px-4 sm:px-6 py-12 space-y-8">
-      <div className="space-y-1">
-        <Badge variant="accent">DAY ITINERARY</Badge>
-        <h2 className="text-2xl sm:text-3xl font-bold font-display text-ink tracking-tight">
-          Symposium Schedule
-        </h2>
-        <p className="text-sm text-ink-muted max-w-xl">
-          Complete timeline of on-stage presentations, lab sessions, and the grand valedictory ceremony.
-        </p>
-      </div>
+    <section className="bg-surface border-y border-border">
+      <div className="container-shine py-20 lg:py-24 grid grid-cols-1 lg:grid-cols-[1fr_1.4fr] gap-12 lg:gap-16 items-start">
+        <div className="lg:sticky lg:top-28">
+          <p className="eyebrow">Day itinerary</p>
+          <h2 className="text-fluid-h1 mt-3">One day, planned to the minute</h2>
+          <p className="mt-4 text-lg text-ink-muted max-w-md">
+            From reporting desk to valedictory, here is how the symposium unfolds.
+          </p>
+        </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {DEFAULT_SCHEDULE.map((item, idx) => (
-          <div
-            key={idx}
-            className="p-5 rounded-[12px] bg-surface border border-border hover:border-border-strong transition-colors flex flex-col justify-between space-y-3"
-          >
-            <div className="space-y-2">
-              <div className="flex items-center gap-1.5 text-xs font-mono font-semibold text-accent">
-                <Clock className="w-3.5 h-3.5 shrink-0" />
-                <span>{item.time}</span>
-              </div>
-              <h3 className="text-base font-bold text-ink leading-snug">
-                {item.title}
-              </h3>
-              <p className="text-xs text-ink-muted leading-relaxed">
-                {item.description}
-              </p>
-            </div>
-
-            <div className="pt-2 border-t border-border flex items-center gap-1.5 text-xs text-ink-subtle">
-              <MapPin className="w-3.5 h-3.5 text-accent shrink-0" />
-              <span className="truncate">{item.venue}</span>
-            </div>
-          </div>
-        ))}
+        <div className="blob-stage">
+          <div aria-hidden="true" className="blob blob-cyan w-56 h-56 -top-8 -right-8 hidden sm:block" />
+          <ol className="relative rounded-2xl bg-surface border border-border shadow-elevated divide-y divide-border">
+            {DEFAULT_SCHEDULE.map((item, idx) => (
+              <li key={idx} className="p-5 sm:p-6 grid grid-cols-1 sm:grid-cols-[150px_1fr] gap-2 sm:gap-6">
+                <div className="flex items-center gap-2 text-[15px] font-semibold text-accent tabular-nums">
+                  <Clock className="w-4 h-4 shrink-0 sm:hidden" />
+                  <span>{item.time.split(" — ")[0]}</span>
+                </div>
+                <div className="space-y-1.5 min-w-0">
+                  <h3 className="text-lg font-semibold text-ink leading-snug">{item.title}</h3>
+                  <p className="text-[15px] text-ink-muted leading-relaxed">{item.description}</p>
+                  <p className="flex items-center gap-1.5 text-[15px] text-ink-subtle pt-1">
+                    <MapPin className="w-4 h-4 shrink-0" />
+                    <span className="truncate">{item.venue}</span>
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </div>
       </div>
     </section>
   );

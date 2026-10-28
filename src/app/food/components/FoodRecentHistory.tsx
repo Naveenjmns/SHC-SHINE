@@ -39,15 +39,15 @@ export default function FoodRecentHistory({
   });
 
   return (
-    <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-5 flex flex-col h-full">
-      <div className="flex items-center justify-between pb-3 border-b border-[var(--border)] mb-3">
+    <div className="bg-surface border border-border rounded-2xl shadow-card p-5 flex flex-col h-full">
+      <div className="flex items-center justify-between pb-3 border-b border-border mb-3">
         <div className="flex items-center gap-2">
-          <History className="w-4 h-4 text-[var(--accent)]" />
-          <h3 className="text-sm font-semibold text-[var(--ink)]">
+          <History className="w-4 h-4 text-accent" />
+          <h3 className="text-[15px] font-semibold text-ink">
             Recent Meal Distributions
           </h3>
         </div>
-        <span className="text-xs text-[var(--ink-muted)]">
+        <span className="text-sm text-ink-muted">
           {claims.length} logged
         </span>
       </div>
@@ -58,13 +58,13 @@ export default function FoodRecentHistory({
             placeholder="Search recent claims..."
             value={filterQuery}
             onChange={(e) => setFilterQuery(e.target.value)}
-            className="text-xs h-8"
+            className="text-sm h-8"
           />
         </div>
       )}
 
       {filteredClaims.length === 0 ? (
-        <div className="py-8 text-center text-xs text-[var(--ink-muted)]">
+        <div className="py-8 text-center text-sm text-ink-muted">
           {claims.length === 0
             ? "No meals distributed yet today."
             : "No claims match your search filter."}
@@ -76,14 +76,14 @@ export default function FoodRecentHistory({
             return (
               <div
                 key={claim.id}
-                className="p-3 rounded-lg border border-[var(--border)] bg-[var(--surface-raised)] flex items-center justify-between gap-3 text-xs"
+                className="p-3 rounded-xl border border-border bg-surface-raised flex items-center justify-between gap-3 text-sm"
               >
                 <div className="flex items-start gap-2.5 min-w-0">
                   <div
                     className={`p-1.5 rounded-md mt-0.5 shrink-0 ${
                       isVeg
-                        ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400"
-                        : "bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400"
+                        ? "bg-success-surface text-success"
+                        : "bg-warning-surface text-warning"
                     }`}
                   >
                     {isVeg ? (
@@ -93,14 +93,14 @@ export default function FoodRecentHistory({
                     )}
                   </div>
                   <div className="min-w-0">
-                    <p className="font-semibold text-[var(--ink)] truncate">
+                    <p className="font-semibold text-ink truncate">
                       {claim.name}
                     </p>
-                    <p className="text-[11px] text-[var(--ink-muted)] truncate">
+                    <p className="text-xs text-ink-muted truncate">
                       {claim.collegeName} · <span className="font-mono">{claim.foodTokenCode}</span>
                     </p>
                     {claim.foodClaimedAt && (
-                      <p className="text-[10px] text-[var(--ink-muted)] mt-0.5">
+                      <p className="text-xs text-ink-muted mt-0.5">
                         {new Date(claim.foodClaimedAt).toLocaleTimeString("en-IN", {
                           hour: "2-digit",
                           minute: "2-digit",
@@ -117,7 +117,7 @@ export default function FoodRecentHistory({
                   loading={actionLoading}
                   onClick={() => onUndoClaim(claim.foodTokenCode)}
                   title="Undo claim"
-                  className="text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 text-[11px] h-7 px-2 shrink-0"
+                  className="text-danger hover:bg-danger-surface text-xs h-7 px-2 shrink-0"
                 >
                   <RotateCcw className="w-3 h-3 mr-1" />
                   Undo

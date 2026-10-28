@@ -70,10 +70,10 @@ export default function StepMembersEvents({
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      <Card>
+      <Card className="rounded-3xl">
         <CardHeader>
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-accent">
+            <div className="eyebrow flex items-center gap-2 text-accent">
               <Users className="w-4 h-4" /> Step 2 of 3
             </div>
             <Badge variant="accent">
@@ -93,23 +93,23 @@ export default function StepMembersEvents({
           const isLead = idx === 0;
 
           return (
-            <Card key={idx} className="p-5 space-y-4">
+            <Card key={idx} className="p-6 space-y-4">
               <div className="flex items-center justify-between border-b border-border pb-3">
                 <div className="flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-full bg-accent-muted text-accent font-bold text-xs flex items-center justify-center">
+                  <span className="w-6 h-6 rounded-full bg-accent-muted text-accent font-bold text-sm flex items-center justify-center">
                     {idx + 1}
                   </span>
-                  <h3 className="text-sm font-bold text-ink">
+                  <h3 className="text-[15px] font-bold text-ink">
                     {isLead ? "Team Lead (Delegate #1)" : `Delegate #${idx + 1}`}
                   </h3>
-                  {isLead && <Badge variant="gold" size="sm">Primary</Badge>}
+                  {isLead && <Badge variant="accent" size="sm">Primary</Badge>}
                 </div>
 
                 {!isLead && (
                   <button
                     type="button"
                     onClick={() => onRemoveMember(idx)}
-                    className="p-1.5 rounded-[6px] hover:bg-danger-surface text-ink-subtle hover:text-danger transition-colors cursor-pointer text-xs flex items-center gap-1"
+                    className="p-1.5 rounded-[8px] hover:bg-danger-surface text-ink-subtle hover:text-danger transition-colors cursor-pointer text-sm flex items-center gap-1"
                   >
                     <Trash2 className="w-3.5 h-3.5" /> Remove
                   </button>
@@ -147,7 +147,7 @@ export default function StepMembersEvents({
 
               {/* Food Preference */}
               <div className="pt-2 border-t border-border flex items-center justify-between gap-4">
-                <div className="text-xs font-semibold text-ink flex items-center gap-1.5">
+                <div className="text-sm font-semibold text-ink flex items-center gap-1.5">
                   <Utensils className="w-3.5 h-3.5 text-accent" /> Meal Token Preference:
                 </div>
 
@@ -155,7 +155,7 @@ export default function StepMembersEvents({
                   <button
                     type="button"
                     onClick={() => onUpdateMember(idx, { foodPreference: "VEG" })}
-                    className={`px-3 py-1 rounded-[6px] text-xs font-semibold border transition-all cursor-pointer ${
+                    className={`px-3 py-1 rounded-[8px] text-sm font-semibold border transition-colors cursor-pointer ${
                       member.foodPreference === "VEG"
                         ? "bg-success-surface border-success-border text-success-ink"
                         : "bg-surface border-border text-ink-muted hover:bg-surface-raised"
@@ -167,9 +167,9 @@ export default function StepMembersEvents({
                   <button
                     type="button"
                     onClick={() => onUpdateMember(idx, { foodPreference: "NON_VEG" })}
-                    className={`px-3 py-1 rounded-[6px] text-xs font-semibold border transition-all cursor-pointer ${
+                    className={`px-3 py-1 rounded-[8px] text-sm font-semibold border transition-colors cursor-pointer ${
                       member.foodPreference === "NON_VEG"
-                        ? "bg-amber-100 border-amber-300 text-amber-900 dark:bg-amber-950 dark:border-amber-800 dark:text-amber-200"
+                        ? "bg-warning-surface border-warning-border text-warning-ink"
                         : "bg-surface border-border text-ink-muted hover:bg-surface-raised"
                     }`}
                   >
@@ -181,29 +181,29 @@ export default function StepMembersEvents({
               {/* Competition Checkboxes */}
               <div className="space-y-3 pt-3 border-t border-border">
                 <div className="flex items-center justify-between">
-                  <div className="text-xs font-semibold text-ink">
+                  <div className="text-sm font-semibold text-ink">
                     Assign Competitions for {member.name || `Delegate #${idx + 1}`} *
                   </div>
-                  <span className="text-[11px] text-ink-subtle">
+                  <span className="text-sm text-ink-subtle">
                     {member.eventIds.length} assigned
                   </span>
                 </div>
 
                 {errors[`member_${idx}_events`] && (
-                  <p className="text-xs text-danger font-medium flex items-center gap-1">
+                  <p className="text-sm text-danger font-medium flex items-center gap-1">
                     <AlertCircle className="w-3.5 h-3.5" />
                     {errors[`member_${idx}_events`]}
                   </p>
                 )}
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
                   {events.map((evt) => {
                     const isChecked = member.eventIds.includes(evt.id);
 
                     return (
                       <label
                         key={evt.id}
-                        className={`p-2.5 rounded-[8px] border transition-all flex items-start gap-2.5 cursor-pointer select-none ${
+                        className={`p-2.5 rounded-[8px] border transition-colors flex items-start gap-2.5 cursor-pointer select-none ${
                           isChecked
                             ? "bg-accent-muted border-accent text-ink"
                             : "bg-surface border-border hover:bg-surface-raised text-ink-muted"
@@ -217,7 +217,7 @@ export default function StepMembersEvents({
                         />
                         <div className="min-w-0">
                           <div className="font-semibold truncate">{evt.name}</div>
-                          <div className="text-[10px] text-ink-subtle">
+                          <div className="text-xs text-ink-subtle">
                             {evt.category === "ON_STAGE" ? "On-Stage Arena" : "Off-Stage Challenge"}
                           </div>
                         </div>
@@ -246,7 +246,7 @@ export default function StepMembersEvents({
       {/* Bottom Nav */}
       <div className="pt-4 flex items-center justify-between">
         <Button
-          variant="secondary"
+          variant="ghost"
           size="md"
           onClick={onPrev}
           leftIcon={<ArrowLeft className="w-4 h-4" />}

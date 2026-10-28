@@ -159,13 +159,13 @@ export default function CheckInScannerModal({
     >
       <div className="space-y-4">
         {/* Scanner Viewport */}
-        <div className="relative rounded-[8px] bg-black overflow-hidden border border-border aspect-square flex items-center justify-center">
+        <div className="relative rounded-2xl bg-[#071E33] overflow-hidden border border-border aspect-square flex items-center justify-center">
           <div id={scannerContainerId} className="w-full h-full" />
 
           {/* Scanner Overlay Box */}
           {scannerActive && !cameraError && (
             <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-              <div className="w-56 h-56 rounded-[12px] border-2 border-accent border-dashed animate-pulse" />
+              <div className="w-56 h-56 rounded-2xl border-2 border-accent border-dashed animate-pulse" />
             </div>
           )}
 
@@ -173,8 +173,8 @@ export default function CheckInScannerModal({
           {cameraError && (
             <div className="absolute inset-0 p-6 bg-surface/95 flex flex-col items-center justify-center text-center space-y-3 z-10">
               <AlertCircle className="w-8 h-8 text-danger" />
-              <div className="text-xs font-semibold text-ink">{cameraError.title}</div>
-              <p className="text-[11px] text-ink-muted">{cameraError.message}</p>
+              <div className="text-[15px] font-semibold text-ink">{cameraError.title}</div>
+              <p className="text-sm text-ink-muted">{cameraError.message}</p>
               <Button
                 variant="secondary"
                 size="sm"
@@ -209,7 +209,7 @@ export default function CheckInScannerModal({
             {torchOn ? "Flash Off" : "Flash On"}
           </Button>
 
-          <Button variant="secondary" size="sm" onClick={onClose}>
+          <Button variant="ghost" size="sm" onClick={onClose}>
             Cancel
           </Button>
         </div>

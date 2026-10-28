@@ -45,36 +45,36 @@ export default function AdminNewEditionModal({
     <Modal isOpen={isOpen} onClose={onClose} title="Create New Event Edition">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-xs font-semibold text-[var(--ink-muted)] mb-1">
+          <label className="block text-sm font-semibold text-ink-muted mb-1">
             Fest Title *
           </label>
           <Input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="text-xs"
+            className="text-sm"
             required
           />
         </div>
         <div>
-          <label className="block text-xs font-semibold text-[var(--ink-muted)] mb-1">
+          <label className="block text-sm font-semibold text-ink-muted mb-1">
             Edition Tag / Year *
           </label>
           <Input
             value={year}
             onChange={(e) => setYear(e.target.value)}
-            className="text-xs"
+            className="text-sm"
             required
           />
         </div>
         <div>
-          <label className="block text-xs font-semibold text-[var(--ink-muted)] mb-1">
+          <label className="block text-sm font-semibold text-ink-muted mb-1">
             Tagline
           </label>
           <Input
             value={tagline}
             onChange={(e) => setTagline(e.target.value)}
             placeholder="e.g. Ignite The Future"
-            className="text-xs"
+            className="text-sm"
           />
         </div>
         <div className="flex justify-end gap-2 pt-2">

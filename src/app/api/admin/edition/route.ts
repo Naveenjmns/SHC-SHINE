@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { logActivity } from "@/lib/activityLogger";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 
 export const dynamic = "force-dynamic";
 
@@ -103,9 +103,9 @@ export async function POST(req: NextRequest) {
         logoUrl,
         primaryCtaText: "EXPLORE " + name.toUpperCase() + " →",
         primaryCtaLink: "#events",
-        themePrimaryAccent: "#FF6B1A",
+        themePrimaryAccent: "#006BFF",
         themeSecondaryAccent: "#D9A441",
-        themeBgColor: "#FAF8F5",
+        themeBgColor: "#F8F9FB",
         prizePool: body.prizePool || "₹25K+",
         expectedDelegates: body.expectedDelegates || "500+",
         rulesEligibilityTitle: body.rulesEligibilityTitle || "Eligibility & Registration",
@@ -338,6 +338,7 @@ export async function PATCH(req: NextRequest) {
       },
     });
 
+    revalidateTag("active-edition", { expire: 0 });
     revalidatePath("/", "layout");
     revalidatePath("/");
     revalidatePath("/badge", "layout");

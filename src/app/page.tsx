@@ -45,7 +45,7 @@ export default async function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-surface text-ink flex flex-col selection:bg-accent-muted selection:text-accent">
+    <div className="min-h-screen bg-canvas text-ink flex flex-col selection:bg-accent-muted selection:text-accent-strong">
       <Navbar edition={activeEdition} />
 
       <main className="flex-1">

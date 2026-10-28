@@ -61,7 +61,7 @@ export default function RegisteredEventsList({ registrations }: RegisteredEvents
         <h3 className="text-base font-bold text-ink">
           My Registered Arenas ({registrations.length})
         </h3>
-        <Link href="/events" className="text-xs text-accent hover:underline font-semibold">
+        <Link href="/events" className="text-sm text-accent hover:underline font-semibold">
           View All Events →
         </Link>
       </div>
@@ -80,7 +80,7 @@ export default function RegisteredEventsList({ registrations }: RegisteredEvents
                   </Badge>
                   {getStatusBadge(reg.status)}
                 </div>
-                <h4 className="text-sm font-bold text-ink truncate">{reg.event.name}</h4>
+                <h4 className="text-[15px] font-bold text-ink truncate">{reg.event.name}</h4>
               </div>
 
               {reg.result && (
@@ -90,7 +90,7 @@ export default function RegisteredEventsList({ registrations }: RegisteredEvents
               )}
             </div>
 
-            <div className="space-y-1.5 pt-1 text-xs text-ink-muted">
+            <div className="space-y-1.5 pt-1 text-sm text-ink-muted">
               <div className="flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5 text-accent shrink-0" />
                 <span>{formatDateSafe(reg.event.dateTime)} at {formatTimeSafe(reg.event.dateTime)}</span>
@@ -102,7 +102,7 @@ export default function RegisteredEventsList({ registrations }: RegisteredEvents
               </div>
 
               {reg.event.hasPrelims && (
-                <div className="text-[11px] text-amber-700 dark:text-amber-300 font-medium">
+                <div className="text-xs text-warning-ink font-medium">
                   Prelims: {reg.event.prelimsVenue || "Lab 3"}
                   {reg.event.prelimsDateTime && ` at ${formatTimeSafe(reg.event.prelimsDateTime)}`}
                 </div>

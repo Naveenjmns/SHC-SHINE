@@ -2,12 +2,8 @@
 
 import React from "react";
 import Link from "next/link";
+import AppHero, { HeroStat, heroButtonClass, heroGhostButtonClass } from "@/components/layout/AppHero";
 import {
-  Trophy,
-  Users,
-  UserCheck,
-  Clock,
-  Theater,
   Lock,
   Unlock,
   Eye,
@@ -72,235 +68,164 @@ export default function AdminOverviewTab({
   const isRegOpen = activeEdition?.isRegistrationOpen ?? true;
   const displayRevenue = stats.totalRevenue ?? 0;
 
+  const editionLabel = activeEdition ? `${activeEdition.name} ${activeEdition.edition}` : "Active fest";
+  const approved = stats.totalApprovedStudents ?? stats.confirmedRegistrations;
+  const pending = stats.totalPendingStudents ?? stats.pendingRegistrations;
+
   return (
     <div className="space-y-6">
-      {/* Registration Gateway Controller Banner */}
-      <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
-        <div className="space-y-1.5">
-          <div className="flex flex-wrap items-center gap-2">
+      <AppHero
+        eyebrow={
+          <span className="inline-flex items-center gap-2">
             <span
-              className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                isRegOpen
-                  ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
-                  : "bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800"
-              }`}
+              className={`w-2 h-2 rounded-full ${isRegOpen ? "bg-[#34D399] animate-pulse" : "bg-[#F87171]"}`}
+            />
+            {isRegOpen ? "Registration open" : "Registration closed"} · {editionLabel}
+          </span>
+        }
+        title={isRegOpen ? "Registrations are live" : "Registrations are paused"}
+        subtitle={
+          isRegOpen
+            ? "Delegations can register and receive passes right now."
+            : "New sign-ups are frozen. Passes and check-ins keep working."
+        }
+        actions={
+          <>
+            <button type="button" onClick={onOpenCheckIn} className={heroButtonClass}>
+              <QrCode />
+              Check-in hub
+            </button>
+            <button
+              type="button"
+              onClick={onToggleRegistration}
+              disabled={saving}
+              className={`${heroGhostButtonClass} disabled:opacity-60`}
             >
-              <span
-                className={`w-1.5 h-1.5 rounded-full ${
-                  isRegOpen ? "bg-emerald-500 animate-pulse" : "bg-rose-500"
-                }`}
-              />
-              {isRegOpen ? "Registration Open" : "Registration Closed"}
-            </span>
-
-            <span className="text-xs text-[var(--ink-muted)] font-mono bg-[var(--surface-raised)] px-2 py-0.5 rounded-md border border-[var(--border)]">
-              Edition: {activeEdition ? `${activeEdition.name} ${activeEdition.edition}` : "Active Fest"}
-            </span>
+              {isRegOpen ? <Lock /> : <Unlock />}
+              {isRegOpen ? "Close registration" : "Reopen registration"}
+            </button>
+          </>
+        }
+      >
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+          <HeroStat
+            label="Revenue"
+            value={`₹${displayRevenue.toLocaleString()}`}
+            hint={
+              stats.pendingRevenue && stats.pendingRevenue > 0
+                ? `₹${stats.pendingRevenue.toLocaleString()} pending`
+                : "Confirmed payments"
+            }
+          />
+          <HeroStat label="Approved" value={approved} hint="QR passes issued" />
+          <HeroStat label="Pending" value={pending} hint="Awaiting verification" />
+          <HeroStat
+            label="Registrations"
+            value={stats.totalRegistrations}
+            hint={`${stats.confirmedRegistrations} confirmed`}
+          />
+          <div className="col-span-2 lg:col-span-1">
+            <HeroStat label="Competitions" value={stats.totalEvents} hint="On-stage & off-stage" />
           </div>
-
-          <h2 className="text-base sm:text-lg font-bold text-[var(--ink)]">
-            {isRegOpen
-              ? "Public Registration Gateway is Live"
-              : "Public Registration Gateway is Frozen"}
-          </h2>
-          <p className="text-xs text-[var(--ink-muted)] max-w-2xl leading-relaxed">
-            {isRegOpen
-              ? "External student contingents, team leads, and participants can register and obtain passes at /register."
-              : "Registration is temporarily closed. Existing passes, verification, and badge check-ins remain operational."}
-          </p>
         </div>
+      </AppHero>
 
-        <div className="flex flex-wrap items-center gap-2.5 shrink-0">
-          <Button
-            variant={isRegOpen ? "danger" : "primary"}
-            size="sm"
-            onClick={onToggleRegistration}
-            loading={saving}
-          >
-            {isRegOpen ? (
-              <>
-                <Lock className="w-3.5 h-3.5 mr-1.5" />
-                Close Registrations
-              </>
-            ) : (
-              <>
-                <Unlock className="w-3.5 h-3.5 mr-1.5" />
-                Re-Open Registrations
-              </>
-            )}
-          </Button>
-
-          <Link href="/register" target="_blank">
-            <Button variant="outline" size="sm">
-              <Eye className="w-3.5 h-3.5 mr-1.5" />
-              View /register
-            </Button>
-          </Link>
-
-          <Button variant="secondary" size="sm" onClick={onOpenCheckIn}>
-            <QrCode className="w-3.5 h-3.5 mr-1.5 text-[var(--accent)]" />
-            Check-In Hub
-          </Button>
-
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onOpenResetModal}
-            className="text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/20"
-            title="Reset registrations data"
-          >
-            <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
-            Reset Data
-          </Button>
-        </div>
-      </div>
-
-      {/* KPI Stat Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
-        <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-[var(--ink-muted)] mb-1.5">
-            <span className="text-xs font-semibold uppercase tracking-wider">Revenue</span>
-            <Trophy className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-          </div>
-          <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-400 tabular-nums">
-            ₹{displayRevenue.toLocaleString()}
-          </div>
-          <p className="text-[11px] text-[var(--ink-muted)] mt-1">
-            {stats.pendingRevenue && stats.pendingRevenue > 0
-              ? `Paid (Pending: ₹${stats.pendingRevenue.toLocaleString()})`
-              : "From confirmed registrations"}
-          </p>
-        </div>
-
-        <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-[var(--ink-muted)] mb-1.5">
-            <span className="text-xs font-semibold uppercase tracking-wider">Approved</span>
-            <UserCheck className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-          </div>
-          <div className="text-2xl font-bold text-indigo-700 dark:text-indigo-400 tabular-nums">
-            {stats.totalApprovedStudents ?? stats.confirmedRegistrations}
-          </div>
-          <p className="text-[11px] text-[var(--ink-muted)] mt-1">
-            Official QR passes issued
-          </p>
-        </div>
-
-        <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-[var(--ink-muted)] mb-1.5">
-            <span className="text-xs font-semibold uppercase tracking-wider">Pending</span>
-            <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-          </div>
-          <div className="text-2xl font-bold text-amber-700 dark:text-amber-400 tabular-nums">
-            {stats.totalPendingStudents ?? stats.pendingRegistrations}
-          </div>
-          <p className="text-[11px] text-[var(--ink-muted)] mt-1">
-            Awaiting desk verification
-          </p>
-        </div>
-
-        <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-[var(--ink-muted)] mb-1.5">
-            <span className="text-xs font-semibold uppercase tracking-wider">Registrations</span>
-            <Users className="w-4 h-4 text-[var(--accent)]" />
-          </div>
-          <div className="text-2xl font-bold text-[var(--ink)] tabular-nums">
-            {stats.totalRegistrations}
-          </div>
-          <p className="text-[11px] text-[var(--ink-muted)] mt-1">
-            Confirmed: {stats.confirmedRegistrations} · Pending: {stats.pendingRegistrations}
-          </p>
-        </div>
-
-        <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4 flex flex-col justify-between col-span-2 lg:col-span-1">
-          <div className="flex items-center justify-between text-[var(--ink-muted)] mb-1.5">
-            <span className="text-xs font-semibold uppercase tracking-wider">Competitions</span>
-            <Theater className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-          </div>
-          <div className="text-2xl font-bold text-[var(--ink)] tabular-nums">
-            {stats.totalEvents}
-          </div>
-          <p className="text-[11px] text-[var(--ink-muted)] mt-1">
-            On-stage &amp; off-stage events
-          </p>
-        </div>
-      </div>
-
-      {/* Competitions Breakdown Table */}
-      <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+      {/* Competitions breakdown */}
+      <section className="bg-surface border border-border rounded-2xl shadow-card">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-5 sm:p-6">
           <div>
-            <h3 className="text-base font-semibold text-[var(--ink)]">Competitions Breakdown</h3>
-            <p className="text-xs text-[var(--ink-muted)]">
-              Monitor event registrations and download participant rosters
-            </p>
+            <h2 className="text-xl font-bold text-ink">Competitions</h2>
+            <p className="text-[15px] text-ink-muted">Registrations per event and participant rosters</p>
           </div>
           {eventBreakdown.length > 0 && (
             <Button
               variant="outline"
-              size="sm"
               onClick={onDownloadAllEventCSVs}
               disabled={downloadingEventId === "ALL"}
+              leftIcon={<Download />}
+              className="w-full sm:w-auto"
             >
-              <Download className="w-3.5 h-3.5 mr-1.5 text-[var(--accent)]" />
-              Download All (CSVs)
+              Download all rosters
             </Button>
           )}
         </div>
 
-        <div className="overflow-x-auto border border-[var(--border)] rounded-lg">
-          <table className="w-full text-left text-xs border-collapse">
+        {/* Phones: one card per event */}
+        <ul className="md:hidden divide-y divide-border border-t border-border">
+          {eventBreakdown.map((ev) => {
+            const staffName = ev.staffCoordinatorName || ev.coordinatorName;
+            return (
+              <li key={ev.id} className="p-5 flex items-start gap-4">
+                <div className="min-w-0 flex-1 space-y-1.5">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-base font-semibold text-ink">{ev.name}</span>
+                    <Badge size="sm" variant={ev.category === "ON_STAGE" ? "accent" : "neutral"}>
+                      {ev.category === "ON_STAGE" ? "On-stage" : "Off-stage"}
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-ink-muted">
+                    {staffName && staffName !== "Unassigned" ? staffName : "No coordinator assigned"}
+                  </p>
+                  <p className="text-sm font-semibold text-ink tabular-nums">
+                    {ev.registrationsCount} registered
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onDownloadEventCSV(ev.id, ev.name)}
+                  disabled={downloadingEventId === ev.id}
+                  aria-label={`Download ${ev.name} roster`}
+                  className="w-11 h-11 shrink-0 rounded-[10px] border border-border text-accent flex items-center justify-center hover:bg-accent-muted disabled:opacity-50 cursor-pointer"
+                >
+                  <Download className="w-5 h-5" />
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+
+        {/* Tablet and up: table */}
+        <div className="hidden md:block overflow-x-auto border-t border-border">
+          <table className="w-full text-left text-[15px] border-collapse">
             <thead>
-              <tr className="bg-[var(--surface-raised)] border-b border-[var(--border)] font-semibold text-[var(--ink-muted)] uppercase">
-                <th className="py-2.5 px-3">Event Name</th>
-                <th className="py-2.5 px-3">Category</th>
-                <th className="py-2.5 px-3">Coordinators</th>
-                <th className="py-2.5 px-3">Registrations</th>
-                <th className="py-2.5 px-3 text-right">Roster</th>
+              <tr className="bg-canvas border-b border-border text-sm font-semibold text-ink-muted">
+                <th className="py-3 px-6">Event</th>
+                <th className="py-3 px-4">Category</th>
+                <th className="py-3 px-4">Coordinators</th>
+                <th className="py-3 px-4 text-right">Registered</th>
+                <th className="py-3 px-6 text-right">Roster</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[var(--border)]">
+            <tbody className="divide-y divide-border">
               {eventBreakdown.map((ev) => {
                 const staffName = ev.staffCoordinatorName || ev.coordinatorName;
                 const studentName = ev.studentCoordinatorName;
-
                 return (
-                  <tr key={ev.id} className="hover:bg-[var(--surface-raised)] transition-colors">
-                    <td className="py-2.5 px-3 font-semibold text-[var(--ink)]">{ev.name}</td>
-                    <td className="py-2.5 px-3">
-                      <span
-                        className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${
-                          ev.category === "ON_STAGE"
-                            ? "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800"
-                            : "bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800"
-                        }`}
-                      >
-                        {ev.category === "ON_STAGE" ? "On-Stage" : "Off-Stage"}
-                      </span>
+                  <tr key={ev.id} className="hover:bg-canvas transition-colors">
+                    <td className="py-3.5 px-6 font-semibold text-ink">{ev.name}</td>
+                    <td className="py-3.5 px-4">
+                      <Badge size="sm" variant={ev.category === "ON_STAGE" ? "accent" : "neutral"}>
+                        {ev.category === "ON_STAGE" ? "On-stage" : "Off-stage"}
+                      </Badge>
                     </td>
-                    <td className="py-2.5 px-3">
-                      <div className="flex flex-col gap-0.5">
-                        <span className="font-medium text-[var(--ink)]">
-                          Staff: {staffName && staffName !== "Unassigned" ? staffName : "Unassigned"}
-                        </span>
-                        {studentName && (
-                          <span className="text-[11px] text-[var(--ink-muted)]">
-                            Student: {studentName}
-                          </span>
-                        )}
+                    <td className="py-3.5 px-4">
+                      <div className="text-ink">
+                        {staffName && staffName !== "Unassigned" ? staffName : "Unassigned"}
                       </div>
+                      {studentName && <div className="text-sm text-ink-muted">Student: {studentName}</div>}
                     </td>
-                    <td className="py-2.5 px-3 font-semibold text-[var(--ink)] tabular-nums">
+                    <td className="py-3.5 px-4 text-right font-semibold text-ink tabular-nums">
                       {ev.registrationsCount}
                     </td>
-                    <td className="py-2.5 px-3 text-right">
+                    <td className="py-3.5 px-6 text-right">
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => onDownloadEventCSV(ev.id, ev.name)}
                         disabled={downloadingEventId === ev.id}
-                        className="text-xs h-7 px-2 text-[var(--accent)] hover:bg-[var(--accent)]/10"
+                        leftIcon={<Download />}
+                        className="text-accent hover:bg-accent-muted"
                       >
-                        <Download className="w-3 h-3 mr-1" />
                         CSV
                       </Button>
                     </td>
@@ -310,8 +235,40 @@ export default function AdminOverviewTab({
             </tbody>
           </table>
         </div>
+      </section>
+
+      {/* Quick links + danger zone */}
+      <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4">
+        <Link
+          href="/register"
+          target="_blank"
+          className="group flex items-center gap-4 p-5 rounded-2xl bg-surface border border-border shadow-card hover:border-accent/40 transition-colors"
+        >
+          <span className="w-11 h-11 rounded-[12px] bg-accent-muted text-accent flex items-center justify-center shrink-0">
+            <Eye className="w-5 h-5" />
+          </span>
+          <span className="min-w-0">
+            <span className="block text-base font-semibold text-ink group-hover:text-accent">
+              Preview the public registration page
+            </span>
+            <span className="block text-sm text-ink-muted">Opens /register in a new tab</span>
+          </span>
+        </Link>
+        <div className="flex items-center justify-between gap-4 p-5 rounded-2xl bg-surface border border-danger-border">
+          <div className="min-w-0">
+            <p className="text-base font-semibold text-ink">Danger zone</p>
+            <p className="text-sm text-ink-muted">Wipe registration data</p>
+          </div>
+          <Button
+            variant="outline"
+            onClick={onOpenResetModal}
+            leftIcon={<RotateCcw />}
+            className="!text-danger !border-danger-border hover:!bg-danger-surface shrink-0"
+          >
+            Reset data
+          </Button>
+        </div>
       </div>
     </div>
   );
 }
-

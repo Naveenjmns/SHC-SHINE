@@ -107,16 +107,16 @@ export default function FoodCoordinatorPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[var(--surface-raised)] flex flex-col">
-      <header className="bg-[var(--surface)] border-b border-[var(--border)] sticky top-0 z-20">
+    <main className="min-h-screen bg-canvas text-ink flex flex-col">
+      <header className="bg-surface border-b border-border sticky top-0 z-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link href="/" className="font-semibold text-sm tracking-tight text-[var(--ink)]">
-              SHINE <span className="text-[var(--accent)]">{edition?.edition || "26"}</span>
+            <Link href="/" className="font-semibold text-[15px] tracking-tight text-ink">
+              SHINE <span className="text-accent">{edition?.edition || "26"}</span>
             </Link>
-            <span className="text-[var(--border)]">/</span>
-            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-[var(--surface-raised)] border border-[var(--border)] text-xs font-semibold text-[var(--ink)]">
-              <Utensils className="w-3.5 h-3.5 text-[var(--accent)]" />
+            <span className="text-border-strong">/</span>
+            <div className="pill-badge">
+              <Utensils className="w-3.5 h-3.5 text-accent" />
               <span>Food Committee</span>
             </div>
           </div>
@@ -126,7 +126,7 @@ export default function FoodCoordinatorPage() {
               variant="outline"
               size="sm"
               onClick={() => setSoundEnabled(!soundEnabled)}
-              className="text-xs"
+              className="text-sm"
             >
               {soundEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
               <span className="hidden sm:inline ml-1.5">{soundEnabled ? "Audio On" : "Muted"}</span>
@@ -136,9 +136,9 @@ export default function FoodCoordinatorPage() {
               variant="outline"
               size="sm"
               onClick={fetchStats}
-              className="text-xs"
+              className="text-sm"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${loadingStats ? "animate-spin text-[var(--accent)]" : ""}`} />
+              <RefreshCw className={`w-3.5 h-3.5 ${loadingStats ? "animate-spin text-accent" : ""}`} />
               <span className="hidden sm:inline ml-1.5">Refresh</span>
             </Button>
 
@@ -146,7 +146,7 @@ export default function FoodCoordinatorPage() {
               variant="primary"
               size="sm"
               onClick={() => setShowCheckInModal(true)}
-              className="text-xs gap-1.5"
+              className="text-sm gap-1.5"
             >
               <QrCode className="w-3.5 h-3.5" />
               <span>Full Lookup</span>
@@ -156,7 +156,7 @@ export default function FoodCoordinatorPage() {
               variant="ghost"
               size="sm"
               onClick={() => signOutAndClearCache({ callbackUrl: "/login" })}
-              className="text-xs text-[var(--ink-muted)] hover:text-rose-600"
+              className="text-sm text-ink-muted hover:text-danger"
             >
               <LogOut className="w-3.5 h-3.5" />
             </Button>
@@ -165,28 +165,28 @@ export default function FoodCoordinatorPage() {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full space-y-6">
-        <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-xs font-semibold uppercase tracking-wider text-[var(--ink-muted)]">
+              <span className="eyebrow">
                 Catering &amp; Hospitality Desk
               </span>
-              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold bg-success-surface text-success-ink border border-success-border">
+                <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
                 Live Distribution
               </span>
             </div>
-            <h1 className="text-xl sm:text-2xl font-bold text-[var(--ink)]">
+            <h1 className="text-2xl sm:text-3xl font-bold text-ink">
               Meal Pass Verification
             </h1>
-            <p className="text-xs text-[var(--ink-muted)] mt-0.5">
-              Logged in as <span className="font-semibold text-[var(--ink)]">{session?.user?.name || session?.user?.email}</span>
+            <p className="text-[15px] text-ink-muted mt-1">
+              Logged in as <span className="font-semibold text-ink">{session?.user?.name || session?.user?.email}</span>
             </p>
           </div>
 
-          <div className="text-left sm:text-right">
-            <span className="text-xs text-[var(--ink-muted)] block">Venue</span>
-            <span className="text-sm font-semibold text-[var(--ink)] block">
+          <div className="text-left sm:text-right bg-surface border border-border rounded-2xl shadow-card px-4 py-3">
+            <span className="text-sm text-ink-muted block">Venue</span>
+            <span className="text-[15px] font-semibold text-ink block">
               {edition?.diningHallVenue || "Dining Hall"}
             </span>
           </div>
@@ -194,15 +194,15 @@ export default function FoodCoordinatorPage() {
 
         <FoodDistributionStats stats={stats} edition={edition} />
 
-        <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-3.5">
+        <div className="bg-surface border border-border rounded-2xl shadow-card p-3.5">
           <form onSubmit={onSearchSubmit} className="flex gap-2">
             <div className="relative flex-1">
-              <Search className="w-4 h-4 text-[var(--ink-muted)] absolute left-3 top-1/2 -translate-y-1/2" />
+              <Search className="w-4 h-4 text-ink-muted absolute left-3 top-1/2 -translate-y-1/2" />
               <Input
                 placeholder="Enter Food Token (FT-...) or Badge Code..."
                 value={inputCode}
                 onChange={(e) => setInputCode(e.target.value)}
-                className="pl-9 h-10 text-xs sm:text-sm font-mono"
+                className="pl-9 h-10 text-sm sm:text-[15px] font-mono"
               />
             </div>
             <Button

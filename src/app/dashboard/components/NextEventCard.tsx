@@ -32,7 +32,7 @@ interface NextEventCardProps {
 export default function NextEventCard({ event, festDate }: NextEventCardProps) {
   if (!event) {
     return (
-      <Card className="p-6 bg-surface-raised border-border text-center space-y-2">
+      <Card className="p-6 text-center space-y-2">
         <div className="w-10 h-10 rounded-full bg-accent-muted text-accent flex items-center justify-center mx-auto">
           <Sparkles className="w-5 h-5" />
         </div>
@@ -55,11 +55,11 @@ export default function NextEventCard({ event, festDate }: NextEventCardProps) {
   const coordPhone = event.staffCoordinator?.phone || event.coordinator?.phone;
 
   return (
-    <Card className="border-accent/40 bg-surface overflow-hidden">
-      <div className="bg-accent-muted/40 px-5 py-2.5 border-b border-accent/20 flex items-center justify-between">
+    <Card className="overflow-hidden">
+      <div className="bg-accent-muted px-6 py-2.5 border-b border-border flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-accent animate-ping" />
-          <span className="text-xs font-bold text-accent uppercase tracking-wider">
+          <span className="w-2 h-2 rounded-full bg-accent" />
+          <span className="eyebrow !text-accent-strong">
             Up Next For You
           </span>
         </div>
@@ -70,7 +70,7 @@ export default function NextEventCard({ event, festDate }: NextEventCardProps) {
 
       <CardHeader className="pt-4">
         <CardTitle className="text-xl sm:text-2xl text-ink">{event.name}</CardTitle>
-        <CardDescription className="text-xs flex items-center gap-2 pt-1">
+        <CardDescription className="text-sm flex items-center gap-2 pt-1">
           <Clock className="w-3.5 h-3.5 text-accent shrink-0" />
           <span>{formatDateSafe(event.dateTime)} at {formatTimeSafe(event.dateTime)}</span>
         </CardDescription>
@@ -89,8 +89,8 @@ export default function NextEventCard({ event, festDate }: NextEventCardProps) {
               <MapPin className="w-4 h-4" />
             </div>
             <div className="min-w-0">
-              <div className="text-xs font-semibold text-ink truncate">Venue Room</div>
-              <div className="text-xs text-ink-muted truncate">{event.venue || "Main Auditorium"}</div>
+              <div className="text-sm font-semibold text-ink truncate">Venue Room</div>
+              <div className="text-sm text-ink-muted truncate">{event.venue || "Main Auditorium"}</div>
             </div>
           </div>
 
@@ -119,7 +119,7 @@ export default function NextEventCard({ event, festDate }: NextEventCardProps) {
 
         {/* Coordinator Contact */}
         {coordName && (
-          <div className="text-xs text-ink-muted flex items-center justify-between pt-1">
+          <div className="text-sm text-ink-muted flex items-center justify-between pt-1">
             <span>Coordinator: <strong className="text-ink font-semibold">{coordName}</strong></span>
             {coordPhone && (
               <a
