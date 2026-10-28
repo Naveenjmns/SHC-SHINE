@@ -103,8 +103,8 @@ export default function CountdownTimer({
           </span>
           Live now
         </div>
-        <h3 className="mt-3 text-2xl sm:text-3xl font-bold text-accent-ink flex items-center justify-center gap-2">
-          <Radio className="w-6 h-6 shrink-0" />
+        <h3 className="mt-3 text-xl sm:text-2xl leading-tight font-bold text-accent-ink flex items-center justify-center gap-2 break-words">
+          <Radio className="w-5 h-5 sm:w-6 sm:h-6 shrink-0" />
           {eventName ? `${eventName} is underway` : "The fest is underway"}
         </h3>
         <p className="text-[15px] opacity-90 mt-1">Started {displayDateText}</p>

@@ -188,19 +188,19 @@ export default function AdminEventsPage() {
     <main className="min-h-screen bg-canvas flex flex-col">
       {/* Sticky Header */}
       <header className="bg-surface border-b border-border sticky top-0 z-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link href="/admin" className="font-semibold text-sm text-ink-muted hover:text-ink flex items-center gap-1.5">
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Admin Console</span>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <Link href="/admin" className="shrink-0 min-h-[44px] font-semibold text-sm text-ink-muted hover:text-ink flex items-center gap-1.5" aria-label="Back to admin console">
+              <ArrowLeft className="w-4 h-4" />
+              <span className="hidden sm:inline">Admin Console</span>
             </Link>
-            <span className="text-border">/</span>
-            <span className="text-sm font-semibold text-ink">
+            <span className="hidden sm:inline text-border">/</span>
+            <span className="text-sm font-semibold text-ink truncate">
               Arenas & Competitions ({events.length})
             </span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <Button
               variant="outline"
               size="sm"
@@ -222,7 +222,8 @@ export default function AdminEventsPage() {
               className="text-sm gap-1.5"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>New Competition</span>
+              <span className="sm:hidden">New</span>
+              <span className="hidden sm:inline">New Competition</span>
             </Button>
           </div>
         </div>

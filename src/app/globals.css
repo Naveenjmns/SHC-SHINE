@@ -1,6 +1,16 @@
 @import "tailwindcss";
 @import "../styles/tokens.css";
 
+/* Named stacking layers (z-toast, z-modal...) backed by the --z-* scale in tokens.css */
+@utility z-base { z-index: var(--z-base); }
+@utility z-raised { z-index: var(--z-raised); }
+@utility z-sticky { z-index: var(--z-sticky); }
+@utility z-header { z-index: var(--z-header); }
+@utility z-drawer { z-index: var(--z-drawer); }
+@utility z-modal { z-index: var(--z-modal); }
+@utility z-popover { z-index: var(--z-popover); }
+@utility z-toast { z-index: var(--z-toast); }
+
 /* ==========================================================================
    SHINE Unified Platform — Global Styles & Legacy Token Bridges (v3)
    - Navy ink (#0B3558) text, single Signal Blue (#006BFF) action color
@@ -106,7 +116,9 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-@layer utilities {
+/* Components layer: default 44px tap box, but responsive display utilities
+   (hidden, md:flex, sm:inline-flex...) on the same element still win */
+@layer components {
   .tap-target {
     min-height: 44px;
     min-width: 44px;

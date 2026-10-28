@@ -73,7 +73,7 @@ export default function Loading() {
         </div>
 
         {/* Wordmark */}
-        <h1 className="text-3xl sm:text-4xl font-bold mb-2 text-ink">
+        <h1 className="text-[2rem] sm:text-[2.5rem] font-bold mb-2 text-ink">
           COLLEGE <span className="text-accent">FEST</span>
         </h1>
 

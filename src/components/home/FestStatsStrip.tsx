@@ -27,7 +27,7 @@ export default function FestStatsStrip({
         <dl className="grid grid-cols-2 lg:grid-cols-4 gap-y-10 gap-x-6">
           {stats.map((stat) => (
             <div key={stat.label} className="text-center space-y-1">
-              <dd className="text-4xl sm:text-[2.75rem] leading-none font-bold text-ink tabular-nums">
+              <dd className="text-[2rem] sm:text-[2.75rem] leading-none font-bold text-ink tabular-nums">
                 {stat.value}
               </dd>
               <dt className="text-[15px] font-semibold text-ink pt-2">{stat.label}</dt>

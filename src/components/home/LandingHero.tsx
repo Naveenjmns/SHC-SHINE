@@ -24,17 +24,20 @@ export default function LandingHero({ edition }: LandingHeroProps) {
   const targetDate = edition?.startDate || DEFAULT_EDITION_CONFIG.startDate;
   const description = edition?.description || DEFAULT_EDITION_CONFIG.description;
   const logoUrl = edition?.logoUrl || DEFAULT_EDITION_CONFIG.logoUrl;
-  const institutionBadge = [accreditationText, institutionName].filter(Boolean).join(" · ");
+  const institutionBadge = [institutionName, accreditationText].filter(Boolean).join(" · ");
 
   return (
     <section className="relative overflow-hidden bg-canvas text-ink pt-28 pb-20 lg:pt-36 lg:pb-28">
       <div className="container-shine grid grid-cols-1 lg:grid-cols-[1.1fr_1fr] gap-14 lg:gap-16 items-center">
         {/* Left column — headline, copy, CTAs */}
-        <div className="flex flex-col items-start text-left">
+        <div className="min-w-0 flex flex-col items-start text-left">
           {institutionBadge && (
-            <span className="pill-badge mb-6 select-none max-w-full">
-              <Sparkles className="w-3.5 h-3.5 shrink-0" />
-              <span className="truncate">{institutionBadge}</span>
+            <span
+              title={institutionBadge}
+              className="pill-badge mb-6 select-none max-w-full !items-start !rounded-2xl !py-1.5"
+            >
+              <Sparkles className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+              <span className="min-w-0 line-clamp-2">{institutionBadge}</span>
             </span>
           )}
 
@@ -89,10 +92,10 @@ export default function LandingHero({ edition }: LandingHeroProps) {
         </div>
 
         {/* Right column — event card over decorative blobs */}
-        <div className="blob-stage w-full max-w-md mx-auto lg:max-w-none">
+        <div className="blob-stage min-w-0 w-full max-w-md mx-auto lg:max-w-none">
           <div
             aria-hidden="true"
-            className="blob blob-magenta w-56 h-56 sm:w-72 sm:h-72 -top-10 -right-6 sm:-right-12"
+            className="blob blob-magenta w-56 h-56 sm:w-72 sm:h-72 -top-10 right-0 sm:-right-12"
           />
           <div
             aria-hidden="true"

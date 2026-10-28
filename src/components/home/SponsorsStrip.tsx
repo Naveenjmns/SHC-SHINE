@@ -20,7 +20,7 @@ export default function SponsorsStrip({ edition }: SponsorsStripProps) {
           <p className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.08em] text-[#a6bbd1]">
             <ShieldCheck className="w-4 h-4" /> Official registration desk
           </p>
-          <h2 className="mt-3 text-3xl sm:text-[2.75rem] leading-[1.2] font-bold text-white">
+          <h2 className="mt-3 text-[1.75rem] sm:text-[2.75rem] leading-[1.2] font-bold text-white">
             Ready to represent your institution?
           </h2>
           <p className="mt-4 text-lg text-[#c9d7e6] leading-relaxed max-w-xl">

@@ -124,9 +124,9 @@ export default function CoordinatorDashboard() {
     <main className="dash-layout flex flex-col min-h-screen bg-canvas text-ink">
       {/* Calm Light Navigation */}
       <header className="bg-surface border-b border-border sticky top-0 z-20">
-        <div className="container-shine py-3.5 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link href="/" className="flex items-center gap-2">
+        <div className="container-shine h-16 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <Link href="/" className="flex items-center gap-2 min-w-0">
               {coordLogo ? (
                 <img
                   src={coordLogo}
@@ -138,49 +138,49 @@ export default function CoordinatorDashboard() {
                   {festInitial}
                 </div>
               )}
-              <span className="font-bold text-ink tracking-tight text-base">
+              <span className="font-bold text-ink tracking-tight text-base truncate">
                 {festName}{festEdition && <> <span className="text-accent">{festEdition}</span></>}
               </span>
             </Link>
-            <span className="text-border-strong">/</span>
-            <span className="pill-badge">
+            <span className="hidden sm:inline text-border-strong">/</span>
+            <span className="hidden sm:inline-flex pill-badge whitespace-nowrap">
               Coordinator Console
             </span>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <button
               onClick={() => setShowCheckInModal(true)}
               className="tap-target px-3.5 py-1.5 text-sm font-semibold text-accent-ink bg-accent hover:bg-accent-hover rounded-[8px] transition-colors flex items-center gap-1.5 cursor-pointer"
             >
-              <QrCode className="w-3.5 h-3.5" />
-              <span>QR Check-in</span>
+              <QrCode className="w-4 h-4" />
+              <span className="whitespace-nowrap">QR Check-in</span>
             </button>
             {session?.user?.role === "ADMIN" && (
               <Link
                 href="/admin"
-                className="tap-target px-3 py-1.5 text-sm font-semibold text-ink bg-surface border border-border hover:border-accent hover:text-accent rounded-[8px] transition-colors"
+                className="hidden lg:inline-flex tap-target px-3 py-1.5 text-sm font-semibold text-ink bg-surface border border-border hover:border-accent hover:text-accent rounded-[8px] transition-colors whitespace-nowrap"
               >
                 Switch to Admin Panel →
               </Link>
             )}
             <Link
               href="/leaderboard"
-              className="tap-target px-3 py-1.5 text-sm font-semibold text-ink bg-surface border border-border hover:border-accent hover:text-accent rounded-[8px] transition-colors flex items-center gap-1.5"
+              className="hidden md:flex tap-target px-3 py-1.5 text-sm font-semibold text-ink bg-surface border border-border hover:border-accent hover:text-accent rounded-[8px] transition-colors items-center gap-1.5 whitespace-nowrap"
             >
               <Trophy className="w-3.5 h-3.5 text-gold" />
               Stage Results
             </Link>
             <Link
               href="/profile"
-              className="tap-target px-3 py-1.5 text-sm font-semibold text-ink bg-surface border border-border hover:border-accent hover:text-accent rounded-[8px] transition-colors flex items-center gap-1.5"
+              className="hidden md:flex tap-target px-3 py-1.5 text-sm font-semibold text-ink bg-surface border border-border hover:border-accent hover:text-accent rounded-[8px] transition-colors items-center gap-1.5 whitespace-nowrap"
             >
               <User className="w-3.5 h-3.5 text-ink-muted" />
               <span>My Profile</span>
             </Link>
             <button
               onClick={() => signOutAndClearCache({ callbackUrl: "/" })}
-              className="tap-target px-3 py-1.5 text-sm font-medium text-ink-muted hover:text-danger transition-colors"
+              className="tap-target px-2 sm:px-3 py-1.5 text-sm font-medium text-ink-muted hover:text-danger transition-colors whitespace-nowrap cursor-pointer"
             >
               Sign Out
             </button>
@@ -218,28 +218,28 @@ export default function CoordinatorDashboard() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <div className="dash-card p-5">
             <div className="text-sm font-medium text-ink-muted">Assigned Events</div>
-            <div className="text-3xl font-bold text-ink mt-1 tabular-nums">
+            <div className="text-[2rem] sm:text-3xl font-bold text-ink mt-1 tabular-nums">
               {events.length}
             </div>
           </div>
 
           <div className="dash-card p-5">
             <div className="text-sm font-medium text-ink-muted">Total Registrations</div>
-            <div className="text-3xl font-bold text-ink mt-1 tabular-nums">
+            <div className="text-[2rem] sm:text-3xl font-bold text-ink mt-1 tabular-nums">
               {totalRegistrations}
             </div>
           </div>
 
           <div className="dash-card p-5">
             <div className="text-sm font-medium text-ink-muted">Confirmed</div>
-            <div className="text-3xl font-bold text-success mt-1 tabular-nums">
+            <div className="text-[2rem] sm:text-3xl font-bold text-success mt-1 tabular-nums">
               {totalConfirmed}
             </div>
           </div>
 
           <div className="dash-card p-5">
             <div className="text-sm font-medium text-ink-muted">Needs Action (Pending)</div>
-            <div className="text-3xl font-bold text-warning mt-1 tabular-nums">
+            <div className="text-[2rem] sm:text-3xl font-bold text-warning mt-1 tabular-nums">
               {totalPending}
             </div>
           </div>

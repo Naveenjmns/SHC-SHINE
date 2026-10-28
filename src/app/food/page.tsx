@@ -133,9 +133,9 @@ export default function FoodCoordinatorPage() {
   return (
     <main className="min-h-screen bg-canvas text-ink flex flex-col">
       <header className="bg-surface border-b border-border sticky top-0 z-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link href="/" className="font-semibold text-[15px] tracking-tight text-ink">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <Link href="/" className="font-semibold text-[15px] tracking-tight text-ink truncate">
               {edition?.name?.trim() || DEFAULT_EDITION_CONFIG.name}
               {edition?.edition?.trim() && (
                 <>
@@ -144,19 +144,20 @@ export default function FoodCoordinatorPage() {
                 </>
               )}
             </Link>
-            <span className="text-border-strong">/</span>
-            <div className="pill-badge">
+            <span className="hidden sm:inline text-border-strong">/</span>
+            <div className="hidden sm:inline-flex pill-badge whitespace-nowrap">
               <Utensils className="w-3.5 h-3.5 text-accent" />
               <span>Food Committee</span>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <Button
               variant="outline"
               size="sm"
               onClick={() => setSoundEnabled(!soundEnabled)}
-              className="text-sm"
+              aria-label={soundEnabled ? "Mute scan sounds" : "Unmute scan sounds"}
+              className="text-sm !px-3"
             >
               {soundEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
               <span className="hidden sm:inline ml-1.5">{soundEnabled ? "Audio On" : "Muted"}</span>
@@ -166,7 +167,8 @@ export default function FoodCoordinatorPage() {
               variant="outline"
               size="sm"
               onClick={fetchStats}
-              className="text-sm"
+              aria-label="Refresh stats"
+              className="text-sm !px-3"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loadingStats ? "animate-spin text-accent" : ""}`} />
               <span className="hidden sm:inline ml-1.5">Refresh</span>
@@ -176,17 +178,19 @@ export default function FoodCoordinatorPage() {
               variant="primary"
               size="sm"
               onClick={() => setShowCheckInModal(true)}
-              className="text-sm gap-1.5"
+              aria-label="Full lookup"
+              className="text-sm gap-1.5 !px-3 sm:!px-4"
             >
               <QrCode className="w-3.5 h-3.5" />
-              <span>Full Lookup</span>
+              <span className="hidden sm:inline">Full Lookup</span>
             </Button>
 
             <Button
               variant="ghost"
               size="sm"
               onClick={() => signOutAndClearCache({ callbackUrl: "/login" })}
-              className="text-sm text-ink-muted hover:text-danger"
+              aria-label="Sign out"
+              className="text-sm text-ink-muted hover:text-danger !px-3"
             >
               <LogOut className="w-3.5 h-3.5" />
             </Button>

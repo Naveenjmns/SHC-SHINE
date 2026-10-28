@@ -159,12 +159,12 @@ export default function FoodDistributionStats({
 
       {/* Queue Remaining */}
       <div className="bg-surface border border-border rounded-2xl shadow-card p-4 sm:p-5 flex flex-col justify-between">
-        <div className="flex items-center justify-between mb-1.5">
-          <span className="text-sm font-semibold text-ink-muted flex items-center gap-1.5">
-            <Clock className="w-3.5 h-3.5 text-ink-muted" />
+        <div className="flex flex-wrap items-center justify-between gap-1.5 mb-1.5">
+          <span className="min-w-0 text-sm font-semibold text-ink-muted flex items-center gap-1.5">
+            <Clock className="w-3.5 h-3.5 shrink-0 text-ink-muted" />
             Remaining Queue
           </span>
-          <span className="text-sm font-medium px-2 py-0.5 rounded-full bg-surface-raised border border-border text-ink">
+          <span className="shrink-0 text-xs font-medium px-2 py-0.5 rounded-full bg-surface-raised border border-border text-ink">
             Pending
           </span>
         </div>

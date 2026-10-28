@@ -234,8 +234,8 @@ export default function AdminLogsPage() {
       {/* Top Navbar */}
       <nav className="bg-surface border-b border-border sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between h-16 items-center">
-          <div className="flex items-center gap-3">
-            <Link href="/" className="flex items-center gap-2">
+          <div className="flex items-center gap-3 min-w-0">
+            <Link href="/" className="flex items-center gap-2 shrink-0">
               <span className="w-7 h-7 rounded-[8px] bg-accent flex items-center justify-center text-white font-bold text-[15px]">
                 E
               </span>
@@ -243,29 +243,29 @@ export default function AdminLogsPage() {
                 EVENT <span className="text-accent">ADMIN</span>
               </span>
             </Link>
-            <span className="text-ink-disabled">/</span>
-            <div className="flex items-center gap-1 text-sm font-semibold text-ink-muted">
+            <span className="hidden md:inline text-ink-disabled">/</span>
+            <div className="hidden md:flex items-center gap-1 text-sm font-semibold text-ink-muted">
               <History className="w-3.5 h-3.5 text-accent" />
               <span>Activity Audit Trail</span>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <Link
               href="/admin"
-              className="px-3 py-1.5 rounded-[8px] border border-border text-sm font-semibold text-ink-muted hover:bg-surface-raised transition"
+              className="inline-flex items-center min-h-[40px] px-3 py-1.5 whitespace-nowrap rounded-[8px] border border-border text-sm font-semibold text-ink-muted hover:bg-surface-raised transition"
             >
               ← Overview
             </Link>
             <Link
               href="/admin/events"
-              className="px-3 py-1.5 rounded-[8px] border border-border text-sm font-semibold text-ink-muted hover:bg-surface-raised transition"
+              className="hidden md:inline-flex items-center min-h-[40px] px-3 py-1.5 whitespace-nowrap rounded-[8px] border border-border text-sm font-semibold text-ink-muted hover:bg-surface-raised transition"
             >
               Events Catalog
             </Link>
             <Link
               href="/admin/users"
-              className="px-3 py-1.5 rounded-[8px] border border-border text-sm font-semibold text-ink-muted hover:bg-surface-raised transition"
+              className="hidden md:inline-flex items-center min-h-[40px] px-3 py-1.5 whitespace-nowrap rounded-[8px] border border-border text-sm font-semibold text-ink-muted hover:bg-surface-raised transition"
             >
               User Accounts
             </Link>
