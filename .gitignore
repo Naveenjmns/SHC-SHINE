@@ -43,3 +43,6 @@ next-env.d.ts
 
 # image optimization cache
 public/uploads/.cach
+
+# Playwright cache
+.playwright-browsers/

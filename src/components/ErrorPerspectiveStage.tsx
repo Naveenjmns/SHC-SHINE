@@ -31,57 +31,57 @@ interface ErrorPerspectiveStageProps {
 const DEFAULT_PEOPLE_CONFIGS: Person["outfit"][] = [
   {
     skinTone: "#E0AC69",
-    shirtColor: "#8B263E",
-    pantsColor: "#232D3F",
-    shoesColor: "#1E1E1E",
+    shirtColor: "#006BFF",
+    pantsColor: "#0B3558",
+    shoesColor: "#0B3558",
     hairColor: "#A08060",
     style: "sweater",
   },
   {
     skinTone: "#F1C27D",
-    shirtColor: "#E2E8F0",
-    pantsColor: "#1E293B",
-    shoesColor: "#F8FAFC",
+    shirtColor: "#D4E0ED",
+    pantsColor: "#0B3558",
+    shoesColor: "#F8F9FB",
     hairColor: "#2C1B18",
     style: "tshirt",
   },
   {
     skinTone: "#C68642",
-    shirtColor: "#27272A",
-    pantsColor: "#3F4E3A",
-    shoesColor: "#222222",
+    shirtColor: "#0B3558",
+    pantsColor: "#476788",
+    shoesColor: "#0B3558",
     hairColor: "#1A1A1A",
     style: "jacket",
   },
   {
     skinTone: "#E8BEAC",
-    shirtColor: "#71717A",
-    pantsColor: "#1E293B",
+    shirtColor: "#476788",
+    pantsColor: "#0B3558",
     shoesColor: "#FFFFFF",
     hairColor: "#3D2314",
     style: "tshirt",
   },
   {
     skinTone: "#D4AA78",
-    shirtColor: "#18181B",
-    pantsColor: "#09090B",
-    shoesColor: "#27272A",
+    shirtColor: "#0B3558",
+    pantsColor: "#476788",
+    shoesColor: "#0B3558",
     hairColor: "#18181B",
     style: "jacket",
   },
   {
     skinTone: "#8D5524",
-    shirtColor: "#FF6B1A",
-    pantsColor: "#3F3F46",
-    shoesColor: "#18181B",
+    shirtColor: "#006BFF",
+    pantsColor: "#476788",
+    shoesColor: "#0B3558",
     hairColor: "#09090B",
     style: "loose-pants",
   },
   {
     skinTone: "#FFDBAC",
-    shirtColor: "#0F172A",
-    pantsColor: "#D9A441",
-    shoesColor: "#F8FAFC",
+    shirtColor: "#0B3558",
+    pantsColor: "#B4C7DB",
+    shoesColor: "#F8F9FB",
     hairColor: "#4A3728",
     style: "hoodie",
   },
@@ -175,8 +175,8 @@ export default function ErrorPerspectiveStage({
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, width, height);
 
-      // Dedicated Pure Midnight Palette (#0A0908)
-      ctx.fillStyle = "#0A0908";
+      // Cloud canvas floor (#F8F9FB)
+      ctx.fillStyle = "#F8F9FB";
       ctx.fillRect(0, 0, width, height);
 
       // Perspective horizon setup
@@ -210,7 +210,7 @@ export default function ErrorPerspectiveStage({
         const pStart = project(floorX, 0.01);
         const pEnd = project(floorX, 1.05);
 
-        ctx.strokeStyle = "rgba(255, 255, 255, 0.075)";
+        ctx.strokeStyle = "rgba(11, 53, 88, 0.08)";
         ctx.beginPath();
         ctx.moveTo(pStart.x, pStart.y);
         ctx.lineTo(pEnd.x, pEnd.y);
@@ -225,24 +225,13 @@ export default function ErrorPerspectiveStage({
         const pRight = project(1.35, floorDepth);
 
         const alpha = Math.min(1, floorDepth * 1.35);
-        ctx.strokeStyle = `rgba(255, 255, 255, ${0.07 * alpha})`;
+        ctx.strokeStyle = `rgba(11, 53, 88, ${0.07 * alpha})`;
 
         ctx.beginPath();
         ctx.moveTo(pLeft.x, pLeft.y);
         ctx.lineTo(pRight.x, pRight.y);
         ctx.stroke();
       }
-
-      // Warm Cosmic Glow
-      const glowGrad = ctx.createRadialGradient(
-        vanishX, vanishY, 8,
-        vanishX, vanishY + 100, Math.max(width * 0.55, 300)
-      );
-      glowGrad.addColorStop(0, "rgba(255, 107, 26, 0.12)");
-      glowGrad.addColorStop(0.5, "rgba(217, 164, 65, 0.035)");
-      glowGrad.addColorStop(1, "rgba(10, 9, 8, 0)");
-      ctx.fillStyle = glowGrad;
-      ctx.fillRect(0, 0, width, height);
 
       // 2. Animate and draw people
       const people = peopleRef.current;
@@ -291,9 +280,9 @@ export default function ErrorPerspectiveStage({
         ctx.scale(1, 0.4);
         ctx.rotate(-0.35);
         const shadowGrad = ctx.createRadialGradient(0, 0, 2 * scale, 0, 0, 18 * scale);
-        shadowGrad.addColorStop(0, "rgba(0, 0, 0, 0.8)");
-        shadowGrad.addColorStop(0.6, "rgba(0, 0, 0, 0.35)");
-        shadowGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
+        shadowGrad.addColorStop(0, "rgba(71, 103, 136, 0.35)");
+        shadowGrad.addColorStop(0.6, "rgba(71, 103, 136, 0.14)");
+        shadowGrad.addColorStop(1, "rgba(71, 103, 136, 0)");
         ctx.fillStyle = shadowGrad;
         ctx.beginPath();
         ctx.ellipse(4 * scale, 0, 18 * scale, 8 * scale, 0, 0, Math.PI * 2);
@@ -459,7 +448,7 @@ export default function ErrorPerspectiveStage({
       ref={containerRef}
       onPointerMove={handlePointerMove}
       onPointerDown={handlePointerDown}
-      className={`relative w-full min-h-[100dvh] bg-[#0A0908] text-stone-100 flex flex-col items-center justify-center overflow-x-hidden select-none cursor-default ${className}`}
+      className={`relative w-full min-h-[100dvh] bg-canvas text-ink flex flex-col items-center justify-center overflow-x-hidden select-none cursor-default ${className}`}
     >
       {/* Background Interactive Floor Canvas */}
       <canvas
@@ -470,7 +459,7 @@ export default function ErrorPerspectiveStage({
       {/* Ripple on floor click */}
       {clickRipple && (
         <span
-          className="fixed pointer-events-none rounded-full border border-orange-400/50 animate-ping z-0"
+          className="fixed pointer-events-none rounded-full border border-accent/50 animate-ping z-0"
           style={{
             left: clickRipple.x - 20,
             top: clickRipple.y - 20,

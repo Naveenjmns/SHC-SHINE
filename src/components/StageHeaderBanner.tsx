@@ -42,7 +42,7 @@ export default function StageHeaderBanner({
     if (accreditationText.includes("\n")) {
       const lines = accreditationText.split("\n").map((l) => l.trim()).filter(Boolean);
       return (
-        <div className="text-[10px] sm:text-xs md:text-sm font-bold text-[#FDE047] leading-tight mt-1 mb-1.5 flex flex-col items-center">
+        <div className="text-xs sm:text-sm md:text-[15px] font-semibold text-[#C9D7E6] leading-tight mt-1 mb-1.5 flex flex-col items-center">
           {lines.map((line, idx) => (
             <span key={idx}>{line}</span>
           ))}
@@ -57,7 +57,7 @@ export default function StageHeaderBanner({
       const line1 = rawPart1.endsWith(",") ? rawPart1 : `${rawPart1},`;
       const line2 = match[2].trim();
       return (
-        <div className="text-[10px] sm:text-xs md:text-sm font-bold text-[#FDE047] leading-tight mt-1 mb-1.5 flex flex-col items-center">
+        <div className="text-xs sm:text-sm md:text-[15px] font-semibold text-[#C9D7E6] leading-tight mt-1 mb-1.5 flex flex-col items-center">
           <span>{line1}</span>
           <span>{line2}</span>
         </div>
@@ -65,17 +65,14 @@ export default function StageHeaderBanner({
     }
 
     return (
-      <p className="text-[10px] sm:text-xs md:text-sm font-bold text-[#FDE047] leading-tight mt-1 mb-1.5">
+      <p className="text-xs sm:text-sm md:text-[15px] font-semibold text-[#C9D7E6] leading-tight mt-1 mb-1.5">
         {accreditationText}
       </p>
     );
   };
 
   return (
-    <div className={`${forceVisible ? "" : "stage-header-banner "}w-full bg-[#0E0D0D] border-b border-[#D9A441]/35 py-3 px-4 sm:px-8 text-white relative z-50 overflow-hidden shadow-2xl`}>
-      {/* Background Solar Glow */}
-      <div className="absolute inset-0 bg-gradient-to-r from-[#FF4500]/12 via-[#FF6B1A]/18 to-[#FF4500]/12 blur-xl pointer-events-none" />
-
+    <div className={`${forceVisible ? "" : "stage-header-banner "}w-full bg-[#071E33] border-b border-white/10 py-3 px-4 sm:px-8 text-white relative z-50 overflow-hidden`}>
       {isBannerUploaded ? (
         <div className="max-w-7xl mx-auto flex justify-center items-center relative z-10 min-h-[100px] sm:min-h-[140px] md:min-h-[180px]">
           <img
@@ -87,7 +84,7 @@ export default function StageHeaderBanner({
             // @ts-ignore
             fetchPriority="high"
             decoding="async"
-            className="w-full max-h-44 sm:max-h-56 md:max-h-64 object-contain rounded-xl shadow-lg"
+            className="w-full max-h-44 sm:max-h-56 md:max-h-64 object-contain rounded-2xl"
           />
         </div>
       ) : (
@@ -105,7 +102,7 @@ export default function StageHeaderBanner({
                 // @ts-ignore
                 fetchPriority="high"
                 decoding="async"
-                className="h-10 sm:h-20 md:h-28 w-auto object-contain drop-shadow-[0_4px_16px_rgba(255,107,26,0.35)] transition-transform hover:scale-105"
+                className="h-10 sm:h-20 md:h-28 w-auto object-contain transition-transform hover:scale-105"
               />
             )}
 
@@ -119,26 +116,20 @@ export default function StageHeaderBanner({
                 // @ts-ignore
                 fetchPriority="high"
                 decoding="async"
-                className="h-10 sm:h-20 md:h-28 w-auto object-contain drop-shadow-[0_4px_16px_rgba(255,107,26,0.35)] transition-transform hover:scale-105"
+                className="h-10 sm:h-20 md:h-28 w-auto object-contain transition-transform hover:scale-105"
               />
             )}
           </div>
 
           {/* CENTER: Clean 2-Line Accreditation Text Column (College Details) */}
           <div className="flex-1 min-w-[200px] text-center px-1 sm:px-4">
-            <h2
-              className="text-xs sm:text-xl md:text-2xl lg:text-3xl font-black uppercase tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-[#FF7B2F] via-[#FF6B1A] to-[#D9A441]"
-              style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
-            >
+            <h2 className="text-sm sm:text-xl md:text-2xl lg:text-3xl font-bold uppercase tracking-wide text-white">
               {institutionName}
             </h2>
 
             {renderAccreditationText()}
 
-            <h3
-              className="text-xs sm:text-lg md:text-xl lg:text-2xl font-extrabold uppercase tracking-wider text-[#FF6B1A] drop-shadow-xs"
-              style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
-            >
+            <h3 className="text-sm sm:text-lg md:text-xl lg:text-2xl font-bold uppercase tracking-wide text-[#7FB2FF]">
               {hostDept}
             </h3>
           </div>
@@ -155,7 +146,7 @@ export default function StageHeaderBanner({
                 // @ts-ignore
                 fetchPriority="high"
                 decoding="async"
-                className="h-8 sm:h-14 md:h-20 w-auto object-contain drop-shadow-md hover:scale-105 transition-transform"
+                className="h-8 sm:h-14 md:h-20 w-auto object-contain hover:scale-105 transition-transform"
               />
             )}
 
@@ -169,7 +160,7 @@ export default function StageHeaderBanner({
                 // @ts-ignore
                 fetchPriority="high"
                 decoding="async"
-                className="h-10 sm:h-20 md:h-28 w-auto object-contain drop-shadow-[0_4px_16px_rgba(255,107,26,0.35)] transition-transform hover:scale-105"
+                className="h-10 sm:h-20 md:h-28 w-auto object-contain transition-transform hover:scale-105"
               />
             )}
           </div>

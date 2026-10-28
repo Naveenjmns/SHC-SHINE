@@ -69,66 +69,53 @@ export default function Navbar({ edition }: NavbarProps) {
   return (
     <nav
       suppressHydrationWarning
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled
-          ? "py-3 bg-[#FAF8F5]/90 backdrop-blur-md border-b border-[#1C1917]/10 shadow-md"
-          : "py-5 bg-transparent"
+      className={`fixed top-0 left-0 right-0 z-50 transition-[background-color,border-color,box-shadow] duration-200 border-b ${
+        scrolled || mobileOpen
+          ? "bg-surface/95 backdrop-blur-md border-border shadow-card"
+          : "bg-canvas/0 border-transparent"
       }`}
     >
-      <div className="container-shine flex items-center justify-between">
+      <div className="container-shine h-16 flex items-center justify-between gap-6">
         {/* Brand Logo & Title */}
-        <Link href="/" className="flex items-center gap-3 group tap-target">
+        <Link href="/" className="flex items-center gap-2.5 shrink-0 min-h-[44px]">
           {logoUrl ? (
             <img
               src={logoUrl}
               alt={eventName}
-              width={36}
-              height={36}
+              width={32}
+              height={32}
               loading="eager"
               // @ts-ignore
               fetchPriority="high"
               decoding="async"
-              className="h-9 w-auto object-contain group-hover:scale-105 transition-transform"
+              className="h-8 w-auto object-contain"
             />
           ) : (
-            <div className="relative" suppressHydrationWarning>
-              <div
-                suppressHydrationWarning
-                className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--fest-ember)] to-[var(--fest-gold)] flex items-center justify-center text-white font-black text-xl shadow-md shadow-orange-500/20 group-hover:scale-105 transition-transform"
-                style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
-              >
-                {eventName.charAt(0)}
-              </div>
-              <div
-                suppressHydrationWarning
-                className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-[var(--fest-ember)] ring-2 ring-[#FAF8F5] animate-pulse"
-              />
+            <div
+              suppressHydrationWarning
+              className="w-8 h-8 rounded-[8px] bg-accent text-accent-ink flex items-center justify-center font-bold text-base"
+            >
+              {eventName.charAt(0)}
             </div>
           )}
 
-          <div>
-            <span
-              className="text-xl font-extrabold tracking-tight text-[#1C1917] flex items-center gap-1.5"
-              style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
-            >
-              {eventName}{" "}
-              <span className="hero-wordmark-gradient font-black">
-                {editionYear}
-              </span>
+          <div className="leading-tight">
+            <span className="text-lg font-bold text-ink block">
+              {eventName} <span className="text-accent">{editionYear}</span>
             </span>
-            <span className="text-[10px] uppercase font-bold tracking-widest text-[#57534E] block -mt-1 truncate max-w-[150px] sm:max-w-[240px]">
+            <span className="text-xs font-medium text-ink-muted block truncate max-w-[150px] sm:max-w-[220px]">
               {activeEdition?.institutionShortName || activeEdition?.institutionName || "College Symposium"}
             </span>
           </div>
         </Link>
 
         {/* Desktop Navigation */}
-        <div className="hidden md:flex items-center gap-6 lg:gap-7">
+        <div className="hidden md:flex items-center gap-1 lg:gap-2">
           {navItems.map((item) => (
             <Link
               key={item.id}
               href={item.url}
-              className="text-xs lg:text-sm font-semibold text-[#44403C] hover:text-[#FF6B1A] transition-colors relative py-1 after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-[#FF6B1A] after:scale-x-0 hover:after:scale-x-100 after:transition-transform"
+              className="px-3 py-2 rounded-[8px] text-[15px] font-semibold text-ink hover:text-accent transition-colors"
             >
               {item.label}
             </Link>
@@ -136,124 +123,110 @@ export default function Navbar({ edition }: NavbarProps) {
         </div>
 
         {/* Desktop User Actions */}
-        <div className="hidden md:flex items-center gap-3">
-          <Link
-            href="/leaderboard"
-            className="flex items-center gap-1.5 text-xs font-semibold text-[#57534E] hover:text-[#FF6B1A] bg-white border border-[#1C1917]/10 px-3 py-2 rounded-xl transition shadow-2xs"
-            title="Stage Presentation Mode"
-          >
-            <Monitor className="w-3.5 h-3.5 text-[#D9A441]" />
-            <span>Stage View</span>
-          </Link>
-
+        <div className="hidden md:flex items-center gap-2 shrink-0">
           {session ? (
-            <div className="flex items-center gap-2">
-              <Link
-                href={getDashboardUrl()}
-                className="btn-ember !py-2 !px-4 text-xs font-bold"
-              >
-                <LayoutDashboard className="w-3.5 h-3.5" />
-                <span>{getDashboardLabel()}</span>
-              </Link>
+            <>
               <Link
                 href="/profile"
-                className="p-2 text-[#57534E] hover:text-[#FF6B1A] bg-white border border-[#1C1917]/10 rounded-xl transition shadow-2xs"
+                className="w-10 h-10 flex items-center justify-center text-ink hover:text-accent rounded-[8px] hover:bg-surface-raised transition-colors"
                 title="My Profile"
+                aria-label="My Profile"
               >
-                <User className="w-4 h-4" />
+                <User className="w-5 h-5" />
               </Link>
               <button
                 onClick={() => signOut({ callbackUrl: "/" })}
-                className="p-2 text-[#57534E] hover:text-red-600 rounded-xl hover:bg-stone-100 transition tap-target"
+                className="w-10 h-10 flex items-center justify-center text-ink-muted hover:text-danger rounded-[8px] hover:bg-surface-raised transition-colors cursor-pointer"
                 title="Sign Out"
+                aria-label="Sign Out"
               >
-                <LogOut className="w-4 h-4" />
+                <LogOut className="w-5 h-5" />
               </button>
-            </div>
+              <Link href={getDashboardUrl()} className="btn-primary !min-h-[40px] !py-2 !px-4 !text-[15px]">
+                <LayoutDashboard className="w-4 h-4" />
+                <span>{getDashboardLabel()}</span>
+              </Link>
+            </>
           ) : (
-            <div className="flex items-center gap-2">
+            <>
               <Link
                 href="/login"
-                className="text-xs font-bold text-[#1C1917] hover:text-[#FF6B1A] px-3.5 py-2 rounded-xl transition tap-target"
+                className="px-3 py-2 text-[15px] font-semibold text-ink hover:text-accent transition-colors"
               >
-                Login
+                Log in
               </Link>
-              <Link href="/register" className="btn-ember !py-2 !px-4 text-xs font-bold">
-                Register Now
+              <Link href="/register" className="btn-primary !min-h-[40px] !py-2 !px-4 !text-[15px]">
+                Register now
               </Link>
-            </div>
+            </>
           )}
         </div>
 
-        {/* Mobile Menu Button (only visible on mobile, hidden on md+) */}
+        {/* Mobile Menu Button */}
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
-          className="flex md:hidden items-center justify-center p-2.5 text-[#1C1917] hover:bg-stone-100 rounded-xl min-w-[44px] min-h-[44px]"
+          className="flex md:hidden items-center justify-center text-ink hover:bg-surface-raised rounded-[8px] min-w-[44px] min-h-[44px] cursor-pointer"
           aria-label="Toggle Menu"
+          aria-expanded={mobileOpen}
           suppressHydrationWarning
         >
           {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
       </div>
 
-      {/* Mobile Drawer with Comprehensive Options & PWA Install */}
+      {/* Mobile Drawer */}
       {mobileOpen && (
-        <div className="md:hidden bg-[#FAF8F5] border-b border-[#1C1917]/10 px-5 py-5 space-y-3 shadow-xl animate-fade-in max-h-[85vh] overflow-y-auto">
-          {navItems.map((item) => (
+        <div className="md:hidden bg-surface border-t border-border px-4 pt-2 pb-6 max-h-[calc(100dvh-4rem)] overflow-y-auto">
+          <div className="divide-y divide-border">
+            {navItems.map((item) => (
+              <Link
+                key={item.id}
+                href={item.url}
+                onClick={() => setMobileOpen(false)}
+                className="block text-base font-semibold text-ink hover:text-accent py-3.5"
+              >
+                {item.label}
+              </Link>
+            ))}
+
             <Link
-              key={item.id}
-              href={item.url}
+              href="/leaderboard"
               onClick={() => setMobileOpen(false)}
-              className="block text-sm font-bold text-[#1C1917] hover:text-[#FF6B1A] py-2 border-b border-stone-100"
+              className="flex items-center justify-between py-3.5 text-base font-semibold text-ink hover:text-accent"
             >
-              {item.label}
+              <span className="flex items-center gap-2">
+                <Monitor className="w-5 h-5 text-ink-muted" />
+                Stage presentation view
+              </span>
+              <span className="pill-badge">Auditorium</span>
             </Link>
-          ))}
 
-          {/* Stage View Link */}
-          <Link
-            href="/leaderboard"
-            onClick={() => setMobileOpen(false)}
-            className="flex items-center justify-between py-2 text-sm font-bold text-[#D97706] hover:text-[#FF6B1A] border-b border-stone-100"
-          >
-            <div className="flex items-center gap-2">
-              <Monitor className="w-4 h-4" />
-              <span>Stage Presentation View</span>
-            </div>
-            <span className="text-[10px] font-extrabold uppercase tracking-widest bg-amber-100 text-amber-900 px-2 py-0.5 rounded">
-              Auditorium
-            </span>
-          </Link>
+            <button
+              type="button"
+              onClick={() => {
+                setMobileOpen(false);
+                window.dispatchEvent(new Event("trigger-pwa-install"));
+              }}
+              className="flex items-center justify-between w-full py-3.5 text-left cursor-pointer"
+            >
+              <span className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-accent shrink-0" />
+                <span>
+                  <span className="block text-base font-semibold text-ink">Install the {eventName} app</span>
+                  <span className="block text-[15px] text-ink-muted">Offline passes & live results</span>
+                </span>
+              </span>
+              <span className="text-[15px] font-semibold text-accent">Install</span>
+            </button>
+          </div>
 
-          {/* PWA Install Button */}
-          <button
-            type="button"
-            onClick={() => {
-              setMobileOpen(false);
-              window.dispatchEvent(new Event("trigger-pwa-install"));
-            }}
-            className="tap-target flex items-center justify-between w-full px-4 py-2.5 rounded-xl bg-gradient-to-r from-orange-500/10 via-amber-500/10 to-orange-500/10 border border-orange-500/20 text-[#1C1917] text-xs font-bold transition-all cursor-pointer text-left"
-          >
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-orange-600 shrink-0" />
-              <div>
-                <div className="font-extrabold">Install SHINE 26 App</div>
-                <div className="text-[10px] text-stone-500 font-normal">Fast offline passes & results</div>
-              </div>
-            </div>
-            <span className="text-[10px] font-black uppercase tracking-wider bg-orange-600 text-white px-2 py-0.5 rounded shadow-2xs">
-              Install
-            </span>
-          </button>
-
-          {/* Mobile User Actions */}
-          <div className="pt-3 flex flex-col gap-2.5">
+          <div className="pt-4 flex flex-col gap-3">
             {session ? (
               <>
                 <Link
                   href={getDashboardUrl()}
                   onClick={() => setMobileOpen(false)}
-                  className="btn-ember w-full text-center py-2.5 text-xs font-bold flex items-center justify-center gap-2"
+                  className="btn-primary w-full"
                 >
                   <LayoutDashboard className="w-4 h-4" />
                   <span>{getDashboardLabel()}</span>
@@ -261,19 +234,19 @@ export default function Navbar({ edition }: NavbarProps) {
                 <Link
                   href="/profile"
                   onClick={() => setMobileOpen(false)}
-                  className="tap-target w-full text-center py-2.5 text-xs font-bold text-stone-700 bg-stone-100 hover:bg-stone-200 rounded-xl transition flex items-center justify-center gap-2"
+                  className="btn-outline w-full"
                 >
                   <User className="w-4 h-4" />
-                  <span>My Profile & Settings</span>
+                  <span>My profile & settings</span>
                 </Link>
                 <button
                   onClick={() => {
                     setMobileOpen(false);
                     signOut({ callbackUrl: "/" });
                   }}
-                  className="tap-target w-full text-center py-2 text-xs font-semibold text-red-600 hover:bg-red-50 rounded-xl transition"
+                  className="min-h-[44px] w-full text-center text-base font-semibold text-danger rounded-[8px] hover:bg-danger-surface transition-colors cursor-pointer"
                 >
-                  Sign Out
+                  Sign out
                 </button>
               </>
             ) : (
@@ -281,16 +254,16 @@ export default function Navbar({ edition }: NavbarProps) {
                 <Link
                   href="/register"
                   onClick={() => setMobileOpen(false)}
-                  className="btn-ember w-full text-center py-2.5 text-xs font-bold"
+                  className="btn-primary w-full"
                 >
-                  Register Delegation Now
+                  Register your delegation
                 </Link>
                 <Link
                   href="/login"
                   onClick={() => setMobileOpen(false)}
-                  className="tap-target w-full text-center py-2.5 text-xs font-bold text-stone-700 bg-stone-100 hover:bg-stone-200 rounded-xl transition"
+                  className="btn-outline w-full"
                 >
-                  Sign In to Portal
+                  Log in
                 </Link>
               </>
             )}

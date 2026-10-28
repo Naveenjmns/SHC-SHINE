@@ -136,6 +136,12 @@ export async function checkAndDispatchEventReminders(options?: {
             }
 
             try {
+              const mainZoneId = event.venueZoneId || null;
+              const mainZoneLabel = mainZoneId
+                ? mainZoneId.replace(/^hall-|^lab-|^room-/, "").replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+                : null;
+              const mainMapUrl = mainZoneId ? `${baseUrl}/loc/${mainZoneId}` : `${baseUrl}/events`;
+
               const sent = await sendEventReminderEmail({
                 toEmail: studentEmail,
                 studentName,
@@ -144,6 +150,9 @@ export async function checkAndDispatchEventReminders(options?: {
                 category: event.category,
                 isPrelims: false,
                 venue: event.venue || "Designated Competition Hall",
+                venueZoneId: mainZoneId,
+                venueZoneLabel: mainZoneLabel,
+                mapUrl: mainMapUrl,
                 startTime: timeDisplay,
                 minutesUntilStart: minutesUntil <= 15 && minutesUntil > 0 ? minutesUntil : 10,
                 badgeCode,
@@ -258,6 +267,12 @@ export async function checkAndDispatchEventReminders(options?: {
               }
 
               try {
+                const prelimsZoneId = event.prelimsVenueZoneId || event.venueZoneId || null;
+                const prelimsZoneLabel = prelimsZoneId
+                  ? prelimsZoneId.replace(/^hall-|^lab-|^room-/, "").replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+                  : null;
+                const prelimsMapUrl = prelimsZoneId ? `${baseUrl}/loc/${prelimsZoneId}` : `${baseUrl}/events`;
+
                 const sent = await sendEventReminderEmail({
                   toEmail: studentEmail,
                   studentName,
@@ -266,6 +281,9 @@ export async function checkAndDispatchEventReminders(options?: {
                   category: event.category,
                   isPrelims: true,
                   venue: event.prelimsVenue || event.venue || "Designated Prelims Hall",
+                  venueZoneId: prelimsZoneId,
+                  venueZoneLabel: prelimsZoneLabel,
+                  mapUrl: prelimsMapUrl,
                   startTime: prelimsTimeDisplay,
                   minutesUntilStart: minutesUntilPrelims <= 15 && minutesUntilPrelims > 0 ? minutesUntilPrelims : 10,
                   badgeCode,

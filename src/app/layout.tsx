@@ -1,19 +1,11 @@
 import type { Metadata, Viewport } from "next";
-import { Outfit, Inter } from "next/font/google";
+import { Manrope } from "next/font/google";
 import "./globals.css";
 
-const outfit = Outfit({
-  variable: "--font-outfit",
+const manrope = Manrope({
+  variable: "--font-brand",
   subsets: ["latin"],
   display: "swap",
-  weight: ["300", "400", "500", "600", "700", "800", "900"],
-});
-
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-  display: "swap",
-  weight: ["300", "400", "500", "600", "700"],
 });
 
 export const viewport: Viewport = {
@@ -22,7 +14,7 @@ export const viewport: Viewport = {
   maximumScale: 5,
   userScalable: true,
   viewportFit: "cover",
-  themeColor: "#FF6B1A",
+  themeColor: "#F8F9FB",
 };
 
 export const metadata: Metadata = {
@@ -72,6 +64,7 @@ import { ToastProvider } from "@/components/ToastProvider";
 import PwaRegister from "@/components/PwaRegister";
 import InstallPwaPrompt from "@/components/InstallPwaPrompt";
 import ThemeInjector from "@/components/ThemeInjector";
+import MobileTabBar from "@/components/layout/MobileTabBar";
 import { getActiveEdition } from "@/lib/eventService";
 
 export default async function RootLayout({
@@ -89,7 +82,7 @@ export default async function RootLayout({
   return (
     <html
       lang="en"
-      className={`${outfit.variable} ${inter.variable} h-full antialiased`}
+      className={`${manrope.variable} h-full antialiased`}
     >
       <head>
         <ThemeInjector
@@ -98,10 +91,11 @@ export default async function RootLayout({
           initialBg={activeEdition?.themeBgColor}
         />
       </head>
-      <body className="min-h-full flex flex-col" style={{ fontFamily: 'var(--font-inter), Inter, sans-serif' }}>
+      <body className="min-h-full flex flex-col bg-canvas text-ink font-sans">
         <AuthProvider>
           <ToastProvider>
             {children}
+            <MobileTabBar />
             <PwaRegister />
             <InstallPwaPrompt />
           </ToastProvider>

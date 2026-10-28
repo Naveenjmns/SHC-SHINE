@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { generateThemeCss } from "@/lib/colorUtils";
+import { generateThemeCss, resolveEditionTheme } from "@/lib/colorUtils";
 
 interface ThemeInjectorProps {
   initialPrimary?: string | null;
@@ -10,10 +10,16 @@ interface ThemeInjectorProps {
 }
 
 export default function ThemeInjector({
-  initialPrimary = "#FF6B1A",
-  initialSecondary = "#D9A441",
-  initialBg = "#FAF8F5",
+  initialPrimary,
+  initialSecondary,
+  initialBg,
 }: ThemeInjectorProps) {
+  const { primary, secondary, bg } = resolveEditionTheme(
+    initialPrimary,
+    initialSecondary,
+    initialBg
+  );
+
   useEffect(() => {
     const applyTheme = (primary: string, secondary: string, bg: string) => {
       let styleEl = document.getElementById("app-dynamic-theme") as HTMLStyleElement | null;
@@ -26,11 +32,7 @@ export default function ThemeInjector({
     };
 
     // Apply initial theme
-    applyTheme(
-      initialPrimary || "#FF6B1A",
-      initialSecondary || "#D9A441",
-      initialBg || "#FAF8F5"
-    );
+    applyTheme(primary, secondary, bg);
 
     // Listen for live admin preview events
     const handleThemeUpdate = (e: Event) => {
@@ -52,17 +54,13 @@ export default function ThemeInjector({
     return () => {
       window.removeEventListener("shine:theme-update", handleThemeUpdate);
     };
-  }, [initialPrimary, initialSecondary, initialBg]);
+  }, [primary, secondary, bg]);
 
   return (
     <style
       id="app-dynamic-theme-ssr"
       dangerouslySetInnerHTML={{
-        __html: generateThemeCss(
-          initialPrimary || "#FF6B1A",
-          initialSecondary || "#D9A441",
-          initialBg || "#FAF8F5"
-        ),
+        __html: generateThemeCss(primary, secondary, bg),
       }}
     />
   );

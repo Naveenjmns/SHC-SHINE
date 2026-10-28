@@ -6,6 +6,8 @@ import { EventCategory } from "@prisma/client";
 import { logActivity } from "@/lib/activityLogger";
 import { getActiveEdition } from "@/lib/eventService";
 import { revalidatePath } from "next/cache";
+import { validateZoneExists } from "@/lib/svgSanitizer";
+
 
 // GET /api/events - Public list of events
 export async function GET(req: Request) {
@@ -128,7 +130,9 @@ export async function POST(req: Request) {
       hasPrelims,
       prelimsDateTime,
       prelimsVenue,
+      prelimsVenueZoneId,
       prelimsRules,
+      venueZoneId,
       firstPrize,
       secondPrize,
       thirdPrize,
@@ -147,6 +151,27 @@ export async function POST(req: Request) {
     const defaultSecond = (activeEdition as any)?.defaultSecondPrize || "Cash Prize + Merit Certificate";
     const defaultThird = (activeEdition as any)?.defaultThirdPrize || "Distinction Certificate";
 
+    // Validate map zone identifiers if provided
+    if (venueZoneId) {
+      const isValidZone = await validateZoneExists(venueZoneId, activeEdition?.floorPlanUrl);
+      if (!isValidZone) {
+        return NextResponse.json(
+          { success: false, message: `Selected map zone "${venueZoneId}" does not exist in the active floor plan.` },
+          { status: 400 }
+        );
+      }
+    }
+
+    if (hasPrelims && prelimsVenueZoneId) {
+      const isValidPrelimsZone = await validateZoneExists(prelimsVenueZoneId, activeEdition?.floorPlanUrl);
+      if (!isValidPrelimsZone) {
+        return NextResponse.json(
+          { success: false, message: `Selected prelims map zone "${prelimsVenueZoneId}" does not exist in the active floor plan.` },
+          { status: 400 }
+        );
+      }
+    }
+
     const event = await prisma.event.create({
       data: {
         editionId,
@@ -156,6 +181,7 @@ export async function POST(req: Request) {
         fee: 0,
         capacity: capacity ? parseInt(capacity, 10) : null,
         venue: venue?.trim() || null,
+        venueZoneId: venueZoneId?.trim() || null,
         dateTime: new Date(dateTime),
         rules: rules?.trim() || null,
         imageUrl: imageUrl?.trim() || null,
@@ -174,6 +200,7 @@ export async function POST(req: Request) {
         hasPrelims: Boolean(hasPrelims),
         prelimsDateTime: prelimsDateTime ? new Date(prelimsDateTime) : null,
         prelimsVenue: prelimsVenue?.trim() || null,
+        prelimsVenueZoneId: hasPrelims && prelimsVenueZoneId ? prelimsVenueZoneId.trim() : null,
         prelimsRules: prelimsRules?.trim() || null,
       } as any,
       include: {

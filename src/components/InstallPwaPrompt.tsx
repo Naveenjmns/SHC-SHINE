@@ -98,42 +98,38 @@ export default function InstallPwaPrompt() {
         right: "calc(1.25rem + env(safe-area-inset-right, 0px))",
       }}
     >
-      <div className="bg-white/95 border-2 border-[#FF6B1A]/40 rounded-3xl p-4 sm:p-5 shadow-2xl backdrop-blur-md relative overflow-hidden">
-        {/* Glow ambient accent */}
-        <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-[#FF6B1A]/20 via-[#D9A441]/10 to-transparent rounded-full blur-xl pointer-events-none" />
-
+      <div className="bg-surface border border-border rounded-3xl p-4 sm:p-5 shadow-modal relative overflow-hidden">
         <button
           onClick={handleDismiss}
-          className="absolute top-3.5 right-3.5 p-1 text-stone-400 hover:text-stone-700 rounded-full hover:bg-stone-100 transition tap-target"
+          className="absolute top-3.5 right-3.5 p-1 text-ink-subtle hover:text-ink rounded-full hover:bg-surface-raised transition tap-target"
           aria-label="Dismiss"
         >
           <X className="w-4 h-4" />
         </button>
 
         <div className="flex items-start gap-3.5">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#FF6B1A] to-[#D9A441] flex items-center justify-center text-white font-black text-xl shadow-md shadow-orange-500/20 shrink-0">
+          <div className="w-12 h-12 rounded-2xl bg-accent flex items-center justify-center text-accent-ink font-bold text-xl shrink-0">
             S
           </div>
 
           <div className="flex-1 pr-4">
-            <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-[#FF6B1A]">
-              <Sparkles className="w-3 h-3 text-[#D9A441]" />
+            <div className="flex items-center gap-1.5 eyebrow !text-accent-strong">
+              <Sparkles className="w-3 h-3 text-accent" />
               <span>Official Event App</span>
             </div>
             <h4
-              className="text-sm font-black text-[#1C1917] tracking-tight leading-tight mt-0.5"
-              style={{ fontFamily: "var(--font-outfit), Outfit, sans-serif" }}
+              className="text-base font-bold text-ink leading-tight mt-0.5"
             >
               Install SHINE 26
             </h4>
-            <p className="text-[11px] text-stone-600 mt-1 leading-normal">
+            <p className="text-sm text-ink-muted mt-1 leading-normal">
               Instant access to QR gate passes, live jury leaderboards & food tokens. Works offline on your device.
             </p>
 
             <div className="mt-3 flex items-center gap-2">
               <button
                 onClick={handleInstallClick}
-                className="tap-target btn-ember !py-1.5 !px-3.5 !text-xs !font-bold flex items-center gap-1.5 shadow-sm"
+                className="tap-target btn-primary !py-1.5 !px-3.5 !text-[15px] flex items-center gap-1.5"
               >
                 <Download className="w-3.5 h-3.5" />
                 <span>Install Now</span>
@@ -141,7 +137,7 @@ export default function InstallPwaPrompt() {
 
               <button
                 onClick={handleDismiss}
-                className="tap-target px-3 py-1.5 text-xs font-semibold text-stone-600 hover:text-stone-900 rounded-xl transition"
+                className="tap-target px-3 py-1.5 text-[15px] font-semibold text-ink-muted hover:text-ink hover:bg-surface-raised rounded-[8px] transition"
               >
                 Maybe Later
               </button>

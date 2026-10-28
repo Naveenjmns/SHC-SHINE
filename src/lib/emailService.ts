@@ -308,18 +308,18 @@ export async function testSmtpConnection(testRecipient: string): Promise<{ succe
         isSystemTest: true,
         text: `Hello,\n\nThis is a confirmation that your Google Cloud Gmail REST API is successfully connected and verified over HTTPS (Port 443).\n\nSender: ${senderEmail}\nSent at: ${new Date().toLocaleString()}`,
         html: `
-          <div style="font-family: sans-serif; max-width: 550px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
-            <h2 style="color: #FF6B1A; margin-top: 0;">Gmail REST API Verified!</h2>
-            <p style="color: #334155; font-size: 15px; line-height: 1.5;">
+          <div style="font-family: sans-serif; max-width: 550px; margin: 0 auto; padding: 24px; border: 1px solid #D4E0ED; border-radius: 12px; background: #ffffff;">
+            <h2 style="color: #006BFF; margin-top: 0;">Gmail REST API Verified!</h2>
+            <p style="color: #0B3558; font-size: 15px; line-height: 1.5;">
               Your email dispatch engine is operating over <strong>HTTPS (Port 443)</strong> via the Google Cloud Gmail REST API. Outgoing connection blocks on cloud hosts (such as Railway) are completely bypassed!
             </p>
-            <div style="background: #f8fafc; padding: 12px 16px; border-radius: 8px; font-size: 13px; color: #64748b; margin: 20px 0;">
+            <div style="background: #F8F9FB; padding: 12px 16px; border-radius: 8px; font-size: 13px; color: #476788; margin: 20px 0;">
               <p style="margin: 4px 0;"><strong>Protocol:</strong> HTTPS REST API (Port 443)</p>
               <p style="margin: 4px 0;"><strong>Provider:</strong> Google Cloud Gmail REST API</p>
               <p style="margin: 4px 0;"><strong>Sender Account:</strong> ${senderEmail}</p>
               <p style="margin: 4px 0;"><strong>Timestamp:</strong> ${new Date().toLocaleString()}</p>
             </div>
-            <p style="font-size: 12px; color: #94a3b8; margin-bottom: 0;">
+            <p style="font-size: 12px; color: #A6BBD1; margin-bottom: 0;">
               Automated test triggered from SHINE '26 Admin Console.
             </p>
           </div>
@@ -344,18 +344,18 @@ export async function testSmtpConnection(testRecipient: string): Promise<{ succe
       subject: `[Test] SMTP Configuration Verified — Event Management System`,
       text: `Hello,\n\nThis is a confirmation that your SMTP configuration is successfully connected and verified.\n\nSent at: ${new Date().toLocaleString()}`,
       html: `
-        <div style="font-family: sans-serif; max-width: 550px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
-          <h2 style="color: #FF6B1A; margin-top: 0;">SMTP Test Successful!</h2>
-          <p style="color: #334155; font-size: 15px; line-height: 1.5;">
+        <div style="font-family: sans-serif; max-width: 550px; margin: 0 auto; padding: 24px; border: 1px solid #D4E0ED; border-radius: 12px; background: #ffffff;">
+          <h2 style="color: #006BFF; margin-top: 0;">SMTP Test Successful!</h2>
+          <p style="color: #0B3558; font-size: 15px; line-height: 1.5;">
             Your email dispatch server is active and verified to send announcements and updates to registered delegates.
           </p>
-          <div style="background: #f8fafc; padding: 12px 16px; border-radius: 8px; font-size: 13px; color: #64748b; margin: 20px 0;">
+          <div style="background: #F8F9FB; padding: 12px 16px; border-radius: 8px; font-size: 13px; color: #476788; margin: 20px 0;">
             <p style="margin: 4px 0;"><strong>Host:</strong> ${config.host}:465</p>
             <p style="margin: 4px 0;"><strong>SSL/TLS:</strong> Enabled (Direct SSL Port 465)</p>
             <p style="margin: 4px 0;"><strong>Sender:</strong> ${config.fromName} (${config.fromEmail})</p>
             <p style="margin: 4px 0;"><strong>Timestamp:</strong> ${new Date().toLocaleString()}</p>
           </div>
-          <p style="font-size: 12px; color: #94a3b8; margin-bottom: 0;">
+          <p style="font-size: 12px; color: #A6BBD1; margin-bottom: 0;">
             This was an automated test triggered from the Admin Console.
           </p>
         </div>
@@ -408,10 +408,10 @@ export async function sendBroadcastEmail({
   for (const recipient of recipients) {
     try {
       const personalizedHtml = `
-        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #FAF8F5; padding: 32px 20px;">
-          <div style="background-color: #ffffff; border-radius: 16px; border: 1px solid #E7E5E4; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.04);">
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #F8F9FB; padding: 32px 20px;">
+          <div style="background-color: #ffffff; border-radius: 16px; border: 1px solid #D4E0ED; overflow: hidden; box-shadow: 0 4px 15px rgba(71,103,136,0.04);">
             <!-- Branded Header -->
-            <div style="background: linear-gradient(135deg, #1C1917 0%, #292524 100%); padding: 28px 32px; border-bottom: 3px solid #FF6B1A;">
+            <div style="background: #0B3558; padding: 28px 32px; border-bottom: 3px solid #006BFF;">
               <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.15em; color: #D9A441; text-transform: uppercase; margin-bottom: 6px;">
                 ${institutionName}
               </div>
@@ -421,23 +421,23 @@ export async function sendBroadcastEmail({
             </div>
 
             <!-- Email Body -->
-            <div style="padding: 32px; color: #292524; font-size: 15px;">
-              <p style="font-weight: 600; color: #1C1917; margin-top: 0; margin-bottom: 18px;">
+            <div style="padding: 32px; color: #0F3250; font-size: 15px;">
+              <p style="font-weight: 600; color: #0B3558; margin-top: 0; margin-bottom: 18px;">
                 Dear ${recipient.name || "Participant"},
               </p>
 
-              <div style="color: #44403C;">
+              <div style="color: #0B3558;">
                 ${formattedHtmlContent}
               </div>
 
-              <div style="margin-top: 32px; padding-top: 20px; border-top: 1px solid #F5F5F4; font-size: 13px; color: #78716C;">
-                <p style="margin: 0 0 4px 0; font-weight: 600; color: #1C1917;">Coordination & Organizing Committee</p>
+              <div style="margin-top: 32px; padding-top: 20px; border-top: 1px solid #F0F3F8; font-size: 13px; color: #476788;">
+                <p style="margin: 0 0 4px 0; font-weight: 600; color: #0B3558;">Coordination & Organizing Committee</p>
                 <p style="margin: 0;">${institutionName}</p>
               </div>
             </div>
 
             <!-- Footer -->
-            <div style="background-color: #F5F5F4; padding: 16px 32px; font-size: 11px; color: #A8A29E; text-align: center; border-top: 1px solid #E7E5E4;">
+            <div style="background-color: #F0F3F8; padding: 16px 32px; font-size: 11px; color: #A6BBD1; text-align: center; border-top: 1px solid #D4E0ED;">
               <p style="margin: 0;">You received this announcement because you are registered for ${eventName}.</p>
             </div>
           </div>
@@ -480,6 +480,9 @@ export interface DelegateRegistrationEmailPayload {
     name: string;
     category: string;
     venue?: string | null;
+    venueZoneId?: string | null;
+    venueZoneLabel?: string | null;
+    mapUrl?: string | null;
     time?: string | null;
     staffCoordinator?: string | null;
     studentCoordinator?: string | null;
@@ -521,89 +524,97 @@ export async function sendDelegateRegistrationEmail(payload: DelegateRegistratio
 
     const eventsListHtml = payload.events.length > 0
       ? payload.events.map((ev) => `
-          <div style="background-color: #FAF8F5; border: 1px solid #E7E5E4; border-radius: 12px; padding: 14px 16px; margin-bottom: 10px;">
-            <div style="font-weight: 700; color: #1C1917; font-size: 14px;">${ev.name}</div>
-            <div style="font-size: 11px; color: #78716C; margin-top: 2px;">
+          <div style="background-color: #F8F9FB; border: 1px solid #D4E0ED; border-radius: 12px; padding: 14px 16px; margin-bottom: 10px;">
+            <div style="font-weight: 700; color: #0B3558; font-size: 14px;">${ev.name}</div>
+            <div style="font-size: 11px; color: #476788; margin-top: 2px;">
               <span>${ev.category === "ON_STAGE" ? "On-Stage Arena" : "Off-Stage Challenge"}</span>
               ${ev.venue ? ` • Venue: <b>${ev.venue}</b>` : ""}
+              ${ev.venueZoneLabel || ev.venueZoneId ? ` • Zone: <b style="color: #006BFF;">${ev.venueZoneLabel || ev.venueZoneId}</b>` : ""}
               ${ev.time ? ` • Time: <b>${ev.time}</b>` : ""}
             </div>
+            ${ev.mapUrl ? `
+              <div style="margin-top: 8px;">
+                <a href="${ev.mapUrl}" style="display: inline-block; background-color: #E6F0FF; border: 1px solid #E6F0FF; color: #004EBA; font-size: 11px; font-weight: 700; text-decoration: none; padding: 4px 10px; border-radius: 6px;">
+                  🗺️ View on Map & Turn-by-Turn Directions →
+                </a>
+              </div>
+            ` : ""}
             ${(ev.staffCoordinator || ev.studentCoordinator) ? `
-              <div style="font-size: 11px; color: #57534E; margin-top: 6px; padding-top: 6px; border-top: 1px dashed #E7E5E4;">
+              <div style="font-size: 11px; color: #476788; margin-top: 6px; padding-top: 6px; border-top: 1px dashed #D4E0ED;">
                 ${ev.staffCoordinator ? `Staff Incharge: <b>${ev.staffCoordinator}</b> ` : ""}
                 ${ev.studentCoordinator ? ` • Student Incharge: <b>${ev.studentCoordinator}</b>` : ""}
               </div>
             ` : ""}
           </div>
         `).join("")
-      : `<p style="color: #78716C; font-size: 13px;">General Fest Attendee</p>`;
+      : `<p style="color: #476788; font-size: 13px;">General Fest Attendee</p>`;
 
     const html = `
-      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background-color: #FAF8F5; padding: 32px 20px;">
-        <div style="background-color: #ffffff; border-radius: 20px; border: 1px solid #E7E5E4; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.06);">
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background-color: #F8F9FB; padding: 32px 20px;">
+        <div style="background-color: #ffffff; border-radius: 20px; border: 1px solid #D4E0ED; overflow: hidden; box-shadow: 0 4px 20px rgba(71,103,136,0.06);">
           <!-- Header -->
-          <div style="background: linear-gradient(135deg, #1C1917 0%, #292524 100%); padding: 28px 32px; border-bottom: 3px solid #FF6B1A;">
+          <div style="background: #0B3558; padding: 28px 32px; border-bottom: 3px solid #006BFF;">
             <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.15em; color: #D9A441; text-transform: uppercase; margin-bottom: 4px;">
               ${institutionName}
             </div>
             <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 800;">
               ${eventName} ${editionYear} — Registration Confirmed
             </h1>
-            <div style="color: #A8A29E; font-size: 13px; margin-top: 4px;">
+            <div style="color: #A6BBD1; font-size: 13px; margin-top: 4px;">
               Student Portal Access & Official Pass Details
             </div>
           </div>
 
           <!-- Body -->
-          <div style="padding: 32px; color: #292524;">
-            <p style="font-size: 16px; font-weight: 700; color: #1C1917; margin-top: 0;">
+          <div style="padding: 32px; color: #0F3250;">
+            <p style="font-size: 16px; font-weight: 700; color: #0B3558; margin-top: 0;">
               Welcome, ${payload.delegateName}!
             </p>
-            <p style="font-size: 14px; color: #57534E; line-height: 1.6;">
+            <p style="font-size: 14px; color: #476788; line-height: 1.6;">
               Your registration as part of the <b>${payload.collegeName}</b> contingent has been successfully received. Below are your <b>Student Portal Login Credentials</b> to manage your fest participation, track prelims, and view live results.
             </p>
 
             <!-- Student Portal Access & Credentials Box -->
-            <div style="background: linear-gradient(135deg, #1C1917 0%, #292524 100%); border-radius: 16px; padding: 22px 24px; margin: 24px 0; color: #ffffff; border: 1px solid #383431; box-shadow: 0 4px 18px rgba(0,0,0,0.12);">
+            <div style="background: #0B3558; border-radius: 16px; padding: 22px 24px; margin: 24px 0; color: #ffffff; border: 1px solid #1B4268; box-shadow: 0 4px 18px rgba(71,103,136,0.12);">
               <div style="margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.12); padding-bottom: 12px;">
-                <span style="display: inline-block; background-color: #FF6B1A; color: #ffffff; font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.1em;">
+                <span style="display: inline-block; background-color: #006BFF; color: #ffffff; font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.1em;">
                   Student Portal Access
                 </span>
-                <h2 style="margin: 8px 0 0 0; color: #FAF8F5; font-size: 17px; font-weight: 800; letter-spacing: -0.01em;">
+                <h2 style="margin: 8px 0 0 0; color: #F8F9FB; font-size: 17px; font-weight: 800; letter-spacing: -0.01em;">
                   Your Login & Portal Credentials
                 </h2>
               </div>
 
-              <p style="font-size: 13px; color: #D6D3D1; margin: 0 0 16px 0; line-height: 1.5;">
+              <p style="font-size: 13px; color: #D4E0ED; margin: 0 0 16px 0; line-height: 1.5;">
                 Log in to your Student Portal to access your verified Digital ID Card, Food Voucher QR, prelims screening updates, and arena schedules.
               </p>
 
               <div style="background-color: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 14px 16px; margin-bottom: 18px;">
                 <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
                   <tr>
-                    <td style="padding: 6px 0; color: #A8A29E; width: 36%; font-weight: 600;">Portal Link:</td>
+                    <td style="padding: 6px 0; color: #A6BBD1; width: 36%; font-weight: 600;">Portal Link:</td>
                     <td style="padding: 6px 0;">
-                      <a href="${loginPortalUrl}" style="color: #FF8A4C; font-weight: 700; text-decoration: underline; word-break: break-all;">
+                      <a href="${loginPortalUrl}" style="color: #4D97FF; font-weight: 700; text-decoration: underline; word-break: break-all;">
                         ${loginPortalUrl}
                       </a>
                     </td>
                   </tr>
                   <tr>
-                    <td style="padding: 6px 0; color: #A8A29E; font-weight: 600;">User ID / Login:</td>
+                    <td style="padding: 6px 0; color: #A6BBD1; font-weight: 600;">User ID / Login:</td>
                     <td style="padding: 6px 0; color: #FFFFFF; font-weight: 700; font-family: monospace; font-size: 13.5px;">
                       ${studentUserId}
                     </td>
                   </tr>
                   <tr>
-                    <td style="padding: 6px 0; color: #A8A29E; font-weight: 600;">Password:</td>
+                    <td style="padding: 6px 0; color: #A6BBD1; font-weight: 600;">Password:</td>
                     <td style="padding: 6px 0; color: #FCD34D; font-weight: 800; font-family: monospace; font-size: 14.5px; letter-spacing: 0.04em;">
                       ${studentPassword}
                     </td>
                   </tr>
                   ${payload.userPhone ? `
                   <tr>
-                    <td style="padding: 6px 0; color: #A8A29E; font-weight: 600;">Registered Mobile:</td>
-                    <td style="padding: 6px 0; color: #E7E5E4; font-family: monospace;">
+                    <td style="padding: 6px 0; color: #A6BBD1; font-weight: 600;">Registered Mobile:</td>
+                    <td style="padding: 6px 0; color: #D4E0ED; font-family: monospace;">
                       ${payload.userPhone}
                     </td>
                   </tr>
@@ -612,11 +623,11 @@ export async function sendDelegateRegistrationEmail(payload: DelegateRegistratio
               </div>
 
               <div style="text-align: center;">
-                <a href="${loginPortalUrl}" style="background: linear-gradient(135deg, #FF6B1A 0%, #EA580C 100%); color: #ffffff; padding: 13px 26px; font-size: 13.5px; font-weight: 700; text-decoration: none; border-radius: 10px; display: inline-block; box-shadow: 0 4px 14px rgba(255,107,26,0.35);">
+                <a href="${loginPortalUrl}" style="background: #006BFF; color: #ffffff; padding: 13px 26px; font-size: 13.5px; font-weight: 700; text-decoration: none; border-radius: 10px; display: inline-block; box-shadow: 0 4px 14px rgba(0,107,255,0.35);">
                   Login to Student Portal →
                 </a>
               </div>
-              <p style="font-size: 11px; color: #A8A29E; margin: 12px 0 0 0; text-align: center; line-height: 1.4;">
+              <p style="font-size: 11px; color: #A6BBD1; margin: 12px 0 0 0; text-align: center; line-height: 1.4;">
                 Tip: You can log in using either your email address or mobile number. You can update your password anytime under Profile settings.
               </p>
             </div>
@@ -643,21 +654,21 @@ export async function sendDelegateRegistrationEmail(payload: DelegateRegistratio
 
             <!-- View Pass Button -->
             <div style="text-align: center; margin: 28px 0;">
-              <a href="${payload.badgeUrl}" style="background-color: #FF6B1A; color: #ffffff; padding: 14px 28px; font-size: 14px; font-weight: 700; text-decoration: none; border-radius: 12px; display: inline-block; box-shadow: 0 4px 12px rgba(255,107,26,0.25);">
+              <a href="${payload.badgeUrl}" style="background-color: #006BFF; color: #ffffff; padding: 14px 28px; font-size: 14px; font-weight: 700; text-decoration: none; border-radius: 12px; display: inline-block; box-shadow: 0 4px 12px rgba(0,107,255,0.25);">
                 Open Digital ID Card & QR Pass →
               </a>
             </div>
 
             <!-- Event Schedule Section -->
             <div style="margin-top: 28px;">
-              <div style="font-size: 12px; font-weight: 800; text-transform: uppercase; color: #FF6B1A; letter-spacing: 0.1em; margin-bottom: 12px;">
+              <div style="font-size: 12px; font-weight: 800; text-transform: uppercase; color: #006BFF; letter-spacing: 0.1em; margin-bottom: 12px;">
                 Your Competitions & Arena Schedule
               </div>
               ${eventsListHtml}
             </div>
 
-            <div style="margin-top: 32px; padding-top: 20px; border-top: 1px solid #F5F5F4; font-size: 12px; color: #78716C;">
-              <p style="margin: 0 0 4px 0; font-weight: 700; color: #1C1917;">Symposium Executive Committee</p>
+            <div style="margin-top: 32px; padding-top: 20px; border-top: 1px solid #F0F3F8; font-size: 12px; color: #476788;">
+              <p style="margin: 0 0 4px 0; font-weight: 700; color: #0B3558;">Symposium Executive Committee</p>
               <p style="margin: 0;">${institutionName}</p>
             </div>
           </div>
@@ -761,19 +772,19 @@ export async function sendCoordinatorRegistrationAlert(payload: CoordinatorAlert
     const editionYear = activeEdition?.edition || "2027";
 
     const participantRows = payload.participants.map((p) => `
-      <tr style="border-bottom: 1px solid #E7E5E4;">
-        <td style="padding: 10px 12px; font-weight: 600; color: #1C1917; font-size: 13px;">${p.name}</td>
-        <td style="padding: 10px 12px; font-size: 12px; color: #57534E;">${p.email}</td>
-        <td style="padding: 10px 12px; font-size: 12px; color: #57534E; font-family: monospace;">${p.phone}</td>
+      <tr style="border-bottom: 1px solid #D4E0ED;">
+        <td style="padding: 10px 12px; font-weight: 600; color: #0B3558; font-size: 13px;">${p.name}</td>
+        <td style="padding: 10px 12px; font-size: 12px; color: #476788;">${p.email}</td>
+        <td style="padding: 10px 12px; font-size: 12px; color: #476788; font-family: monospace;">${p.phone}</td>
         <td style="padding: 10px 12px; font-size: 11px; font-family: monospace; font-weight: 700; color: #B45309;">${p.badgeCode}</td>
       </tr>
     `).join("");
 
     const html = `
-      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 620px; margin: 0 auto; background-color: #FAF8F5; padding: 32px 20px;">
-        <div style="background-color: #ffffff; border-radius: 20px; border: 1px solid #E7E5E4; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.06);">
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 620px; margin: 0 auto; background-color: #F8F9FB; padding: 32px 20px;">
+        <div style="background-color: #ffffff; border-radius: 20px; border: 1px solid #D4E0ED; overflow: hidden; box-shadow: 0 4px 20px rgba(71,103,136,0.06);">
           <!-- Header -->
-          <div style="background: linear-gradient(135deg, #1C1917 0%, #292524 100%); padding: 24px 30px; border-bottom: 3px solid #FF6B1A;">
+          <div style="background: #0B3558; padding: 24px 30px; border-bottom: 3px solid #006BFF;">
             <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.15em; color: #D9A441; text-transform: uppercase; margin-bottom: 4px;">
               ${eventName} ${editionYear} — Coordinator Alert
             </div>
@@ -783,24 +794,24 @@ export async function sendCoordinatorRegistrationAlert(payload: CoordinatorAlert
           </div>
 
           <!-- Content -->
-          <div style="padding: 28px 30px; color: #292524;">
-            <p style="font-size: 15px; font-weight: 700; color: #1C1917; margin-top: 0;">
+          <div style="padding: 28px 30px; color: #0F3250;">
+            <p style="font-size: 15px; font-weight: 700; color: #0B3558; margin-top: 0;">
               Dear ${payload.coordinatorName} (${payload.roleType}),
             </p>
-            <p style="font-size: 13.5px; color: #57534E; line-height: 1.6;">
+            <p style="font-size: 13.5px; color: #476788; line-height: 1.6;">
               A new college delegation has registered delegates for your competition <b>"${payload.eventName}"</b>.
             </p>
 
             <!-- Delegation Summary Box -->
-            <div style="background-color: #FAF8F5; border: 1px solid #E7E5E4; border-radius: 14px; padding: 16px; margin: 18px 0;">
-              <div style="font-size: 11px; font-weight: 700; color: #78716C; text-transform: uppercase;">Participating Institution</div>
-              <div style="font-size: 15px; font-weight: 800; color: #1C1917; margin-top: 2px;">
+            <div style="background-color: #F8F9FB; border: 1px solid #D4E0ED; border-radius: 14px; padding: 16px; margin: 18px 0;">
+              <div style="font-size: 11px; font-weight: 700; color: #476788; text-transform: uppercase;">Participating Institution</div>
+              <div style="font-size: 15px; font-weight: 800; color: #0B3558; margin-top: 2px;">
                 ${payload.collegeName}
               </div>
-              ${payload.teamName ? `<div style="font-size: 12px; color: #FF6B1A; font-weight: 600; margin-top: 2px;">Team: ${payload.teamName}</div>` : ""}
+              ${payload.teamName ? `<div style="font-size: 12px; color: #006BFF; font-weight: 600; margin-top: 2px;">Team: ${payload.teamName}</div>` : ""}
 
               ${payload.staffIncharge && payload.staffIncharge.name ? `
-                <div style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed #E7E5E4; font-size: 12px; color: #57534E;">
+                <div style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed #D4E0ED; font-size: 12px; color: #476788;">
                   <b>Accompanying Outer College Staff:</b> ${payload.staffIncharge.name}
                   ${payload.staffIncharge.phone ? ` (${payload.staffIncharge.phone})` : ""}
                   ${payload.staffIncharge.email ? ` • ${payload.staffIncharge.email}` : ""}
@@ -812,7 +823,7 @@ export async function sendCoordinatorRegistrationAlert(payload: CoordinatorAlert
             <div style="margin: 20px 0; overflow-x: auto;">
               <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 12px;">
                 <thead>
-                  <tr style="background-color: #FAF8F5; border-bottom: 2px solid #E7E5E4; color: #78716C; font-size: 11px; text-transform: uppercase;">
+                  <tr style="background-color: #F8F9FB; border-bottom: 2px solid #D4E0ED; color: #476788; font-size: 11px; text-transform: uppercase;">
                     <th style="padding: 8px 12px;">Student Name</th>
                     <th style="padding: 8px 12px;">Email</th>
                     <th style="padding: 8px 12px;">Mobile</th>
@@ -827,7 +838,7 @@ export async function sendCoordinatorRegistrationAlert(payload: CoordinatorAlert
 
             <!-- Coordinator CTA -->
             <div style="text-align: center; margin-top: 28px;">
-              <a href="${payload.coordinatorPortalUrl}" style="background-color: #1C1917; color: #ffffff; padding: 12px 24px; font-size: 13px; font-weight: 700; text-decoration: none; border-radius: 10px; display: inline-block;">
+              <a href="${payload.coordinatorPortalUrl}" style="background-color: #0B3558; color: #ffffff; padding: 12px 24px; font-size: 13px; font-weight: 700; text-decoration: none; border-radius: 10px; display: inline-block;">
                 Access Coordinator Console →
               </a>
             </div>
@@ -890,20 +901,28 @@ export async function sendApprovedDelegatePassEmail(payload: DelegateRegistratio
 
     const eventsListHtml = payload.events.length > 0
       ? payload.events.map((ev) => `
-          <div style="background-color: #FAF8F5; border: 1px solid #E7E5E4; border-radius: 12px; padding: 12px 14px; margin-bottom: 8px;">
-            <div style="font-weight: 700; color: #1C1917; font-size: 13.5px;">${ev.name}</div>
-            <div style="font-size: 11px; color: #78716C; margin-top: 2px;">
+          <div style="background-color: #F8F9FB; border: 1px solid #D4E0ED; border-radius: 12px; padding: 12px 14px; margin-bottom: 8px;">
+            <div style="font-weight: 700; color: #0B3558; font-size: 13.5px;">${ev.name}</div>
+            <div style="font-size: 11px; color: #476788; margin-top: 2px;">
               <span>${ev.category === "ON_STAGE" ? "On-Stage Arena" : "Off-Stage Challenge"}</span>
               ${ev.venue ? ` • Venue: <b>${ev.venue}</b>` : ""}
+              ${ev.venueZoneLabel || ev.venueZoneId ? ` • Zone: <b style="color: #065F46;">${ev.venueZoneLabel || ev.venueZoneId}</b>` : ""}
               ${ev.time ? ` • Time: <b>${ev.time}</b>` : ""}
             </div>
+            ${ev.mapUrl ? `
+              <div style="margin-top: 8px;">
+                <a href="${ev.mapUrl}" style="display: inline-block; background-color: #ECFDF5; border: 1px solid #A7F3D0; color: #065F46; font-size: 11px; font-weight: 700; text-decoration: none; padding: 4px 10px; border-radius: 6px;">
+                  🗺️ View on Map & Turn-by-Turn Directions →
+                </a>
+              </div>
+            ` : ""}
           </div>
         `).join("")
-      : `<p style="color: #78716C; font-size: 13px;">General Fest Attendee</p>`;
+      : `<p style="color: #476788; font-size: 13px;">General Fest Attendee</p>`;
 
     const html = `
-      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background-color: #FAF8F5; padding: 32px 20px;">
-        <div style="background-color: #ffffff; border-radius: 20px; border: 1px solid #E7E5E4; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.06);">
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background-color: #F8F9FB; padding: 32px 20px;">
+        <div style="background-color: #ffffff; border-radius: 20px; border: 1px solid #D4E0ED; overflow: hidden; box-shadow: 0 4px 20px rgba(71,103,136,0.06);">
           <!-- Header -->
           <div style="background: linear-gradient(135deg, #065F46 0%, #047857 100%); padding: 26px 32px; border-bottom: 3px solid #10B981;">
             <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.15em; color: #A7F3D0; text-transform: uppercase; margin-bottom: 4px;">
@@ -916,21 +935,21 @@ export async function sendApprovedDelegatePassEmail(payload: DelegateRegistratio
           </div>
 
           <!-- Body -->
-          <div style="padding: 30px; color: #292524;">
-            <p style="font-size: 16px; font-weight: 700; color: #1C1917; margin-top: 0;">
+          <div style="padding: 30px; color: #0F3250;">
+            <p style="font-size: 16px; font-weight: 700; color: #0B3558; margin-top: 0;">
               Congratulations, ${payload.delegateName}!
             </p>
-            <p style="font-size: 14px; color: #57534E; line-height: 1.6;">
+            <p style="font-size: 14px; color: #476788; line-height: 1.6;">
               Your registration fee has been verified by the Registration Desk. Your <b>Official Digital ID Pass (with Event Check-In QR and Food Token QR)</b> and <b>Student Portal</b> are now officially active.
             </p>
 
             <!-- Student Portal Access & Credentials Box -->
-            <div style="background: linear-gradient(135deg, #1C1917 0%, #292524 100%); border-radius: 16px; padding: 20px 22px; margin: 20px 0; color: #ffffff; border: 1px solid #383431; box-shadow: 0 4px 18px rgba(0,0,0,0.12);">
+            <div style="background: #0B3558; border-radius: 16px; padding: 20px 22px; margin: 20px 0; color: #ffffff; border: 1px solid #1B4268; box-shadow: 0 4px 18px rgba(71,103,136,0.12);">
               <div style="margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.12); padding-bottom: 10px;">
                 <span style="display: inline-block; background-color: #10B981; color: #ffffff; font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.1em;">
                   Active Portal Account
                 </span>
-                <h3 style="margin: 6px 0 0 0; color: #FAF8F5; font-size: 16px; font-weight: 800;">
+                <h3 style="margin: 6px 0 0 0; color: #F8F9FB; font-size: 16px; font-weight: 800;">
                   Your Student Portal Credentials
                 </h3>
               </div>
@@ -938,7 +957,7 @@ export async function sendApprovedDelegatePassEmail(payload: DelegateRegistratio
               <div style="background-color: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 12px 16px; margin: 14px 0;">
                 <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
                   <tr>
-                    <td style="padding: 5px 0; color: #A8A29E; width: 36%; font-weight: 600;">Portal Link:</td>
+                    <td style="padding: 5px 0; color: #A6BBD1; width: 36%; font-weight: 600;">Portal Link:</td>
                     <td style="padding: 5px 0;">
                       <a href="${loginPortalUrl}" style="color: #34D399; font-weight: 700; text-decoration: underline; word-break: break-all;">
                         ${loginPortalUrl}
@@ -946,13 +965,13 @@ export async function sendApprovedDelegatePassEmail(payload: DelegateRegistratio
                     </td>
                   </tr>
                   <tr>
-                    <td style="padding: 5px 0; color: #A8A29E; font-weight: 600;">User ID / Login:</td>
+                    <td style="padding: 5px 0; color: #A6BBD1; font-weight: 600;">User ID / Login:</td>
                     <td style="padding: 5px 0; color: #FFFFFF; font-weight: 700; font-family: monospace; font-size: 13.5px;">
                       ${studentUserId}
                     </td>
                   </tr>
                   <tr>
-                    <td style="padding: 5px 0; color: #A8A29E; font-weight: 600;">Password:</td>
+                    <td style="padding: 5px 0; color: #A6BBD1; font-weight: 600;">Password:</td>
                     <td style="padding: 5px 0; color: #FCD34D; font-weight: 800; font-family: monospace; font-size: 14px; letter-spacing: 0.04em;">
                       ${studentPassword}
                     </td>
@@ -1001,8 +1020,8 @@ export async function sendApprovedDelegatePassEmail(payload: DelegateRegistratio
               ${eventsListHtml}
             </div>
 
-            <div style="margin-top: 30px; padding-top: 18px; border-top: 1px solid #F5F5F4; font-size: 12px; color: #78716C;">
-              <p style="margin: 0 0 4px 0; font-weight: 700; color: #1C1917;">Symposium Executive Committee</p>
+            <div style="margin-top: 30px; padding-top: 18px; border-top: 1px solid #F0F3F8; font-size: 12px; color: #476788;">
+              <p style="margin: 0 0 4px 0; font-weight: 700; color: #0B3558;">Symposium Executive Committee</p>
               <p style="margin: 0;">${institutionName}</p>
             </div>
           </div>
@@ -1105,12 +1124,12 @@ export async function sendTeamLeadConsolidatedPassEmail(payload: TeamLeadConsoli
     const institutionName = activeEdition?.institutionName || "Sacred Heart College (Autonomous)";
 
     const memberCardsHtml = payload.members.map((m, idx) => `
-      <div style="background-color: #FAF8F5; border: 1.5px solid #E7E5E4; border-radius: 14px; padding: 16px; margin-bottom: 14px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #E7E5E4; padding-bottom: 10px; margin-bottom: 10px;">
+      <div style="background-color: #F8F9FB; border: 1.5px solid #D4E0ED; border-radius: 14px; padding: 16px; margin-bottom: 14px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #D4E0ED; padding-bottom: 10px; margin-bottom: 10px;">
           <div>
-            <span style="font-weight: 800; font-size: 14px; color: #1C1917;">${idx + 1}. ${m.name}</span>
+            <span style="font-weight: 800; font-size: 14px; color: #0B3558;">${idx + 1}. ${m.name}</span>
             ${m.isTeamLead ? `<span style="background-color: #FEF3C7; color: #92400E; font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 6px; margin-left: 6px;">TEAM LEAD</span>` : ""}
-            <div style="font-size: 12px; color: #78716C; margin-top: 2px;">${m.email} • ${m.phone}</div>
+            <div style="font-size: 12px; color: #476788; margin-top: 2px;">${m.email} • ${m.phone}</div>
           </div>
         </div>
 
@@ -1125,12 +1144,12 @@ export async function sendTeamLeadConsolidatedPassEmail(payload: TeamLeadConsoli
           </div>
         </div>
 
-        <div style="font-size: 11px; color: #57534E; margin-bottom: 10px;">
+        <div style="font-size: 11px; color: #476788; margin-bottom: 10px;">
           <b>Competitions:</b> ${m.events.map((e) => e.name).join(", ") || "General Participant"}
         </div>
 
         <div style="text-align: right;">
-          <a href="${m.badgeUrl}" style="background-color: #FF6B1A; color: #ffffff; padding: 8px 16px; font-size: 11px; font-weight: 700; text-decoration: none; border-radius: 8px; display: inline-block;">
+          <a href="${m.badgeUrl}" style="background-color: #006BFF; color: #ffffff; padding: 8px 16px; font-size: 11px; font-weight: 700; text-decoration: none; border-radius: 8px; display: inline-block;">
             Open ${m.name.split(" ")[0]}'s Pass (2 QRs) →
           </a>
         </div>
@@ -1138,28 +1157,28 @@ export async function sendTeamLeadConsolidatedPassEmail(payload: TeamLeadConsoli
     `).join("");
 
     const html = `
-      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 650px; margin: 0 auto; background-color: #FAF8F5; padding: 32px 20px;">
-        <div style="background-color: #ffffff; border-radius: 20px; border: 1px solid #E7E5E4; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.06);">
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 650px; margin: 0 auto; background-color: #F8F9FB; padding: 32px 20px;">
+        <div style="background-color: #ffffff; border-radius: 20px; border: 1px solid #D4E0ED; overflow: hidden; box-shadow: 0 4px 20px rgba(71,103,136,0.06);">
           <!-- Header -->
-          <div style="background: linear-gradient(135deg, #1C1917 0%, #292524 100%); padding: 28px 32px; border-bottom: 3px solid #FF6B1A;">
+          <div style="background: #0B3558; padding: 28px 32px; border-bottom: 3px solid #006BFF;">
             <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.15em; color: #D9A441; text-transform: uppercase; margin-bottom: 4px;">
               ${institutionName}
             </div>
             <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 800;">
               Team Dossier: All Member ID Passes & Food Tokens
             </h1>
-            <div style="color: #A8A29E; font-size: 13px; margin-top: 4px;">${eventName} ${editionYear} • Team Lead Consolidated Roster</div>
+            <div style="color: #A6BBD1; font-size: 13px; margin-top: 4px;">${eventName} ${editionYear} • Team Lead Consolidated Roster</div>
           </div>
 
           <!-- Body -->
-          <div style="padding: 30px; color: #292524;">
-            <p style="font-size: 16px; font-weight: 700; color: #1C1917; margin-top: 0;">
+          <div style="padding: 30px; color: #0F3250;">
+            <p style="font-size: 16px; font-weight: 700; color: #0B3558; margin-top: 0;">
               Hello ${payload.teamLeadName} (Contingent Team Lead),
             </p>
-            <p style="font-size: 14px; color: #57534E; line-height: 1.6;">
+            <p style="font-size: 14px; color: #476788; line-height: 1.6;">
               Payment has been verified at the Registration Desk for your college contingent <b>${payload.collegeName}</b>${payload.teamName ? ` (${payload.teamName})` : ""}.
             </p>
-            <p style="font-size: 13.5px; color: #57534E; line-height: 1.6;">
+            <p style="font-size: 13.5px; color: #476788; line-height: 1.6;">
               Below is the complete dossier of <b>all ${payload.members.length} team members</b>, including their unique <b>Badge Codes</b>, <b>Food Tokens</b>, and direct links to each member's digital pass containing both their <b>Event Registration QR</b> and <b>Food Token QR</b>.
             </p>
 
@@ -1168,8 +1187,8 @@ export async function sendTeamLeadConsolidatedPassEmail(payload: TeamLeadConsoli
               ${memberCardsHtml}
             </div>
 
-            <div style="margin-top: 30px; padding-top: 18px; border-top: 1px solid #F5F5F4; font-size: 12px; color: #78716C;">
-              <p style="margin: 0 0 4px 0; font-weight: 700; color: #1C1917;">Registration & Helpdesk Team</p>
+            <div style="margin-top: 30px; padding-top: 18px; border-top: 1px solid #F0F3F8; font-size: 12px; color: #476788;">
+              <p style="margin: 0 0 4px 0; font-weight: 700; color: #0B3558;">Registration & Helpdesk Team</p>
               <p style="margin: 0;">${institutionName}</p>
             </div>
           </div>
@@ -1204,6 +1223,9 @@ export interface EventReminderEmailPayload {
   category: "ON_STAGE" | "OFF_STAGE" | string;
   isPrelims?: boolean;
   venue?: string | null;
+  venueZoneId?: string | null;
+  venueZoneLabel?: string | null;
+  mapUrl?: string | null;
   startTime: string;
   minutesUntilStart?: number;
   badgeCode: string;
@@ -1241,36 +1263,37 @@ export async function sendEventReminderEmail(payload: EventReminderEmailPayload)
     const minutesStr = payload.minutesUntilStart ? `${payload.minutesUntilStart}` : "10";
     const roundTitle = payload.isPrelims ? "Preliminary Screening Round" : "Final / Main Arena";
     const venueDisplay = payload.venue || "Designated Competition Arena";
+    const zoneBadge = payload.venueZoneLabel || payload.venueZoneId;
 
     const subject = `${payload.isPrelims ? "⚡ [Prelims Alert]" : "⏰ [Starting in 10 Mins]"} ${payload.eventName} — Venue: ${venueDisplay} (${payload.startTime})`;
 
     const html = `
-      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background-color: #FAF8F5; padding: 32px 20px;">
-        <div style="background-color: #ffffff; border-radius: 20px; border: 1px solid #E7E5E4; overflow: hidden; box-shadow: 0 6px 24px rgba(0,0,0,0.08);">
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background-color: #F8F9FB; padding: 32px 20px;">
+        <div style="background-color: #ffffff; border-radius: 20px; border: 1px solid #D4E0ED; overflow: hidden; box-shadow: 0 6px 24px rgba(71,103,136,0.08);">
           <!-- Header with Amber/Orange Fest Theme -->
-          <div style="background: linear-gradient(135deg, #1C1917 0%, #292524 100%); padding: 26px 32px; border-bottom: 3px solid #FF6B1A;">
+          <div style="background: #0B3558; padding: 26px 32px; border-bottom: 3px solid #006BFF;">
             <div style="display: flex; align-items: center; justify-content: space-between;">
               <span style="font-size: 11px; font-weight: 800; letter-spacing: 0.15em; color: #D9A441; text-transform: uppercase;">
                 ${institutionName}
               </span>
-              <span style="background-color: #FF6B1A; color: #ffffff; font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.08em;">
+              <span style="background-color: #006BFF; color: #ffffff; font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.08em;">
                 Starts in ~${minutesStr} Mins
               </span>
             </div>
             <h1 style="color: #ffffff; margin: 8px 0 0 0; font-size: 22px; font-weight: 800;">
               ${payload.eventName} Starting Soon!
             </h1>
-            <div style="color: #D6D3D1; font-size: 13px; margin-top: 4px;">
+            <div style="color: #D4E0ED; font-size: 13px; margin-top: 4px;">
               ${eventName} ${editionYear} • ${roundTitle}
             </div>
           </div>
 
           <!-- Body -->
-          <div style="padding: 30px; color: #292524;">
-            <p style="font-size: 16px; font-weight: 700; color: #1C1917; margin-top: 0;">
+          <div style="padding: 30px; color: #0F3250;">
+            <p style="font-size: 16px; font-weight: 700; color: #0B3558; margin-top: 0;">
               Hello ${payload.studentName},
             </p>
-            <p style="font-size: 14px; color: #57534E; line-height: 1.6; margin-bottom: 22px;">
+            <p style="font-size: 14px; color: #476788; line-height: 1.6; margin-bottom: 22px;">
               This is a timely notification that your registered competition <b>${payload.eventName}</b> is scheduled to commence in approximately <b>${minutesStr} minutes</b>. Please proceed to the arena immediately.
             </p>
 
@@ -1282,17 +1305,30 @@ export async function sendEventReminderEmail(payload: EventReminderEmailPayload)
                 </div>
                 <div style="font-size: 19px; font-weight: 900; color: #78350F; margin-top: 3px;">
                   ${venueDisplay}
+                  ${zoneBadge ? `
+                    <span style="display: inline-block; font-size: 11px; font-weight: 800; background-color: #006BFF; color: #ffffff; padding: 2px 8px; border-radius: 6px; vertical-align: middle; margin-left: 6px; letter-spacing: 0.05em;">
+                      📍 ZONE ${zoneBadge}
+                    </span>
+                  ` : ""}
                 </div>
               </div>
 
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding-top: 12px; border-top: 1px dashed #F59E0B;">
+              ${payload.mapUrl ? `
+                <div style="margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px dashed #F59E0B;">
+                  <a href="${payload.mapUrl}" style="background-color: #006BFF; color: #ffffff; padding: 7px 14px; font-size: 11.5px; font-weight: 800; text-decoration: none; border-radius: 8px; display: inline-block; box-shadow: 0 2px 6px rgba(0,107,255,0.3);">
+                    🗺️ View on Interactive Campus Map & Directions →
+                  </a>
+                </div>
+              ` : ""}
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding-top: 12px; ${payload.mapUrl ? "" : "border-top: 1px dashed #F59E0B;"}">
                 <div>
                   <div style="font-size: 10px; font-weight: 800; color: #92400E; text-transform: uppercase;">Reporting Time</div>
-                  <div style="font-size: 15px; font-weight: 800; color: #1C1917; margin-top: 2px;">${payload.startTime}</div>
+                  <div style="font-size: 15px; font-weight: 800; color: #0B3558; margin-top: 2px;">${payload.startTime}</div>
                 </div>
                 <div>
                   <div style="font-size: 10px; font-weight: 800; color: #92400E; text-transform: uppercase;">Track Category</div>
-                  <div style="font-size: 14px; font-weight: 700; color: #1C1917; margin-top: 2px;">
+                  <div style="font-size: 14px; font-weight: 700; color: #0B3558; margin-top: 2px;">
                     ${payload.category === "ON_STAGE" ? "On-Stage Arena" : "Off-Stage Arena"}
                   </div>
                 </div>
@@ -1300,7 +1336,7 @@ export async function sendEventReminderEmail(payload: EventReminderEmailPayload)
             </div>
 
             <!-- Digital Pass Card for Venue Gate Entry -->
-            <div style="background: linear-gradient(135deg, #1C1917 0%, #292524 100%); border-radius: 16px; padding: 20px 22px; margin-bottom: 24px; color: #ffffff; border: 1px solid #383431;">
+            <div style="background: #0B3558; border-radius: 16px; padding: 20px 22px; margin-bottom: 24px; color: #ffffff; border: 1px solid #1B4268;">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                 <div>
                   <div style="font-size: 10px; font-weight: 800; color: #D9A441; text-transform: uppercase; letter-spacing: 0.1em;">
@@ -1311,16 +1347,16 @@ export async function sendEventReminderEmail(payload: EventReminderEmailPayload)
                   </div>
                 </div>
                 <div style="text-align: right;">
-                  <span style="background-color: rgba(255,107,26,0.25); color: #FF8A4C; border: 1px solid rgba(255,107,26,0.4); font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 6px; text-transform: uppercase;">
+                  <span style="background-color: rgba(0,107,255,0.25); color: #4D97FF; border: 1px solid rgba(0,107,255,0.4); font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 6px; text-transform: uppercase;">
                     Verified Pass
                   </span>
                 </div>
               </div>
-              <p style="font-size: 12px; color: #D6D3D1; margin: 0 0 16px 0; line-height: 1.5;">
+              <p style="font-size: 12px; color: #D4E0ED; margin: 0 0 16px 0; line-height: 1.5;">
                 Present your Digital ID Pass QR to the student volunteer at the arena entrance for physical attendance verification.
               </p>
               <div style="text-align: center;">
-                <a href="${payload.badgeUrl}" style="background: linear-gradient(135deg, #FF6B1A 0%, #EA580C 100%); color: #ffffff; padding: 13px 26px; font-size: 13.5px; font-weight: 700; text-decoration: none; border-radius: 10px; display: inline-block; box-shadow: 0 4px 14px rgba(255,107,26,0.35);">
+                <a href="${payload.badgeUrl}" style="background: #006BFF; color: #ffffff; padding: 13px 26px; font-size: 13.5px; font-weight: 700; text-decoration: none; border-radius: 10px; display: inline-block; box-shadow: 0 4px 14px rgba(0,107,255,0.35);">
                   Open Digital ID Pass & QR Code →
                 </a>
               </div>
@@ -1328,36 +1364,36 @@ export async function sendEventReminderEmail(payload: EventReminderEmailPayload)
 
             <!-- Event Incharge Coordinators Hotline -->
             ${(payload.staffCoordinator || payload.studentCoordinator) ? `
-              <div style="background-color: #FAF8F5; border: 1px solid #E7E5E4; border-radius: 14px; padding: 16px; margin-bottom: 22px;">
-                <div style="font-size: 11px; font-weight: 800; color: #1C1917; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">
+              <div style="background-color: #F8F9FB; border: 1px solid #D4E0ED; border-radius: 14px; padding: 16px; margin-bottom: 22px;">
+                <div style="font-size: 11px; font-weight: 800; color: #0B3558; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">
                   Event Incharge Coordinators
                 </div>
-                <div style="font-size: 12.5px; color: #57534E; line-height: 1.6;">
+                <div style="font-size: 12.5px; color: #476788; line-height: 1.6;">
                   ${payload.staffCoordinator?.name ? `
-                    <div>Staff Incharge: <b>${payload.staffCoordinator.name}</b> ${payload.staffCoordinator.phone ? `(<a href="tel:${payload.staffCoordinator.phone}" style="color: #FF6B1A; font-weight: 700; text-decoration: none;">${payload.staffCoordinator.phone}</a>)` : ""}</div>
+                    <div>Staff Incharge: <b>${payload.staffCoordinator.name}</b> ${payload.staffCoordinator.phone ? `(<a href="tel:${payload.staffCoordinator.phone}" style="color: #006BFF; font-weight: 700; text-decoration: none;">${payload.staffCoordinator.phone}</a>)` : ""}</div>
                   ` : ""}
                   ${payload.studentCoordinator?.name ? `
-                    <div style="margin-top: 3px;">Student Incharge: <b>${payload.studentCoordinator.name}</b> ${payload.studentCoordinator.phone ? `(<a href="tel:${payload.studentCoordinator.phone}" style="color: #2563EB; font-weight: 700; text-decoration: none;">${payload.studentCoordinator.phone}</a>)` : ""}</div>
+                    <div style="margin-top: 3px;">Student Incharge: <b>${payload.studentCoordinator.name}</b> ${payload.studentCoordinator.phone ? `(<a href="tel:${payload.studentCoordinator.phone}" style="color: #006BFF; font-weight: 700; text-decoration: none;">${payload.studentCoordinator.phone}</a>)` : ""}</div>
                   ` : ""}
                 </div>
               </div>
             ` : ""}
 
             ${payload.rules ? `
-              <div style="background-color: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 14px; margin-bottom: 22px; font-size: 12px; color: #475569; line-height: 1.5;">
-                <b style="color: #1E293B; display: block; margin-bottom: 4px;">Quick Rules Reminder:</b>
+              <div style="background-color: #F8F9FB; border: 1px solid #D4E0ED; border-radius: 12px; padding: 14px; margin-bottom: 22px; font-size: 12px; color: #476788; line-height: 1.5;">
+                <b style="color: #0B3558; display: block; margin-bottom: 4px;">Quick Rules Reminder:</b>
                 <div style="white-space: pre-line;">${payload.rules}</div>
               </div>
             ` : ""}
 
             ${payload.portalUrl ? `
-              <p style="font-size: 12px; text-align: center; color: #78716C; margin: 16px 0 0 0;">
-                Need to view your full fest schedule? <a href="${payload.portalUrl}" style="color: #FF6B1A; font-weight: 700; text-decoration: underline;">Log in to your Student Portal</a>
+              <p style="font-size: 12px; text-align: center; color: #476788; margin: 16px 0 0 0;">
+                Need to view your full fest schedule? <a href="${payload.portalUrl}" style="color: #006BFF; font-weight: 700; text-decoration: underline;">Log in to your Student Portal</a>
               </p>
             ` : ""}
 
-            <div style="margin-top: 28px; padding-top: 18px; border-top: 1px solid #F5F5F4; font-size: 12px; color: #78716C;">
-              <p style="margin: 0 0 4px 0; font-weight: 700; color: #1C1917;">Fest Operations & Arena Management</p>
+            <div style="margin-top: 28px; padding-top: 18px; border-top: 1px solid #F0F3F8; font-size: 12px; color: #476788;">
+              <p style="margin: 0 0 4px 0; font-weight: 700; color: #0B3558;">Fest Operations & Arena Management</p>
               <p style="margin: 0;">${institutionName}</p>
             </div>
           </div>
@@ -1376,8 +1412,8 @@ Your registered event "${payload.eventName}" (${roundTitle}) is scheduled to com
 EVENT DETAILS
 ============================================================
 Competition: ${payload.eventName}
-Venue / Room: ${venueDisplay}
-Start Time: ${payload.startTime}
+Venue / Room: ${venueDisplay}${zoneBadge ? ` (Zone: ${zoneBadge})` : ""}
+${payload.mapUrl ? `Floor Plan & Directions: ${payload.mapUrl}\n` : ""}Start Time: ${payload.startTime}
 Category: ${payload.category === "ON_STAGE" ? "On-Stage Arena" : "Off-Stage Arena"}
 
 ============================================================
