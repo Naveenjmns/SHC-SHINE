@@ -672,7 +672,7 @@ export default function AdminReportsPage() {
     return (
       <div suppressHydrationWarning className="min-h-screen bg-canvas flex flex-col items-center justify-center p-4">
         <div className="w-10 h-10 border-4 border-accent border-t-transparent rounded-full animate-spin mb-4" />
-        <p suppressHydrationWarning className="text-xs font-semibold text-ink-muted">
+        <p suppressHydrationWarning className="text-sm font-semibold text-ink-muted">
           Loading Event Reports...
         </p>
       </div>
@@ -685,17 +685,17 @@ export default function AdminReportsPage() {
         <div className="dash-card max-w-md p-6 text-center space-y-4">
           <AlertCircle className="w-10 h-10 text-danger mx-auto" />
           <h2 className="text-lg font-bold text-ink">Failed to Load Reports</h2>
-          <p className="text-xs text-ink-muted">{error || "No data available."}</p>
+          <p className="text-sm text-ink-muted">{error || "No data available."}</p>
           <div className="flex gap-3 justify-center">
             <Link
               href="/admin"
-              className="px-4 py-2 bg-surface-raised text-ink-muted text-xs font-bold rounded-[8px] hover:bg-surface-sunken transition"
+              className="px-4 py-2 bg-surface-raised text-ink-muted text-sm font-bold rounded-[8px] hover:bg-surface-sunken transition"
             >
               Return to Admin
             </Link>
             <button
               onClick={fetchReports}
-              className="px-4 py-2 bg-accent text-white text-xs font-bold rounded-[8px] hover:bg-accent-hover transition"
+              className="px-4 py-2 bg-accent text-white text-sm font-bold rounded-[8px] hover:bg-accent-hover transition"
             >
               Retry
             </button>
@@ -830,14 +830,14 @@ export default function AdminReportsPage() {
             </Link>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-accent bg-accent-muted px-2 py-0.5 rounded border border-accent/30">
+                <span className="text-sm font-bold uppercase tracking-wider text-accent bg-accent-muted px-2 py-0.5 rounded border border-accent/30">
                   Official Event Report
                 </span>
-                <span className="text-[10px] text-ink-muted font-semibold">
+                <span className="text-xs text-ink-muted font-semibold">
                   Edition: {summary.festName} {summary.festEdition}
                 </span>
               </div>
-              <h1 className="text-sm sm:text-base font-bold text-ink flex items-center gap-1.5">
+              <h1 className="text-[15px] sm:text-base font-bold text-ink flex items-center gap-1.5">
                 <span>Official Comprehensive Event Report</span>
               </h1>
             </div>
@@ -846,7 +846,7 @@ export default function AdminReportsPage() {
           {/* Action Export & Print Setup Buttons */}
           <div className="flex flex-wrap items-center gap-2">
             {/* Print Orientation Selector */}
-            <div className="flex items-center bg-surface-raised p-1 rounded-[8px] border border-border text-xs">
+            <div className="flex items-center bg-surface-raised p-1 rounded-[8px] border border-border text-sm">
               <button
                 type="button"
                 onClick={() => setPrintOrientation("portrait")}
@@ -884,7 +884,7 @@ export default function AdminReportsPage() {
             {/* Print Official Report */}
             <button
               onClick={handlePrint}
-              className="px-3.5 sm:px-4 py-2 bg-surface border border-border text-ink hover:border-accent hover:text-accent rounded-[8px] text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
+              className="px-3.5 sm:px-4 py-2 bg-surface border border-border text-ink hover:border-accent hover:text-accent rounded-[8px] text-sm font-bold flex items-center gap-1.5 transition cursor-pointer"
             >
               <Printer className="w-4 h-4 text-accent" />
               <span>Print Official Report (PDF)</span>
@@ -892,53 +892,53 @@ export default function AdminReportsPage() {
 
             {/* CSV Dropdown / Actions */}
             <div className="relative group">
-              <button className="px-3.5 sm:px-4 py-2 bg-accent hover:bg-accent-hover text-white rounded-[8px] text-xs font-bold flex items-center gap-1.5 transition cursor-pointer">
+              <button className="px-3.5 sm:px-4 py-2 bg-accent hover:bg-accent-hover text-white rounded-[8px] text-sm font-bold flex items-center gap-1.5 transition cursor-pointer">
                 <Download className="w-4 h-4" />
                 <span>Export CSVs</span>
                 <ChevronDown className="w-3.5 h-3.5 opacity-80" />
               </button>
               <div className="absolute right-0 mt-1 w-64 bg-surface border border-border rounded-2xl shadow-popover py-2 hidden group-hover:block z-50 animate-in fade-in duration-150">
-                <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-ink-subtle border-b border-border">
+                <div className="px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-ink-subtle border-b border-border">
                   Download Datasets
                 </div>
                 <button
                   onClick={exportMasterRosterCSV}
-                  className="w-full text-left px-3.5 py-2 text-xs font-semibold text-ink-muted hover:bg-accent-muted hover:text-accent-hover transition flex items-center gap-2 cursor-pointer"
+                  className="w-full text-left px-3.5 py-2 text-sm font-semibold text-ink-muted hover:bg-accent-muted hover:text-accent-hover transition flex items-center gap-2 cursor-pointer"
                 >
                   <FileText className="w-3.5 h-3.5 text-accent shrink-0" />
                   <span>Master Student Roster ({data.masterStudentRoster.length})</span>
                 </button>
                 <button
                   onClick={exportPrelimsProgressionCSV}
-                  className="w-full text-left px-3.5 py-2 text-xs font-semibold text-ink-muted hover:bg-accent-muted hover:text-accent-hover transition flex items-center gap-2 cursor-pointer"
+                  className="w-full text-left px-3.5 py-2 text-sm font-semibold text-ink-muted hover:bg-accent-muted hover:text-accent-hover transition flex items-center gap-2 cursor-pointer"
                 >
                   <Target className="w-3.5 h-3.5 text-accent shrink-0" />
                   <span>Prelims & Mains Scores ({data.prelimsProgression.length})</span>
                 </button>
                 <button
                   onClick={exportFinalResultsCSV}
-                  className="w-full text-left px-3.5 py-2 text-xs font-semibold text-ink-muted hover:bg-accent-muted hover:text-accent-hover transition flex items-center gap-2 cursor-pointer"
+                  className="w-full text-left px-3.5 py-2 text-sm font-semibold text-ink-muted hover:bg-accent-muted hover:text-accent-hover transition flex items-center gap-2 cursor-pointer"
                 >
                   <Trophy className="w-3.5 h-3.5 text-gold shrink-0" />
                   <span>Final Results & Winners ({data.finalResults.length})</span>
                 </button>
                 <button
                   onClick={exportEventsCoordinatorsCSV}
-                  className="w-full text-left px-3.5 py-2 text-xs font-semibold text-ink-muted hover:bg-accent-muted hover:text-accent-hover transition flex items-center gap-2 cursor-pointer"
+                  className="w-full text-left px-3.5 py-2 text-sm font-semibold text-ink-muted hover:bg-accent-muted hover:text-accent-hover transition flex items-center gap-2 cursor-pointer"
                 >
                   <Theater className="w-3.5 h-3.5 text-accent shrink-0" />
                   <span>Events & Coordinators ({data.events.length})</span>
                 </button>
                 <button
                   onClick={exportChampionshipCSV}
-                  className="w-full text-left px-3.5 py-2 text-xs font-semibold text-ink-muted hover:bg-accent-muted hover:text-accent-hover transition flex items-center gap-2 border-t border-border cursor-pointer"
+                  className="w-full text-left px-3.5 py-2 text-sm font-semibold text-ink-muted hover:bg-accent-muted hover:text-accent-hover transition flex items-center gap-2 border-t border-border cursor-pointer"
                 >
                   <Medal className="w-3.5 h-3.5 text-accent shrink-0" />
                   <span>College Championship Standings</span>
                 </button>
                 <button
                   onClick={exportCateringVendorCSV}
-                  className="w-full text-left px-3.5 py-2 text-xs font-semibold text-ink-muted hover:bg-accent-muted hover:text-accent-hover transition flex items-center gap-2 border-t border-border cursor-pointer"
+                  className="w-full text-left px-3.5 py-2 text-sm font-semibold text-ink-muted hover:bg-accent-muted hover:text-accent-hover transition flex items-center gap-2 border-t border-border cursor-pointer"
                 >
                   <Utensils className="w-3.5 h-3.5 text-accent shrink-0" />
                   <span>Catering & Food Vendor List ({data.cateringRoster?.length || 0})</span>
@@ -965,7 +965,7 @@ export default function AdminReportsPage() {
             <button
               key={tab.id}
               onClick={() => setActiveSection(tab.id as any)}
-              className={`px-3 py-1.5 rounded-[8px] text-xs font-bold shrink-0 transition cursor-pointer ${
+              className={`px-3 py-1.5 rounded-[8px] text-sm font-bold shrink-0 transition cursor-pointer ${
                 activeSection === tab.id
                   ? "bg-surface-inverse text-white"
                   : "bg-surface-raised text-ink-muted hover:bg-surface-sunken"
@@ -986,34 +986,34 @@ export default function AdminReportsPage() {
         <div className="bg-surface border border-border rounded-3xl p-6 sm:p-8 shadow-card print:border-none print:shadow-none print:p-0 print:mb-6 text-center space-y-3">
           {/* Institutional Crest & Details */}
           <div className="border-b-2 border-surface-inverse pb-4">
-            <div className="flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-widest text-ink-muted mb-1">
+            <div className="flex items-center justify-center gap-2 text-sm font-bold uppercase tracking-widest text-ink-muted mb-1">
               <Landmark className="w-4 h-4 text-accent" />
               <span>Official Institutional Event Documentation</span>
             </div>
             <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-ink tracking-tight">
               {summary.institutionName}
             </h1>
-            <p className="text-[11px] sm:text-xs text-ink-muted font-medium max-w-3xl mx-auto mt-1 leading-relaxed">
+            <p className="text-xs sm:text-sm text-ink-muted font-medium max-w-3xl mx-auto mt-1 leading-relaxed">
               {summary.accreditationText}
             </p>
-            <div className="mt-2 inline-block px-4 py-1 rounded-full bg-surface-raised text-ink text-xs font-bold uppercase tracking-wider">
+            <div className="mt-2 inline-block px-4 py-1 rounded-full bg-surface-raised text-ink text-sm font-bold uppercase tracking-wider">
               {summary.hostDepartment}
             </div>
           </div>
 
           {/* Event Wordmark & Metadata Title */}
           <div className="pt-2">
-            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-widest text-accent">
+            <span className="text-xs sm:text-sm font-bold uppercase tracking-widest text-accent">
               OFFICIAL EVENT REPORT & ANNUAL DOCUMENTATION
             </span>
             <h2 className="text-2xl sm:text-3xl font-bold text-ink mt-1">
               {summary.festName} {summary.festEdition} — Consolidated Report
             </h2>
-            <p className="text-xs italic text-ink-muted mt-0.5">
+            <p className="text-sm italic text-ink-muted mt-0.5">
               &ldquo;{summary.tagline}&rdquo;
             </p>
 
-            <div className="mt-3 flex flex-wrap items-center justify-center gap-4 text-xs text-ink-muted font-medium">
+            <div className="mt-3 flex flex-wrap items-center justify-center gap-4 text-sm text-ink-muted font-medium">
               <span className="flex items-center gap-1">
                 <MapPin className="w-3.5 h-3.5 text-ink-subtle" />
                 <span>Venue: <strong>{summary.venue}</strong></span>
@@ -1049,52 +1049,52 @@ export default function AdminReportsPage() {
                   1. Executive Summary & Fest Participation Metrics
                 </h3>
               </div>
-              <span className="text-[10px] text-ink-subtle font-bold uppercase no-print print:hidden">
+              <span className="text-xs text-ink-subtle font-bold uppercase no-print print:hidden">
                 Key Performance Indicators
               </span>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 print:grid-cols-4 gap-3 sm:gap-4 print:gap-2">
               <div className="p-4 rounded-2xl bg-surface-raised border border-border print:p-2.5">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-ink-muted block">
+                <span className="text-xs font-bold uppercase tracking-wider text-ink-muted block">
                   Colleges Represented
                 </span>
                 <span className="text-2xl sm:text-3xl print:text-xl font-bold text-ink tabular-nums">
                   {summary.totalCollegesCount}
                 </span>
-                <span className="text-[10px] text-ink-subtle block mt-0.5">Institutions registered</span>
+                <span className="text-xs text-ink-subtle block mt-0.5">Institutions registered</span>
               </div>
 
               <div className="p-4 rounded-2xl bg-surface-raised border border-border print:p-2.5">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-ink-muted block">
+                <span className="text-xs font-bold uppercase tracking-wider text-ink-muted block">
                   Total Student Delegates
                 </span>
                 <span className="text-2xl sm:text-3xl print:text-xl font-bold text-ink tabular-nums">
                   {summary.totalUniqueStudentsCount}
                 </span>
-                <span className="text-[10px] text-ink-subtle block mt-0.5">Unique participants</span>
+                <span className="text-xs text-ink-subtle block mt-0.5">Unique participants</span>
               </div>
 
               <div className="p-4 rounded-2xl bg-surface-raised border border-border print:p-2.5">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-ink-muted block">
+                <span className="text-xs font-bold uppercase tracking-wider text-ink-muted block">
                   Verified Attendance
                 </span>
                 <span className="text-2xl sm:text-3xl print:text-xl font-bold text-success-ink tabular-nums">
                   {summary.attendedStudentsCount}
                 </span>
-                <span className="text-[10px] text-ink-subtle block mt-0.5">
+                <span className="text-xs text-ink-subtle block mt-0.5">
                   {summary.attendancePercentage}% Check-in Rate
                 </span>
               </div>
 
               <div className="p-4 rounded-2xl bg-surface-raised border border-border print:p-2.5">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-ink-muted block">
+                <span className="text-xs font-bold uppercase tracking-wider text-ink-muted block">
                   Total Competitions
                 </span>
                 <span className="text-2xl sm:text-3xl print:text-xl font-bold text-ink tabular-nums">
                   {summary.totalEvents}
                 </span>
-                <span className="text-[10px] text-ink-subtle block mt-0.5">
+                <span className="text-xs text-ink-subtle block mt-0.5">
                   {summary.onStageEventsCount} On-Stage • {summary.offStageEventsCount} Off-Stage
                 </span>
               </div>
@@ -1102,7 +1102,7 @@ export default function AdminReportsPage() {
 
             <div className="grid grid-cols-2 sm:grid-cols-4 print:grid-cols-4 gap-3 sm:gap-4 print:gap-2 mt-3 print:mt-2">
               <div className="p-3.5 rounded-[16px] bg-surface-raised border border-border print:p-2">
-                <span className="text-[10px] font-bold text-ink-muted uppercase block">
+                <span className="text-xs font-bold text-ink-muted uppercase block">
                   Total Registrations
                 </span>
                 <span className="text-xl print:text-base font-bold text-ink tabular-nums">
@@ -1111,7 +1111,7 @@ export default function AdminReportsPage() {
               </div>
 
               <div className="p-3.5 rounded-[16px] bg-surface-raised border border-border print:p-2">
-                <span className="text-[10px] font-bold text-ink-muted uppercase block">
+                <span className="text-xs font-bold text-ink-muted uppercase block">
                   Prelims Candidates
                 </span>
                 <span className="text-xl print:text-base font-bold text-ink tabular-nums">
@@ -1120,7 +1120,7 @@ export default function AdminReportsPage() {
               </div>
 
               <div className="p-3.5 rounded-[16px] bg-surface-raised border border-border print:p-2">
-                <span className="text-[10px] font-bold text-ink-muted uppercase block">
+                <span className="text-xs font-bold text-ink-muted uppercase block">
                   Mains Finalists
                 </span>
                 <span className="text-xl print:text-base font-bold text-success-ink tabular-nums">
@@ -1129,7 +1129,7 @@ export default function AdminReportsPage() {
               </div>
 
               <div className="p-3.5 rounded-[16px] bg-surface-raised border border-border print:p-2">
-                <span className="text-[10px] font-bold text-ink-muted uppercase block">
+                <span className="text-xs font-bold text-ink-muted uppercase block">
                   Podium Winners Awarded
                 </span>
                 <span className="text-xl print:text-base font-bold text-accent tabular-nums">
@@ -1146,15 +1146,15 @@ export default function AdminReportsPage() {
                     <Trophy className="w-5 h-5 text-gold-ink" />
                   </div>
                   <div>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-gold-ink block">
+                    <span className="text-xs font-bold uppercase tracking-wider text-gold-ink block">
                       Overall Symposium Champion Institution
                     </span>
-                    <h4 className="text-sm sm:text-base font-bold text-ink">
+                    <h4 className="text-[15px] sm:text-base font-bold text-ink">
                       {summary.overallChampionCollege.collegeName}
                     </h4>
                   </div>
                 </div>
-                <div className="flex items-center gap-4 text-xs font-bold text-ink">
+                <div className="flex items-center gap-4 text-sm font-bold text-ink">
                   <span>Score: <strong className="text-gold-ink text-base">{summary.overallChampionCollege.totalPoints} pts</strong></span>
                   <span>1st Places: <strong className="text-gold-ink">{summary.overallChampionCollege.goldCount}</strong></span>
                 </div>
@@ -1177,7 +1177,7 @@ export default function AdminReportsPage() {
               </div>
               <button
                 onClick={exportEventsCoordinatorsCSV}
-                className="no-print print:hidden text-xs font-bold text-accent hover:text-accent-hover flex items-center gap-1 cursor-pointer"
+                className="no-print print:hidden text-sm font-bold text-accent hover:text-accent-hover flex items-center gap-1 cursor-pointer"
               >
                 <Download className="w-3.5 h-3.5" />
                 <span>CSV</span>
@@ -1185,7 +1185,7 @@ export default function AdminReportsPage() {
             </div>
 
             <div className="overflow-x-auto print:overflow-visible">
-              <table className="w-full text-left text-xs border-collapse border border-border print:text-[7pt] print:table-fixed">
+              <table className="w-full text-left text-sm border-collapse border border-border print:text-[7pt] print:table-fixed">
                 <thead>
                   <tr className="bg-surface-raised text-ink font-bold border-b border-border print:bg-surface-raised">
                     <th className="p-2 border border-border w-8 print:w-[4%] text-center">#</th>
@@ -1206,16 +1206,16 @@ export default function AdminReportsPage() {
                         {idx + 1}
                       </td>
                       <td className="p-2 border border-border">
-                        <strong className="text-ink block text-xs print:text-[7.5pt] break-words">{ev.name}</strong>
+                        <strong className="text-ink block text-sm print:text-[7.5pt] break-words">{ev.name}</strong>
                         {ev.rules && (
-                          <span className="text-[10px] text-ink-muted line-clamp-1 no-print print:hidden">
+                          <span className="text-xs text-ink-muted line-clamp-1 no-print print:hidden">
                             {ev.rules}
                           </span>
                         )}
                       </td>
                       <td className="p-2 border border-border">
                         <span
-                          className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase print:text-[6.5pt] ${
+                          className={`px-1.5 py-0.5 rounded text-xs font-bold uppercase print:text-[6.5pt] ${
                             ev.category === "ON_STAGE"
                               ? "bg-accent-muted text-accent-strong border border-accent/30"
                               : "bg-surface-raised text-ink-muted border border-border"
@@ -1226,19 +1226,19 @@ export default function AdminReportsPage() {
                       </td>
                       <td className="p-2 border border-border">
                         <div className="font-semibold text-ink break-words">{ev.venue}</div>
-                        <div className="text-[10px] text-ink-muted print:text-[6.5pt]">
+                        <div className="text-xs text-ink-muted print:text-[6.5pt]">
                           {formatReportTime(ev.dateTime)}
                         </div>
                       </td>
                       <td className="p-2 border border-border">
                         <div className="font-bold text-ink break-words">{ev.staffCoordinator.name}</div>
-                        <div className="text-[10px] text-ink-muted break-words print:text-[6.5pt]">
+                        <div className="text-xs text-ink-muted break-words print:text-[6.5pt]">
                           {ev.staffCoordinator.phone !== "—" ? ev.staffCoordinator.phone : ev.staffCoordinator.email}
                         </div>
                       </td>
                       <td className="p-2 border border-border">
                         <div className="font-bold text-ink break-words">{ev.studentCoordinator.name}</div>
-                        <div className="text-[10px] text-ink-muted break-words print:text-[6.5pt]">
+                        <div className="text-xs text-ink-muted break-words print:text-[6.5pt]">
                           {ev.studentCoordinator.phone !== "—" ? ev.studentCoordinator.phone : ev.studentCoordinator.email}
                         </div>
                       </td>
@@ -1256,7 +1256,7 @@ export default function AdminReportsPage() {
                         <button
                           onClick={() => handleDownloadEventCSV(ev.id, ev.name)}
                           disabled={downloadingEventId === ev.id}
-                          className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-bold text-accent hover:text-white hover:bg-accent rounded-[8px] border border-accent/30 transition cursor-pointer disabled:opacity-50"
+                          className="inline-flex items-center gap-1 px-2 py-1 text-xs font-bold text-accent hover:text-white hover:bg-accent rounded-[8px] border border-accent/30 transition cursor-pointer disabled:opacity-50"
                           title={`Download ${ev.name} participant CSV roster`}
                         >
                           {downloadingEventId === ev.id ? (
@@ -1287,7 +1287,7 @@ export default function AdminReportsPage() {
                   2B. Indoor Venue Floor Plan & Competition Zones Directory
                 </h3>
               </div>
-              <span className="text-xs font-bold text-ink-muted no-print print:hidden">
+              <span className="text-sm font-bold text-ink-muted no-print print:hidden">
                 Campus Wayfinding & Arenas
               </span>
             </div>
@@ -1296,10 +1296,10 @@ export default function AdminReportsPage() {
             <div className="mb-6 rounded-2xl border border-border bg-surface-raised p-4 print:bg-surface print:border-border-strong print:p-2 print:break-inside-avoid">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
                 <div>
-                  <h4 className="text-xs font-bold text-ink">
+                  <h4 className="text-sm font-bold text-ink">
                     Official Indoor Floor Plan — Sacred Heart College Campus
                   </h4>
-                  <p className="text-[11px] text-ink-muted print:text-[7pt]">
+                  <p className="text-xs text-ink-muted print:text-[7pt]">
                     Active map layout with delineated competition halls, preliminary screening rooms, amenities, and wayfinding checkpoints.
                   </p>
                 </div>
@@ -1307,14 +1307,14 @@ export default function AdminReportsPage() {
                   <Link
                     href={data.edition?.floorPlanUrl || "/uploads/campus-floorplan.svg"}
                     target="_blank"
-                    className="text-[11px] font-bold text-accent hover:text-accent-hover bg-accent-muted px-2.5 py-1 rounded-[8px] border border-accent/30"
+                    className="text-xs font-bold text-accent hover:text-accent-hover bg-accent-muted px-2.5 py-1 rounded-[8px] border border-accent/30"
                   >
                     View Raw Vector SVG
                   </Link>
                   <Link
                     href="/loc/wp-entrance"
                     target="_blank"
-                    className="text-[11px] font-bold text-ink hover:text-accent bg-surface px-2.5 py-1 rounded-[8px] border border-border hover:border-accent"
+                    className="text-xs font-bold text-ink hover:text-accent bg-surface px-2.5 py-1 rounded-[8px] border border-border hover:border-accent"
                   >
                     Open Live Interactive Map →
                   </Link>
@@ -1335,13 +1335,13 @@ export default function AdminReportsPage() {
             {/* Zones & Hall Assignment Legend Table */}
             <div className="mb-6">
               <div className="flex items-center justify-between mb-2">
-                <h4 className="text-xs font-bold text-ink">
+                <h4 className="text-sm font-bold text-ink">
                   Zone & Hall Allocation Legend ({zoneAllocations.length} Active Zones)
                 </h4>
               </div>
 
               <div className="overflow-x-auto print:overflow-visible">
-                <table className="w-full text-left text-xs border-collapse border border-border print:text-[7pt] print:table-fixed">
+                <table className="w-full text-left text-sm border-collapse border border-border print:text-[7pt] print:table-fixed">
                   <thead>
                     <tr className="bg-surface-raised text-ink font-bold border-b border-border print:bg-surface-raised">
                       <th className="p-2 border border-border w-8 print:w-[5%] text-center">#</th>
@@ -1355,7 +1355,7 @@ export default function AdminReportsPage() {
                   <tbody className="divide-y divide-border">
                     {zoneAllocations.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="p-4 text-center text-ink-muted text-xs">
+                        <td colSpan={6} className="p-4 text-center text-ink-muted text-sm">
                           No indoor map zones currently allocated to competitions. Assign zone IDs under Admin Events.
                         </td>
                       </tr>
@@ -1366,7 +1366,7 @@ export default function AdminReportsPage() {
                             {idx + 1}
                           </td>
                           <td className="p-2 border border-border">
-                            <span className="font-mono font-bold text-xs print:text-[7pt] text-accent bg-accent-muted px-1.5 py-0.5 rounded border border-accent/30 print:border-none print:p-0 print:bg-transparent">
+                            <span className="font-mono font-bold text-sm print:text-[7pt] text-accent bg-accent-muted px-1.5 py-0.5 rounded border border-accent/30 print:border-none print:p-0 print:bg-transparent">
                               {z.zoneId}
                             </span>
                           </td>
@@ -1379,17 +1379,17 @@ export default function AdminReportsPage() {
                             ) : (
                               <div className="space-y-1">
                                 {z.mainEvents.map((ev) => (
-                                  <div key={ev.id} className="text-ink text-[11px] print:text-[7pt]">
+                                  <div key={ev.id} className="text-ink text-xs print:text-[7pt]">
                                     <span className="font-bold text-ink">{ev.name}</span>
-                                    <span className="ml-1 text-[9px] font-bold text-accent uppercase bg-accent-muted px-1 rounded">Main</span>
-                                    <div className="text-[10px] text-ink-muted">{ev.coordinator}</div>
+                                    <span className="ml-1 text-xs font-bold text-accent uppercase bg-accent-muted px-1 rounded">Main</span>
+                                    <div className="text-xs text-ink-muted">{ev.coordinator}</div>
                                   </div>
                                 ))}
                                 {z.prelimsEvents.map((ev) => (
-                                  <div key={`prelim-${ev.id}`} className="text-ink text-[11px] print:text-[7pt]">
+                                  <div key={`prelim-${ev.id}`} className="text-ink text-xs print:text-[7pt]">
                                     <span className="font-bold text-ink">{ev.name}</span>
-                                    <span className="ml-1 text-[9px] font-bold text-ink-muted uppercase bg-surface-raised px-1 rounded">Prelims</span>
-                                    <div className="text-[10px] text-ink-muted">{ev.coordinator}</div>
+                                    <span className="ml-1 text-xs font-bold text-ink-muted uppercase bg-surface-raised px-1 rounded">Prelims</span>
+                                    <div className="text-xs text-ink-muted">{ev.coordinator}</div>
                                   </div>
                                 ))}
                               </div>
@@ -1399,10 +1399,10 @@ export default function AdminReportsPage() {
                             {z.mainEvents[0]?.venue || z.prelimsEvents[0]?.venue || "Sacred Heart College Campus"}
                           </td>
                           <td className="p-2 border border-border">
-                            <div className="font-mono text-[10px] print:text-[6.5pt] text-ink-muted">
+                            <div className="font-mono text-xs print:text-[6.5pt] text-ink-muted">
                               /loc/{z.zoneId}
                             </div>
-                            <div className="text-[9px] text-ink-subtle print:text-[6pt]">
+                            <div className="text-xs text-ink-subtle print:text-[6pt]">
                               QR Scannable Waypoint
                             </div>
                           </td>
@@ -1416,29 +1416,29 @@ export default function AdminReportsPage() {
 
             {/* Campus Facilities & Amenities Directory */}
             <div className="border-t border-border pt-4 print:break-inside-avoid">
-              <h4 className="text-xs font-bold text-ink mb-2">
+              <h4 className="text-sm font-bold text-ink mb-2">
                 Campus Facilities & Services Directory
               </h4>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs print:text-[7pt]">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm print:text-[7pt]">
                 <div className="border border-border rounded-[16px] p-2.5 bg-surface-raised print:bg-transparent">
                   <div className="font-bold text-ink">Restrooms / Washrooms</div>
-                  <div className="text-ink-muted text-[10px] print:text-[6.5pt] mt-0.5">Ground & 1st Floor Corridors</div>
-                  <div className="font-mono text-[9px] text-accent mt-1">amenity-restroom-*</div>
+                  <div className="text-ink-muted text-xs print:text-[6.5pt] mt-0.5">Ground & 1st Floor Corridors</div>
+                  <div className="font-mono text-xs text-accent mt-1">amenity-restroom-*</div>
                 </div>
                 <div className="border border-border rounded-[16px] p-2.5 bg-surface-raised print:bg-transparent">
                   <div className="font-bold text-ink">Drinking Water Stations</div>
-                  <div className="text-ink-muted text-[10px] print:text-[6.5pt] mt-0.5">RO Water Purifiers (All Wings)</div>
-                  <div className="font-mono text-[9px] text-accent mt-1">amenity-water-*</div>
+                  <div className="text-ink-muted text-xs print:text-[6.5pt] mt-0.5">RO Water Purifiers (All Wings)</div>
+                  <div className="font-mono text-xs text-accent mt-1">amenity-water-*</div>
                 </div>
                 <div className="border border-border rounded-[16px] p-2.5 bg-surface-raised print:bg-transparent">
                   <div className="font-bold text-ink">Dining & Refreshments</div>
-                  <div className="text-ink-muted text-[10px] print:text-[6.5pt] mt-0.5">Main College Canteen & Counters</div>
-                  <div className="font-mono text-[9px] text-accent mt-1">amenity-food-*</div>
+                  <div className="text-ink-muted text-xs print:text-[6.5pt] mt-0.5">Main College Canteen & Counters</div>
+                  <div className="font-mono text-xs text-accent mt-1">amenity-food-*</div>
                 </div>
                 <div className="border border-border rounded-[16px] p-2.5 bg-surface-raised print:bg-transparent">
                   <div className="font-bold text-ink">Helpdesk & First Aid</div>
-                  <div className="text-ink-muted text-[10px] print:text-[6.5pt] mt-0.5">Auditorium Main Lobby</div>
-                  <div className="font-mono text-[9px] text-accent mt-1">amenity-helpdesk-*</div>
+                  <div className="text-ink-muted text-xs print:text-[6.5pt] mt-0.5">Auditorium Main Lobby</div>
+                  <div className="font-mono text-xs text-accent mt-1">amenity-helpdesk-*</div>
                 </div>
               </div>
             </div>
@@ -1457,13 +1457,13 @@ export default function AdminReportsPage() {
                   3. Participating College Delegations Representation Tally
                 </h3>
               </div>
-              <span className="text-xs font-bold text-ink-muted no-print print:hidden">
+              <span className="text-sm font-bold text-ink-muted no-print print:hidden">
                 Total Colleges: {data.delegations.length}
               </span>
             </div>
 
             <div className="overflow-x-auto print:overflow-visible">
-              <table className="w-full text-left text-xs border-collapse border border-border print:text-[7pt] print:table-fixed">
+              <table className="w-full text-left text-sm border-collapse border border-border print:text-[7pt] print:table-fixed">
                 <thead>
                   <tr className="bg-surface-raised text-ink font-bold border-b border-border print:bg-surface-raised">
                     <th className="p-2 border border-border w-8 print:w-[4%] text-center">#</th>
@@ -1482,9 +1482,9 @@ export default function AdminReportsPage() {
                         {idx + 1}
                       </td>
                       <td className="p-2 border border-border">
-                        <strong className="text-ink text-xs print:text-[8pt] break-words block">{del.collegeName}</strong>
+                        <strong className="text-ink text-sm print:text-[8pt] break-words block">{del.collegeName}</strong>
                         {del.teamName && (
-                          <span className="text-[10px] text-ink-muted block break-words print:text-[7.5pt]">Team: {del.teamName}</span>
+                          <span className="text-xs text-ink-muted block break-words print:text-[7.5pt]">Team: {del.teamName}</span>
                         )}
                       </td>
                       <td className="p-2 border border-border text-ink-muted break-words">
@@ -1492,13 +1492,13 @@ export default function AdminReportsPage() {
                       </td>
                       <td className="p-2 border border-border">
                         <div className="font-semibold text-ink break-words">{del.teamLeadName}</div>
-                        <div className="text-[10px] text-ink-muted break-words print:text-[7.5pt]">{del.teamLeadPhone}</div>
+                        <div className="text-xs text-ink-muted break-words print:text-[7.5pt]">{del.teamLeadPhone}</div>
                       </td>
                       <td className="p-2 border border-border">
                         {del.staffInchargeName ? (
                           <div>
                             <div className="font-semibold text-ink break-words">{del.staffInchargeName}</div>
-                            <div className="text-[10px] text-ink-muted break-words print:text-[7.5pt]">{del.staffInchargePhone || "—"}</div>
+                            <div className="text-xs text-ink-muted break-words print:text-[7.5pt]">{del.staffInchargePhone || "—"}</div>
                           </div>
                         ) : (
                           <span className="text-ink-subtle italic">None</span>
@@ -1509,7 +1509,7 @@ export default function AdminReportsPage() {
                       </td>
                       <td className="p-2 border border-border text-center">
                         <span
-                          className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase print:border ${
+                          className={`px-1.5 py-0.5 rounded text-xs font-bold uppercase print:border ${
                             del.paymentStatus === "PAID"
                               ? "bg-success-surface text-success-ink border-success-border"
                               : "bg-warning-surface text-warning-ink border-warning-border"
@@ -1538,7 +1538,7 @@ export default function AdminReportsPage() {
                   <h3 className="text-base font-bold text-ink">
                     4. Master Student Registration & Enrollment Roster
                   </h3>
-                  <span className="text-xs text-ink-muted">
+                  <span className="text-sm text-ink-muted">
                     Showing {filteredRoster.length} of {data.masterStudentRoster.length} participants
                   </span>
                 </div>
@@ -1553,14 +1553,14 @@ export default function AdminReportsPage() {
                     placeholder="Search name, college, phone..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="h-9 pl-8 pr-3 bg-surface-raised border border-border rounded-[8px] text-xs text-ink placeholder-ink-subtle focus:outline-none focus:border-accent"
+                    className="h-9 pl-8 pr-3 bg-surface-raised border border-border rounded-[8px] text-sm text-ink placeholder-ink-subtle focus:outline-none focus:border-accent"
                   />
                 </div>
 
                 <select
                   value={selectedEventFilter}
                   onChange={(e) => setSelectedEventFilter(e.target.value)}
-                  className="h-9 px-3 bg-surface-raised border border-border rounded-[8px] text-xs text-ink font-semibold focus:outline-none focus:border-accent"
+                  className="h-9 px-3 bg-surface-raised border border-border rounded-[8px] text-sm text-ink font-semibold focus:outline-none focus:border-accent"
                 >
                   <option value="ALL">All Competitions</option>
                   {data.events.map((ev) => (
@@ -1572,7 +1572,7 @@ export default function AdminReportsPage() {
 
                 <button
                   onClick={exportMasterRosterCSV}
-                  className="px-3 py-2 bg-surface-raised hover:bg-surface-sunken text-ink-muted rounded-[8px] text-xs font-bold flex items-center gap-1 cursor-pointer transition"
+                  className="px-3 py-2 bg-surface-raised hover:bg-surface-sunken text-ink-muted rounded-[8px] text-sm font-bold flex items-center gap-1 cursor-pointer transition"
                 >
                   <Download className="w-3.5 h-3.5" />
                   <span>CSV</span>
@@ -1581,7 +1581,7 @@ export default function AdminReportsPage() {
             </div>
 
             <div className="overflow-x-auto print:overflow-visible">
-              <table className="w-full text-left text-xs border-collapse border border-border print:text-[7pt] print:table-fixed">
+              <table className="w-full text-left text-sm border-collapse border border-border print:text-[7pt] print:table-fixed">
                 <thead>
                   <tr className="bg-surface-raised text-ink font-bold border-b border-border print:bg-surface-raised">
                     <th className="p-2 border border-border w-8 print:w-[4%] text-center">#</th>
@@ -1603,7 +1603,7 @@ export default function AdminReportsPage() {
                         <div className="font-bold text-ink flex items-center gap-1 flex-wrap">
                           <span className="break-words">{s.name}</span>
                           {s.isTeamLead && (
-                            <span className="text-[9px] bg-accent-muted text-accent-strong px-1 py-0.2 rounded font-bold print:text-[6.5pt] print:border print:border-accent/30">
+                            <span className="text-xs bg-accent-muted text-accent-strong px-1 py-0.2 rounded font-bold print:text-[6.5pt] print:border print:border-accent/30">
                               LEAD
                             </span>
                           )}
@@ -1611,13 +1611,13 @@ export default function AdminReportsPage() {
                       </td>
                       <td className="p-2 border border-border text-ink font-medium">
                         <div className="break-words">{s.college}</div>
-                        {s.department && <span className="text-[10px] text-ink-muted block break-words print:text-[6.5pt]">({s.department})</span>}
+                        {s.department && <span className="text-xs text-ink-muted block break-words print:text-[6.5pt]">({s.department})</span>}
                       </td>
                       <td className="p-2 border border-border">
                         <div className="text-ink font-semibold break-words">{s.phone}</div>
-                        <div className="text-[10px] text-ink-muted truncate print:text-clip break-all max-w-[140px] print:max-w-none print:text-[6.5pt]">{s.email}</div>
+                        <div className="text-xs text-ink-muted truncate print:text-clip break-all max-w-[140px] print:max-w-none print:text-[6.5pt]">{s.email}</div>
                       </td>
-                      <td className="p-2 border border-border font-mono text-[10px] text-ink-muted break-words print:text-[7pt]">
+                      <td className="p-2 border border-border font-mono text-xs text-ink-muted break-words print:text-[7pt]">
                         {s.badgeCode || "—"}
                       </td>
                       <td className="p-2 border border-border">
@@ -1626,7 +1626,7 @@ export default function AdminReportsPage() {
                           {s.events.map((ev) => (
                             <span
                               key={ev.eventId}
-                              className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                              className={`px-1.5 py-0.5 rounded text-xs font-bold ${
                                 ev.category === "ON_STAGE"
                               ? "bg-accent-muted text-accent-strong border border-accent/30"
                               : "bg-surface-raised text-ink-muted border border-border"
@@ -1643,11 +1643,11 @@ export default function AdminReportsPage() {
                     </td>
                     <td className="p-2 border border-border text-center">
                       {s.attended ? (
-                        <span className="text-success-ink font-bold text-[9px] bg-success-surface px-1.5 py-0.5 rounded border border-success-border inline-block print:text-[6.5pt] print:px-1">
+                        <span className="text-success-ink font-bold text-xs bg-success-surface px-1.5 py-0.5 rounded border border-success-border inline-block print:text-[6.5pt] print:px-1">
                           PRESENT
                         </span>
                       ) : (
-                        <span className="text-ink-subtle text-[9px] font-bold inline-block print:text-[6.5pt]">
+                        <span className="text-ink-subtle text-xs font-bold inline-block print:text-[6.5pt]">
                           ABSENT
                         </span>
                       )}
@@ -1672,14 +1672,14 @@ export default function AdminReportsPage() {
                   <h3 className="text-base font-bold text-ink">
                     5. Prelims Screening, Evaluation Scores & Mains Progression
                   </h3>
-                  <span className="text-xs text-ink-muted">
+                  <span className="text-sm text-ink-muted">
                     Detailed record of prelims nominees, scores, qualification remarks, and advancement to mains
                   </span>
                 </div>
               </div>
               <button
                 onClick={exportPrelimsProgressionCSV}
-                className="no-print print:hidden text-xs font-bold text-accent hover:text-accent-hover flex items-center gap-1 cursor-pointer"
+                className="no-print print:hidden text-sm font-bold text-accent hover:text-accent-hover flex items-center gap-1 cursor-pointer"
               >
                 <Download className="w-3.5 h-3.5" />
                 <span>CSV</span>
@@ -1687,12 +1687,12 @@ export default function AdminReportsPage() {
             </div>
 
             {data.prelimsProgression.length === 0 ? (
-              <div className="p-8 text-center text-xs text-ink-muted border border-dashed border-border rounded-2xl">
+              <div className="p-8 text-center text-sm text-ink-muted border border-dashed border-border rounded-2xl">
                 No preliminary rounds configured or no participants registered for prelims yet.
               </div>
             ) : (
               <div className="overflow-x-auto print:overflow-visible">
-                <table className="w-full text-left text-xs border-collapse border border-border print:text-[7pt] print:table-fixed">
+                <table className="w-full text-left text-sm border-collapse border border-border print:text-[7pt] print:table-fixed">
                   <thead>
                     <tr className="bg-surface-raised text-ink font-bold border-b border-border print:bg-surface-raised">
                       <th className="p-2 border border-border w-8 print:w-[4%] text-center">#</th>
@@ -1713,11 +1713,11 @@ export default function AdminReportsPage() {
                         </td>
                         <td className="p-2 border border-border">
                           <strong className="text-ink block break-words print:text-[8pt]">{p.eventName}</strong>
-                          <span className="text-[10px] text-ink-muted print:text-[7pt]">{p.eventCategory}</span>
+                          <span className="text-xs text-ink-muted print:text-[7pt]">{p.eventCategory}</span>
                         </td>
                         <td className="p-2 border border-border">
                           <div className="font-bold text-ink break-words">{p.studentName}</div>
-                          <div className="text-[10px] text-ink-muted print:text-[7pt]">{p.studentPhone}</div>
+                          <div className="text-xs text-ink-muted print:text-[7pt]">{p.studentPhone}</div>
                         </td>
                         <td className="p-2 border border-border text-ink-muted font-medium break-words">
                           {p.collegeName}
@@ -1727,7 +1727,7 @@ export default function AdminReportsPage() {
                         </td>
                         <td className="p-2 border border-border text-center">
                           <span
-                            className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase print:border ${
+                            className={`px-1.5 py-0.5 rounded text-xs font-bold uppercase print:border ${
                               p.clearedToMains
                                 ? "bg-success-surface text-success-ink border-success-border"
                                 : p.prelimsStatus === "ELIMINATED"
@@ -1738,7 +1738,7 @@ export default function AdminReportsPage() {
                             {p.prelimsStatus}
                           </span>
                         </td>
-                        <td className="p-2 border border-border text-[10px] text-ink-muted italic break-words print:text-[7.5pt]">
+                        <td className="p-2 border border-border text-xs text-ink-muted italic break-words print:text-[7.5pt]">
                           {p.prelimsNotes || "—"}
                         </td>
                         <td className="p-2 border border-border text-center">
@@ -1774,7 +1774,7 @@ export default function AdminReportsPage() {
               </div>
               <button
                 onClick={exportFinalResultsCSV}
-                className="no-print print:hidden text-xs font-bold text-accent hover:text-accent-hover flex items-center gap-1 cursor-pointer"
+                className="no-print print:hidden text-sm font-bold text-accent hover:text-accent-hover flex items-center gap-1 cursor-pointer"
               >
                 <Download className="w-3.5 h-3.5" />
                 <span>CSV</span>
@@ -1782,12 +1782,12 @@ export default function AdminReportsPage() {
             </div>
 
             {data.finalResults.length === 0 ? (
-              <div className="p-8 text-center text-xs text-ink-muted border border-dashed border-border rounded-2xl">
+              <div className="p-8 text-center text-sm text-ink-muted border border-dashed border-border rounded-2xl">
                 No competition results published yet. Coordinators will publish scores and winners via their Event Consoles.
               </div>
             ) : (
               <div className="overflow-x-auto print:overflow-visible">
-                <table className="w-full text-left text-xs border-collapse border border-border print:text-[7pt] print:table-fixed">
+                <table className="w-full text-left text-sm border-collapse border border-border print:text-[7pt] print:table-fixed">
                   <thead>
                     <tr className="bg-surface-raised text-ink font-bold border-b border-border print:bg-surface-raised">
                       <th className="p-2 border border-border w-8 print:w-[4%] text-center">#</th>
@@ -1809,7 +1809,7 @@ export default function AdminReportsPage() {
                         </td>
                         <td className="p-2 border border-border text-center">
                           <span
-                            className={`px-2.5 py-0.5 rounded-full text-xs print:text-[7pt] font-bold inline-flex items-center gap-1 ${
+                            className={`px-2.5 py-0.5 rounded-full text-sm print:text-[7pt] font-bold inline-flex items-center gap-1 ${
                               res.rank === 1
                                 ? "bg-gold text-gold-ink border border-gold"
                                 : res.rank === 2
@@ -1869,14 +1869,14 @@ export default function AdminReportsPage() {
                   <h3 className="text-base font-bold text-ink">
                     7. Overall Intercollegiate Championship Trophy Leaderboard
                   </h3>
-                  <span className="text-xs text-ink-muted">
+                  <span className="text-sm text-ink-muted">
                     Points Weightage: 1st Place = 10 pts, 2nd Place = 7 pts, 3rd Place = 5 pts
                   </span>
                 </div>
               </div>
               <button
                 onClick={exportChampionshipCSV}
-                className="no-print print:hidden text-xs font-bold text-accent hover:text-accent-hover flex items-center gap-1 cursor-pointer"
+                className="no-print print:hidden text-sm font-bold text-accent hover:text-accent-hover flex items-center gap-1 cursor-pointer"
               >
                 <Download className="w-3.5 h-3.5" />
                 <span>CSV</span>
@@ -1884,7 +1884,7 @@ export default function AdminReportsPage() {
             </div>
 
             <div className="overflow-x-auto print:overflow-visible">
-              <table className="w-full text-left text-xs border-collapse border border-border print:text-[7pt] print:table-fixed">
+              <table className="w-full text-left text-sm border-collapse border border-border print:text-[7pt] print:table-fixed">
                 <thead>
                   <tr className="bg-surface-raised text-ink font-bold border-b border-border print:bg-surface-raised">
                     <th className="p-2 border border-border w-12 print:w-[6%] text-center">Rank</th>
@@ -1910,11 +1910,11 @@ export default function AdminReportsPage() {
                     >
                       <td className="p-2 border border-border text-center font-bold">
                         {idx === 0 && col.totalPoints > 0 ? (
-                          <span className="w-5 h-5 rounded-full bg-gold text-gold-ink font-bold inline-flex items-center justify-center text-xs">
+                          <span className="w-5 h-5 rounded-full bg-gold text-gold-ink font-bold inline-flex items-center justify-center text-sm">
                             1
                           </span>
                         ) : idx === 1 && col.totalPoints > 0 ? (
-                          <span className="w-5 h-5 rounded-full bg-border-strong text-ink font-bold inline-flex items-center justify-center text-xs">
+                          <span className="w-5 h-5 rounded-full bg-border-strong text-ink font-bold inline-flex items-center justify-center text-sm">
                             2
                           </span>
                         ) : (
@@ -1933,22 +1933,22 @@ export default function AdminReportsPage() {
                       <td className="p-2 border border-border text-center font-bold text-gold-ink tabular-nums print:text-[7pt]">
                         {col.bronzeCount}
                       </td>
-                      <td className="p-2 border border-border text-center font-bold text-sm print:text-[7.5pt] text-accent tabular-nums">
+                      <td className="p-2 border border-border text-center font-bold text-[15px] print:text-[7.5pt] text-accent tabular-nums">
                         {col.totalPoints} pts
                       </td>
                       <td className="p-2 border border-border text-center">
                         {idx === 0 && col.totalPoints > 0 ? (
-                          <span className="px-2 py-0.5 rounded-full bg-gold text-gold-ink font-bold text-[9px] uppercase inline-flex items-center gap-1 print:border print:border-gold print:text-[6.5pt]">
+                          <span className="px-2 py-0.5 rounded-full bg-gold text-gold-ink font-bold text-xs uppercase inline-flex items-center gap-1 print:border print:border-gold print:text-[6.5pt]">
                             <Trophy className="w-3 h-3 text-gold-ink print:hidden" />
                             <span>Champion</span>
                           </span>
                         ) : idx === 1 && col.totalPoints > 0 ? (
-                          <span className="px-2 py-0.5 rounded-full bg-surface-sunken text-ink font-bold text-[9px] uppercase inline-flex items-center gap-1 print:border print:border-border-strong print:text-[6.5pt]">
+                          <span className="px-2 py-0.5 rounded-full bg-surface-sunken text-ink font-bold text-xs uppercase inline-flex items-center gap-1 print:border print:border-border-strong print:text-[6.5pt]">
                             <Medal className="w-3 h-3 text-ink-muted print:hidden" />
                             <span>Runner-Up</span>
                           </span>
                         ) : (
-                          <span className="text-ink-subtle text-[9px] print:text-[6.5pt]">Participant</span>
+                          <span className="text-ink-subtle text-xs print:text-[6.5pt]">Participant</span>
                         )}
                       </td>
                     </tr>
@@ -1966,14 +1966,14 @@ export default function AdminReportsPage() {
           <div className="bg-surface border border-border rounded-3xl p-6 sm:p-8 shadow-card print:border-none print:shadow-none print:p-0 space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-4">
               <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-accent block mb-0.5">
+                <span className="text-xs font-bold uppercase tracking-wider text-accent block mb-0.5">
                   Dining & Hospitality Services
                 </span>
                 <h3 className="text-base sm:text-lg font-bold text-ink flex items-center gap-2">
                   <Utensils className="w-5 h-5 text-accent print:hidden" />
                   <span>Catering Logistics & Dietary Distribution Report</span>
                 </h3>
-                <p className="text-xs text-ink-muted mt-0.5">
+                <p className="text-sm text-ink-muted mt-0.5">
                   Official meal tally & dietary preference roster for food contractors, catering vendors, and dining hall audit.
                 </p>
               </div>
@@ -1981,14 +1981,14 @@ export default function AdminReportsPage() {
               <div className="flex items-center gap-2 no-print print:hidden">
                 <Link
                   href="/food"
-                  className="px-3.5 py-1.5 rounded-[8px] bg-surface border border-border text-xs font-bold text-ink hover:border-accent hover:text-accent transition flex items-center gap-1.5"
+                  className="px-3.5 py-1.5 rounded-[8px] bg-surface border border-border text-sm font-bold text-ink hover:border-accent hover:text-accent transition flex items-center gap-1.5"
                 >
                   <Utensils className="w-3.5 h-3.5" />
                   <span>Open Food Console</span>
                 </Link>
                 <button
                   onClick={exportCateringVendorCSV}
-                  className="px-3.5 py-1.5 rounded-[8px] bg-accent hover:bg-accent-hover text-white text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
+                  className="px-3.5 py-1.5 rounded-[8px] bg-accent hover:bg-accent-hover text-white text-sm font-bold flex items-center gap-1.5 transition cursor-pointer"
                 >
                   <Download className="w-3.5 h-3.5" />
                   <span>Vendor CSV</span>
@@ -1999,47 +1999,47 @@ export default function AdminReportsPage() {
             {/* Catering Breakdown KPI Cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 print:grid-cols-4">
               <div className="p-3.5 sm:p-4 rounded-2xl bg-surface-raised border border-border">
-                <div className="text-[10px] font-bold uppercase text-ink-muted tracking-wider">Total Meals Ordered</div>
+                <div className="text-xs font-bold uppercase text-ink-muted tracking-wider">Total Meals Ordered</div>
                 <div className="text-xl sm:text-2xl font-bold text-ink mt-1 tabular-nums">
                   {data.cateringSummary?.totalEligible ?? 0}
                 </div>
-                <div className="text-[11px] text-ink-muted mt-1">
+                <div className="text-xs text-ink-muted mt-1">
                   {data.cateringSummary?.totalClaimed ?? 0} served ({data.cateringSummary?.claimPercentage ?? 0}%)
                 </div>
               </div>
 
               <div className="p-3.5 sm:p-4 rounded-2xl bg-success-surface border border-success-border">
-                <div className="text-[10px] font-bold uppercase text-success-ink tracking-wider flex items-center gap-1">
+                <div className="text-xs font-bold uppercase text-success-ink tracking-wider flex items-center gap-1">
                   <Leaf className="w-3 h-3 text-success print:hidden" />
                   <span>Vegetarian Meals</span>
                 </div>
                 <div className="text-xl sm:text-2xl font-bold text-success-ink mt-1 tabular-nums">
                   {data.cateringSummary?.veg.requested ?? 0}
                 </div>
-                <div className="text-[11px] text-success-ink mt-1">
+                <div className="text-xs text-success-ink mt-1">
                   {data.cateringSummary?.veg.claimed ?? 0} served • {data.cateringSummary?.veg.remaining ?? 0} pending
                 </div>
               </div>
 
               <div className="p-3.5 sm:p-4 rounded-2xl bg-warning-surface border border-warning-border">
-                <div className="text-[10px] font-bold uppercase text-warning-ink tracking-wider flex items-center gap-1">
+                <div className="text-xs font-bold uppercase text-warning-ink tracking-wider flex items-center gap-1">
                   <Flame className="w-3 h-3 text-warning print:hidden" />
                   <span>Non-Vegetarian Meals</span>
                 </div>
                 <div className="text-xl sm:text-2xl font-bold text-warning-ink mt-1 tabular-nums">
                   {data.cateringSummary?.nonVeg.requested ?? 0}
                 </div>
-                <div className="text-[11px] text-warning-ink mt-1">
+                <div className="text-xs text-warning-ink mt-1">
                   {data.cateringSummary?.nonVeg.claimed ?? 0} served • {data.cateringSummary?.nonVeg.remaining ?? 0} pending
                 </div>
               </div>
 
               <div className="p-3.5 sm:p-4 rounded-2xl bg-surface-raised border border-border">
-                <div className="text-[10px] font-bold uppercase text-ink-muted tracking-wider">Queue Remaining</div>
+                <div className="text-xs font-bold uppercase text-ink-muted tracking-wider">Queue Remaining</div>
                 <div className="text-xl sm:text-2xl font-bold text-ink mt-1 tabular-nums">
                   {data.cateringSummary?.totalRemaining ?? 0}
                 </div>
-                <div className="text-[11px] text-ink-muted mt-1">
+                <div className="text-xs text-ink-muted mt-1">
                   Delegates yet to claim lunch token
                 </div>
               </div>
@@ -2047,7 +2047,7 @@ export default function AdminReportsPage() {
 
             {/* Detailed Catering Roster Table */}
             <div className="overflow-x-auto print:overflow-visible pt-2">
-              <table className="w-full text-left text-xs border-collapse border border-border print:text-[7pt] print:table-fixed">
+              <table className="w-full text-left text-sm border-collapse border border-border print:text-[7pt] print:table-fixed">
                 <thead>
                   <tr className="bg-surface-raised text-ink font-bold border-b border-border">
                     <th className="p-2 border border-border w-10 text-center print:w-[5%]">S.No</th>
@@ -2067,7 +2067,7 @@ export default function AdminReportsPage() {
                       <td className="p-2 border border-border font-bold text-ink">
                         {c.name}
                         {c.phone && (
-                          <span className="block text-[10px] font-normal text-ink-subtle font-mono">
+                          <span className="block text-xs font-normal text-ink-subtle font-mono">
                             {c.phone}
                           </span>
                         )}
@@ -2077,7 +2077,7 @@ export default function AdminReportsPage() {
                       </td>
                       <td className="p-2 border border-border text-center">
                         <span
-                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider inline-flex items-center gap-1 ${
+                          className={`px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider inline-flex items-center gap-1 ${
                             c.foodPreference === "VEG"
                               ? "bg-success-surface text-success-ink border border-success-border"
                               : "bg-warning-surface text-warning-ink border border-warning-border"
@@ -2091,12 +2091,12 @@ export default function AdminReportsPage() {
                       </td>
                       <td className="p-2 border border-border text-center">
                         {c.foodTokenClaimed ? (
-                          <span className="text-[10px] font-bold text-success-ink inline-flex items-center gap-1">
+                          <span className="text-xs font-bold text-success-ink inline-flex items-center gap-1">
                             <CheckCircle2 className="w-3 h-3 text-success print:hidden" />
                             <span>SERVED</span>
                           </span>
                         ) : (
-                          <span className="text-[10px] font-semibold text-ink-subtle">
+                          <span className="text-xs font-semibold text-ink-subtle">
                             PENDING
                           </span>
                         )}
@@ -2114,13 +2114,13 @@ export default function AdminReportsPage() {
             ========================================================================= */}
         <div className="official-certification-block bg-surface border border-border rounded-3xl p-6 sm:p-8 shadow-card print:shadow-none print:break-inside-avoid space-y-6">
           <div>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-ink-subtle block mb-1">
+            <span className="text-xs font-bold uppercase tracking-wider text-ink-subtle block mb-1">
               Official Institutional Validation
             </span>
-            <h4 className="text-sm sm:text-base font-bold text-ink">
+            <h4 className="text-[15px] sm:text-base font-bold text-ink">
               Certification & Endorsement Declaration
             </h4>
-            <p className="text-xs text-ink-muted leading-relaxed mt-1">
+            <p className="text-sm text-ink-muted leading-relaxed mt-1">
               This is to officially certify that the data, competition rosters, prelims progression evaluation, and
               final results recorded in this document have been validated against official symposium records for{" "}
               <strong>{summary.festName} {summary.festEdition}</strong> organized by the{" "}
@@ -2135,37 +2135,37 @@ export default function AdminReportsPage() {
             <div className="space-y-12">
               <div className="h-10" />
               <div className="border-t border-border-strong pt-2">
-                <div className="text-xs font-bold text-ink uppercase">Staff Coordinator</div>
-                <div className="text-[10px] text-ink-muted font-semibold">{summary.hostDepartment}</div>
+                <div className="text-sm font-bold text-ink uppercase">Staff Coordinator</div>
+                <div className="text-xs text-ink-muted font-semibold">{summary.hostDepartment}</div>
               </div>
             </div>
 
             <div className="space-y-12">
               <div className="h-10" />
               <div className="border-t border-border-strong pt-2">
-                <div className="text-xs font-bold text-ink uppercase">Student Coordinator</div>
-                <div className="text-[10px] text-ink-muted font-semibold">{summary.festName} {summary.festEdition}</div>
+                <div className="text-sm font-bold text-ink uppercase">Student Coordinator</div>
+                <div className="text-xs text-ink-muted font-semibold">{summary.festName} {summary.festEdition}</div>
               </div>
             </div>
 
             <div className="space-y-12">
               <div className="h-10" />
               <div className="border-t border-border-strong pt-2">
-                <div className="text-xs font-bold text-ink uppercase">Head of Department</div>
-                <div className="text-[10px] text-ink-muted font-semibold">{summary.hostDepartment}</div>
+                <div className="text-sm font-bold text-ink uppercase">Head of Department</div>
+                <div className="text-xs text-ink-muted font-semibold">{summary.hostDepartment}</div>
               </div>
             </div>
 
             <div className="space-y-12">
               <div className="h-10" />
               <div className="border-t border-border-strong pt-2">
-                <div className="text-xs font-bold text-ink uppercase">Principal / Secretary</div>
-                <div className="text-[10px] text-ink-muted font-semibold">{summary.institutionName}</div>
+                <div className="text-sm font-bold text-ink uppercase">Principal / Secretary</div>
+                <div className="text-xs text-ink-muted font-semibold">{summary.institutionName}</div>
               </div>
             </div>
           </div>
 
-          <div className="pt-4 border-t border-border flex flex-col sm:flex-row sm:items-center justify-between text-[10px] text-ink-subtle font-medium">
+          <div className="pt-4 border-t border-border flex flex-col sm:flex-row sm:items-center justify-between text-xs text-ink-subtle font-medium">
             <span>
               Report Generated Electronically: {summary.generatedAt ? `${formatReportDate(summary.generatedAt)} at ${formatReportTime(summary.generatedAt)}` : "Live Session"}
             </span>

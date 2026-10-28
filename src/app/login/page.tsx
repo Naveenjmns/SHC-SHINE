@@ -99,7 +99,7 @@ function LoginForm() {
           <h2 className="text-xl sm:text-2xl font-bold text-ink tracking-tight">
             Sign in to <span className="text-accent">SHINE 26</span>
           </h2>
-          <p className="text-sm text-ink-muted mt-1.5 leading-relaxed">
+          <p className="text-[15px] text-ink-muted mt-1.5 leading-relaxed">
             Access your verified delegate badge, event registrations, or coordination desk.
           </p>
         </div>
@@ -108,7 +108,7 @@ function LoginForm() {
         {errorMsg && (
           <div
             role="alert"
-            className="bg-danger-surface border border-danger-border text-danger-ink text-sm p-3.5 rounded-[8px] mb-5 flex items-start gap-2.5 animate-fade-in"
+            className="bg-danger-surface border border-danger-border text-danger-ink text-[15px] p-3.5 rounded-[8px] mb-5 flex items-start gap-2.5 animate-fade-in"
           >
             <AlertCircle className="w-4 h-4 text-danger shrink-0 mt-0.5" />
             <span className="leading-relaxed font-medium">{errorMsg}</span>
@@ -121,7 +121,7 @@ function LoginForm() {
           <div>
             <label
               htmlFor="login-identifier"
-              className="block text-sm font-semibold text-ink mb-1.5"
+              className="block text-[15px] font-semibold text-ink mb-1.5"
             >
               Email Address or Mobile Number
             </label>
@@ -147,11 +147,11 @@ function LoginForm() {
             <div className="flex items-center justify-between mb-1.5">
               <label
                 htmlFor="login-password"
-                className="block text-sm font-semibold text-ink"
+                className="block text-[15px] font-semibold text-ink"
               >
                 Password
               </label>
-              <span className="text-xs text-ink-subtle">
+              <span className="text-sm text-ink-subtle">
                 Delegate: mobile number
               </span>
             </div>
@@ -186,7 +186,7 @@ function LoginForm() {
             </div>
 
             {/* Delegate Password Helper Callout */}
-            <div className="mt-3 p-3 rounded-[8px] bg-surface-raised text-xs text-ink-muted flex items-start gap-2">
+            <div className="mt-3 p-3 rounded-[8px] bg-surface-raised text-sm text-ink-muted flex items-start gap-2">
               <Smartphone className="w-3.5 h-3.5 text-accent shrink-0 mt-0.5" />
               <p className="leading-snug">
                 <strong className="text-ink">Registered Student Delegates:</strong> Use your registered 10-digit mobile number as your default password.
@@ -215,7 +215,7 @@ function LoginForm() {
         </form>
 
         {/* Footer Navigation Strip */}
-        <div className="mt-6 pt-5 border-t border-border space-y-3 text-sm text-ink-muted">
+        <div className="mt-6 pt-5 border-t border-border space-y-3 text-[15px] text-ink-muted">
           <div>
             New student delegate or team?{" "}
             <Link
@@ -286,7 +286,7 @@ export default function LoginPage() {
             />
             <Suspense
               fallback={
-                <div className="relative rounded-3xl bg-surface border border-border shadow-elevated p-8 text-center text-sm text-ink-muted flex items-center justify-center gap-2">
+                <div className="relative rounded-3xl bg-surface border border-border shadow-elevated p-8 text-center text-[15px] text-ink-muted flex items-center justify-center gap-2">
                   <div className="w-4 h-4 border-2 border-accent border-t-transparent rounded-full animate-spin" />
                   <span>Loading secure sign in...</span>
                 </div>

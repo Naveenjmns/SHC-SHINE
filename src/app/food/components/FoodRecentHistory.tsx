@@ -43,11 +43,11 @@ export default function FoodRecentHistory({
       <div className="flex items-center justify-between pb-3 border-b border-border mb-3">
         <div className="flex items-center gap-2">
           <History className="w-4 h-4 text-accent" />
-          <h3 className="text-sm font-semibold text-ink">
+          <h3 className="text-[15px] font-semibold text-ink">
             Recent Meal Distributions
           </h3>
         </div>
-        <span className="text-xs text-ink-muted">
+        <span className="text-sm text-ink-muted">
           {claims.length} logged
         </span>
       </div>
@@ -58,13 +58,13 @@ export default function FoodRecentHistory({
             placeholder="Search recent claims..."
             value={filterQuery}
             onChange={(e) => setFilterQuery(e.target.value)}
-            className="text-xs h-8"
+            className="text-sm h-8"
           />
         </div>
       )}
 
       {filteredClaims.length === 0 ? (
-        <div className="py-8 text-center text-xs text-ink-muted">
+        <div className="py-8 text-center text-sm text-ink-muted">
           {claims.length === 0
             ? "No meals distributed yet today."
             : "No claims match your search filter."}
@@ -76,7 +76,7 @@ export default function FoodRecentHistory({
             return (
               <div
                 key={claim.id}
-                className="p-3 rounded-xl border border-border bg-surface-raised flex items-center justify-between gap-3 text-xs"
+                className="p-3 rounded-xl border border-border bg-surface-raised flex items-center justify-between gap-3 text-sm"
               >
                 <div className="flex items-start gap-2.5 min-w-0">
                   <div
@@ -96,11 +96,11 @@ export default function FoodRecentHistory({
                     <p className="font-semibold text-ink truncate">
                       {claim.name}
                     </p>
-                    <p className="text-[11px] text-ink-muted truncate">
+                    <p className="text-xs text-ink-muted truncate">
                       {claim.collegeName} · <span className="font-mono">{claim.foodTokenCode}</span>
                     </p>
                     {claim.foodClaimedAt && (
-                      <p className="text-[10px] text-ink-muted mt-0.5">
+                      <p className="text-xs text-ink-muted mt-0.5">
                         {new Date(claim.foodClaimedAt).toLocaleTimeString("en-IN", {
                           hour: "2-digit",
                           minute: "2-digit",
@@ -117,7 +117,7 @@ export default function FoodRecentHistory({
                   loading={actionLoading}
                   onClick={() => onUndoClaim(claim.foodTokenCode)}
                   title="Undo claim"
-                  className="text-danger hover:bg-danger-surface text-[11px] h-7 px-2 shrink-0"
+                  className="text-danger hover:bg-danger-surface text-xs h-7 px-2 shrink-0"
                 >
                   <RotateCcw className="w-3 h-3 mr-1" />
                   Undo

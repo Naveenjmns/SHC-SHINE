@@ -173,8 +173,8 @@ export default function CheckInScannerModal({
           {cameraError && (
             <div className="absolute inset-0 p-6 bg-surface/95 flex flex-col items-center justify-center text-center space-y-3 z-10">
               <AlertCircle className="w-8 h-8 text-danger" />
-              <div className="text-sm font-semibold text-ink">{cameraError.title}</div>
-              <p className="text-xs text-ink-muted">{cameraError.message}</p>
+              <div className="text-[15px] font-semibold text-ink">{cameraError.title}</div>
+              <p className="text-sm text-ink-muted">{cameraError.message}</p>
               <Button
                 variant="secondary"
                 size="sm"

@@ -95,7 +95,7 @@ export default function EventsPage() {
           <div className="inline-flex items-center p-1 rounded-[8px] bg-surface border border-border gap-1 overflow-x-auto no-scrollbar">
             <button
               onClick={() => setCategoryFilter("ALL")}
-              className={`min-h-[38px] px-3.5 rounded-[6px] text-sm font-semibold whitespace-nowrap transition-all cursor-pointer ${
+              className={`min-h-[38px] px-3.5 rounded-[6px] text-[15px] font-semibold whitespace-nowrap transition-all cursor-pointer ${
                 categoryFilter === "ALL"
                   ? "bg-accent text-accent-ink border border-transparent"
                   : "text-ink-muted border border-transparent hover:text-ink hover:bg-surface-raised"
@@ -106,7 +106,7 @@ export default function EventsPage() {
 
             <button
               onClick={() => setCategoryFilter("ON_STAGE")}
-              className={`min-h-[38px] px-3.5 rounded-[6px] text-sm font-semibold whitespace-nowrap flex items-center gap-1.5 transition-all cursor-pointer ${
+              className={`min-h-[38px] px-3.5 rounded-[6px] text-[15px] font-semibold whitespace-nowrap flex items-center gap-1.5 transition-all cursor-pointer ${
                 categoryFilter === "ON_STAGE"
                   ? "bg-accent text-accent-ink border border-transparent"
                   : "text-ink-muted border border-transparent hover:text-ink hover:bg-surface-raised"
@@ -118,7 +118,7 @@ export default function EventsPage() {
 
             <button
               onClick={() => setCategoryFilter("OFF_STAGE")}
-              className={`min-h-[38px] px-3.5 rounded-[6px] text-sm font-semibold whitespace-nowrap flex items-center gap-1.5 transition-all cursor-pointer ${
+              className={`min-h-[38px] px-3.5 rounded-[6px] text-[15px] font-semibold whitespace-nowrap flex items-center gap-1.5 transition-all cursor-pointer ${
                 categoryFilter === "OFF_STAGE"
                   ? "bg-accent text-accent-ink border border-transparent"
                   : "text-ink-muted border border-transparent hover:text-ink hover:bg-surface-raised"

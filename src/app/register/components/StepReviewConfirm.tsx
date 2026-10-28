@@ -69,13 +69,13 @@ export default function StepReviewConfirm({
 
       {/* Institution & Team Lead Summary */}
       <Card className="p-6 space-y-3">
-        <div className="flex items-center gap-2 text-sm font-semibold text-ink">
+        <div className="flex items-center gap-2 text-[15px] font-semibold text-ink">
           <Building2 className="w-4 h-4 text-accent" /> Affiliated Institution
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
           <div>
             <div className="text-ink-muted">College Name:</div>
-            <div className="font-semibold text-ink text-sm mt-0.5">{institution.collegeName}</div>
+            <div className="font-semibold text-ink text-[15px] mt-0.5">{institution.collegeName}</div>
             {institution.department && (
               <div className="text-ink-subtle mt-0.5">{institution.department}</div>
             )}
@@ -83,7 +83,7 @@ export default function StepReviewConfirm({
 
           <div>
             <div className="text-ink-muted">Team Lead:</div>
-            <div className="font-semibold text-ink text-sm mt-0.5">{institution.teamLeadName}</div>
+            <div className="font-semibold text-ink text-[15px] mt-0.5">{institution.teamLeadName}</div>
             <div className="text-ink-subtle mt-0.5">
               {institution.teamLeadEmail} • {institution.teamLeadPhone}
             </div>
@@ -94,7 +94,7 @@ export default function StepReviewConfirm({
       {/* Roster & Event Allocations */}
       <Card className="p-6 space-y-3">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sm font-semibold text-ink">
+          <div className="flex items-center gap-2 text-[15px] font-semibold text-ink">
             <Users className="w-4 h-4 text-accent" /> Registered Delegates ({members.length})
           </div>
         </div>
@@ -103,9 +103,9 @@ export default function StepReviewConfirm({
           {members.map((m, idx) => (
             <div key={idx} className="py-3 first:pt-0 last:pb-0 space-y-1.5">
               <div className="flex items-center justify-between">
-                <div className="font-semibold text-xs text-ink">
+                <div className="font-semibold text-sm text-ink">
                   {idx + 1}. {m.name}
-                  {idx === 0 && <span className="ml-1.5 text-accent text-[10px] font-bold">(Lead)</span>}
+                  {idx === 0 && <span className="ml-1.5 text-accent text-xs font-bold">(Lead)</span>}
                 </div>
                 <Badge variant={m.foodPreference === "VEG" ? "confirmed" : "pending"} size="sm">
                   {m.foodPreference === "VEG" ? "Pure Veg" : "Non-Veg"}
@@ -116,7 +116,7 @@ export default function StepReviewConfirm({
                 {m.eventIds.map((evtId) => (
                   <span
                     key={evtId}
-                    className="inline-block px-2 py-0.5 rounded-full bg-surface-raised text-[11px] font-medium text-ink-muted"
+                    className="inline-block px-2 py-0.5 rounded-full bg-surface-raised text-xs font-medium text-ink-muted"
                   >
                     {getEventName(evtId)}
                   </span>
@@ -130,13 +130,13 @@ export default function StepReviewConfirm({
       {/* Live Fee Summary */}
       <Card className="p-6 space-y-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sm font-semibold text-ink">
+          <div className="flex items-center gap-2 text-[15px] font-semibold text-ink">
             <ReceiptIndianRupee className="w-4 h-4 text-accent" /> Live Fee Summary
           </div>
           <Badge variant="accent">Official Registration</Badge>
         </div>
 
-        <div className="space-y-1.5 text-xs">
+        <div className="space-y-1.5 text-sm">
           <div className="flex justify-between text-ink-muted">
             <span>Per-Delegate Fee:</span>
             <span>{participantFee === 0 ? "Complimentary (₹0)" : `₹${participantFee}`}</span>
@@ -145,7 +145,7 @@ export default function StepReviewConfirm({
             <span>Total Registered Delegates:</span>
             <span>{totalDelegates} Students</span>
           </div>
-          <div className="pt-2 border-t border-border flex justify-between font-bold text-sm text-ink">
+          <div className="pt-2 border-t border-border flex justify-between font-bold text-[15px] text-ink">
             <span>Total Payable Amount:</span>
             <span className="text-base text-accent">
               {totalRegistrationFee === 0 ? "₹0 (Free / Host Subsidized)" : `₹${totalRegistrationFee}`}
@@ -165,7 +165,7 @@ export default function StepReviewConfirm({
       </div>
 
       {submitError && (
-        <div className="p-4 rounded-2xl bg-danger-surface border border-danger-border text-xs text-danger-ink flex items-start gap-2.5">
+        <div className="p-4 rounded-2xl bg-danger-surface border border-danger-border text-sm text-danger-ink flex items-start gap-2.5">
           <AlertCircle className="w-4 h-4 text-danger shrink-0 mt-0.5" />
           <div>{submitError}</div>
         </div>

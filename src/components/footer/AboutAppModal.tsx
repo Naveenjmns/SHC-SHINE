@@ -47,11 +47,11 @@ export default function AboutAppModal({ isOpen, onClose }: AboutAppModalProps) {
                 <h3 className="text-base font-bold text-ink">
                   SHINE Platform OS
                 </h3>
-                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-accent-muted text-accent-strong">
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-accent-muted text-accent-strong">
                   v2.0
                 </span>
               </div>
-              <p className="text-xs text-ink-muted">
+              <p className="text-sm text-ink-muted">
                 Intercollegiate Fest Management & Wayfinding System
               </p>
             </div>
@@ -71,13 +71,13 @@ export default function AboutAppModal({ isOpen, onClose }: AboutAppModalProps) {
           <h4 className="eyebrow">
             Architecture Highlights
           </h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
             <div className="p-4 rounded-2xl bg-surface-raised border border-border space-y-1">
               <div className="font-bold text-ink flex items-center gap-1.5">
                 <QrCode className="w-3.5 h-3.5 text-accent" />
                 <span>Paperless Digital Passes</span>
               </div>
-              <p className="text-[11px] text-ink-muted">
+              <p className="text-xs text-ink-muted">
                 Unique encrypted QR badges with live desk check-in and multi-device scanner support.
               </p>
             </div>
@@ -87,7 +87,7 @@ export default function AboutAppModal({ isOpen, onClose }: AboutAppModalProps) {
                 <Utensils className="w-3.5 h-3.5 text-accent" />
                 <span>Dining Hall Distribution</span>
               </div>
-              <p className="text-[11px] text-ink-muted">
+              <p className="text-xs text-ink-muted">
                 Sub-second audio-cued food voucher claims preventing duplicate catering redemptions.
               </p>
             </div>
@@ -97,7 +97,7 @@ export default function AboutAppModal({ isOpen, onClose }: AboutAppModalProps) {
                 <Award className="w-3.5 h-3.5 text-gold" />
                 <span>Stage Leaderboard Engine</span>
               </div>
-              <p className="text-[11px] text-ink-muted">
+              <p className="text-xs text-ink-muted">
                 16:9 projector auditorium mode with remote cycling and live championship standings.
               </p>
             </div>
@@ -107,7 +107,7 @@ export default function AboutAppModal({ isOpen, onClose }: AboutAppModalProps) {
                 <ShieldCheck className="w-3.5 h-3.5 text-success" />
                 <span>Role-Based Access Control</span>
               </div>
-              <p className="text-[11px] text-ink-muted">
+              <p className="text-xs text-ink-muted">
                 Strict NextAuth RBAC boundaries for Students, Coordinators, Catering, and Admins.
               </p>
             </div>
@@ -119,7 +119,7 @@ export default function AboutAppModal({ isOpen, onClose }: AboutAppModalProps) {
           <h4 className="eyebrow">
             Technical Stack
           </h4>
-          <div className="flex flex-wrap gap-1.5 text-[11px]">
+          <div className="flex flex-wrap gap-1.5 text-xs">
             {["Next.js 16 App Router", "React 19", "Tailwind CSS v4", "PostgreSQL", "Prisma ORM", "NextAuth v4", "A* Wayfinding"].map((tech) => (
               <span key={tech} className="px-2.5 py-0.5 rounded-full bg-surface-raised border border-border text-ink font-medium">
                 {tech}
@@ -129,12 +129,12 @@ export default function AboutAppModal({ isOpen, onClose }: AboutAppModalProps) {
         </div>
 
         {/* Institution Attribution */}
-        <div className="p-4 rounded-2xl bg-surface-raised border border-border flex items-center justify-between gap-3 text-xs">
+        <div className="p-4 rounded-2xl bg-surface-raised border border-border flex items-center justify-between gap-3 text-sm">
           <div>
             <div className="font-bold text-ink">Department of Computer Applications (PG)</div>
-            <div className="text-[11px] text-ink-muted">Sacred Heart College (Autonomous), Tirupattur</div>
+            <div className="text-xs text-ink-muted">Sacred Heart College (Autonomous), Tirupattur</div>
           </div>
-          <Button variant="secondary" size="sm" onClick={onClose} className="text-xs shrink-0">
+          <Button variant="secondary" size="sm" onClick={onClose} className="text-sm shrink-0">
             Close
           </Button>
         </div>

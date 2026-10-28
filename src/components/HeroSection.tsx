@@ -81,7 +81,7 @@ export default function HeroSection({ edition }: HeroSectionProps) {
         {/* Acronym Expansion right under SHINE 26 */}
         {acronymExpansion && (
           <div className="mb-5 md:mb-6 animate-stage-title px-2">
-            <span className="inline-block px-4 py-1.5 rounded-full bg-accent-muted text-xs sm:text-sm font-semibold text-accent-strong break-words max-w-[92vw]">
+            <span className="inline-block px-4 py-1.5 rounded-full bg-accent-muted text-sm sm:text-[15px] font-semibold text-accent-strong break-words max-w-[92vw]">
               {acronymExpansion}
             </span>
           </div>

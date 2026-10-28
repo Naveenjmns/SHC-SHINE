@@ -21,7 +21,7 @@ export default function FestStatsStrip({
   return (
     <section className="bg-canvas border-y border-border">
       <div className="container-shine py-12">
-        <p className="text-center text-sm font-medium text-ink-muted mb-8">
+        <p className="text-center text-[15px] font-medium text-ink-muted mb-8">
           Trusted by student delegations from across the region
         </p>
         <dl className="grid grid-cols-2 lg:grid-cols-4 gap-y-10 gap-x-6">
@@ -30,8 +30,8 @@ export default function FestStatsStrip({
               <dd className="text-4xl sm:text-[2.75rem] leading-none font-bold text-ink tabular-nums">
                 {stat.value}
               </dd>
-              <dt className="text-sm font-semibold text-ink pt-2">{stat.label}</dt>
-              <p className="text-xs text-ink-muted">{stat.subtext}</p>
+              <dt className="text-[15px] font-semibold text-ink pt-2">{stat.label}</dt>
+              <p className="text-sm text-ink-muted">{stat.subtext}</p>
             </div>
           ))}
         </dl>

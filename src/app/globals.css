@@ -482,3 +482,10 @@ a {
 .press-scale:active {
   transform: scale(0.98);
 }
+
+/* Keep floating prompts above the mobile tab bar */
+@media (max-width: 767px) {
+  body:has(.mobile-tab-bar) aside[aria-label="Install App"] {
+    bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px)) !important;
+  }
+}

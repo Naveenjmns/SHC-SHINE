@@ -110,7 +110,7 @@ export default function AdminUserModal({
             <h3 className="text-base font-bold text-ink">
               {isEdit ? `Edit User: ${user?.name}` : "Create New User Account"}
             </h3>
-            <p className="text-xs text-ink-muted">
+            <p className="text-sm text-ink-muted">
               {isEdit ? "Update user role, college affiliation, or password." : "Add a coordinator, admin, or staff user."}
             </p>
           </div>
@@ -125,7 +125,7 @@ export default function AdminUserModal({
 
         {/* Error message */}
         {errorMsg && (
-          <div className="mt-3 p-3 bg-danger-surface border border-danger-border text-danger-ink rounded-2xl text-xs">
+          <div className="mt-3 p-3 bg-danger-surface border border-danger-border text-danger-ink rounded-2xl text-sm">
             {errorMsg}
           </div>
         )}
@@ -134,7 +134,7 @@ export default function AdminUserModal({
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto space-y-4 py-4 pr-1">
           {/* Role Picker */}
           <div>
-            <label className="block text-xs font-semibold text-ink mb-1.5">
+            <label className="block text-sm font-semibold text-ink mb-1.5">
               Account Role *
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -151,14 +151,14 @@ export default function AdminUserModal({
                     key={item.r}
                     type="button"
                     onClick={() => setRole(item.r as any)}
-                    className={`py-2 px-2.5 rounded-[8px] text-xs font-semibold border flex flex-col items-center gap-1 transition-colors cursor-pointer ${
+                    className={`py-2 px-2.5 rounded-[8px] text-sm font-semibold border flex flex-col items-center gap-1 transition-colors cursor-pointer ${
                       isSelected
                         ? "bg-surface-raised border-accent text-accent"
                         : "bg-surface border-border text-ink-muted"
                     }`}
                   >
                     <Icon className="w-4 h-4" />
-                    <span className="text-[11px]">{item.label}</span>
+                    <span className="text-xs">{item.label}</span>
                   </button>
                 );
               })}
@@ -168,7 +168,7 @@ export default function AdminUserModal({
           {/* Name & Email */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-ink mb-1">
+              <label className="block text-sm font-semibold text-ink mb-1">
                 Full Name *
               </label>
               <Input
@@ -179,7 +179,7 @@ export default function AdminUserModal({
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-ink mb-1">
+              <label className="block text-sm font-semibold text-ink mb-1">
                 Email Address *
               </label>
               <Input
@@ -195,7 +195,7 @@ export default function AdminUserModal({
           {/* Phone & College */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-ink mb-1">
+              <label className="block text-sm font-semibold text-ink mb-1">
                 Mobile Number
               </label>
               <Input
@@ -206,7 +206,7 @@ export default function AdminUserModal({
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-ink mb-1">
+              <label className="block text-sm font-semibold text-ink mb-1">
                 College Affiliation
               </label>
               <Input
@@ -219,7 +219,7 @@ export default function AdminUserModal({
 
           {/* Password */}
           <div>
-            <label className="block text-xs font-semibold text-ink mb-1 flex items-center gap-1.5">
+            <label className="block text-sm font-semibold text-ink mb-1 flex items-center gap-1.5">
               <KeyRound className="w-3.5 h-3.5 text-accent" />
               <span>{isEdit ? "Change Password (Leave blank to keep current)" : "Password *"}</span>
             </label>
@@ -234,9 +234,9 @@ export default function AdminUserModal({
           {/* Coordinator Event Assignment */}
           {role === "COORDINATOR" && availableEvents.length > 0 && (
             <div className="p-3.5 bg-surface-raised border border-border rounded-2xl space-y-2">
-              <div className="text-xs font-bold text-ink flex items-center justify-between">
+              <div className="text-sm font-bold text-ink flex items-center justify-between">
                 <span>Assign Competition Arenas</span>
-                <span className="text-[10px] text-ink-muted">
+                <span className="text-xs text-ink-muted">
                   {assignedEventIds.length} selected
                 </span>
               </div>
@@ -246,7 +246,7 @@ export default function AdminUserModal({
                   return (
                     <label
                       key={ev.id}
-                      className="flex items-center gap-2 p-2 rounded-[8px] bg-surface border border-border text-xs text-ink cursor-pointer hover:border-accent transition-colors"
+                      className="flex items-center gap-2 p-2 rounded-[8px] bg-surface border border-border text-sm text-ink cursor-pointer hover:border-accent transition-colors"
                     >
                       <input
                         type="checkbox"

@@ -64,10 +64,10 @@ export default function Loading() {
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75" />
             <span className="relative inline-flex rounded-full h-2 w-2 bg-success" />
           </span>
-          <span className="text-xs font-semibold text-ink-muted">
+          <span className="text-sm font-semibold text-ink-muted">
             System initializing
           </span>
-          <span className="text-[10px] font-mono font-semibold text-accent-strong bg-accent-muted px-1.5 rounded-full">
+          <span className="text-xs font-mono font-semibold text-accent-strong bg-accent-muted px-1.5 rounded-full">
             v2.6
           </span>
         </div>
@@ -81,7 +81,7 @@ export default function Loading() {
         <div className="h-6 flex items-center justify-center mb-6">
           <p
             key={stageIndex}
-            className="text-xs sm:text-sm text-ink-muted transition-all duration-300 animate-fade-in font-medium"
+            className="text-sm sm:text-[15px] text-ink-muted transition-all duration-300 animate-fade-in font-medium"
           >
             {BOOT_STAGES[stageIndex]}
           </p>
@@ -96,7 +96,7 @@ export default function Loading() {
             />
           </div>
 
-          <div className="flex items-center justify-between text-[11px] text-ink-subtle pt-0.5 px-0.5">
+          <div className="flex items-center justify-between text-xs text-ink-subtle pt-0.5 px-0.5">
             <span className="flex items-center gap-1.5 font-medium">
               <span className="w-1.5 h-1.5 rounded-full bg-accent" />
               Arena protocol
@@ -108,7 +108,7 @@ export default function Loading() {
         </div>
 
         {/* Telemetry chips */}
-        <div className="flex flex-wrap items-center justify-center gap-3 mt-8 text-[11px] text-ink-subtle font-medium">
+        <div className="flex flex-wrap items-center justify-center gap-3 mt-8 text-xs text-ink-subtle font-medium">
           <span className="inline-flex items-center gap-1">
             <Shield className="w-3 h-3 text-success" />
             TLS 1.3 secured

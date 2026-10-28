@@ -116,18 +116,18 @@ export default function AdminFloorplanTab({
             <MapPin className="w-5 h-5 text-accent" />
             <span>Campus Floor Plan &amp; Wayfinding Graph</span>
           </h2>
-          <p className="text-xs text-ink-muted">
+          <p className="text-sm text-ink-muted">
             Upload SVG venue maps and configure A* navigation waypoints for delegates.
           </p>
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          <Button variant="outline" size="sm" onClick={onOpenInteractiveModal} className="text-xs">
+          <Button variant="outline" size="sm" onClick={onOpenInteractiveModal} className="text-sm">
             <Maximize2 className="w-3.5 h-3.5 mr-1" />
             2D/3D Map View
           </Button>
 
-          <Button variant="secondary" size="sm" onClick={onOpenPrintableQr} className="text-xs">
+          <Button variant="secondary" size="sm" onClick={onOpenPrintableQr} className="text-sm">
             <QrCode className="w-3.5 h-3.5 mr-1 text-accent" />
             Print Checkpoints
           </Button>
@@ -140,17 +140,17 @@ export default function AdminFloorplanTab({
           {/* File Upload & URL */}
           <div className="bg-surface border border-border rounded-2xl shadow-card p-5 space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-border">
-              <h3 className="text-sm font-semibold text-ink flex items-center gap-2">
+              <h3 className="text-[15px] font-semibold text-ink flex items-center gap-2">
                 <Upload className="w-4 h-4 text-accent" />
                 <span>Venue SVG Vector Blueprint</span>
               </h3>
-              <span className="text-[10px] tabular-nums text-ink-muted">
+              <span className="text-xs tabular-nums text-ink-muted">
                 Max 2MB (SVG)
               </span>
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
-              <label className="cursor-pointer inline-flex items-center gap-2 px-3 py-1.5 border border-border rounded-[8px] text-xs font-semibold hover:bg-surface-raised transition bg-surface">
+              <label className="cursor-pointer inline-flex items-center gap-2 px-3 py-1.5 border border-border rounded-[8px] text-sm font-semibold hover:bg-surface-raised transition bg-surface">
                 <Upload className="w-3.5 h-3.5 text-accent" />
                 <span>{uploading ? "Sanitizing..." : "Upload Blueprint (.svg)"}</span>
                 <input
@@ -167,7 +167,7 @@ export default function AdminFloorplanTab({
                 size="sm"
                 onClick={onScanZones}
                 loading={loadingZones}
-                className="text-xs h-8"
+                className="text-sm h-8"
               >
                 <RefreshCw className="w-3.5 h-3.5 mr-1 text-accent" />
                 Re-scan Zones
@@ -175,31 +175,31 @@ export default function AdminFloorplanTab({
             </div>
 
             <div>
-              <label className="block text-[11px] font-medium text-ink-muted mb-1">
+              <label className="block text-xs font-medium text-ink-muted mb-1">
                 Active SVG Blueprint Path
               </label>
               <Input
                 value={floorPlanUrl}
                 onChange={(e) => onChangeFloorPlanUrl(e.target.value)}
                 placeholder="/uploads/campus-floorplan.svg"
-                className="text-xs font-mono h-8"
+                className="text-sm font-mono h-8"
               />
             </div>
 
             {/* Detected Zones List */}
             <div className="p-3 bg-surface-raised border border-border rounded-[8px] space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-ink flex items-center gap-1.5">
+                <span className="text-sm font-semibold text-ink flex items-center gap-1.5">
                   <Layers className="w-3.5 h-3.5 text-accent" />
                   <span>Interactive Campus Zones</span>
                 </span>
-                <span className="text-[11px] text-ink-muted">
+                <span className="text-xs text-ink-muted">
                   {detectedZones.length} detected
                 </span>
               </div>
 
               {detectedZones.length === 0 ? (
-                <p className="text-xs text-ink-muted italic">
+                <p className="text-sm text-ink-muted italic">
                   No zones detected yet. Ensure your SVG shapes have unique IDs (e.g. id="hall-1").
                 </p>
               ) : (
@@ -207,9 +207,9 @@ export default function AdminFloorplanTab({
                   {detectedZones.map((z) => (
                     <span
                       key={z.id}
-                      className="px-2 py-0.5 rounded-full text-[11px] font-medium bg-surface border border-border text-ink"
+                      className="px-2 py-0.5 rounded-full text-xs font-medium bg-surface border border-border text-ink"
                     >
-                      {z.label} <code className="text-[10px] text-ink-muted">({z.id})</code>
+                      {z.label} <code className="text-xs text-ink-muted">({z.id})</code>
                     </span>
                   ))}
                 </div>
@@ -221,7 +221,7 @@ export default function AdminFloorplanTab({
           <div className="bg-surface border border-border rounded-2xl shadow-card p-5 space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border">
               <div>
-                <h3 className="text-sm font-semibold text-ink flex items-center gap-2">
+                <h3 className="text-[15px] font-semibold text-ink flex items-center gap-2">
                   <Route className="w-4 h-4 text-accent" />
                   <span>A* Walking Network ({graphData.nodes.length} nodes, {graphData.edges.length} edges)</span>
                 </h3>
@@ -232,7 +232,7 @@ export default function AdminFloorplanTab({
                   variant="outline"
                   size="sm"
                   onClick={handleValidate}
-                  className="text-xs h-7"
+                  className="text-sm h-7"
                 >
                   <ShieldCheck className="w-3.5 h-3.5 mr-1 text-success" />
                   Validate
@@ -243,7 +243,7 @@ export default function AdminFloorplanTab({
                   size="sm"
                   onClick={onSaveGraph}
                   loading={savingGraph}
-                  className="text-xs h-7"
+                  className="text-sm h-7"
                 >
                   <Check className="w-3.5 h-3.5 mr-1" />
                   Save Graph
@@ -252,7 +252,7 @@ export default function AdminFloorplanTab({
             </div>
 
             {/* Instruction strip */}
-            <div className="p-2.5 rounded-[8px] bg-surface-raised border border-border text-xs text-ink-muted flex items-center justify-between">
+            <div className="p-2.5 rounded-[8px] bg-surface-raised border border-border text-sm text-ink-muted flex items-center justify-between">
               <span>
                 {selectedWaypointA
                   ? `Selected ${selectedWaypointA}. Click a second node below to connect or disconnect corridor.`
@@ -262,7 +262,7 @@ export default function AdminFloorplanTab({
                 <button
                   type="button"
                   onClick={() => setSelectedWaypointA(null)}
-                  className="text-xs text-accent font-semibold hover:underline ml-2"
+                  className="text-sm text-accent font-semibold hover:underline ml-2"
                 >
                   Cancel
                 </button>
@@ -271,7 +271,7 @@ export default function AdminFloorplanTab({
 
             {/* Node Pills */}
             <div className="space-y-1.5">
-              <span className="eyebrow text-[11px]">
+              <span className="eyebrow text-xs">
                 Waypoint Checkpoints
               </span>
               <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto">
@@ -286,7 +286,7 @@ export default function AdminFloorplanTab({
                       key={node.id}
                       type="button"
                       onClick={() => handleWaypointClick(node.id)}
-                      className={`px-2 py-1 rounded-full text-xs font-mono transition-colors border cursor-pointer ${
+                      className={`px-2 py-1 rounded-full text-sm font-mono transition-colors border cursor-pointer ${
                         isSelected
                           ? "bg-accent text-accent-ink border-accent font-semibold"
                           : degree === 0
@@ -303,14 +303,14 @@ export default function AdminFloorplanTab({
 
             {/* Edges list */}
             <div className="space-y-1.5 pt-2 border-t border-border">
-              <span className="eyebrow text-[11px]">
+              <span className="eyebrow text-xs">
                 Corridors ({graphData.edges.length})
               </span>
               <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto">
                 {graphData.edges.map((edge, idx) => (
                   <span
                     key={`${edge.a}-${edge.b}-${idx}`}
-                    className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-mono bg-surface-raised border border-border text-ink"
+                    className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-mono bg-surface-raised border border-border text-ink"
                   >
                     <span>{edge.a} ↔ {edge.b}</span>
                     <button
@@ -328,7 +328,7 @@ export default function AdminFloorplanTab({
             {/* Validation feedback */}
             {validationReport && (
               <div
-                className={`p-3 rounded-[8px] border text-xs ${
+                className={`p-3 rounded-[8px] border text-sm ${
                   validationReport.isValid
                     ? "bg-success-surface border-success-border text-success-ink"
                     : "bg-warning-surface border-warning-border text-warning-ink"
@@ -354,10 +354,10 @@ export default function AdminFloorplanTab({
         {/* Right Col: Quick Tips & Live Blueprint Preview */}
         <div className="space-y-4">
           <div className="bg-surface border border-border rounded-2xl shadow-card p-5 space-y-3">
-            <h3 className="text-sm font-semibold text-ink">
+            <h3 className="text-[15px] font-semibold text-ink">
               Wayfinding Quick Tips
             </h3>
-            <ul className="text-xs text-ink-muted space-y-2 list-disc list-inside">
+            <ul className="text-sm text-ink-muted space-y-2 list-disc list-inside">
               <li>Each hall or stage must have an associated waypoint node.</li>
               <li>A* search computes shortest walking distance along defined corridor edges.</li>
               <li>Print QR checkpoint codes to post on physical doors and pillars.</li>

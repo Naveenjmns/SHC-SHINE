@@ -32,10 +32,10 @@ export default function StudentPassCard({ pass, collegeName }: StudentPassCardPr
           >
             {pass.eventCheckedIn ? "Desk Verified" : "Awaiting Verification"}
           </Badge>
-          <span className="text-xs font-semibold text-accent">PASS</span>
+          <span className="text-sm font-semibold text-accent">PASS</span>
         </div>
         <CardTitle className="text-base">Digital Event Pass</CardTitle>
-        <CardDescription className="text-xs truncate">
+        <CardDescription className="text-sm truncate">
           {pass.name} • {collegeName || pass.college || "Participant"}
         </CardDescription>
       </CardHeader>
@@ -59,10 +59,10 @@ export default function StudentPassCard({ pass, collegeName }: StudentPassCardPr
             </div>
           )}
 
-          <div className="font-mono text-xs font-bold text-ink">
+          <div className="font-mono text-sm font-bold text-ink">
             {pass.badgeCode}
           </div>
-          <div className="text-[11px] text-ink-muted">
+          <div className="text-xs text-ink-muted">
             Present at entrance desk on arrival
           </div>
         </div>

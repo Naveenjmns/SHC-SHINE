@@ -35,11 +35,11 @@ export default function ProfileDetailsCard({
     <div className="bg-surface border border-border rounded-2xl p-6 shadow-card space-y-5">
       <div className="flex items-center justify-between pb-3 border-b border-border">
         <div>
-          <h3 className="text-sm font-bold text-ink flex items-center gap-2">
+          <h3 className="text-[15px] font-bold text-ink flex items-center gap-2">
             <User className="w-4 h-4 text-accent" />
             <span>Personal Information</span>
           </h3>
-          <p className="text-xs text-ink-muted">
+          <p className="text-sm text-ink-muted">
             Manage your personal profile details and meal preference.
           </p>
         </div>
@@ -49,7 +49,7 @@ export default function ProfileDetailsCard({
         {/* Name & Email */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-semibold text-ink mb-1">
+            <label className="block text-sm font-semibold text-ink mb-1">
               Full Name *
             </label>
             <Input
@@ -61,7 +61,7 @@ export default function ProfileDetailsCard({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-ink mb-1">
+            <label className="block text-sm font-semibold text-ink mb-1">
               Email Address
             </label>
             <Input
@@ -69,7 +69,7 @@ export default function ProfileDetailsCard({
               value={email}
               className="opacity-70 bg-surface-raised cursor-not-allowed"
             />
-            <span className="text-[10px] text-ink-muted">
+            <span className="text-xs text-ink-muted">
               Account email cannot be modified directly.
             </span>
           </div>
@@ -78,7 +78,7 @@ export default function ProfileDetailsCard({
         {/* Phone & College */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-semibold text-ink mb-1">
+            <label className="block text-sm font-semibold text-ink mb-1">
               Mobile Number
             </label>
             <Input
@@ -90,7 +90,7 @@ export default function ProfileDetailsCard({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-ink mb-1">
+            <label className="block text-sm font-semibold text-ink mb-1">
               Institution / College
             </label>
             <Input
@@ -103,7 +103,7 @@ export default function ProfileDetailsCard({
 
         {/* Meal Preference Toggle */}
         <div>
-          <label className="block text-xs font-semibold text-ink mb-1.5 flex items-center gap-1.5">
+          <label className="block text-sm font-semibold text-ink mb-1.5 flex items-center gap-1.5">
             <Utensils className="w-3.5 h-3.5 text-accent" />
             <span>Festival Meal Preference</span>
           </label>
@@ -111,7 +111,7 @@ export default function ProfileDetailsCard({
             <button
               type="button"
               onClick={() => setFoodPreference("VEG")}
-              className={`py-2 px-3 rounded-[8px] text-xs font-semibold border flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
+              className={`py-2 px-3 rounded-[8px] text-sm font-semibold border flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
                 foodPreference === "VEG"
                   ? "bg-success-surface border-success-border text-success-ink"
                   : "bg-surface border-border text-ink-muted hover:text-ink"
@@ -124,7 +124,7 @@ export default function ProfileDetailsCard({
             <button
               type="button"
               onClick={() => setFoodPreference("NON_VEG")}
-              className={`py-2 px-3 rounded-[8px] text-xs font-semibold border flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
+              className={`py-2 px-3 rounded-[8px] text-sm font-semibold border flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
                 foodPreference === "NON_VEG"
                   ? "bg-warning-surface border-warning-border text-warning-ink"
                   : "bg-surface border-border text-ink-muted hover:text-ink"

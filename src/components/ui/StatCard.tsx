@@ -28,7 +28,7 @@ export function StatCard({
       className={`p-6 rounded-2xl bg-surface border border-border shadow-card space-y-3 ${className}`}
     >
       <div className="flex items-center justify-between gap-3">
-        <span className="text-sm font-medium text-ink-muted truncate">
+        <span className="text-[15px] font-medium text-ink-muted truncate">
           {label}
         </span>
         {icon && (
@@ -44,7 +44,7 @@ export function StatCard({
         </div>
 
         {(delta || description) && (
-          <div className="flex items-center gap-2 text-xs">
+          <div className="flex items-center gap-2 text-sm">
             {delta && (
               <span
                 className={`inline-flex items-center gap-1 font-semibold ${

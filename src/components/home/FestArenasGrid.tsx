@@ -39,7 +39,7 @@ function ArenaPanel({
         </div>
         <div className="min-w-0">
           <h3 className="text-2xl font-bold text-ink">{title}</h3>
-          <p className="text-sm text-ink-muted mt-1">{description}</p>
+          <p className="text-[15px] text-ink-muted mt-1">{description}</p>
         </div>
       </div>
 
@@ -54,7 +54,7 @@ function ArenaPanel({
                 <p className="text-base font-semibold text-ink truncate group-hover:text-accent transition-colors">
                   {evt.name}
                 </p>
-                <p className="flex items-center gap-1.5 text-sm text-ink-muted">
+                <p className="flex items-center gap-1.5 text-[15px] text-ink-muted">
                   <span className="tabular-nums font-medium">{formatTimeSafe(evt.dateTime)}</span>
                   <span aria-hidden="true">·</span>
                   <MapPin className="w-3.5 h-3.5 shrink-0" />
@@ -66,7 +66,7 @@ function ArenaPanel({
           </li>
         ))}
         {events.length === 0 && (
-          <li className="py-6 text-sm text-ink-muted">Events will be announced soon.</li>
+          <li className="py-6 text-[15px] text-ink-muted">Events will be announced soon.</li>
         )}
       </ul>
     </div>

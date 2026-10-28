@@ -70,7 +70,7 @@ export default function NextEventCard({ event, festDate }: NextEventCardProps) {
 
       <CardHeader className="pt-4">
         <CardTitle className="text-xl sm:text-2xl text-ink">{event.name}</CardTitle>
-        <CardDescription className="text-xs flex items-center gap-2 pt-1">
+        <CardDescription className="text-sm flex items-center gap-2 pt-1">
           <Clock className="w-3.5 h-3.5 text-accent shrink-0" />
           <span>{formatDateSafe(event.dateTime)} at {formatTimeSafe(event.dateTime)}</span>
         </CardDescription>
@@ -89,8 +89,8 @@ export default function NextEventCard({ event, festDate }: NextEventCardProps) {
               <MapPin className="w-4 h-4" />
             </div>
             <div className="min-w-0">
-              <div className="text-xs font-semibold text-ink truncate">Venue Room</div>
-              <div className="text-xs text-ink-muted truncate">{event.venue || "Main Auditorium"}</div>
+              <div className="text-sm font-semibold text-ink truncate">Venue Room</div>
+              <div className="text-sm text-ink-muted truncate">{event.venue || "Main Auditorium"}</div>
             </div>
           </div>
 
@@ -119,7 +119,7 @@ export default function NextEventCard({ event, festDate }: NextEventCardProps) {
 
         {/* Coordinator Contact */}
         {coordName && (
-          <div className="text-xs text-ink-muted flex items-center justify-between pt-1">
+          <div className="text-sm text-ink-muted flex items-center justify-between pt-1">
             <span>Coordinator: <strong className="text-ink font-semibold">{coordName}</strong></span>
             {coordPhone && (
               <a

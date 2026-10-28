@@ -56,7 +56,7 @@ export function CardDescription({
   ...props
 }: HTMLAttributes<HTMLParagraphElement>) {
   return (
-    <p className={`text-sm text-ink-muted leading-relaxed ${className}`} {...props}>
+    <p className={`text-[15px] text-ink-muted leading-relaxed ${className}`} {...props}>
       {children}
     </p>
   );

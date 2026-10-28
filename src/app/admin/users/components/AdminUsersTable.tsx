@@ -50,7 +50,7 @@ export default function AdminUsersTable({
 }: AdminUsersTableProps) {
   if (users.length === 0) {
     return (
-      <div className="bg-surface border border-border rounded-2xl shadow-card p-12 text-center text-xs text-ink-muted">
+      <div className="bg-surface border border-border rounded-2xl shadow-card p-12 text-center text-sm text-ink-muted">
         No accounts match your current filter criteria.
       </div>
     );
@@ -60,28 +60,28 @@ export default function AdminUsersTable({
     switch (role) {
       case "ADMIN":
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-danger-surface text-danger-ink border border-danger-border">
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-danger-surface text-danger-ink border border-danger-border">
             <Shield className="w-3 h-3" />
             <span>Admin</span>
           </span>
         );
       case "COORDINATOR":
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-warning-surface text-warning-ink border border-warning-border">
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-warning-surface text-warning-ink border border-warning-border">
             <GraduationCap className="w-3 h-3" />
             <span>Coordinator</span>
           </span>
         );
       case "FOOD_COORDINATOR":
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-success-surface text-success-ink border border-success-border">
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-success-surface text-success-ink border border-success-border">
             <Utensils className="w-3 h-3" />
             <span>Food Desk</span>
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-surface-raised text-ink border border-border">
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-surface-raised text-ink border border-border">
             <User className="w-3 h-3 text-accent" />
             <span>Student</span>
           </span>
@@ -92,9 +92,9 @@ export default function AdminUsersTable({
   return (
     <div className="bg-surface border border-border rounded-2xl overflow-hidden shadow-card">
       <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse text-xs">
+        <table className="w-full text-left border-collapse text-sm">
           <thead>
-            <tr className="border-b border-border bg-surface-raised text-[11px] font-bold text-ink-muted uppercase tracking-wider">
+            <tr className="border-b border-border bg-surface-raised text-xs font-bold text-ink-muted uppercase tracking-wider">
               <th className="py-3 px-4">User</th>
               <th className="py-3 px-4">Role</th>
               <th className="py-3 px-4">College Affiliation</th>
@@ -113,15 +113,15 @@ export default function AdminUsersTable({
                     <div className="flex items-center gap-2.5">
                       <Avatar name={u.name} src={u.avatarUrl} size="sm" />
                       <div>
-                        <div className="font-bold text-sm text-ink flex items-center gap-1.5">
+                        <div className="font-bold text-[15px] text-ink flex items-center gap-1.5">
                           <span>{u.name}</span>
                           {isCurrentUser && (
-                            <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-accent text-accent-ink">
+                            <span className="text-xs font-bold px-1.5 py-0.2 rounded bg-accent text-accent-ink">
                               YOU
                             </span>
                           )}
                         </div>
-                        <div className="text-[11px] text-ink-muted flex items-center gap-1 mt-0.5">
+                        <div className="text-xs text-ink-muted flex items-center gap-1 mt-0.5">
                           <Mail className="w-3 h-3" />
                           <span>{u.email}</span>
                         </div>
@@ -133,7 +133,7 @@ export default function AdminUsersTable({
                   <td className="py-3.5 px-4 whitespace-nowrap">
                     {getRoleBadge(u.role)}
                     {u.assignedEvents && u.assignedEvents.length > 0 && (
-                      <div className="mt-1 text-[10px] text-ink-muted">
+                      <div className="mt-1 text-xs text-ink-muted">
                         Assigned to {u.assignedEvents.length} arena(s)
                       </div>
                     )}
@@ -143,7 +143,7 @@ export default function AdminUsersTable({
                   <td className="py-3.5 px-4">
                     <div className="flex items-start gap-1.5 max-w-xs">
                       <Building2 className="w-3.5 h-3.5 text-ink-muted shrink-0 mt-0.5" />
-                      <span className="text-xs text-ink line-clamp-1">
+                      <span className="text-sm text-ink line-clamp-1">
                         {u.college || "—"}
                       </span>
                     </div>
@@ -152,7 +152,7 @@ export default function AdminUsersTable({
                   {/* Phone */}
                   <td className="py-3.5 px-4 whitespace-nowrap">
                     {u.phone ? (
-                      <span className="inline-flex items-center gap-1 text-xs text-ink-muted">
+                      <span className="inline-flex items-center gap-1 text-sm text-ink-muted">
                         <Phone className="w-3 h-3" />
                         <span>{u.phone}</span>
                       </span>
@@ -163,7 +163,7 @@ export default function AdminUsersTable({
 
                   {/* Registrations count */}
                   <td className="py-3.5 px-4 text-center whitespace-nowrap">
-                    <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded bg-surface-raised border border-border">
+                    <span className="font-mono text-sm font-semibold px-2 py-0.5 rounded bg-surface-raised border border-border">
                       {u._count.registrations}
                     </span>
                   </td>
@@ -176,7 +176,7 @@ export default function AdminUsersTable({
                         size="sm"
                         onClick={() => onEdit(u)}
                         title="Edit user"
-                        className="h-8 px-2 text-xs"
+                        className="h-8 px-2 text-sm"
                       >
                         <Pencil className="w-3.5 h-3.5" />
                       </Button>
@@ -187,7 +187,7 @@ export default function AdminUsersTable({
                           size="sm"
                           onClick={() => onDelete(u)}
                           title="Delete user"
-                          className="h-8 px-2 text-xs hover:text-danger"
+                          className="h-8 px-2 text-sm hover:text-danger"
                         >
                           <Trash2 className="w-3.5 h-3.5 text-danger" />
                         </Button>

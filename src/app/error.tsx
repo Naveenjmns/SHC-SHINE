@@ -51,9 +51,9 @@ export default function Error({
   return (
     <ErrorPerspectiveStage>
       {/* Fest Status Pill */}
-      <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-surface border border-border text-ink-muted mb-6 shadow-card">
+      <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-sm font-semibold bg-surface border border-border text-ink-muted mb-6 shadow-card">
         <span className="w-2.5 h-2.5 rounded-full bg-danger animate-pulse" />
-        <span className="text-[11px] sm:text-xs">
+        <span className="text-xs sm:text-sm">
           HTTP 500 • System Anomaly
         </span>
       </div>
@@ -73,13 +73,13 @@ export default function Error({
       </h1>
 
       {/* Subtitle */}
-      <p className="text-sm sm:text-base md:text-lg text-ink-muted max-w-md mx-auto leading-relaxed mb-6">
+      <p className="text-[15px] sm:text-base md:text-lg text-ink-muted max-w-md mx-auto leading-relaxed mb-6">
         An unexpected anomaly occurred while processing this request. Our technical team has been notified.
       </p>
 
       {/* Error Digest Badge */}
       {error?.digest && (
-        <div className="inline-flex max-w-[90vw] items-center gap-2 px-3.5 py-1.5 rounded-[8px] bg-surface border border-border shadow-card text-xs font-mono mb-6">
+        <div className="inline-flex max-w-[90vw] items-center gap-2 px-3.5 py-1.5 rounded-[8px] bg-surface border border-border shadow-card text-sm font-mono mb-6">
           <span className="text-ink-subtle">Incident:</span>
           <span className="font-semibold text-danger-ink truncate max-w-[140px] sm:max-w-none">
             {error.digest}
@@ -99,7 +99,7 @@ export default function Error({
         <button
           onClick={handleRetry}
           disabled={isRetrying}
-          className="btn-primary text-sm disabled:opacity-50"
+          className="btn-primary text-[15px] disabled:opacity-50"
         >
           <RefreshCcw className={`w-4 h-4 ${isRetrying ? "animate-spin" : ""}`} />
           <span>{isRetrying ? "Retrying..." : "Try again"}</span>
@@ -107,7 +107,7 @@ export default function Error({
 
         <Link
           href="/"
-          className="btn-outline text-sm"
+          className="btn-outline text-[15px]"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Back to homepage</span>
@@ -118,19 +118,19 @@ export default function Error({
       <div className="w-full max-w-md mx-auto">
         <button
           onClick={() => setShowDetails(!showDetails)}
-          className="inline-flex items-center gap-1 text-xs text-ink-subtle hover:text-ink transition mb-2"
+          className="inline-flex items-center gap-1 text-sm text-ink-subtle hover:text-ink transition mb-2"
         >
           <span>{showDetails ? "Hide technical details" : "Show technical details"}</span>
           {showDetails ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
         </button>
 
         {showDetails && (
-          <div className="p-4 rounded-2xl text-left font-mono text-xs overflow-x-auto bg-surface border border-border shadow-card text-ink-muted">
+          <div className="p-4 rounded-2xl text-left font-mono text-sm overflow-x-auto bg-surface border border-border shadow-card text-ink-muted">
             <p className="font-semibold text-danger-ink mb-1 break-words">
               {error.name || "Error"}: {error.message || "Unknown error"}
             </p>
             {error.stack && (
-              <pre className="text-[11px] text-ink-subtle whitespace-pre-wrap leading-relaxed max-h-36 overflow-y-auto">
+              <pre className="text-xs text-ink-subtle whitespace-pre-wrap leading-relaxed max-h-36 overflow-y-auto">
                 {error.stack}
               </pre>
             )}
@@ -139,7 +139,7 @@ export default function Error({
       </div>
 
       {/* Footer */}
-      <div className="w-full pt-6 mt-6 border-t border-border text-[11px] text-ink-subtle">
+      <div className="w-full pt-6 mt-6 border-t border-border text-xs text-ink-subtle">
         Sacred Heart College • SHINE Telemetry Active
       </div>
     </ErrorPerspectiveStage>

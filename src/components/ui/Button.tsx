@@ -28,13 +28,13 @@ const variantStyles: Record<ButtonVariant, string> = {
   ghost:
     "bg-transparent text-ink-muted hover:text-ink hover:bg-surface-raised border border-transparent shadow-none",
   link:
-    "bg-transparent text-accent hover:underline p-0 h-auto border-none shadow-none font-medium",
+    "bg-transparent text-accent hover:underline !px-0 !h-auto !min-h-0 border-none shadow-none font-semibold",
 };
 
 const sizeStyles: Record<ButtonSize, string> = {
-  sm: "min-h-[44px] sm:min-h-[36px] h-9 px-3 text-xs gap-1.5",
-  md: "min-h-[44px] h-11 px-4 text-sm gap-2",
-  lg: "min-h-[48px] h-12 px-6 text-lg gap-2.5",
+  sm: "min-h-[44px] sm:min-h-[40px] h-10 px-4 text-sm gap-2 [&_svg]:size-4",
+  md: "min-h-[44px] h-11 px-5 text-[15px] gap-2 [&_svg]:size-[18px]",
+  lg: "min-h-[52px] h-[52px] px-6 text-base gap-2.5 [&_svg]:size-5",
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(

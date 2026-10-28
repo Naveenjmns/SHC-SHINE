@@ -53,21 +53,21 @@ export default function CheckInSearchResultCard({
               {member.foodPreference === "VEG" ? "Pure Veg" : "Non-Veg"}
             </Badge>
           </div>
-          <div className="text-xs text-ink-muted flex items-center gap-1.5">
+          <div className="text-sm text-ink-muted flex items-center gap-1.5">
             <Building2 className="w-3.5 h-3.5 text-ink-subtle" />
             <span>{member.collegeName}</span>
           </div>
         </div>
 
-        <div className="px-3 py-2 rounded-[8px] bg-surface-raised text-right text-xs">
-          <div className="eyebrow text-[10px]">Badge code</div>
+        <div className="px-3 py-2 rounded-[8px] bg-surface-raised text-right text-sm">
+          <div className="eyebrow text-xs">Badge code</div>
           <div className="font-mono font-bold text-accent-strong">{member.badgeCode}</div>
         </div>
       </div>
 
       {/* Events Check-In Section */}
       <div className="space-y-2">
-        <h4 className="text-sm font-semibold text-ink">
+        <h4 className="text-[15px] font-semibold text-ink">
           Arena Competitions ({member.registrations.length})
         </h4>
 
@@ -82,12 +82,12 @@ export default function CheckInSearchResultCard({
                   <Badge variant="neutral" size="sm">
                     {reg.category}
                   </Badge>
-                  <span className="font-semibold text-xs text-ink truncate">
+                  <span className="font-semibold text-sm text-ink truncate">
                     {reg.eventName}
                   </span>
                 </div>
                 {reg.venue && (
-                  <div className="text-[11px] text-ink-muted truncate">
+                  <div className="text-xs text-ink-muted truncate">
                     Venue: {reg.venue}
                   </div>
                 )}
@@ -114,10 +114,10 @@ export default function CheckInSearchResultCard({
       {/* Meal Token Section */}
       <div className="pt-3 border-t border-border flex items-center justify-between gap-3">
         <div className="space-y-0.5">
-          <div className="text-xs font-semibold text-ink flex items-center gap-1.5">
+          <div className="text-sm font-semibold text-ink flex items-center gap-1.5">
             <Utensils className="w-3.5 h-3.5 text-accent" /> Lunch Meal Token
           </div>
-          <div className="text-[11px] font-mono text-ink-muted">
+          <div className="text-xs font-mono text-ink-muted">
             Token: {member.foodTokenCode}
           </div>
         </div>

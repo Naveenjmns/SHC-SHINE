@@ -73,7 +73,7 @@ export function Sheet({
                 </h3>
               )}
               {description && (
-                <p className="text-xs text-ink-muted mt-1">{description}</p>
+                <p className="text-sm text-ink-muted mt-1">{description}</p>
               )}
             </div>
 

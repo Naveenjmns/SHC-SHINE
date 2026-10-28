@@ -64,6 +64,7 @@ import { ToastProvider } from "@/components/ToastProvider";
 import PwaRegister from "@/components/PwaRegister";
 import InstallPwaPrompt from "@/components/InstallPwaPrompt";
 import ThemeInjector from "@/components/ThemeInjector";
+import MobileTabBar from "@/components/layout/MobileTabBar";
 import { getActiveEdition } from "@/lib/eventService";
 
 export default async function RootLayout({
@@ -94,6 +95,7 @@ export default async function RootLayout({
         <AuthProvider>
           <ToastProvider>
             {children}
+            <MobileTabBar />
             <PwaRegister />
             <InstallPwaPrompt />
           </ToastProvider>

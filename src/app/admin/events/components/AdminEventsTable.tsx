@@ -84,7 +84,7 @@ export default function AdminEventsTable({
   if (events.length === 0) {
     return (
       <div className="bg-surface border border-border rounded-2xl shadow-card p-12 text-center">
-        <p className="text-sm font-semibold text-ink-muted">
+        <p className="text-[15px] font-semibold text-ink-muted">
           No competitions created yet. Click "+ New Competition" above to add your first arena.
         </p>
       </div>
@@ -94,7 +94,7 @@ export default function AdminEventsTable({
   if (filteredEvents.length === 0) {
     return (
       <div className="bg-surface border border-border rounded-2xl shadow-card p-12 text-center">
-        <p className="text-sm font-semibold text-ink-muted">
+        <p className="text-[15px] font-semibold text-ink-muted">
           No competitions match your current filter or search criteria.
         </p>
       </div>
@@ -104,9 +104,9 @@ export default function AdminEventsTable({
   return (
     <div className="bg-surface border border-border rounded-2xl overflow-hidden shadow-card">
       <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse text-xs">
+        <table className="w-full text-left border-collapse text-sm">
           <thead>
-            <tr className="border-b border-border bg-surface-raised text-[11px] font-bold text-ink-muted uppercase tracking-wider">
+            <tr className="border-b border-border bg-surface-raised text-xs font-bold text-ink-muted uppercase tracking-wider">
               <th className="py-3 px-4">Competition</th>
               <th className="py-3 px-4">Category</th>
               <th className="py-3 px-4">Venue & Time</th>
@@ -129,16 +129,16 @@ export default function AdminEventsTable({
                 >
                   {/* Event Name & Description */}
                   <td className="py-3.5 px-4">
-                    <div className="font-bold text-sm text-ink">
+                    <div className="font-bold text-[15px] text-ink">
                       {ev.name}
                     </div>
                     {ev.description && (
-                      <p className="text-[11px] text-ink-muted line-clamp-1 max-w-xs mt-0.5">
+                      <p className="text-xs text-ink-muted line-clamp-1 max-w-xs mt-0.5">
                         {ev.description}
                       </p>
                     )}
                     {ev.hasPrelims && (
-                      <span className="inline-block mt-1 text-[10px] font-semibold text-warning-ink bg-warning-surface border border-warning-border px-1.5 py-0.2 rounded">
+                      <span className="inline-block mt-1 text-xs font-semibold text-warning-ink bg-warning-surface border border-warning-border px-1.5 py-0.2 rounded">
                         Has Prelims
                       </span>
                     )}
@@ -147,12 +147,12 @@ export default function AdminEventsTable({
                   {/* Category */}
                   <td className="py-3.5 px-4 whitespace-nowrap">
                     {ev.category === "ON_STAGE" ? (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-success-surface text-success-ink border border-success-border">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-success-surface text-success-ink border border-success-border">
                         <Theater className="w-3 h-3" />
                         <span>On-Stage</span>
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-info-surface text-info-ink border border-info-border">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-info-surface text-info-ink border border-info-border">
                         <Laptop className="w-3 h-3" />
                         <span>Off-Stage</span>
                       </span>
@@ -166,7 +166,7 @@ export default function AdminEventsTable({
                       <span>{ev.venue || "TBA"}</span>
                     </div>
                     {ev.dateTime && (
-                      <div className="flex items-center gap-1.5 text-[11px] text-ink-muted mt-0.5">
+                      <div className="flex items-center gap-1.5 text-xs text-ink-muted mt-0.5">
                         <Clock className="w-3 h-3 shrink-0" />
                         <span>{new Date(ev.dateTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
                       </div>
@@ -177,26 +177,26 @@ export default function AdminEventsTable({
                   <td className="py-3.5 px-4">
                     <div className="space-y-0.5 max-w-[200px]">
                       {staffCoord ? (
-                        <div className="text-xs text-ink truncate" title={staffCoord}>
-                          <span className="font-semibold text-[10px] text-ink-muted uppercase mr-1">Staff:</span>
+                        <div className="text-sm text-ink truncate" title={staffCoord}>
+                          <span className="font-semibold text-xs text-ink-muted uppercase mr-1">Staff:</span>
                           {staffCoord}
                         </div>
                       ) : null}
                       {studentCoord ? (
-                        <div className="text-[11px] text-ink-muted truncate" title={studentCoord}>
-                          <span className="font-semibold text-[10px] text-ink-muted uppercase mr-1">Student:</span>
+                        <div className="text-xs text-ink-muted truncate" title={studentCoord}>
+                          <span className="font-semibold text-xs text-ink-muted uppercase mr-1">Student:</span>
                           {studentCoord}
                         </div>
                       ) : null}
                       {!staffCoord && !studentCoord && (
-                        <span className="text-[11px] text-ink-muted italic">Unassigned</span>
+                        <span className="text-xs text-ink-muted italic">Unassigned</span>
                       )}
                     </div>
                   </td>
 
                   {/* Registrations Count */}
                   <td className="py-3.5 px-4 text-center whitespace-nowrap">
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-surface-raised border border-border font-bold text-xs text-ink">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-surface-raised border border-border font-bold text-sm text-ink">
                       <Users className="w-3 h-3 text-accent" />
                       <span>{regCount}</span>
                       {ev.capacity && <span className="text-ink-muted">/{ev.capacity}</span>}
@@ -211,7 +211,7 @@ export default function AdminEventsTable({
                         size="sm"
                         onClick={() => onInspectRoster(ev)}
                         title="View registered delegates"
-                        className="h-8 px-2 text-xs gap-1"
+                        className="h-8 px-2 text-sm gap-1"
                       >
                         <Eye className="w-3.5 h-3.5" />
                         <span className="hidden sm:inline">Roster</span>
@@ -223,7 +223,7 @@ export default function AdminEventsTable({
                         onClick={() => onDownloadCSV(ev.id, ev.name)}
                         disabled={isDownloading}
                         title="Download CSV Roster"
-                        className="h-8 px-2 text-xs"
+                        className="h-8 px-2 text-sm"
                       >
                         {isDownloading ? (
                           <RefreshCw className="w-3.5 h-3.5 animate-spin" />
@@ -237,7 +237,7 @@ export default function AdminEventsTable({
                         size="sm"
                         onClick={() => onEdit(ev)}
                         title="Edit arena"
-                        className="h-8 px-2 text-xs"
+                        className="h-8 px-2 text-sm"
                       >
                         <Edit2 className="w-3.5 h-3.5" />
                       </Button>
@@ -247,7 +247,7 @@ export default function AdminEventsTable({
                         size="sm"
                         onClick={() => onDelete(ev.id, ev.name)}
                         title="Delete arena"
-                        className="h-8 px-2 text-xs hover:text-danger"
+                        className="h-8 px-2 text-sm hover:text-danger"
                       >
                         <Trash2 className="w-3.5 h-3.5 text-danger" />
                       </Button>

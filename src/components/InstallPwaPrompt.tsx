@@ -122,14 +122,14 @@ export default function InstallPwaPrompt() {
             >
               Install SHINE 26
             </h4>
-            <p className="text-xs text-ink-muted mt-1 leading-normal">
+            <p className="text-sm text-ink-muted mt-1 leading-normal">
               Instant access to QR gate passes, live jury leaderboards & food tokens. Works offline on your device.
             </p>
 
             <div className="mt-3 flex items-center gap-2">
               <button
                 onClick={handleInstallClick}
-                className="tap-target btn-primary !py-1.5 !px-3.5 !text-sm flex items-center gap-1.5"
+                className="tap-target btn-primary !py-1.5 !px-3.5 !text-[15px] flex items-center gap-1.5"
               >
                 <Download className="w-3.5 h-3.5" />
                 <span>Install Now</span>
@@ -137,7 +137,7 @@ export default function InstallPwaPrompt() {
 
               <button
                 onClick={handleDismiss}
-                className="tap-target px-3 py-1.5 text-sm font-semibold text-ink-muted hover:text-ink hover:bg-surface-raised rounded-[8px] transition"
+                className="tap-target px-3 py-1.5 text-[15px] font-semibold text-ink-muted hover:text-ink hover:bg-surface-raised rounded-[8px] transition"
               >
                 Maybe Later
               </button>

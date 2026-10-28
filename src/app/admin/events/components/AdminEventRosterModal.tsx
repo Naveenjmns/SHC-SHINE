@@ -61,7 +61,7 @@ export default function AdminEventRosterModal({
               <Users className="w-4 h-4 text-accent" />
               <span>{event.name} — Delegate Roster</span>
             </h3>
-            <p className="text-xs text-ink-muted">
+            <p className="text-sm text-ink-muted">
               {event.venue || "Venue Unassigned"} • {event.category === "ON_STAGE" ? "On-Stage" : "Off-Stage"}
             </p>
           </div>
@@ -77,12 +77,12 @@ export default function AdminEventRosterModal({
 
         {/* Rules Collapsible or Preview */}
         {event.rules && (
-          <div className="p-3 bg-surface-raised border border-border rounded-2xl text-xs space-y-1 shrink-0">
-            <div className="font-bold text-ink flex items-center gap-1.5 text-[11px] uppercase tracking-wider">
+          <div className="p-3 bg-surface-raised border border-border rounded-2xl text-sm space-y-1 shrink-0">
+            <div className="font-bold text-ink flex items-center gap-1.5 text-xs uppercase tracking-wider">
               <BookOpen className="w-3.5 h-3.5 text-accent" />
               <span>Rules & Constraints</span>
             </div>
-            <p className="text-ink-muted whitespace-pre-wrap font-mono text-[11px] max-h-24 overflow-y-auto">
+            <p className="text-ink-muted whitespace-pre-wrap font-mono text-xs max-h-24 overflow-y-auto">
               {event.rules}
             </p>
           </div>
@@ -91,18 +91,18 @@ export default function AdminEventRosterModal({
         {/* Participant Table */}
         <div className="flex-1 overflow-y-auto border border-border rounded-2xl">
           {loading ? (
-            <div className="py-12 text-center text-xs text-ink-muted flex flex-col items-center gap-2">
+            <div className="py-12 text-center text-sm text-ink-muted flex flex-col items-center gap-2">
               <RefreshCw className="w-5 h-5 animate-spin text-accent" />
               <span>Loading delegates...</span>
             </div>
           ) : participants.length === 0 ? (
-            <div className="py-12 text-center text-xs text-ink-muted">
+            <div className="py-12 text-center text-sm text-ink-muted">
               No registered participants found for this competition yet.
             </div>
           ) : (
-            <table className="w-full text-left border-collapse text-xs">
+            <table className="w-full text-left border-collapse text-sm">
               <thead>
-                <tr className="bg-surface-raised border-b border-border text-[10px] font-bold text-ink-muted uppercase tracking-wider">
+                <tr className="bg-surface-raised border-b border-border text-xs font-bold text-ink-muted uppercase tracking-wider">
                   <th className="py-2.5 px-3">Participant</th>
                   <th className="py-2.5 px-3">College</th>
                   <th className="py-2.5 px-3 text-center">Status</th>
@@ -114,7 +114,7 @@ export default function AdminEventRosterModal({
                   <tr key={p.id} className="hover:bg-surface-raised/40">
                     <td className="py-2.5 px-3 font-semibold text-ink">
                       {p.user?.name || "Student"}
-                      <div className="text-[10px] text-ink-muted font-normal">
+                      <div className="text-xs text-ink-muted font-normal">
                         {p.user?.email}
                       </div>
                     </td>
@@ -122,13 +122,13 @@ export default function AdminEventRosterModal({
                       {p.delegation?.collegeName || p.user?.college || "—"}
                     </td>
                     <td className="py-2.5 px-3 text-center">
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-surface-raised border border-border">
+                      <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-surface-raised border border-border">
                         {p.status}
                       </span>
                     </td>
                     <td className="py-2.5 px-3 text-center">
                       <span
-                        className={`text-[10px] font-bold ${
+                        className={`text-xs font-bold ${
                           p.attended ? "text-success" : "text-ink-muted"
                         }`}
                       >
@@ -149,7 +149,7 @@ export default function AdminEventRosterModal({
             size="sm"
             onClick={() => onDownloadCSV(event.id, event.name)}
             disabled={downloading}
-            className="text-xs gap-1.5"
+            className="text-sm gap-1.5"
           >
             {downloading ? (
               <RefreshCw className="w-3.5 h-3.5 animate-spin" />
@@ -159,7 +159,7 @@ export default function AdminEventRosterModal({
             <span>Export Roster CSV</span>
           </Button>
 
-          <Button variant="secondary" size="sm" onClick={onClose} className="text-xs">
+          <Button variant="secondary" size="sm" onClick={onClose} className="text-sm">
             Close
           </Button>
         </div>

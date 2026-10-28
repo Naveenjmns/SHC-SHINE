@@ -156,7 +156,7 @@ export default function CoordinatorEventDeskPage({
                 </Badge>
                 <h1 className="text-2xl sm:text-3xl font-bold text-ink truncate">{event?.name}</h1>
               </div>
-              <div className="text-sm text-ink-muted flex items-center gap-2 mt-1">
+              <div className="text-[15px] text-ink-muted flex items-center gap-2 mt-1">
                 <MapPin className="w-3.5 h-3.5 text-accent" />
                 <span>{event?.venue || "Main Auditorium"}</span>
               </div>

@@ -80,18 +80,18 @@ export default function ProfileRoleSummaryCard({
           <div>
             <div className="flex items-center gap-2">
               <h3 className="text-base font-bold text-ink">{meta.title}</h3>
-              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${meta.badgeColor}`}>
+              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${meta.badgeColor}`}>
                 {role}
               </span>
             </div>
-            <p className="text-xs text-ink-muted mt-0.5 max-w-lg">
+            <p className="text-sm text-ink-muted mt-0.5 max-w-lg">
               {meta.description}
             </p>
           </div>
         </div>
 
         <Link href={meta.link}>
-          <Button variant="outline" size="sm" className="text-xs gap-1.5 shrink-0">
+          <Button variant="outline" size="sm" className="text-sm gap-1.5 shrink-0">
             <span>{meta.linkLabel}</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </Button>
@@ -102,7 +102,7 @@ export default function ProfileRoleSummaryCard({
       {role === "STUDENT" && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
           <div className="p-3 bg-surface-raised rounded-xl border border-border">
-            <div className="text-xs font-medium text-ink-muted">
+            <div className="text-sm font-medium text-ink-muted">
               Registered Arenas
             </div>
             <div className="text-lg font-bold tabular-nums text-ink mt-0.5">
@@ -111,7 +111,7 @@ export default function ProfileRoleSummaryCard({
           </div>
 
           <div className="p-3 bg-surface-raised rounded-xl border border-border">
-            <div className="text-xs font-medium text-ink-muted">
+            <div className="text-sm font-medium text-ink-muted">
               Confirmed Status
             </div>
             <div className="text-lg font-bold tabular-nums text-success mt-0.5">
@@ -120,7 +120,7 @@ export default function ProfileRoleSummaryCard({
           </div>
 
           <div className="p-3 bg-surface-raised rounded-xl border border-border">
-            <div className="text-xs font-medium text-ink-muted">
+            <div className="text-sm font-medium text-ink-muted">
               Desk Attendance
             </div>
             <div className="text-lg font-bold text-ink mt-0.5">
@@ -129,7 +129,7 @@ export default function ProfileRoleSummaryCard({
           </div>
 
           <div className="p-3 bg-surface-raised rounded-xl border border-border">
-            <div className="text-xs font-medium text-ink-muted">
+            <div className="text-sm font-medium text-ink-muted">
               Meal Token
             </div>
             <div className="text-lg font-bold text-ink mt-0.5">
@@ -145,17 +145,17 @@ export default function ProfileRoleSummaryCard({
           <div className="flex items-center gap-2.5">
             <QrCode className="w-5 h-5 text-accent" />
             <div>
-              <div className="text-xs font-bold text-ink">
+              <div className="text-sm font-bold text-ink">
                 Digital Festival ID Badge
               </div>
-              <div className="font-mono text-[11px] text-ink-muted">
+              <div className="font-mono text-xs text-ink-muted">
                 {stats.badgeCode}
               </div>
             </div>
           </div>
 
           <Link href={`/badge/${stats.badgeCode}`} target="_blank">
-            <Button variant="secondary" size="sm" className="text-xs gap-1">
+            <Button variant="secondary" size="sm" className="text-sm gap-1">
               <span>View Badge Pass</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Button>
@@ -166,7 +166,7 @@ export default function ProfileRoleSummaryCard({
       {/* Awards won if any */}
       {role === "STUDENT" && stats?.wonAwards && stats.wonAwards.length > 0 && (
         <div className="pt-2">
-          <div className="text-xs font-bold text-ink flex items-center gap-1.5 mb-2">
+          <div className="text-sm font-bold text-ink flex items-center gap-1.5 mb-2">
             <Trophy className="w-4 h-4 text-gold" />
             <span>Honors & Awards ({stats.wonAwards.length})</span>
           </div>
@@ -174,7 +174,7 @@ export default function ProfileRoleSummaryCard({
             {stats.wonAwards.map((a: any, idx: number) => (
               <span
                 key={idx}
-                className="px-2.5 py-1 rounded-full bg-gold-muted text-gold-ink text-xs font-semibold flex items-center gap-1.5"
+                className="px-2.5 py-1 rounded-full bg-gold-muted text-gold-ink text-sm font-semibold flex items-center gap-1.5"
               >
                 <Trophy className="w-3.5 h-3.5 text-gold" />
                 <span>{a.event}: {a.result}</span>

@@ -90,14 +90,14 @@ export default function CheckpointLocationPage() {
       {/* Top Header Bar */}
       <header className="relative z-10 px-4 sm:px-8 py-5 border-b border-border bg-surface/90 backdrop-blur-md flex items-center justify-between">
         <Link href="/" className="flex items-center gap-3 group">
-          <div className="w-9 h-9 rounded-[8px] bg-accent flex items-center justify-center text-accent-ink font-bold text-sm">
+          <div className="w-9 h-9 rounded-[8px] bg-accent flex items-center justify-center text-accent-ink font-bold text-[15px]">
             S
           </div>
           <div>
-            <span className="text-sm font-bold text-ink block">
+            <span className="text-[15px] font-bold text-ink block">
               SHINE 2026
             </span>
-            <span className="text-xs text-ink-muted font-medium">
+            <span className="text-sm text-ink-muted font-medium">
               Indoor Wayfinding & Checkpoints
             </span>
           </div>
@@ -106,13 +106,13 @@ export default function CheckpointLocationPage() {
         <div className="flex items-center gap-2">
           <Link
             href="/events"
-            className="text-xs font-semibold px-3 py-2 rounded-[8px] border border-border bg-surface text-ink hover:border-accent hover:text-accent transition-colors"
+            className="text-sm font-semibold px-3 py-2 rounded-[8px] border border-border bg-surface text-ink hover:border-accent hover:text-accent transition-colors"
           >
             Events
           </Link>
           <Link
             href="/dashboard"
-            className="text-xs font-semibold px-3 py-2 rounded-[8px] bg-accent text-accent-ink border border-transparent hover:bg-accent-hover transition-colors"
+            className="text-sm font-semibold px-3 py-2 rounded-[8px] bg-accent text-accent-ink border border-transparent hover:bg-accent-hover transition-colors"
           >
             My Badge
           </Link>
@@ -125,12 +125,12 @@ export default function CheckpointLocationPage() {
         <div className="p-6 sm:p-8 rounded-3xl bg-surface border border-border shadow-elevated relative overflow-hidden space-y-6">
           {/* Status Badge */}
           <div className="flex items-center justify-between">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-success-surface text-success-ink border border-success-border">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-bold bg-success-surface text-success-ink border border-success-border">
               <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
               <span>QR Checkpoint Verified</span>
             </span>
 
-            <span className="text-xs text-ink-subtle">
+            <span className="text-sm text-ink-subtle">
               Saved to Device
             </span>
           </div>
@@ -148,7 +148,7 @@ export default function CheckpointLocationPage() {
                 <h1 className="text-2xl sm:text-3xl font-bold text-ink tracking-tight">
                   {waypointDisplayName}
                 </h1>
-                <p className="text-xs text-ink-muted mt-0.5">
+                <p className="text-sm text-ink-muted mt-0.5">
                   ID: <span className="font-mono text-ink font-semibold">{waypointId}</span>
                 </p>
               </div>
@@ -169,7 +169,7 @@ export default function CheckpointLocationPage() {
 
           {/* Quick Destination Navigation */}
           <div className="space-y-3 pt-5 border-t border-border">
-            <span className="text-sm font-semibold text-ink flex items-center gap-1.5">
+            <span className="text-[15px] font-semibold text-ink flex items-center gap-1.5">
               <Navigation className="w-4 h-4 text-accent" />
               <span>Where are you heading?</span>
             </span>
@@ -180,7 +180,7 @@ export default function CheckpointLocationPage() {
                   <select
                     value={selectedDestination}
                     onChange={(e) => setSelectedDestination(e.target.value)}
-                    className="flex-1 min-w-0 px-4 py-3 rounded-[8px] bg-surface border border-border text-sm font-medium text-ink focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+                    className="flex-1 min-w-0 px-4 py-3 rounded-[8px] bg-surface border border-border text-[15px] font-medium text-ink focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
                   >
                     <option value="">Select a hall, lab or amenity...</option>
                     {zones.map((zone) => (
@@ -194,7 +194,7 @@ export default function CheckpointLocationPage() {
                     type="button"
                     disabled={!selectedDestination}
                     onClick={() => handleStartNavigation(selectedDestination)}
-                    className="px-4 py-3 rounded-[8px] border border-border bg-surface text-ink hover:border-accent hover:text-accent disabled:opacity-50 disabled:pointer-events-none font-semibold text-sm flex items-center gap-1 transition-colors cursor-pointer"
+                    className="px-4 py-3 rounded-[8px] border border-border bg-surface text-ink hover:border-accent hover:text-accent disabled:opacity-50 disabled:pointer-events-none font-semibold text-[15px] flex items-center gap-1 transition-colors cursor-pointer"
                   >
                     <span>Guide Me</span>
                     <ArrowRight className="w-3.5 h-3.5" />
@@ -211,7 +211,7 @@ export default function CheckpointLocationPage() {
                         key={zone.id}
                         type="button"
                         onClick={() => handleStartNavigation(zone.id)}
-                        className="text-xs font-medium px-3 py-1.5 rounded-full bg-surface-raised hover:bg-accent-muted text-ink-muted hover:text-accent-strong transition-colors flex items-center gap-1"
+                        className="text-sm font-medium px-3 py-1.5 rounded-full bg-surface-raised hover:bg-accent-muted text-ink-muted hover:text-accent-strong transition-colors flex items-center gap-1"
                       >
                         <span>{zone.label}</span>
                         <ChevronRight className="w-3 h-3" />
@@ -220,14 +220,14 @@ export default function CheckpointLocationPage() {
                 </div>
               </div>
             ) : (
-              <p className="text-xs text-ink-subtle italic">
+              <p className="text-sm text-ink-subtle italic">
                 Loading campus destination zones...
               </p>
             )}
           </div>
 
           {/* Zero-Tracking Privacy Notice */}
-          <div className="p-4 rounded-2xl bg-surface-raised flex items-start gap-2.5 text-xs text-ink-muted leading-relaxed">
+          <div className="p-4 rounded-2xl bg-surface-raised flex items-start gap-2.5 text-sm text-ink-muted leading-relaxed">
             <ShieldCheck className="w-4 h-4 text-success shrink-0 mt-0.5" />
             <div>
               <strong className="text-ink block mb-0.5 font-semibold">
@@ -242,7 +242,7 @@ export default function CheckpointLocationPage() {
       </main>
 
       {/* Footer */}
-      <footer className="relative z-10 py-4 px-4 text-center text-xs text-ink-muted border-t border-border bg-surface">
+      <footer className="relative z-10 py-4 px-4 text-center text-sm text-ink-muted border-t border-border bg-surface">
         <p>
           Sacred Heart College (Autonomous), Tirupattur • Department of Computer Science
         </p>

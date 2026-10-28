@@ -76,7 +76,7 @@ export default function CountdownTimer({
   if (timeLeft.isLive) {
     return (
       <div className="w-full rounded-2xl bg-accent text-accent-ink p-6 text-center">
-        <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold">
+        <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-sm font-semibold">
           <span className="relative flex h-2 w-2">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
             <span className="relative inline-flex rounded-full h-2 w-2 bg-white" />
@@ -87,7 +87,7 @@ export default function CountdownTimer({
           <Radio className="w-6 h-6 shrink-0" />
           The fest is underway
         </h3>
-        <p className="text-sm opacity-90 mt-1">Started {displayDateText}</p>
+        <p className="text-[15px] opacity-90 mt-1">Started {displayDateText}</p>
       </div>
     );
   }
@@ -102,8 +102,8 @@ export default function CountdownTimer({
   return (
     <div className="w-full" aria-live="off">
       <div className="flex items-center justify-between gap-2 mb-3">
-        <span className="text-sm font-semibold text-ink">Starts in</span>
-        <span className="text-xs font-medium text-ink-muted tabular-nums">{displayDateText}</span>
+        <span className="text-[15px] font-semibold text-ink">Starts in</span>
+        <span className="text-sm font-medium text-ink-muted tabular-nums">{displayDateText}</span>
       </div>
 
       <div className="grid grid-cols-4 gap-2">
@@ -124,7 +124,7 @@ export default function CountdownTimer({
                 {mounted ? formatTwoDigits(unit.value) : "--"}
               </div>
               <div
-                className={`text-[11px] font-semibold mt-1.5 ${
+                className={`text-xs font-semibold mt-1.5 ${
                   isSeconds ? "text-accent-ink/85" : "text-ink-muted"
                 }`}
               >

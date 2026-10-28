@@ -19,7 +19,7 @@ export default function ErrorPreviewPage() {
       <div className="fixed bottom-3 sm:bottom-6 left-1/2 -translate-x-1/2 z-50 max-w-[94vw] sm:max-w-max">
         <aside
           aria-label="Error showcase switcher"
-          className="p-1 sm:p-1.5 rounded-full bg-surface/95 backdrop-blur-xl border border-border shadow-popover flex items-center gap-1 overflow-x-auto no-scrollbar text-xs"
+          className="p-1 sm:p-1.5 rounded-full bg-surface/95 backdrop-blur-xl border border-border shadow-popover flex items-center gap-1 overflow-x-auto no-scrollbar text-sm"
         >
           <div className="px-2.5 py-1 flex items-center gap-1.5 text-ink-muted font-semibold border-r border-border hidden md:flex whitespace-nowrap flex-shrink-0">
             <Eye className="w-3.5 h-3.5 text-accent" />

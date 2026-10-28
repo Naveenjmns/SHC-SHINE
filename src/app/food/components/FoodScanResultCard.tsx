@@ -85,7 +85,7 @@ export default function FoodScanResultCard({
           <h3 className="text-base font-semibold text-ink">
             {popup.title}
           </h3>
-          <p className="text-xs text-ink-muted mt-0.5 leading-relaxed">
+          <p className="text-sm text-ink-muted mt-0.5 leading-relaxed">
             {popup.message}
           </p>
         </div>
@@ -108,7 +108,7 @@ export default function FoodScanResultCard({
                 <Utensils className="w-5 h-5 text-warning shrink-0" />
               )}
               <div>
-                <span className="text-[11px] font-semibold opacity-80 block">
+                <span className="text-xs font-semibold opacity-80 block">
                   Catering Choice
                 </span>
                 <span className="text-base font-bold tracking-tight">
@@ -116,7 +116,7 @@ export default function FoodScanResultCard({
                 </span>
               </div>
             </div>
-            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-surface border border-border">
+            <span className="text-sm font-semibold px-2 py-0.5 rounded-full bg-surface border border-border">
               {popup.foodPreference === "VEG" ? "Pure Veg" : "Non-Veg"}
             </span>
           </div>
@@ -127,10 +127,10 @@ export default function FoodScanResultCard({
       {isEligible && popup.tokenCode && (
         <div className="my-3 p-3.5 rounded-xl bg-surface border border-border space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-ink">
+            <span className="text-sm font-semibold text-ink">
               Approval Required
             </span>
-            <span className="text-[11px] text-ink-muted">
+            <span className="text-xs text-ink-muted">
               Auto-claim mode off
             </span>
           </div>
@@ -161,7 +161,7 @@ export default function FoodScanResultCard({
 
       {/* Delegate Info */}
       {popup.name && (
-        <div className="bg-surface border border-border rounded-xl p-3.5 space-y-2 text-xs">
+        <div className="bg-surface border border-border rounded-xl p-3.5 space-y-2 text-sm">
           <div className="flex items-center justify-between">
             <span className="text-ink-muted">Delegate:</span>
             <span className="font-semibold text-ink">{popup.name}</span>
@@ -175,13 +175,13 @@ export default function FoodScanResultCard({
             </div>
           )}
           {popup.tokenCode && (
-            <div className="flex items-center justify-between text-[11px]">
+            <div className="flex items-center justify-between text-xs">
               <span className="text-ink-muted">Token Code:</span>
               <span className="font-mono text-accent font-semibold">{popup.tokenCode}</span>
             </div>
           )}
           {popup.claimedAt && (
-            <div className="flex items-center justify-between text-[11px]">
+            <div className="flex items-center justify-between text-xs">
               <span className="text-ink-muted">Previously Issued:</span>
               <span className="font-medium text-ink">
                 {new Date(popup.claimedAt).toLocaleTimeString("en-IN", {

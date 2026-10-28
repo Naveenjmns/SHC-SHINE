@@ -53,7 +53,7 @@ export default function Footer({ edition: initialEdition }: FooterProps) {
   const startDate = edition?.startDate || "2026-09-17T04:00:00.000Z";
 
   return (
-    <footer className="border-t border-border bg-canvas text-ink-muted text-sm">
+    <footer className="border-t border-border bg-canvas text-ink-muted text-[15px]">
       <div className="container-shine py-16">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
           {/* Col 1: Logo & Mission */}
@@ -78,7 +78,7 @@ export default function Footer({ edition: initialEdition }: FooterProps) {
                 {eventName} <span className="text-accent">{editionYear}</span>
               </span>
             </Link>
-            <p className="leading-relaxed mb-4 text-ink-muted text-sm max-w-sm">
+            <p className="leading-relaxed mb-4 text-ink-muted text-[15px] max-w-sm">
               {description}
             </p>
             {startDate && (
@@ -106,7 +106,7 @@ export default function Footer({ edition: initialEdition }: FooterProps) {
         </div>
 
         {/* Bottom Bar */}
-        <div className="mt-12 pt-6 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-ink-muted">
+        <div className="mt-12 pt-6 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-ink-muted">
           <div>
             © {new Date().getFullYear()} {hostDepartment}, {institutionName}. All rights reserved.
           </div>

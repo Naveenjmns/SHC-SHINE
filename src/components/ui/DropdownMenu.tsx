@@ -96,7 +96,7 @@ export function DropdownItem({
       role="menuitem"
       disabled={disabled}
       type="button"
-      className={`w-full min-h-[44px] sm:min-h-[36px] px-3 py-2 rounded-[6px] text-xs font-medium flex items-center gap-2.5 transition-colors text-left cursor-pointer outline-none ${
+      className={`w-full min-h-[44px] sm:min-h-[36px] px-3 py-2 rounded-[6px] text-sm font-medium flex items-center gap-2.5 transition-colors text-left cursor-pointer outline-none ${
         variant === "destructive"
           ? "text-danger hover:bg-danger-surface focus:bg-danger-surface"
           : "text-ink hover:bg-surface-raised focus:bg-surface-raised"
@@ -124,7 +124,7 @@ export function DropdownLabel({
 }: HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={`px-3 py-1.5 text-[11px] font-semibold text-ink-muted uppercase tracking-wider ${className}`}
+      className={`px-3 py-1.5 text-xs font-semibold text-ink-muted uppercase tracking-wider ${className}`}
       {...props}
     >
       {children}

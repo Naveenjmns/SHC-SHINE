@@ -17,7 +17,7 @@ export default function SponsorsStrip({ edition }: SponsorsStripProps) {
     <section className="container-shine py-20 lg:py-24">
       <div className="rounded-3xl bg-surface-inverse text-white px-6 py-12 sm:px-12 sm:py-16 grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-10 items-center">
         <div>
-          <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.08em] text-[#a6bbd1]">
+          <p className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.08em] text-[#a6bbd1]">
             <ShieldCheck className="w-4 h-4" /> Official registration desk
           </p>
           <h2 className="mt-3 text-3xl sm:text-[2.75rem] leading-[1.2] font-bold text-white">

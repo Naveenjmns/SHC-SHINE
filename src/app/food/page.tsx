@@ -110,7 +110,7 @@ export default function FoodCoordinatorPage() {
       <header className="bg-surface border-b border-border sticky top-0 z-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link href="/" className="font-semibold text-sm tracking-tight text-ink">
+            <Link href="/" className="font-semibold text-[15px] tracking-tight text-ink">
               SHINE <span className="text-accent">{edition?.edition || "26"}</span>
             </Link>
             <span className="text-border-strong">/</span>
@@ -125,7 +125,7 @@ export default function FoodCoordinatorPage() {
               variant="outline"
               size="sm"
               onClick={() => setSoundEnabled(!soundEnabled)}
-              className="text-xs"
+              className="text-sm"
             >
               {soundEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
               <span className="hidden sm:inline ml-1.5">{soundEnabled ? "Audio On" : "Muted"}</span>
@@ -135,7 +135,7 @@ export default function FoodCoordinatorPage() {
               variant="outline"
               size="sm"
               onClick={fetchStats}
-              className="text-xs"
+              className="text-sm"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loadingStats ? "animate-spin text-accent" : ""}`} />
               <span className="hidden sm:inline ml-1.5">Refresh</span>
@@ -145,7 +145,7 @@ export default function FoodCoordinatorPage() {
               variant="primary"
               size="sm"
               onClick={() => setShowCheckInModal(true)}
-              className="text-xs gap-1.5"
+              className="text-sm gap-1.5"
             >
               <QrCode className="w-3.5 h-3.5" />
               <span>Full Lookup</span>
@@ -155,7 +155,7 @@ export default function FoodCoordinatorPage() {
               variant="ghost"
               size="sm"
               onClick={() => signOut({ callbackUrl: "/login" })}
-              className="text-xs text-ink-muted hover:text-danger"
+              className="text-sm text-ink-muted hover:text-danger"
             >
               <LogOut className="w-3.5 h-3.5" />
             </Button>
@@ -170,7 +170,7 @@ export default function FoodCoordinatorPage() {
               <span className="eyebrow">
                 Catering &amp; Hospitality Desk
               </span>
-              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-success-surface text-success-ink border border-success-border">
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold bg-success-surface text-success-ink border border-success-border">
                 <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
                 Live Distribution
               </span>
@@ -178,14 +178,14 @@ export default function FoodCoordinatorPage() {
             <h1 className="text-2xl sm:text-3xl font-bold text-ink">
               Meal Pass Verification
             </h1>
-            <p className="text-sm text-ink-muted mt-1">
+            <p className="text-[15px] text-ink-muted mt-1">
               Logged in as <span className="font-semibold text-ink">{session?.user?.name || session?.user?.email}</span>
             </p>
           </div>
 
           <div className="text-left sm:text-right bg-surface border border-border rounded-2xl shadow-card px-4 py-3">
-            <span className="text-xs text-ink-muted block">Venue</span>
-            <span className="text-sm font-semibold text-ink block">
+            <span className="text-sm text-ink-muted block">Venue</span>
+            <span className="text-[15px] font-semibold text-ink block">
               {edition?.diningHallVenue || "Dining Hall"}
             </span>
           </div>
@@ -201,7 +201,7 @@ export default function FoodCoordinatorPage() {
                 placeholder="Enter Food Token (FT-...) or Badge Code..."
                 value={inputCode}
                 onChange={(e) => setInputCode(e.target.value)}
-                className="pl-9 h-10 text-xs sm:text-sm font-mono"
+                className="pl-9 h-10 text-sm sm:text-[15px] font-mono"
               />
             </div>
             <Button

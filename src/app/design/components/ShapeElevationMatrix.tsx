@@ -23,7 +23,7 @@ export default function ShapeElevationMatrix() {
       <div>
         <p className="eyebrow">Shape &amp; depth</p>
         <h2 className="text-2xl font-bold text-ink mt-1">4. Radii &amp; Blue-Tinted Elevation</h2>
-        <p className="text-sm text-ink-muted mt-1 max-w-3xl">
+        <p className="text-[15px] text-ink-muted mt-1 max-w-3xl">
           Three radii (8 / 16 / 24) plus pills. Shadows are layered and tinted with slate-blue, never neutral black,
           so white cards appear to float on the Cloud canvas. Surfaces are flat: no gradients, glows or neon.
         </p>
@@ -35,12 +35,12 @@ export default function ShapeElevationMatrix() {
             <div
               className={`h-24 bg-surface border border-border shadow-card flex items-center justify-center ${r.cls}`}
             >
-              <span className="text-sm font-bold text-ink tabular-nums">{r.px}</span>
+              <span className="text-[15px] font-bold text-ink tabular-nums">{r.px}</span>
             </div>
             <div>
-              <div className="text-xs font-semibold text-ink">{r.name}</div>
-              <div className="text-[11px] font-mono text-accent">{r.cls}</div>
-              <div className="text-[11px] text-ink-subtle mt-0.5">{r.use}</div>
+              <div className="text-sm font-semibold text-ink">{r.name}</div>
+              <div className="text-xs font-mono text-accent">{r.cls}</div>
+              <div className="text-xs text-ink-subtle mt-0.5">{r.use}</div>
             </div>
           </div>
         ))}
@@ -50,9 +50,9 @@ export default function ShapeElevationMatrix() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
           {ELEVATION.map((e) => (
             <div key={e.cls} className={`p-5 rounded-2xl bg-surface border border-border ${e.cls}`}>
-              <div className="text-sm font-semibold text-ink">{e.name}</div>
-              <div className="text-[11px] font-mono text-accent mt-0.5">{e.cls}</div>
-              <div className="text-[11px] text-ink-subtle mt-2">{e.use}</div>
+              <div className="text-[15px] font-semibold text-ink">{e.name}</div>
+              <div className="text-xs font-mono text-accent mt-0.5">{e.cls}</div>
+              <div className="text-xs text-ink-subtle mt-2">{e.use}</div>
             </div>
           ))}
         </div>
@@ -62,7 +62,7 @@ export default function ShapeElevationMatrix() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
         <div className="space-y-2">
           <h3 className="text-base font-semibold text-ink">Decorative blobs</h3>
-          <p className="text-sm text-ink-muted">
+          <p className="text-[15px] text-ink-muted">
             <code className="font-mono text-accent">.blob .blob-magenta</code> and{" "}
             <code className="font-mono text-accent">.blob .blob-cyan</code> sit behind a product visual inside a{" "}
             <code className="font-mono text-accent">.blob-stage</code>. They add atmosphere to hero areas only and are

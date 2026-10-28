@@ -59,7 +59,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
                 ? `${inputId}-helper`
                 : undefined
             }
-            className={`w-full h-11 rounded-[8px] bg-surface text-ink text-sm placeholder:text-ink-subtle transition-all border outline-none ${
+            className={`w-full h-12 rounded-[8px] bg-surface text-ink text-base placeholder:text-ink-subtle transition-all border outline-none ${
               startIcon ? "pl-10" : "pl-3"
             } ${endIcon ? "pr-10" : "pr-3"} ${
               hasError
@@ -81,13 +81,13 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         </div>
 
         {hasError && (
-          <p id={`${inputId}-error`} className="text-xs text-danger font-medium">
+          <p id={`${inputId}-error`} className="text-sm text-danger font-medium">
             {error}
           </p>
         )}
 
         {!hasError && helperText && (
-          <p id={`${inputId}-helper`} className="text-xs text-ink-muted">
+          <p id={`${inputId}-helper`} className="text-sm text-ink-muted">
             {helperText}
           </p>
         )}

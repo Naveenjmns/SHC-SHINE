@@ -6,9 +6,9 @@ export default function Unauthorized() {
   return (
     <ErrorPerspectiveStage>
       {/* Fest Status Pill */}
-      <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-surface border border-border text-ink-muted mb-6 shadow-card">
+      <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-sm font-semibold bg-surface border border-border text-ink-muted mb-6 shadow-card">
         <span className="w-2.5 h-2.5 rounded-full bg-info animate-pulse" />
-        <span className="text-[11px] sm:text-xs">
+        <span className="text-xs sm:text-sm">
           HTTP 401 • Authentication Required
         </span>
       </div>
@@ -28,7 +28,7 @@ export default function Unauthorized() {
       </h1>
 
       {/* Subtitle */}
-      <p className="text-sm sm:text-base md:text-lg text-ink-muted max-w-md mx-auto leading-relaxed mb-6">
+      <p className="text-[15px] sm:text-base md:text-lg text-ink-muted max-w-md mx-auto leading-relaxed mb-6">
         Your active login session has expired or authentication token is missing. Please sign in to resume.
       </p>
 
@@ -36,7 +36,7 @@ export default function Unauthorized() {
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 w-full sm:w-auto max-w-xs sm:max-w-none mx-auto mb-6">
         <Link
           href="/login"
-          className="btn-primary text-sm"
+          className="btn-primary text-[15px]"
         >
           <LogIn className="w-4 h-4" />
           <span>Sign In to SHINE</span>
@@ -44,7 +44,7 @@ export default function Unauthorized() {
 
         <Link
           href="/"
-          className="btn-outline text-sm"
+          className="btn-outline text-[15px]"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Back to homepage</span>
@@ -52,7 +52,7 @@ export default function Unauthorized() {
       </div>
 
       {/* Footer */}
-      <div className="w-full pt-6 mt-4 border-t border-border text-[11px] text-ink-subtle">
+      <div className="w-full pt-6 mt-4 border-t border-border text-xs text-ink-subtle">
         SHINE 26 Identity Verification • Sacred Heart College
       </div>
     </ErrorPerspectiveStage>

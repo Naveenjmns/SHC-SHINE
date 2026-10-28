@@ -141,7 +141,7 @@ export default function ProfilePage() {
       <div className="min-h-screen bg-canvas flex items-center justify-center p-6">
         <div className="flex flex-col items-center gap-3">
           <RefreshCw className="w-8 h-8 animate-spin text-accent" />
-          <p className="text-sm font-medium text-ink-muted">
+          <p className="text-[15px] font-medium text-ink-muted">
             Loading Account Profile...
           </p>
         </div>
@@ -165,21 +165,21 @@ export default function ProfilePage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-2.5 flex items-center justify-between">
           <Link
             href={roleDashboardLink}
-            className="text-xs font-semibold text-ink-muted hover:text-ink flex items-center gap-1.5"
+            className="text-sm font-semibold text-ink-muted hover:text-ink flex items-center gap-1.5"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Dashboard</span>
           </Link>
 
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-ink">
+            <span className="text-sm font-bold text-ink">
               {profile?.name}
             </span>
             <Button
               variant="ghost"
               size="sm"
               onClick={() => signOut({ callbackUrl: "/login" })}
-              className="text-xs text-ink-muted hover:text-danger gap-1.5"
+              className="text-sm text-ink-muted hover:text-danger gap-1.5"
             >
               <LogOut className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Sign Out</span>
@@ -192,7 +192,7 @@ export default function ProfilePage() {
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-10 w-full flex-1 space-y-6">
         <div className="space-y-1">
           <h1 className="text-2xl sm:text-3xl font-bold text-ink">My Profile</h1>
-          <p className="text-sm text-ink-muted">
+          <p className="text-[15px] text-ink-muted">
             Manage your account details, meal preference, and password.
           </p>
         </div>

@@ -18,9 +18,9 @@ export default function MaintenancePage() {
   return (
     <ErrorPerspectiveStage>
       {/* Fest Status Pill */}
-      <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-surface border border-border text-ink-muted mb-6 shadow-card">
+      <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-sm font-semibold bg-surface border border-border text-ink-muted mb-6 shadow-card">
         <span className="w-2.5 h-2.5 rounded-full bg-success animate-pulse" />
-        <span className="text-[11px] sm:text-xs">
+        <span className="text-xs sm:text-sm">
           HTTP 503 • Platform Maintenance
         </span>
       </div>
@@ -40,17 +40,17 @@ export default function MaintenancePage() {
       </h1>
 
       {/* Subtitle */}
-      <p className="text-sm sm:text-base md:text-lg text-ink-muted max-w-md mx-auto leading-relaxed mb-6">
+      <p className="text-[15px] sm:text-base md:text-lg text-ink-muted max-w-md mx-auto leading-relaxed mb-6">
         Our technical crew is tuning stage systems and live event pipelines. We will resume fest services momentarily.
       </p>
 
       {/* Status Pill Group */}
       <div className="flex flex-wrap items-center justify-center gap-2.5 mb-6 px-2">
-        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs bg-surface border border-border text-ink-muted">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm bg-surface border border-border text-ink-muted">
           <Clock className="w-3.5 h-3.5 text-accent" />
           <span>Estimated window: ~5 mins</span>
         </div>
-        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs bg-success-surface border border-success-border text-success-ink">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm bg-success-surface border border-success-border text-success-ink">
           <ShieldCheck className="w-3.5 h-3.5 text-success" />
           <span>Registration data secured</span>
         </div>
@@ -61,7 +61,7 @@ export default function MaintenancePage() {
         <button
           onClick={handleRefresh}
           disabled={isRefreshing}
-          className="btn-primary text-sm disabled:opacity-50"
+          className="btn-primary text-[15px] disabled:opacity-50"
         >
           <RefreshCcw className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`} />
           <span>{isRefreshing ? "Checking..." : "Check Status Now"}</span>
@@ -69,14 +69,14 @@ export default function MaintenancePage() {
 
         <Link
           href="/"
-          className="btn-outline text-sm"
+          className="btn-outline text-[15px]"
         >
           <span>Back to homepage</span>
         </Link>
       </div>
 
       {/* Footer */}
-      <div className="w-full pt-6 mt-4 border-t border-border text-[11px] text-ink-subtle">
+      <div className="w-full pt-6 mt-4 border-t border-border text-xs text-ink-subtle">
         Sacred Heart College • SHINE Fest Operations
       </div>
     </ErrorPerspectiveStage>

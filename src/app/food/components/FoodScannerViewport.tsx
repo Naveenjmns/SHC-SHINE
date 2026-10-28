@@ -193,14 +193,14 @@ export default function FoodScannerViewport({
     <div className="bg-surface border border-border rounded-2xl shadow-card p-5 flex flex-col justify-between">
       <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-border mb-4">
         <div>
-          <h2 className="text-sm font-semibold text-ink">Camera Viewport</h2>
-          <p className="text-xs text-ink-muted">Scan delegate badge or food voucher QR code</p>
+          <h2 className="text-[15px] font-semibold text-ink">Camera Viewport</h2>
+          <p className="text-sm text-ink-muted">Scan delegate badge or food voucher QR code</p>
         </div>
 
         <button
           type="button"
           onClick={onToggleAutoClaim}
-          className={`flex items-center gap-2 px-3 py-1.5 rounded-[8px] border text-xs font-semibold transition-colors cursor-pointer ${
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-[8px] border text-sm font-semibold transition-colors cursor-pointer ${
             autoClaim
               ? "bg-accent-muted border-accent text-accent-strong"
               : "bg-surface-raised border-border text-ink-muted"
@@ -217,8 +217,8 @@ export default function FoodScannerViewport({
         {!cameraActive && !cameraStarting && (
           <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-surface-raised">
             <Camera className="w-8 h-8 text-ink-muted mb-2" />
-            <p className="text-xs font-semibold text-ink mb-1">Camera is Inactive</p>
-            <p className="text-xs text-ink-muted max-w-xs mb-4">
+            <p className="text-sm font-semibold text-ink mb-1">Camera is Inactive</p>
+            <p className="text-sm text-ink-muted max-w-xs mb-4">
               Start camera to scan physical passes or upload a QR snapshot.
             </p>
             <Button variant="primary" size="sm" onClick={() => startScanner()} className="gap-2">
@@ -231,41 +231,41 @@ export default function FoodScannerViewport({
         {cameraStarting && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#071E33]/90 text-white p-4">
             <RefreshCw className="w-6 h-6 animate-spin text-accent mb-2" />
-            <p className="text-xs font-semibold text-[#C9D7E6]">Initializing camera hardware...</p>
+            <p className="text-sm font-semibold text-[#C9D7E6]">Initializing camera hardware...</p>
           </div>
         )}
 
         {processing && (
           <div className="absolute inset-0 bg-surface/90 backdrop-blur-xs flex flex-col items-center justify-center z-10 space-y-2">
             <RefreshCw className="w-6 h-6 animate-spin text-accent" />
-            <span className="text-xs font-semibold text-ink">Verifying &amp; Claiming Meal...</span>
+            <span className="text-sm font-semibold text-ink">Verifying &amp; Claiming Meal...</span>
           </div>
         )}
       </div>
 
       {cameraError && (
-        <div className="mt-3 p-3 rounded-xl border border-danger-border bg-danger-surface text-xs text-danger-ink">
+        <div className="mt-3 p-3 rounded-xl border border-danger-border bg-danger-surface text-sm text-danger-ink">
           <p className="font-semibold">{cameraError.title}</p>
-          <p className="mt-0.5 text-[11px] opacity-90">{cameraError.message}</p>
+          <p className="mt-0.5 text-xs opacity-90">{cameraError.message}</p>
         </div>
       )}
 
       <div className="mt-4 pt-3 border-t border-border flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           {cameraActive ? (
-            <Button variant="outline" size="sm" onClick={stopScanner} className="text-xs">
+            <Button variant="outline" size="sm" onClick={stopScanner} className="text-sm">
               <CameraOff className="w-3.5 h-3.5 mr-1" />
               Stop Camera
             </Button>
           ) : (
-            <Button variant="outline" size="sm" onClick={() => startScanner()} className="text-xs">
+            <Button variant="outline" size="sm" onClick={() => startScanner()} className="text-sm">
               <Camera className="w-3.5 h-3.5 mr-1" />
               Start Camera
             </Button>
           )}
 
           {availableCameras.length > 1 && cameraActive && (
-            <Button variant="ghost" size="sm" onClick={switchCamera} className="text-xs">
+            <Button variant="ghost" size="sm" onClick={switchCamera} className="text-sm">
               <RefreshCw className="w-3.5 h-3.5 mr-1" />
               Switch Camera
             </Button>
@@ -279,7 +279,7 @@ export default function FoodScannerViewport({
             size="sm"
             onClick={() => fileInputRef.current?.click()}
             loading={fileScanning}
-            className="text-xs text-ink-muted hover:text-ink"
+            className="text-sm text-ink-muted hover:text-ink"
           >
             <Upload className="w-3.5 h-3.5 mr-1" />
             Upload QR Photo

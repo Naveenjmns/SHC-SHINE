@@ -79,7 +79,7 @@ export default function ThemePlayground() {
       <div>
         <p className="eyebrow">Playground</p>
         <h2 className="text-2xl font-bold text-ink mt-1">1. Interactive Theme &amp; Token Playground</h2>
-        <p className="text-sm text-ink-muted mt-1">
+        <p className="text-[15px] text-ink-muted mt-1">
           Switch between light, dark-navy and stage modes, test edition accent presets (Signal Blue is the default), and audit contrast in real time.
         </p>
       </div>
@@ -93,7 +93,7 @@ export default function ThemePlayground() {
             </h3>
             <button
               onClick={resetToDefault}
-              className="inline-flex items-center gap-1.5 text-xs text-ink-muted hover:text-ink font-medium"
+              className="inline-flex items-center gap-1.5 text-sm text-ink-muted hover:text-ink font-medium"
             >
               <RefreshCw className="w-3 h-3" /> Reset Default
             </button>
@@ -103,7 +103,7 @@ export default function ThemePlayground() {
           <div className="grid grid-cols-3 gap-2">
             <button
               onClick={() => applyTheme("light")}
-              className={`h-10 px-3 rounded-[8px] border text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
+              className={`h-10 px-3 rounded-[8px] border text-sm font-semibold flex items-center justify-center gap-1.5 transition-all ${
                 activeTheme === "light"
                   ? "bg-accent text-accent-ink border-accent"
                   : "bg-surface-raised border-border text-ink hover:bg-surface-sunken"
@@ -114,7 +114,7 @@ export default function ThemePlayground() {
 
             <button
               onClick={() => applyTheme("dark")}
-              className={`h-10 px-3 rounded-[8px] border text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
+              className={`h-10 px-3 rounded-[8px] border text-sm font-semibold flex items-center justify-center gap-1.5 transition-all ${
                 activeTheme === "dark"
                   ? "bg-accent text-accent-ink border-accent"
                   : "bg-surface-raised border-border text-ink hover:bg-surface-sunken"
@@ -125,7 +125,7 @@ export default function ThemePlayground() {
 
             <button
               onClick={() => applyTheme("stage")}
-              className={`h-10 px-3 rounded-[8px] border text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
+              className={`h-10 px-3 rounded-[8px] border text-sm font-semibold flex items-center justify-center gap-1.5 transition-all ${
                 activeTheme === "stage"
                   ? "bg-accent text-accent-ink border-accent"
                   : "bg-surface-raised border-border text-ink hover:bg-surface-sunken"
@@ -137,7 +137,7 @@ export default function ThemePlayground() {
 
           {/* Edition Presets */}
           <div className="space-y-2">
-            <label className="text-xs font-semibold text-ink">Institution Edition Presets</label>
+            <label className="text-sm font-semibold text-ink">Institution Edition Presets</label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {INSTITUTION_THEME_PRESETS.map((preset) => (
                 <button
@@ -154,8 +154,8 @@ export default function ThemePlayground() {
                     style={{ backgroundColor: preset.primary }}
                   />
                   <div className="truncate">
-                    <div className="text-xs font-semibold text-ink truncate">{preset.name}</div>
-                    <div className="text-[11px] font-mono text-ink-subtle truncate">{preset.primary}</div>
+                    <div className="text-sm font-semibold text-ink truncate">{preset.name}</div>
+                    <div className="text-xs font-mono text-ink-subtle truncate">{preset.primary}</div>
                   </div>
                 </button>
               ))}
@@ -171,7 +171,7 @@ export default function ThemePlayground() {
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-ink">Foreground Ink</label>
+              <label className="text-sm font-semibold text-ink">Foreground Ink</label>
               <div className="flex items-center gap-2">
                 <input
                   type="color"
@@ -183,13 +183,13 @@ export default function ThemePlayground() {
                   type="text"
                   value={fgColor}
                   onChange={(e) => setFgColor(e.target.value)}
-                  className="w-full h-9 px-2.5 rounded-[8px] border border-border bg-surface-raised text-xs font-mono uppercase text-ink focus:outline-none focus:border-accent"
+                  className="w-full h-9 px-2.5 rounded-[8px] border border-border bg-surface-raised text-sm font-mono uppercase text-ink focus:outline-none focus:border-accent"
                 />
               </div>
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-ink">Background Surface</label>
+              <label className="text-sm font-semibold text-ink">Background Surface</label>
               <div className="flex items-center gap-2">
                 <input
                   type="color"
@@ -201,7 +201,7 @@ export default function ThemePlayground() {
                   type="text"
                   value={bgColor}
                   onChange={(e) => setBgColor(e.target.value)}
-                  className="w-full h-9 px-2.5 rounded-[8px] border border-border bg-surface-raised text-xs font-mono uppercase text-ink focus:outline-none focus:border-accent"
+                  className="w-full h-9 px-2.5 rounded-[8px] border border-border bg-surface-raised text-sm font-mono uppercase text-ink focus:outline-none focus:border-accent"
                 />
               </div>
             </div>
@@ -213,7 +213,7 @@ export default function ThemePlayground() {
             style={{ backgroundColor: bgColor, color: fgColor }}
           >
             <div className="text-base font-bold">SHINE 2026 Sample Text Preview</div>
-            <div className="text-xs opacity-90">
+            <div className="text-sm opacity-90">
               The quick brown fox jumps over the lazy dog. 1234567890
             </div>
           </div>
@@ -221,7 +221,7 @@ export default function ThemePlayground() {
           {/* Results Matrix */}
           <div className="grid grid-cols-3 gap-2 text-center">
             <div className="p-2.5 rounded-[8px] border border-border bg-surface-raised space-y-0.5">
-              <div className="eyebrow text-[10px]">Contrast ratio</div>
+              <div className="eyebrow text-xs">Contrast ratio</div>
               <div className="text-base font-bold tabular-nums text-ink">
                 {contrastRatio.toFixed(2)}:1
               </div>
@@ -234,8 +234,8 @@ export default function ThemePlayground() {
                   : "bg-danger-surface border-danger-border text-danger-ink"
               }`}
             >
-              <div className="text-[10px] font-semibold tabular-nums">Normal text (≥4.5)</div>
-              <div className="text-xs font-bold flex items-center justify-center gap-1">
+              <div className="text-xs font-semibold tabular-nums">Normal text (≥4.5)</div>
+              <div className="text-sm font-bold flex items-center justify-center gap-1">
                 {passesNormalAA ? (
                   <CheckCircle2 className="w-3.5 h-3.5" />
                 ) : (
@@ -252,8 +252,8 @@ export default function ThemePlayground() {
                   : "bg-danger-surface border-danger-border text-danger-ink"
               }`}
             >
-              <div className="text-[10px] font-semibold tabular-nums">Large text (≥3.0)</div>
-              <div className="text-xs font-bold flex items-center justify-center gap-1">
+              <div className="text-xs font-semibold tabular-nums">Large text (≥3.0)</div>
+              <div className="text-sm font-bold flex items-center justify-center gap-1">
                 {passesLargeAA ? (
                   <CheckCircle2 className="w-3.5 h-3.5" />
                 ) : (

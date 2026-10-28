@@ -44,18 +44,18 @@ export default function ProfileSecurityCard({
     <div className="bg-surface border border-border rounded-2xl p-6 shadow-card space-y-4">
       <div className="flex items-center justify-between pb-3 border-b border-border">
         <div>
-          <h3 className="text-sm font-bold text-ink flex items-center gap-2">
+          <h3 className="text-[15px] font-bold text-ink flex items-center gap-2">
             <KeyRound className="w-4 h-4 text-accent" />
             <span>Account Security</span>
           </h3>
-          <p className="text-xs text-ink-muted">
+          <p className="text-sm text-ink-muted">
             Change your account password for secure festival portal access.
           </p>
         </div>
       </div>
 
       {errorMsg && (
-        <div className="p-3 bg-danger-surface border border-danger-border text-danger-ink rounded-[8px] text-xs flex items-center gap-2">
+        <div className="p-3 bg-danger-surface border border-danger-border text-danger-ink rounded-[8px] text-sm flex items-center gap-2">
           <AlertCircle className="w-4 h-4 shrink-0" />
           <span>{errorMsg}</span>
         </div>
@@ -63,7 +63,7 @@ export default function ProfileSecurityCard({
 
       <form onSubmit={handleSubmit} className="space-y-3.5">
         <div>
-          <label className="block text-xs font-semibold text-ink mb-1">
+          <label className="block text-sm font-semibold text-ink mb-1">
             Current Password *
           </label>
           <Input
@@ -77,7 +77,7 @@ export default function ProfileSecurityCard({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-semibold text-ink mb-1">
+            <label className="block text-sm font-semibold text-ink mb-1">
               New Password *
             </label>
             <Input
@@ -90,7 +90,7 @@ export default function ProfileSecurityCard({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-ink mb-1">
+            <label className="block text-sm font-semibold text-ink mb-1">
               Confirm New Password *
             </label>
             <Input

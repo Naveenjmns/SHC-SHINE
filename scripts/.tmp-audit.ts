@@ -6,7 +6,8 @@ const OUT = process.argv[2];
 const WIDTHS = [320, 360, 390, 414, 768, 1024, 1280, 1440, 1920];
 const EVENT = "cmv2gd2jh000i0ggzjwnn8xmc";
 type Target = { name: string; url: string; tab?: string };
-const SESSIONS: { role: string; email?: string; pass?: string; targets: Target[] }[] = [
+const ONLY = process.env.ONLY;
+const SESSIONS0: { role: string; email?: string; pass?: string; targets: Target[] }[] = [
   { role: "public", targets: [
     { name: "home", url: "/" }, { name: "events", url: "/events" }, { name: "leaderboard", url: "/leaderboard" },
     { name: "login", url: "/login" }, { name: "register", url: "/register" }, { name: "badge", url: "/badge/SHN26-DEL-WJ7UY8" },
@@ -26,6 +27,8 @@ const SESSIONS: { role: string; email?: string; pass?: string; targets: Target[]
   ]},
 ];
 
+const SESSIONS = ONLY ? SESSIONS0.map(s => ({ ...s, targets: s.targets.filter(t => t.name === ONLY) })).filter(s => s.targets.length) : SESSIONS0;
+const WIDTHS_RUN = process.env.W ? process.env.W.split(",").map(Number) : WIDTHS;
 async function measure(p: Page, w: number) {
   return p.evaluate((w) => {
     const vw = window.innerWidth;
@@ -61,6 +64,7 @@ async function measure(p: Page, w: number) {
       for (const el of Array.from(document.querySelectorAll("a, button, input:not([type=hidden]), select, [role=tab], [role=button]"))) {
         if (!visible(el)) continue;
         if (el.closest("p, li > span, td > a")) continue; // inline text links
+        if (el.tagName === "A" && el.querySelector("button")) continue; // link wrapping a Button
         const r = el.getBoundingClientRect();
         if (r.height < 36 || r.width < 36) { smallCount++; if (small.length < 5) small.push(desc(el) + ` ${Math.round(r.width)}x${Math.round(r.height)}`); }
       }
@@ -76,6 +80,7 @@ async function measure(p: Page, w: number) {
   const results: any[] = [];
   for (const s of SESSIONS) {
     const ctx = await b.newContext({ viewport: { width: 1280, height: 900 } });
+    await ctx.addInitScript("window.__name = (f) => f");
     const p = await ctx.newPage();
     if (s.email) {
       await p.goto(B + "/login", { waitUntil: "networkidle" });
@@ -85,7 +90,7 @@ async function measure(p: Page, w: number) {
       await p.waitForLoadState("networkidle"); await p.waitForTimeout(1500);
     }
     for (const t of s.targets) {
-      for (const w of WIDTHS) {
+      for (const w of WIDTHS_RUN) {
         try {
           await p.setViewportSize({ width: w, height: w <= 414 ? 800 : 900 });
           await p.goto(B + t.url, { waitUntil: "networkidle", timeout: 60000 });
@@ -100,7 +105,7 @@ async function measure(p: Page, w: number) {
           results.push({ page: t.name, w, ...m });
           if (w === 360) await p.screenshot({ path: `${OUT}/${t.name}-360.png`, fullPage: true });
           if (w === 1280) await p.screenshot({ path: `${OUT}/${t.name}-1280.png`, fullPage: false });
-        } catch (e: any) { results.push({ page: t.name, w, error: e.message.slice(0, 100) }); }
+        } catch (e: any) { console.log("ERR", t.name, w, e.message.slice(0, 300)); results.push({ page: t.name, w, error: e.message.slice(0, 100) }); }
       }
       process.stdout.write(t.name + " ");
     }

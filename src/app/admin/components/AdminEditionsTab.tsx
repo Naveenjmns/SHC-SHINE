@@ -42,7 +42,7 @@ export default function AdminEditionsTab({
           <h2 className="text-base sm:text-lg font-bold text-ink">
             Event Editions Architecture
           </h2>
-          <p className="text-xs text-ink-muted">
+          <p className="text-sm text-ink-muted">
             Manage annual editions (e.g. SHINE 2026, SHINE 2027). Only 1 edition serves live traffic.
           </p>
         </div>
@@ -70,7 +70,7 @@ export default function AdminEditionsTab({
             }`}
           >
             {ed.isActive && (
-              <span className="absolute top-4 right-4 bg-accent text-accent-ink text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full">
+              <span className="absolute top-4 right-4 bg-accent text-accent-ink text-xs uppercase font-bold tracking-wider px-2 py-0.5 rounded-full">
                 Active
               </span>
             )}
@@ -83,7 +83,7 @@ export default function AdminEditionsTab({
                   className="h-10 w-auto max-w-[44px] object-contain shrink-0"
                 />
               ) : (
-                <div className="w-10 h-10 rounded-[8px] bg-surface-raised border border-border flex items-center justify-center font-bold text-sm text-accent shrink-0">
+                <div className="w-10 h-10 rounded-[8px] bg-surface-raised border border-border flex items-center justify-center font-bold text-[15px] text-accent shrink-0">
                   {(ed.name?.charAt(0) || "S").toUpperCase()}
                 </div>
               )}
@@ -91,19 +91,19 @@ export default function AdminEditionsTab({
                 <h3 className="text-base font-bold text-ink">
                   {ed.name} {ed.edition}
                 </h3>
-                <span className="text-xs text-ink-muted font-mono">
+                <span className="text-sm text-ink-muted font-mono">
                   Slug: {ed.slug}
                 </span>
               </div>
             </div>
 
             {ed.tagline && (
-              <p className="text-xs text-ink-muted italic mb-4 font-medium">
+              <p className="text-sm text-ink-muted italic mb-4 font-medium">
                 "{ed.tagline}"
               </p>
             )}
 
-            <div className="space-y-1.5 text-xs text-ink-muted mb-5">
+            <div className="space-y-1.5 text-sm text-ink-muted mb-5">
               <p className="flex items-center gap-1.5">
                 <MapPin className="w-3.5 h-3.5 text-ink-muted shrink-0" />
                 <span>Venue: {ed.venue || "College Campus"}</span>
@@ -121,12 +121,12 @@ export default function AdminEditionsTab({
                   size="sm"
                   onClick={() => onMakeEditionActive(ed.id)}
                   loading={saving}
-                  className="text-xs"
+                  className="text-sm"
                 >
                   Set as Active
                 </Button>
               ) : (
-                <span className="text-xs text-success-ink font-semibold flex items-center gap-1">
+                <span className="text-sm text-success-ink font-semibold flex items-center gap-1">
                   <CheckCircle2 className="w-3.5 h-3.5" />
                   Serving Live
                 </span>
@@ -136,7 +136,7 @@ export default function AdminEditionsTab({
                 variant="ghost"
                 size="sm"
                 onClick={() => onSelectEditionForEdit(ed)}
-                className="text-xs text-ink-muted hover:text-ink"
+                className="text-sm text-ink-muted hover:text-ink"
               >
                 Configure →
               </Button>

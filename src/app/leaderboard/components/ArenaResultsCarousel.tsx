@@ -128,7 +128,7 @@ export default function ArenaResultsCarousel({
           )}
         </div>
 
-        <span className="text-xs font-semibold text-ink-muted tabular-nums px-3 py-1 rounded-full bg-surface border border-border">
+        <span className="text-sm font-semibold text-ink-muted tabular-nums px-3 py-1 rounded-full bg-surface border border-border">
           {currentIndex + 1} of {totalEvents}
         </span>
       </div>
@@ -159,7 +159,7 @@ export default function ArenaResultsCarousel({
       </div>
 
       {/* Venue Room */}
-      <p className="text-sm sm:text-base font-medium text-ink-muted flex items-center justify-center gap-1.5 pb-2">
+      <p className="text-[15px] sm:text-base font-medium text-ink-muted flex items-center justify-center gap-1.5 pb-2">
         <MapPin className="w-4 h-4 text-accent" />
         <span>{currentEvent.venue || "Sacred Heart College Campus"}</span>
       </p>

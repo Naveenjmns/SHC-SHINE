@@ -148,7 +148,7 @@ export default function AdminEventFormModal({
             <h3 className="text-base font-bold text-ink">
               {editingEvent ? `Edit Competition: ${editingEvent.name}` : "Create New Competition"}
             </h3>
-            <p className="text-xs text-ink-muted">
+            <p className="text-sm text-ink-muted">
               Configure event arena specifications, reporting venues, and coordinators.
             </p>
           </div>
@@ -166,7 +166,7 @@ export default function AdminEventFormModal({
           {/* Basic Info */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-ink mb-1">
+              <label className="block text-sm font-semibold text-ink mb-1">
                 Competition Name *
               </label>
               <Input
@@ -179,14 +179,14 @@ export default function AdminEventFormModal({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-ink mb-1">
+              <label className="block text-sm font-semibold text-ink mb-1">
                 Category *
               </label>
               <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
                   onClick={() => setCategory("ON_STAGE")}
-                  className={`py-2 px-3 rounded-[8px] text-xs font-semibold border flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
+                  className={`py-2 px-3 rounded-[8px] text-sm font-semibold border flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
                     category === "ON_STAGE"
                       ? "bg-surface-raised border-accent text-accent"
                       : "bg-surface border-border text-ink-muted"
@@ -198,7 +198,7 @@ export default function AdminEventFormModal({
                 <button
                   type="button"
                   onClick={() => setCategory("OFF_STAGE")}
-                  className={`py-2 px-3 rounded-[8px] text-xs font-semibold border flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
+                  className={`py-2 px-3 rounded-[8px] text-sm font-semibold border flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
                     category === "OFF_STAGE"
                       ? "bg-surface-raised border-accent text-accent"
                       : "bg-surface border-border text-ink-muted"
@@ -214,7 +214,7 @@ export default function AdminEventFormModal({
           {/* Venue, Zone, and Schedule */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-ink mb-1">
+              <label className="block text-sm font-semibold text-ink mb-1">
                 Reporting Venue
               </label>
               <Input
@@ -226,13 +226,13 @@ export default function AdminEventFormModal({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-ink mb-1">
+              <label className="block text-sm font-semibold text-ink mb-1">
                 Floor Plan Zone
               </label>
               <select
                 value={venueZoneId}
                 onChange={(e) => setVenueZoneId(e.target.value)}
-                className="w-full h-9 rounded-[8px] border border-border bg-surface text-ink px-2.5 text-xs focus:outline-none focus:border-accent"
+                className="w-full h-9 rounded-[8px] border border-border bg-surface text-ink px-2.5 text-sm focus:outline-none focus:border-accent"
               >
                 <option value="">-- Link to Zone (Optional) --</option>
                 {floorPlanZones.map((z) => (
@@ -244,7 +244,7 @@ export default function AdminEventFormModal({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-ink mb-1">
+              <label className="block text-sm font-semibold text-ink mb-1">
                 Date & Time
               </label>
               <Input
@@ -257,7 +257,7 @@ export default function AdminEventFormModal({
 
           {/* Staff Coordinator */}
           <div className="p-3.5 bg-surface-raised border border-border rounded-2xl space-y-2.5">
-            <div className="text-xs font-bold text-ink flex items-center gap-1.5">
+            <div className="text-sm font-bold text-ink flex items-center gap-1.5">
               <GraduationCap className="w-4 h-4 text-accent" />
               <span>Staff Coordinator (Faculty Incharge)</span>
             </div>
@@ -284,7 +284,7 @@ export default function AdminEventFormModal({
 
           {/* Student Coordinator */}
           <div className="p-3.5 bg-surface-raised border border-border rounded-2xl space-y-2.5">
-            <div className="text-xs font-bold text-ink flex items-center gap-1.5">
+            <div className="text-sm font-bold text-ink flex items-center gap-1.5">
               <Users className="w-4 h-4 text-accent" />
               <span>Student Coordinator</span>
             </div>
@@ -312,7 +312,7 @@ export default function AdminEventFormModal({
           {/* Description & Rules */}
           <div className="space-y-3">
             <div>
-              <label className="block text-xs font-semibold text-ink mb-1">
+              <label className="block text-sm font-semibold text-ink mb-1">
                 Brief Description
               </label>
               <textarea
@@ -320,12 +320,12 @@ export default function AdminEventFormModal({
                 placeholder="Short summary displayed on public cards..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="w-full rounded-[8px] border border-border bg-surface text-ink p-2.5 text-xs focus:outline-none focus:border-accent"
+                className="w-full rounded-[8px] border border-border bg-surface text-ink p-2.5 text-sm focus:outline-none focus:border-accent"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-ink mb-1">
+              <label className="block text-sm font-semibold text-ink mb-1">
                 Rules & Regulations
               </label>
               <textarea
@@ -333,7 +333,7 @@ export default function AdminEventFormModal({
                 placeholder="Competition guidelines and constraints..."
                 value={rules}
                 onChange={(e) => setRules(e.target.value)}
-                className="w-full rounded-[8px] border border-border bg-surface text-ink p-2.5 text-xs font-mono focus:outline-none focus:border-accent"
+                className="w-full rounded-[8px] border border-border bg-surface text-ink p-2.5 text-sm font-mono focus:outline-none focus:border-accent"
               />
             </div>
           </div>

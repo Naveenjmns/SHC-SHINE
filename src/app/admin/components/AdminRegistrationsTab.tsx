@@ -104,7 +104,7 @@ export default function AdminRegistrationsTab({
           <h3 className="text-base font-bold text-ink">
             Student Registrations &amp; Delegation Approvals
           </h3>
-          <p className="text-xs text-ink-muted">
+          <p className="text-sm text-ink-muted">
             Batch-approve contingents college-wise or inspect individual delegates.
           </p>
         </div>
@@ -114,7 +114,7 @@ export default function AdminRegistrationsTab({
             <button
               type="button"
               onClick={() => setRegViewMode("COLLEGE")}
-              className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-colors cursor-pointer flex items-center gap-1.5 ${
+              className={`px-2.5 py-1 text-sm font-semibold rounded-md transition-colors cursor-pointer flex items-center gap-1.5 ${
                 regViewMode === "COLLEGE"
                   ? "bg-surface text-ink"
                   : "text-ink-muted hover:text-ink"
@@ -126,7 +126,7 @@ export default function AdminRegistrationsTab({
             <button
               type="button"
               onClick={() => setRegViewMode("FLAT")}
-              className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-colors cursor-pointer flex items-center gap-1.5 ${
+              className={`px-2.5 py-1 text-sm font-semibold rounded-md transition-colors cursor-pointer flex items-center gap-1.5 ${
                 regViewMode === "FLAT"
                   ? "bg-surface text-ink"
                   : "text-ink-muted hover:text-ink"
@@ -143,14 +143,14 @@ export default function AdminRegistrationsTab({
               placeholder="Search delegate, college..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-8 text-xs h-8 w-44 sm:w-56"
+              className="pl-8 text-sm h-8 w-44 sm:w-56"
             />
           </div>
 
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-2.5 py-1 text-xs border border-border rounded-[8px] bg-surface text-ink font-medium h-8 outline-none"
+            className="px-2.5 py-1 text-sm border border-border rounded-[8px] bg-surface text-ink font-medium h-8 outline-none"
           >
             <option value="ALL">All Statuses</option>
             <option value="PENDING">Pending</option>
@@ -164,7 +164,7 @@ export default function AdminRegistrationsTab({
       {regViewMode === "COLLEGE" && (
         <div className="space-y-3">
           {collegeGroups.length === 0 ? (
-            <div className="text-center py-10 text-xs text-ink-muted bg-surface-raised rounded-2xl border border-border">
+            <div className="text-center py-10 text-sm text-ink-muted bg-surface-raised rounded-2xl border border-border">
               No college registrations match your filter criteria.
             </div>
           ) : (
@@ -186,7 +186,7 @@ export default function AdminRegistrationsTab({
       {/* VIEW MODE 2: FLAT TABLE */}
       {regViewMode === "FLAT" && (
         <div className="overflow-x-auto border border-border rounded-2xl">
-          <table className="w-full text-left text-xs border-collapse">
+          <table className="w-full text-left text-sm border-collapse">
             <thead>
               <tr className="bg-surface-raised border-b border-border font-semibold text-ink-muted uppercase">
                 <th className="py-2.5 px-3">Delegate</th>
@@ -201,7 +201,7 @@ export default function AdminRegistrationsTab({
                 <tr key={reg.id} className="hover:bg-surface-raised transition-colors">
                   <td className="py-2.5 px-3">
                     <span className="font-semibold text-ink block">{reg.user.name}</span>
-                    <span className="text-[11px] text-ink-muted">{reg.user.email}</span>
+                    <span className="text-xs text-ink-muted">{reg.user.email}</span>
                   </td>
                   <td className="py-2.5 px-3 text-ink">
                     {reg.delegation?.collegeName || reg.user.collegeName}
@@ -209,7 +209,7 @@ export default function AdminRegistrationsTab({
                   <td className="py-2.5 px-3 text-ink">{reg.event.name}</td>
                   <td className="py-2.5 px-3">
                     <span
-                      className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                      className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
                         reg.status === "CONFIRMED"
                           ? "bg-success-surface text-success-ink"
                           : reg.status === "PENDING"

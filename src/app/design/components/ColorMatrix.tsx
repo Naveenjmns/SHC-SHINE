@@ -20,7 +20,7 @@ function Swatch({ name, variable, hexValue, textVariant = "dark", wcagContrast, 
         style={{ backgroundColor: `var(${variable}, ${hexValue})` }}
       >
         <span
-          className={`text-xs font-mono font-medium ${
+          className={`text-sm font-mono font-medium ${
             textVariant === "light" ? "text-white" : "text-ink"
           }`}
         >
@@ -28,7 +28,7 @@ function Swatch({ name, variable, hexValue, textVariant = "dark", wcagContrast, 
         </span>
         {wcagContrast && (
           <span
-            className={`self-end text-[10px] font-semibold tabular-nums px-1.5 py-0.5 rounded-full ${
+            className={`self-end text-xs font-semibold tabular-nums px-1.5 py-0.5 rounded-full ${
               textVariant === "light"
                 ? "bg-white/20 text-white"
                 : "bg-white/80 text-ink"
@@ -39,9 +39,9 @@ function Swatch({ name, variable, hexValue, textVariant = "dark", wcagContrast, 
         )}
       </div>
       <div className="p-3 flex flex-col gap-0.5 bg-surface">
-        <span className="text-xs font-semibold text-ink">{name}</span>
-        <span className="text-[11px] font-mono text-ink-muted">{hexValue}</span>
-        {notes && <span className="text-[11px] text-ink-subtle mt-0.5">{notes}</span>}
+        <span className="text-sm font-semibold text-ink">{name}</span>
+        <span className="text-xs font-mono text-ink-muted">{hexValue}</span>
+        {notes && <span className="text-xs text-ink-subtle mt-0.5">{notes}</span>}
       </div>
     </div>
   );
@@ -57,7 +57,7 @@ export default function ColorMatrix() {
       <div>
         <p className="eyebrow">Palette</p>
         <h2 className="text-2xl font-bold text-ink mt-1">2. Color Tokens &amp; WCAG AA Contrast</h2>
-        <p className="text-sm text-ink-muted mt-1 max-w-3xl">
+        <p className="text-[15px] text-ink-muted mt-1 max-w-3xl">
           Navy ink on cool marble: a Cloud canvas with white cards, navy text instead of black, one Signal Blue
           action color, and hairline borders. Every swatch below reads its live CSS variable, so it reflects the
           active theme.
@@ -234,32 +234,32 @@ export default function ColorMatrix() {
           <div className="p-4 border border-success-border bg-success-surface rounded-2xl flex items-start gap-2.5">
             <CheckCircle2 className="w-4 h-4 text-success shrink-0 mt-0.5" />
             <div>
-              <div className="text-xs font-semibold text-success-ink">Success / Confirmed</div>
-              <div className="text-[11px] text-success-ink/80 font-mono mt-0.5">#0E9F6E · ink #065F46 (7.3:1)</div>
+              <div className="text-sm font-semibold text-success-ink">Success / Confirmed</div>
+              <div className="text-xs text-success-ink/80 font-mono mt-0.5">#0E9F6E · ink #065F46 (7.3:1)</div>
             </div>
           </div>
 
           <div className="p-4 border border-warning-border bg-warning-surface rounded-2xl flex items-start gap-2.5">
             <Clock className="w-4 h-4 text-warning shrink-0 mt-0.5" />
             <div>
-              <div className="text-xs font-semibold text-warning-ink">Warning / Pending</div>
-              <div className="text-[11px] text-warning-ink/80 font-mono mt-0.5">#D97706 · ink #78350F (8.8:1)</div>
+              <div className="text-sm font-semibold text-warning-ink">Warning / Pending</div>
+              <div className="text-xs text-warning-ink/80 font-mono mt-0.5">#D97706 · ink #78350F (8.8:1)</div>
             </div>
           </div>
 
           <div className="p-4 border border-danger-border bg-danger-surface rounded-2xl flex items-start gap-2.5">
             <XCircle className="w-4 h-4 text-danger shrink-0 mt-0.5" />
             <div>
-              <div className="text-xs font-semibold text-danger-ink">Danger / Rejected</div>
-              <div className="text-[11px] text-danger-ink/80 font-mono mt-0.5">#E02424 · ink #9B1C1C (7.4:1)</div>
+              <div className="text-sm font-semibold text-danger-ink">Danger / Rejected</div>
+              <div className="text-xs text-danger-ink/80 font-mono mt-0.5">#E02424 · ink #9B1C1C (7.4:1)</div>
             </div>
           </div>
 
           <div className="p-4 border border-info-border bg-info-surface rounded-2xl flex items-start gap-2.5">
             <Info className="w-4 h-4 text-info shrink-0 mt-0.5" />
             <div>
-              <div className="text-xs font-semibold text-info-ink">Info / System Notice</div>
-              <div className="text-[11px] text-info-ink/80 font-mono mt-0.5">#006BFF · ink #004EBA (6.5:1)</div>
+              <div className="text-sm font-semibold text-info-ink">Info / System Notice</div>
+              <div className="text-xs text-info-ink/80 font-mono mt-0.5">#006BFF · ink #004EBA (6.5:1)</div>
             </div>
           </div>
         </div>

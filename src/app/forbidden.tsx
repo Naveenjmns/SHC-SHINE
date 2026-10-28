@@ -6,9 +6,9 @@ export default function Forbidden() {
   return (
     <ErrorPerspectiveStage>
       {/* Fest Status Pill */}
-      <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-surface border border-border text-ink-muted mb-6 shadow-card">
+      <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-sm font-semibold bg-surface border border-border text-ink-muted mb-6 shadow-card">
         <span className="w-2.5 h-2.5 rounded-full bg-warning animate-pulse" />
-        <span className="text-[11px] sm:text-xs">
+        <span className="text-xs sm:text-sm">
           HTTP 403 • Restricted Zone
         </span>
       </div>
@@ -28,7 +28,7 @@ export default function Forbidden() {
       </h1>
 
       {/* Subtitle */}
-      <p className="text-sm sm:text-base md:text-lg text-ink-muted max-w-md mx-auto leading-relaxed mb-6">
+      <p className="text-[15px] sm:text-base md:text-lg text-ink-muted max-w-md mx-auto leading-relaxed mb-6">
         This sector is reserved for verified coordinators, judges, or administrators. Your account lacks the required credentials.
       </p>
 
@@ -36,7 +36,7 @@ export default function Forbidden() {
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 w-full sm:w-auto max-w-xs sm:max-w-none mx-auto mb-6">
         <Link
           href="/login"
-          className="btn-primary text-sm"
+          className="btn-primary text-[15px]"
         >
           <LogIn className="w-4 h-4" />
           <span>Sign in with another role</span>
@@ -44,7 +44,7 @@ export default function Forbidden() {
 
         <Link
           href="/"
-          className="btn-outline text-sm"
+          className="btn-outline text-[15px]"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Back to homepage</span>
@@ -52,7 +52,7 @@ export default function Forbidden() {
       </div>
 
       {/* Quick Links */}
-      <div className="w-full pt-6 mt-4 border-t border-border flex flex-wrap items-center justify-center gap-4 text-xs text-ink-subtle">
+      <div className="w-full pt-6 mt-4 border-t border-border flex flex-wrap items-center justify-center gap-4 text-sm text-ink-subtle">
         <Link href="/dashboard" className="hover:text-accent transition">
           Student Portal
         </Link>

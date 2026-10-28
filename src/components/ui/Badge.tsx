@@ -69,8 +69,8 @@ const variantStyles: Record<BadgeVariant, { classes: string; defaultIcon: ReactN
 };
 
 const sizeStyles: Record<BadgeSize, string> = {
-  sm: "h-6 px-2 text-[11px] gap-1",
-  md: "h-7 px-2.5 text-xs gap-1.5",
+  sm: "h-6 px-2.5 text-xs gap-1",
+  md: "h-8 px-3 text-[13px] gap-1.5",
 };
 
 export function Badge({

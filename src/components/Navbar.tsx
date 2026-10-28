@@ -103,7 +103,7 @@ export default function Navbar({ edition }: NavbarProps) {
             <span className="text-lg font-bold text-ink block">
               {eventName} <span className="text-accent">{editionYear}</span>
             </span>
-            <span className="text-[11px] font-medium text-ink-muted block truncate max-w-[150px] sm:max-w-[220px]">
+            <span className="text-xs font-medium text-ink-muted block truncate max-w-[150px] sm:max-w-[220px]">
               {activeEdition?.institutionShortName || activeEdition?.institutionName || "College Symposium"}
             </span>
           </div>
@@ -213,10 +213,10 @@ export default function Navbar({ edition }: NavbarProps) {
                 <Sparkles className="w-5 h-5 text-accent shrink-0" />
                 <span>
                   <span className="block text-base font-semibold text-ink">Install the {eventName} app</span>
-                  <span className="block text-sm text-ink-muted">Offline passes & live results</span>
+                  <span className="block text-[15px] text-ink-muted">Offline passes & live results</span>
                 </span>
               </span>
-              <span className="text-sm font-semibold text-accent">Install</span>
+              <span className="text-[15px] font-semibold text-accent">Install</span>
             </button>
           </div>
 

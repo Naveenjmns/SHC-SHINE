@@ -156,7 +156,7 @@ export default function PrintableQrModal({
               <h2 className="text-lg font-bold text-ink">
                 Printable Venue QR Checkpoints
               </h2>
-              <p className="text-sm text-ink-muted">
+              <p className="text-[15px] text-ink-muted">
                 Generate high-resolution printable signage for doors, halls, and junctions
               </p>
             </div>
@@ -167,7 +167,7 @@ export default function PrintableQrModal({
               type="button"
               onClick={() => window.print()}
               disabled={generating || qrItems.length === 0}
-              className="min-h-[44px] px-4 py-2 rounded-[8px] bg-accent hover:bg-accent-hover text-accent-ink text-sm font-semibold flex items-center gap-1.5 disabled:opacity-50 disabled:pointer-events-none transition-colors cursor-pointer"
+              className="min-h-[44px] px-4 py-2 rounded-[8px] bg-accent hover:bg-accent-hover text-accent-ink text-[15px] font-semibold flex items-center gap-1.5 disabled:opacity-50 disabled:pointer-events-none transition-colors cursor-pointer"
             >
               <Printer className="w-4 h-4" />
               <span>Print Checkpoints</span>
@@ -185,7 +185,7 @@ export default function PrintableQrModal({
         </header>
 
         {/* Filter controls */}
-        <div className="no-print px-6 py-3 bg-surface border-b border-border flex flex-wrap items-center justify-between gap-2 text-xs">
+        <div className="no-print px-6 py-3 bg-surface border-b border-border flex flex-wrap items-center justify-between gap-2 text-sm">
           <div className="flex items-center gap-2">
             <span className="text-ink-muted font-semibold flex items-center gap-1">
               <Filter className="w-3.5 h-3.5" />
@@ -195,7 +195,7 @@ export default function PrintableQrModal({
             <button
               type="button"
               onClick={() => setFilter("ALL")}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
+              className={`px-3 py-1.5 rounded-full text-sm font-semibold transition-colors ${
                 filter === "ALL"
                   ? "bg-accent text-accent-ink"
                   : "bg-surface-raised text-ink-muted hover:text-ink"
@@ -207,7 +207,7 @@ export default function PrintableQrModal({
             <button
               type="button"
               onClick={() => setFilter("HALLS")}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
+              className={`px-3 py-1.5 rounded-full text-sm font-semibold transition-colors ${
                 filter === "HALLS"
                   ? "bg-accent text-accent-ink"
                   : "bg-surface-raised text-ink-muted hover:text-ink"
@@ -219,7 +219,7 @@ export default function PrintableQrModal({
             <button
               type="button"
               onClick={() => setFilter("AMENITIES")}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
+              className={`px-3 py-1.5 rounded-full text-sm font-semibold transition-colors ${
                 filter === "AMENITIES"
                   ? "bg-accent text-accent-ink"
                   : "bg-surface-raised text-ink-muted hover:text-ink"
@@ -229,7 +229,7 @@ export default function PrintableQrModal({
             </button>
           </div>
 
-          <span className="text-ink-subtle text-xs">
+          <span className="text-ink-subtle text-sm">
             Ready for standard A4 landscape or portrait printing
           </span>
         </div>
@@ -242,10 +242,10 @@ export default function PrintableQrModal({
           {generating ? (
             <div className="col-span-full py-16 text-center text-ink-muted space-y-2">
               <div className="w-8 h-8 border-2 border-accent/20 border-t-accent rounded-full animate-spin mx-auto" />
-              <p className="text-xs">Generating high-density QR checkpoints...</p>
+              <p className="text-sm">Generating high-density QR checkpoints...</p>
             </div>
           ) : filteredItems.length === 0 ? (
-            <div className="col-span-full py-16 text-center text-ink-subtle text-sm">
+            <div className="col-span-full py-16 text-center text-ink-subtle text-[15px]">
               No waypoints found in the current filter.
             </div>
           ) : (
@@ -256,10 +256,10 @@ export default function PrintableQrModal({
               >
                 {/* Header branding on card */}
                 <div className="w-full border-b border-border pb-2">
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-ink-muted block">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-ink-muted block">
                     {institutionName}
                   </span>
-                  <span className="text-xs font-bold text-accent">
+                  <span className="text-sm font-bold text-accent">
                     {editionName} • Indoor Wayfinding
                   </span>
                 </div>
@@ -269,7 +269,7 @@ export default function PrintableQrModal({
                   <h3 className="text-base font-bold text-ink tracking-tight leading-snug">
                     {item.label}
                   </h3>
-                  <div className="flex items-center justify-center gap-1.5 text-[10px] font-mono text-ink-muted">
+                  <div className="flex items-center justify-center gap-1.5 text-xs font-mono text-ink-muted">
                     <span className="bg-surface-raised px-2 py-0.5 rounded-full font-bold">
                       {item.id}
                     </span>
@@ -291,10 +291,10 @@ export default function PrintableQrModal({
 
                 {/* Call to action instruction */}
                 <div className="space-y-1 w-full pt-1 border-t border-border">
-                  <p className="text-[10px] font-bold text-ink uppercase tracking-wider leading-tight">
+                  <p className="text-xs font-bold text-ink uppercase tracking-wider leading-tight">
                     Scan with smartphone camera
                   </p>
-                  <p className="text-[9px] text-ink-muted leading-tight">
+                  <p className="text-xs text-ink-muted leading-tight">
                     Instantly view your location on the campus map & get walking directions
                   </p>
                   <p className="text-[8.5px] font-mono text-ink-subtle truncate pt-0.5">

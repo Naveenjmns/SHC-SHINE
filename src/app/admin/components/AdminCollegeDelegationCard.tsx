@@ -36,11 +36,11 @@ export default function AdminCollegeDelegationCard({
     <div className="bg-surface-raised border border-border rounded-2xl p-4 transition-colors space-y-3">
       <div className="flex items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="font-semibold text-xs text-ink">
+          <span className="font-semibold text-sm text-ink">
             {group.collegeName}
           </span>
           <span
-            className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
+            className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${
               isPaid
                 ? "bg-success-surface text-success-ink border-success-border"
                 : "bg-warning-surface text-warning-ink border-warning-border"
@@ -52,24 +52,24 @@ export default function AdminCollegeDelegationCard({
 
         <div className="shrink-0">
           {group.pendingCount === 0 && group.confirmedCount > 0 ? (
-            <span className="text-xs font-semibold text-success-ink bg-success-surface border border-success-border px-2 py-0.5 rounded-full flex items-center gap-1">
+            <span className="text-sm font-semibold text-success-ink bg-success-surface border border-success-border px-2 py-0.5 rounded-full flex items-center gap-1">
               <CheckCircle2 className="w-3.5 h-3.5 text-success" />
               <span>Approved ({group.confirmedCount})</span>
             </span>
           ) : group.pendingCount > 0 ? (
-            <span className="text-xs font-semibold text-warning-ink bg-warning-surface border border-warning-border px-2 py-0.5 rounded-full flex items-center gap-1">
+            <span className="text-sm font-semibold text-warning-ink bg-warning-surface border border-warning-border px-2 py-0.5 rounded-full flex items-center gap-1">
               <Clock className="w-3.5 h-3.5 text-warning" />
               <span>Pending ({group.pendingCount})</span>
             </span>
           ) : (
-            <span className="text-xs font-semibold text-danger-ink bg-danger-surface border border-danger-border px-2 py-0.5 rounded-full">
+            <span className="text-sm font-semibold text-danger-ink bg-danger-surface border border-danger-border px-2 py-0.5 rounded-full">
               Rejected
             </span>
           )}
         </div>
       </div>
 
-      <div className="text-xs text-ink-muted flex flex-wrap items-center gap-x-3 gap-y-1">
+      <div className="text-sm text-ink-muted flex flex-wrap items-center gap-x-3 gap-y-1">
         <span>Lead: <strong className="text-ink">{group.teamLeadName || "Unspecified"}</strong> ({group.teamLeadPhone || "-"})</span>
         {group.staffInchargeName && (
           <span>· Faculty: <strong className="text-ink">{group.staffInchargeName}</strong></span>
@@ -85,7 +85,7 @@ export default function AdminCollegeDelegationCard({
               variant="primary"
               size="sm"
               onClick={() => onApproveCollege(group)}
-              className="h-7 text-xs"
+              className="h-7 text-sm"
             >
               <Check className="w-3.5 h-3.5 mr-1" />
               Approve College ({group.uniqueStudentsCount})
@@ -103,7 +103,7 @@ export default function AdminCollegeDelegationCard({
                   group.totalFee
                 )
               }
-              className="h-7 text-xs text-warning-ink"
+              className="h-7 text-sm text-warning-ink"
             >
               <ReceiptIndianRupee className="w-3.5 h-3.5 mr-1" />
               Collect ₹{group.totalFee}
@@ -114,7 +114,7 @@ export default function AdminCollegeDelegationCard({
             variant="ghost"
             size="sm"
             onClick={() => onRejectCollege(group)}
-            className="h-7 text-xs text-danger hover:bg-danger-surface"
+            className="h-7 text-sm text-danger hover:bg-danger-surface"
             title="Reject college"
           >
             <X className="w-3.5 h-3.5" />
@@ -125,7 +125,7 @@ export default function AdminCollegeDelegationCard({
           variant="outline"
           size="sm"
           onClick={() => setIsExpanded((prev) => !prev)}
-          className="h-7 text-xs"
+          className="h-7 text-sm"
         >
           <span>{isExpanded ? "Hide Roster" : `Roster (${group.registrations.length})`}</span>
           <ChevronDown
@@ -137,7 +137,7 @@ export default function AdminCollegeDelegationCard({
       {/* Collapsible Roster Table */}
       {isExpanded && (
         <div className="pt-2 border-t border-border overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse">
+          <table className="w-full text-left text-sm border-collapse">
             <thead>
               <tr className="border-b border-border font-semibold text-ink-muted uppercase">
                 <th className="py-2 px-2">Delegate</th>
@@ -152,15 +152,15 @@ export default function AdminCollegeDelegationCard({
                 <tr key={reg.id} className="hover:bg-surface transition-colors">
                   <td className="py-2 px-2 font-medium text-ink">
                     <div>{reg.user.name}</div>
-                    <div className="text-[11px] text-ink-muted">{reg.user.email}</div>
+                    <div className="text-xs text-ink-muted">{reg.user.email}</div>
                   </td>
                   <td className="py-2 px-2 text-ink">{reg.event.name}</td>
-                  <td className="py-2 px-2 font-mono text-[11px] text-accent">
+                  <td className="py-2 px-2 font-mono text-xs text-accent">
                     {reg.delegationMember?.badgeCode || "-"}
                   </td>
                   <td className="py-2 px-2">
                     <span
-                      className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                      className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
                         reg.status === "CONFIRMED"
                           ? "bg-success-surface text-success-ink"
                           : reg.status === "PENDING"

@@ -129,7 +129,7 @@ export default function DataDisplayPreviewMatrix() {
                       <Avatar name="Rahul Sharma" size="sm" />
                       <div>
                         <div className="font-semibold text-ink">Rahul Sharma</div>
-                        <div className="text-xs text-ink-muted">rahul@example.com</div>
+                        <div className="text-sm text-ink-muted">rahul@example.com</div>
                       </div>
                     </div>
                   </TableCell>
@@ -137,7 +137,7 @@ export default function DataDisplayPreviewMatrix() {
                   <TableCell>
                     <Badge variant="confirmed" size="sm">Confirmed</Badge>
                   </TableCell>
-                  <TableCell className="font-mono text-xs text-ink-muted">SHINE26-DEMO-RAHUL</TableCell>
+                  <TableCell className="font-mono text-sm text-ink-muted">SHINE26-DEMO-RAHUL</TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu
                       trigger={
@@ -167,7 +167,7 @@ export default function DataDisplayPreviewMatrix() {
                       <Avatar name="Priya Patel" size="sm" />
                       <div>
                         <div className="font-semibold text-ink">Priya Patel</div>
-                        <div className="text-xs text-ink-muted">priya@example.com</div>
+                        <div className="text-sm text-ink-muted">priya@example.com</div>
                       </div>
                     </div>
                   </TableCell>
@@ -175,7 +175,7 @@ export default function DataDisplayPreviewMatrix() {
                   <TableCell>
                     <Badge variant="pending" size="sm">Pending</Badge>
                   </TableCell>
-                  <TableCell className="font-mono text-xs text-ink-muted">SHINE26-REG-9812</TableCell>
+                  <TableCell className="font-mono text-sm text-ink-muted">SHINE26-REG-9812</TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu
                       trigger={
@@ -193,11 +193,11 @@ export default function DataDisplayPreviewMatrix() {
           </TabsContent>
 
           <TabsContent value="confirmed">
-            <div className="p-6 text-center text-xs text-ink-muted">Showing 2 confirmed students.</div>
+            <div className="p-6 text-center text-sm text-ink-muted">Showing 2 confirmed students.</div>
           </TabsContent>
 
           <TabsContent value="pending">
-            <div className="p-6 text-center text-xs text-ink-muted">Showing 1 pending student.</div>
+            <div className="p-6 text-center text-sm text-ink-muted">Showing 1 pending student.</div>
           </TabsContent>
         </Tabs>
 
@@ -218,7 +218,7 @@ export default function DataDisplayPreviewMatrix() {
             <div className="flex items-center justify-between">
               <Badge variant="gold" size="sm">Podium Event</Badge>
               <Tooltip content="Live in Auditorium Hall 1">
-                <span className="text-xs text-ink-subtle underline cursor-help">Venue Info</span>
+                <span className="text-sm text-ink-subtle underline cursor-help">Venue Info</span>
               </Tooltip>
             </div>
             <CardTitle>Interactive Card Primitive</CardTitle>
@@ -227,12 +227,12 @@ export default function DataDisplayPreviewMatrix() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-xs text-ink-muted">
+            <p className="text-sm text-ink-muted">
               Hover to preview the border-strong and shadow-elevated lift.
             </p>
           </CardContent>
           <CardFooter>
-            <span className="text-xs tabular-nums text-ink-muted">10:30 AM — 01:00 PM</span>
+            <span className="text-sm tabular-nums text-ink-muted">10:30 AM — 01:00 PM</span>
             <Button size="sm" onClick={() => setModalOpen(true)}>
               Open Modal
             </Button>
@@ -261,8 +261,8 @@ export default function DataDisplayPreviewMatrix() {
         title="Event Details Modal"
         description="Native HTML5 <dialog> with focus trap and Esc-to-close"
       >
-        <div className="space-y-4 text-sm text-ink">
-          <p className="text-xs text-ink-muted">
+        <div className="space-y-4 text-[15px] text-ink">
+          <p className="text-sm text-ink-muted">
             Modals utilize <code className="font-mono text-accent">--radius-feature</code> (24px),
             <code className="font-mono text-accent">--shadow-modal</code>, and a translucent navy scrim backdrop.
           </p>

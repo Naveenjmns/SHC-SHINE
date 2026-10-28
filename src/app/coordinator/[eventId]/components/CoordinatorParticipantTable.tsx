@@ -92,10 +92,10 @@ export default function CoordinatorParticipantTable({
                 <div className="flex items-center gap-3">
                   <Avatar name={row.user.name} size="sm" />
                   <div className="space-y-0.5 min-w-0">
-                    <div className="font-semibold text-xs text-ink truncate">
+                    <div className="font-semibold text-sm text-ink truncate">
                       {row.user.name}
                     </div>
-                    <div className="text-[11px] text-ink-muted truncate">
+                    <div className="text-xs text-ink-muted truncate">
                       {row.user.email}
                     </div>
                   </div>
@@ -103,12 +103,12 @@ export default function CoordinatorParticipantTable({
               </TableCell>
 
               {/* College */}
-              <TableCell className="text-xs text-ink-muted truncate max-w-[200px]">
+              <TableCell className="text-sm text-ink-muted truncate max-w-[200px]">
                 {collegeName}
               </TableCell>
 
               {/* Badge Code */}
-              <TableCell className="font-mono text-xs text-ink font-semibold">
+              <TableCell className="font-mono text-sm text-ink font-semibold">
                 {badgeCode}
               </TableCell>
 
@@ -131,7 +131,7 @@ export default function CoordinatorParticipantTable({
 
               {/* Score / Result */}
               <TableCell>
-                <div className="flex items-center gap-2 text-xs">
+                <div className="flex items-center gap-2 text-sm">
                   {row.score !== null && row.score !== undefined && (
                     <span className="font-bold tabular-nums text-ink">
                       {row.score} pts

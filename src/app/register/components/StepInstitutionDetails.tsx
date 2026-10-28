@@ -42,7 +42,7 @@ export default function StepInstitutionDetails({
       <CardContent className="space-y-6 pt-4">
         {/* Institution Fields */}
         <div className="space-y-4">
-          <h3 className="text-sm font-semibold text-ink">
+          <h3 className="text-[15px] font-semibold text-ink">
             College Information
           </h3>
 
@@ -76,7 +76,7 @@ export default function StepInstitutionDetails({
 
         {/* Team Lead Fields */}
         <div className="space-y-4 pt-4 border-t border-border">
-          <h3 className="text-sm font-semibold text-ink">
+          <h3 className="text-[15px] font-semibold text-ink">
             Primary Team Lead Contact (Student)
           </h3>
 
@@ -119,10 +119,10 @@ export default function StepInstitutionDetails({
         {/* Faculty In-Charge (Optional) */}
         <div className="space-y-4 pt-4 border-t border-border">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-ink">
+            <h3 className="text-[15px] font-semibold text-ink">
               Faculty / Staff In-Charge (Optional)
             </h3>
-            <span className="text-xs text-ink-subtle">Recommended for official letters</span>
+            <span className="text-sm text-ink-subtle">Recommended for official letters</span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

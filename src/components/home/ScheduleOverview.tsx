@@ -64,14 +64,14 @@ export default function ScheduleOverview() {
           <ol className="relative rounded-2xl bg-surface border border-border shadow-elevated divide-y divide-border">
             {DEFAULT_SCHEDULE.map((item, idx) => (
               <li key={idx} className="p-5 sm:p-6 grid grid-cols-1 sm:grid-cols-[150px_1fr] gap-2 sm:gap-6">
-                <div className="flex items-center gap-2 text-sm font-semibold text-accent tabular-nums">
+                <div className="flex items-center gap-2 text-[15px] font-semibold text-accent tabular-nums">
                   <Clock className="w-4 h-4 shrink-0 sm:hidden" />
                   <span>{item.time.split(" — ")[0]}</span>
                 </div>
                 <div className="space-y-1.5 min-w-0">
                   <h3 className="text-lg font-semibold text-ink leading-snug">{item.title}</h3>
-                  <p className="text-sm text-ink-muted leading-relaxed">{item.description}</p>
-                  <p className="flex items-center gap-1.5 text-sm text-ink-subtle pt-1">
+                  <p className="text-[15px] text-ink-muted leading-relaxed">{item.description}</p>
+                  <p className="flex items-center gap-1.5 text-[15px] text-ink-subtle pt-1">
                     <MapPin className="w-4 h-4 shrink-0" />
                     <span className="truncate">{item.venue}</span>
                   </p>

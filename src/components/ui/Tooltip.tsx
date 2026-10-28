@@ -37,7 +37,7 @@ export function Tooltip({
       {isVisible && (
         <div
           role="tooltip"
-          className={`absolute z-popover px-2.5 py-1.5 rounded-[6px] bg-ink text-surface text-[11px] font-medium whitespace-nowrap pointer-events-none animate-in fade-in zoom-in-95 duration-100 ${positionClasses[position]}`}
+          className={`absolute z-popover px-2.5 py-1.5 rounded-[6px] bg-ink text-surface text-xs font-medium whitespace-nowrap pointer-events-none animate-in fade-in zoom-in-95 duration-100 ${positionClasses[position]}`}
           style={{ boxShadow: "var(--shadow-popover)" }}
         >
           {content}

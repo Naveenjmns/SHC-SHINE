@@ -71,12 +71,12 @@ export const Switch = forwardRef<HTMLButtonElement, SwitchProps>(
             }`}
           >
             {label && (
-              <div className="text-sm font-medium text-ink leading-tight">
+              <div className="text-[15px] font-medium text-ink leading-tight">
                 {label}
               </div>
             )}
             {description && (
-              <div className="text-xs text-ink-muted leading-normal">
+              <div className="text-sm text-ink-muted leading-normal">
                 {description}
               </div>
             )}

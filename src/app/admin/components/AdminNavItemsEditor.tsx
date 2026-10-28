@@ -47,11 +47,11 @@ export default function AdminNavItemsEditor({
     <div className="bg-surface border border-border rounded-2xl shadow-card p-5 space-y-4">
       <div className="flex items-center justify-between pb-3 border-b border-border">
         <div>
-          <h3 className="text-xs font-semibold text-ink flex items-center gap-2">
+          <h3 className="text-sm font-semibold text-ink flex items-center gap-2">
             <Link2 className="w-4 h-4 text-accent" />
             <span>Navigation Menu Links</span>
           </h3>
-          <p className="text-xs text-ink-muted">
+          <p className="text-sm text-ink-muted">
             Manage links shown in the top navbar and footer.
           </p>
         </div>
@@ -61,7 +61,7 @@ export default function AdminNavItemsEditor({
         {navItems.map((item) => (
           <div
             key={item.id}
-            className="flex items-center justify-between p-2.5 bg-surface-raised border border-border rounded-[8px] text-xs"
+            className="flex items-center justify-between p-2.5 bg-surface-raised border border-border rounded-[8px] text-sm"
           >
             <div className="flex items-center gap-2">
               <button
@@ -77,7 +77,7 @@ export default function AdminNavItemsEditor({
                 )}
               </button>
               <span className="font-semibold text-ink">{item.label}</span>
-              <span className="font-mono text-[11px] text-ink-muted">({item.url})</span>
+              <span className="font-mono text-xs text-ink-muted">({item.url})</span>
             </div>
 
             <button
@@ -97,14 +97,14 @@ export default function AdminNavItemsEditor({
           placeholder="Label (e.g. Schedule)"
           value={newLabel}
           onChange={(e) => setNewLabel(e.target.value)}
-          className="text-xs h-8"
+          className="text-sm h-8"
           required
         />
         <Input
           placeholder="URL (e.g. #schedule)"
           value={newUrl}
           onChange={(e) => setNewUrl(e.target.value)}
-          className="text-xs h-8"
+          className="text-sm h-8"
           required
         />
         <Button
@@ -112,7 +112,7 @@ export default function AdminNavItemsEditor({
           variant="secondary"
           size="sm"
           loading={isAdding}
-          className="h-8 text-xs shrink-0"
+          className="h-8 text-sm shrink-0"
         >
           <Plus className="w-3 h-3 mr-1" />
           Add

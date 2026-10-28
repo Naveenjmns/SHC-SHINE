@@ -123,7 +123,7 @@ export default function StageLeaderboardPage() {
       </section>
 
       {/* Subdued Bottom Metadata Strip */}
-      <div className="py-3 px-6 text-center border-t border-border bg-surface text-xs font-medium text-ink-muted">
+      <div className="py-3 px-6 text-center border-t border-border bg-surface text-sm font-medium text-ink-muted">
         SHINE 26 • Department of Computer Applications (PG) • Sacred Heart College (Autonomous)
       </div>
     </main>

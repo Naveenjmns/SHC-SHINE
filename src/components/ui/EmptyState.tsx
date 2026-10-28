@@ -37,7 +37,7 @@ export function EmptyState({
       <div className="space-y-1 max-w-sm">
         <h3 className="text-base font-bold text-ink">{title}</h3>
         {description && (
-          <p className="text-xs text-ink-muted leading-relaxed">{description}</p>
+          <p className="text-sm text-ink-muted leading-relaxed">{description}</p>
         )}
       </div>
 

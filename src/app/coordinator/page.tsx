@@ -97,7 +97,7 @@ export default function CoordinatorDashboard() {
       <main className="dash-layout min-h-screen bg-canvas flex items-center justify-center p-8">
         <div className="text-center">
           <div className="w-10 h-10 border-3 border-accent-muted border-t-accent rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-sm font-medium text-ink-muted">Loading coordinator portal...</p>
+          <p className="text-[15px] font-medium text-ink-muted">Loading coordinator portal...</p>
         </div>
       </main>
     );
@@ -149,7 +149,7 @@ export default function CoordinatorDashboard() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => setShowCheckInModal(true)}
-              className="tap-target px-3.5 py-1.5 text-xs font-semibold text-accent-ink bg-accent hover:bg-accent-hover rounded-[8px] transition-colors flex items-center gap-1.5 cursor-pointer"
+              className="tap-target px-3.5 py-1.5 text-sm font-semibold text-accent-ink bg-accent hover:bg-accent-hover rounded-[8px] transition-colors flex items-center gap-1.5 cursor-pointer"
             >
               <QrCode className="w-3.5 h-3.5" />
               <span>QR Check-in</span>
@@ -157,28 +157,28 @@ export default function CoordinatorDashboard() {
             {session?.user?.role === "ADMIN" && (
               <Link
                 href="/admin"
-                className="tap-target px-3 py-1.5 text-xs font-semibold text-ink bg-surface border border-border hover:border-accent hover:text-accent rounded-[8px] transition-colors"
+                className="tap-target px-3 py-1.5 text-sm font-semibold text-ink bg-surface border border-border hover:border-accent hover:text-accent rounded-[8px] transition-colors"
               >
                 Switch to Admin Panel →
               </Link>
             )}
             <Link
               href="/leaderboard"
-              className="tap-target px-3 py-1.5 text-xs font-semibold text-ink bg-surface border border-border hover:border-accent hover:text-accent rounded-[8px] transition-colors flex items-center gap-1.5"
+              className="tap-target px-3 py-1.5 text-sm font-semibold text-ink bg-surface border border-border hover:border-accent hover:text-accent rounded-[8px] transition-colors flex items-center gap-1.5"
             >
               <Trophy className="w-3.5 h-3.5 text-gold" />
               Stage Results
             </Link>
             <Link
               href="/profile"
-              className="tap-target px-3 py-1.5 text-xs font-semibold text-ink bg-surface border border-border hover:border-accent hover:text-accent rounded-[8px] transition-colors flex items-center gap-1.5"
+              className="tap-target px-3 py-1.5 text-sm font-semibold text-ink bg-surface border border-border hover:border-accent hover:text-accent rounded-[8px] transition-colors flex items-center gap-1.5"
             >
               <User className="w-3.5 h-3.5 text-ink-muted" />
               <span>My Profile</span>
             </Link>
             <button
               onClick={() => signOut({ callbackUrl: "/" })}
-              className="tap-target px-3 py-1.5 text-xs font-medium text-ink-muted hover:text-danger transition-colors"
+              className="tap-target px-3 py-1.5 text-sm font-medium text-ink-muted hover:text-danger transition-colors"
             >
               Sign Out
             </button>
@@ -198,13 +198,13 @@ export default function CoordinatorDashboard() {
               <h1 className="text-2xl sm:text-3xl font-bold text-ink tracking-tight">
                 {session?.user?.name || "Event Coordinator"}
               </h1>
-              <p className="text-sm text-ink-muted mt-1">
+              <p className="text-[15px] text-ink-muted mt-1">
                 {session?.user?.email} • Manage participant check-ins and enter official competition awards.
               </p>
             </div>
 
             <div className="bg-surface border border-border shadow-card rounded-2xl px-4 py-3 text-right">
-              <div className="text-xs font-medium text-ink-muted">Total Assigned</div>
+              <div className="text-sm font-medium text-ink-muted">Total Assigned</div>
               <div className="text-xl font-bold text-ink tabular-nums">
                 {events.length} Event(s)
               </div>
@@ -215,28 +215,28 @@ export default function CoordinatorDashboard() {
         {/* Metrics Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <div className="dash-card p-5">
-            <div className="text-xs font-medium text-ink-muted">Assigned Events</div>
+            <div className="text-sm font-medium text-ink-muted">Assigned Events</div>
             <div className="text-3xl font-bold text-ink mt-1 tabular-nums">
               {events.length}
             </div>
           </div>
 
           <div className="dash-card p-5">
-            <div className="text-xs font-medium text-ink-muted">Total Registrations</div>
+            <div className="text-sm font-medium text-ink-muted">Total Registrations</div>
             <div className="text-3xl font-bold text-ink mt-1 tabular-nums">
               {totalRegistrations}
             </div>
           </div>
 
           <div className="dash-card p-5">
-            <div className="text-xs font-medium text-ink-muted">Confirmed</div>
+            <div className="text-sm font-medium text-ink-muted">Confirmed</div>
             <div className="text-3xl font-bold text-success mt-1 tabular-nums">
               {totalConfirmed}
             </div>
           </div>
 
           <div className="dash-card p-5">
-            <div className="text-xs font-medium text-ink-muted">Needs Action (Pending)</div>
+            <div className="text-sm font-medium text-ink-muted">Needs Action (Pending)</div>
             <div className="text-3xl font-bold text-warning mt-1 tabular-nums">
               {totalPending}
             </div>
@@ -255,7 +255,7 @@ export default function CoordinatorDashboard() {
               <h3 className="text-base font-bold text-ink mb-1">
                 No Events Assigned Yet
               </h3>
-              <p className="text-sm text-ink-muted">
+              <p className="text-[15px] text-ink-muted">
                 You do not currently have any events linked to your coordinator account. Contact the administrator to assign events.
               </p>
             </div>
@@ -285,7 +285,7 @@ export default function CoordinatorDashboard() {
                             </>
                           )}
                         </span>
-                        <span className="text-xs font-semibold text-ink-muted tabular-nums">
+                        <span className="text-sm font-semibold text-ink-muted tabular-nums">
                           Fee: ₹{ev.fee}
                         </span>
                       </div>
@@ -294,7 +294,7 @@ export default function CoordinatorDashboard() {
                         {ev.name}
                       </h3>
 
-                      <div className="space-y-1 text-xs text-ink-muted mb-6">
+                      <div className="space-y-1 text-sm text-ink-muted mb-6">
                         {ev.venue && (
                           <div className="flex items-center gap-1.5">
                             <MapPin className="w-3.5 h-3.5 text-ink-subtle shrink-0" />
@@ -314,11 +314,11 @@ export default function CoordinatorDashboard() {
 
                       {/* Attendee Progress Bar */}
                       <div className="bg-surface-raised rounded-xl p-4 mb-6">
-                        <div className="flex justify-between text-xs font-bold mb-2">
+                        <div className="flex justify-between text-sm font-bold mb-2">
                           <span className="text-ink-muted">Total Registered:</span>
                           <span className="text-ink tabular-nums">{ev._count.registrations}</span>
                         </div>
-                        <div className="flex gap-4 text-xs">
+                        <div className="flex gap-4 text-sm">
                           <span className="text-success-ink font-semibold inline-flex items-center gap-1">
                             <CheckCircle2 className="w-3.5 h-3.5 text-success" />
                             <span>{confirmedCount} Confirmed</span>
@@ -333,7 +333,7 @@ export default function CoordinatorDashboard() {
 
                     <Link
                       href={`/coordinator/${ev.id}`}
-                      className="tap-target w-full bg-accent hover:bg-accent-hover text-accent-ink text-sm font-semibold rounded-[8px] flex items-center justify-center gap-2 transition-colors"
+                      className="tap-target w-full bg-accent hover:bg-accent-hover text-accent-ink text-[15px] font-semibold rounded-[8px] flex items-center justify-center gap-2 transition-colors"
                     >
                       Manage Registrations & Results →
                     </Link>

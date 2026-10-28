@@ -101,7 +101,7 @@ export function Modal({
                 </h3>
               )}
               {description && (
-                <p className="text-sm text-ink-muted mt-1">{description}</p>
+                <p className="text-[15px] text-ink-muted mt-1">{description}</p>
               )}
             </div>
 

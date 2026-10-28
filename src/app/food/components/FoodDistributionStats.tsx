@@ -48,10 +48,10 @@ export default function FoodDistributionStats({
       {/* Total Meals Progress */}
       <div className="bg-surface border border-border rounded-2xl shadow-card p-4 sm:p-5 flex flex-col justify-between">
         <div className="flex items-center justify-between mb-1.5">
-          <span className="text-xs font-semibold text-ink-muted">
+          <span className="text-sm font-semibold text-ink-muted">
             Total Served
           </span>
-          <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-surface-raised border border-border text-ink">
+          <span className="text-sm font-medium px-2 py-0.5 rounded-full bg-surface-raised border border-border text-ink">
             {claimPct}%
           </span>
         </div>
@@ -59,7 +59,7 @@ export default function FoodDistributionStats({
           <span className="text-2xl sm:text-3xl font-bold text-ink tabular-nums">
             {stats?.totalClaimed ?? 0}
           </span>
-          <span className="text-xs text-ink-muted">
+          <span className="text-sm text-ink-muted">
             / {stats?.totalEligible ?? 0}
           </span>
         </div>
@@ -74,11 +74,11 @@ export default function FoodDistributionStats({
       {/* Vegetarian Counter */}
       <div className="bg-surface border border-border rounded-2xl shadow-card p-4 sm:p-5 flex flex-col justify-between">
         <div className="flex items-center justify-between mb-1.5">
-          <span className="text-xs font-semibold text-ink-muted flex items-center gap-1.5">
+          <span className="text-sm font-semibold text-ink-muted flex items-center gap-1.5">
             <Leaf className="w-3.5 h-3.5 text-success" />
             Vegetarian
           </span>
-          <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-success-surface text-success-ink border border-success-border">
+          <span className="text-sm font-medium px-2 py-0.5 rounded-full bg-success-surface text-success-ink border border-success-border">
             {stats?.veg.remaining ?? 0} left
           </span>
         </div>
@@ -86,7 +86,7 @@ export default function FoodDistributionStats({
           <span className="text-2xl sm:text-3xl font-bold text-success-ink tabular-nums">
             {stats?.veg.claimed ?? 0}
           </span>
-          <span className="text-xs text-ink-muted">
+          <span className="text-sm text-ink-muted">
             of {stats?.veg.requested ?? 0}
           </span>
         </div>
@@ -108,29 +108,29 @@ export default function FoodDistributionStats({
       {isVegOnly ? (
         <div className="bg-surface border border-border rounded-2xl shadow-card p-4 sm:p-5 flex flex-col justify-between">
           <div className="flex items-center justify-between mb-1.5">
-            <span className="text-xs font-semibold text-ink-muted flex items-center gap-1.5">
+            <span className="text-sm font-semibold text-ink-muted flex items-center gap-1.5">
               <Leaf className="w-3.5 h-3.5 text-success" />
               Policy
             </span>
-            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-success-surface text-success-ink border border-success-border">
+            <span className="text-sm font-medium px-2 py-0.5 rounded-full bg-success-surface text-success-ink border border-success-border">
               Pure Veg
             </span>
           </div>
           <div className="text-lg font-semibold text-ink mt-1">
             100% Vegetarian
           </div>
-          <p className="text-xs text-ink-muted mt-2">
+          <p className="text-sm text-ink-muted mt-2">
             Host institution provides vegetarian catering for all delegates.
           </p>
         </div>
       ) : (
         <div className="bg-surface border border-border rounded-2xl shadow-card p-4 sm:p-5 flex flex-col justify-between">
           <div className="flex items-center justify-between mb-1.5">
-            <span className="text-xs font-semibold text-ink-muted flex items-center gap-1.5">
+            <span className="text-sm font-semibold text-ink-muted flex items-center gap-1.5">
               <Utensils className="w-3.5 h-3.5 text-warning" />
               Non-Vegetarian
             </span>
-            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-warning-surface text-warning-ink border border-warning-border">
+            <span className="text-sm font-medium px-2 py-0.5 rounded-full bg-warning-surface text-warning-ink border border-warning-border">
               {stats?.nonVeg.remaining ?? 0} left
             </span>
           </div>
@@ -138,7 +138,7 @@ export default function FoodDistributionStats({
             <span className="text-2xl sm:text-3xl font-bold text-warning-ink tabular-nums">
               {stats?.nonVeg.claimed ?? 0}
             </span>
-            <span className="text-xs text-ink-muted">
+            <span className="text-sm text-ink-muted">
               of {stats?.nonVeg.requested ?? 0}
             </span>
           </div>
@@ -160,11 +160,11 @@ export default function FoodDistributionStats({
       {/* Queue Remaining */}
       <div className="bg-surface border border-border rounded-2xl shadow-card p-4 sm:p-5 flex flex-col justify-between">
         <div className="flex items-center justify-between mb-1.5">
-          <span className="text-xs font-semibold text-ink-muted flex items-center gap-1.5">
+          <span className="text-sm font-semibold text-ink-muted flex items-center gap-1.5">
             <Clock className="w-3.5 h-3.5 text-ink-muted" />
             Remaining Queue
           </span>
-          <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-surface-raised border border-border text-ink">
+          <span className="text-sm font-medium px-2 py-0.5 rounded-full bg-surface-raised border border-border text-ink">
             Pending
           </span>
         </div>
@@ -172,9 +172,9 @@ export default function FoodDistributionStats({
           <span className="text-2xl sm:text-3xl font-bold text-ink tabular-nums">
             {stats?.totalRemaining ?? 0}
           </span>
-          <span className="text-xs text-ink-muted">delegates</span>
+          <span className="text-sm text-ink-muted">delegates</span>
         </div>
-        <p className="text-xs text-ink-muted mt-3 truncate">
+        <p className="text-sm text-ink-muted mt-3 truncate">
           {isVegOnly
             ? `${stats?.totalRemaining ?? 0} Pure Veg Pending`
             : `${stats?.veg.remaining ?? 0} Veg · ${stats?.nonVeg.remaining ?? 0} Non-Veg`}

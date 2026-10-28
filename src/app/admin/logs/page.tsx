@@ -174,40 +174,40 @@ export default function AdminLogsPage() {
   const getActionBadge = (action: string) => {
     switch (action) {
       case "REGISTRATION_APPROVED":
-        return <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-success-surface text-success-ink">Approved</span>;
+        return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-success-surface text-success-ink">Approved</span>;
       case "REGISTRATION_REJECTED":
-        return <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-danger-surface text-danger-ink">Rejected</span>;
+        return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-danger-surface text-danger-ink">Rejected</span>;
       case "REGISTRATION_CREATED":
-        return <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-warning-surface text-warning-ink">Registration</span>;
+        return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-warning-surface text-warning-ink">Registration</span>;
       case "USER_LOGIN":
-        return <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-info-surface text-info-ink">Login</span>;
+        return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-info-surface text-info-ink">Login</span>;
       case "USER_CREATED":
-        return <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-accent-muted text-accent-strong">User Added</span>;
+        return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-accent-muted text-accent-strong">User Added</span>;
       case "USER_DELETED":
-        return <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-danger-surface text-danger-ink">User Deleted</span>;
+        return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-danger-surface text-danger-ink">User Deleted</span>;
       case "EVENT_CREATED":
-        return <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-accent-muted text-accent-strong">Event Created</span>;
+        return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-accent-muted text-accent-strong">Event Created</span>;
       case "EVENT_UPDATED":
-        return <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-warning-surface text-warning-ink">Event Updated</span>;
+        return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-warning-surface text-warning-ink">Event Updated</span>;
       case "EVENT_DELETED":
-        return <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-danger-surface text-danger-ink">Event Deleted</span>;
+        return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-danger-surface text-danger-ink">Event Deleted</span>;
       case "RESULT_UPDATED":
-        return <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-accent-muted text-accent-strong">Result Awarded</span>;
+        return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-accent-muted text-accent-strong">Result Awarded</span>;
       case "EMAIL_BROADCAST":
-        return <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-accent-muted text-accent-strong">Email Broadcast</span>;
+        return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-accent-muted text-accent-strong">Email Broadcast</span>;
       case "SMTP_SETTINGS_UPDATED":
       case "EDITION_UPDATED":
-        return <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-surface-raised text-ink">Config Updated</span>;
+        return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-surface-raised text-ink">Config Updated</span>;
       default:
-        return <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-surface-raised text-ink">{action}</span>;
+        return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-surface-raised text-ink">{action}</span>;
     }
   };
 
   const getRoleBadge = (role: string | null) => {
     if (!role) return null;
-    if (role === "ADMIN") return <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-danger-surface text-danger-ink border border-danger-border">ADMIN</span>;
-    if (role === "COORDINATOR") return <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-info-surface text-info-ink border border-info-border">COORD</span>;
-    return <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-surface-raised text-ink-muted">STUDENT</span>;
+    if (role === "ADMIN") return <span className="text-xs font-bold px-1.5 py-0.5 rounded bg-danger-surface text-danger-ink border border-danger-border">ADMIN</span>;
+    if (role === "COORDINATOR") return <span className="text-xs font-bold px-1.5 py-0.5 rounded bg-info-surface text-info-ink border border-info-border">COORD</span>;
+    return <span className="text-xs font-bold px-1.5 py-0.5 rounded bg-surface-raised text-ink-muted">STUDENT</span>;
   };
 
   if (status === "loading" || loading) {
@@ -215,7 +215,7 @@ export default function AdminLogsPage() {
       <main className="dash-layout flex items-center justify-center p-8">
         <div className="text-center">
           <div className="w-10 h-10 border-3 border-accent/20 border-t-accent rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-xs font-semibold text-ink-muted">Loading system audit trail...</p>
+          <p className="text-sm font-semibold text-ink-muted">Loading system audit trail...</p>
         </div>
       </main>
     );
@@ -228,15 +228,15 @@ export default function AdminLogsPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between h-16 items-center">
           <div className="flex items-center gap-3">
             <Link href="/" className="flex items-center gap-2">
-              <span className="w-7 h-7 rounded-[8px] bg-accent flex items-center justify-center text-white font-bold text-sm">
+              <span className="w-7 h-7 rounded-[8px] bg-accent flex items-center justify-center text-white font-bold text-[15px]">
                 S
               </span>
-              <span className="font-bold text-sm tracking-tight text-ink">
+              <span className="font-bold text-[15px] tracking-tight text-ink">
                 SHINE <span className="text-accent">ADMIN</span>
               </span>
             </Link>
             <span className="text-ink-disabled">/</span>
-            <div className="flex items-center gap-1 text-xs font-semibold text-ink-muted">
+            <div className="flex items-center gap-1 text-sm font-semibold text-ink-muted">
               <History className="w-3.5 h-3.5 text-accent" />
               <span>Activity Audit Trail</span>
             </div>
@@ -245,19 +245,19 @@ export default function AdminLogsPage() {
           <div className="flex items-center gap-2">
             <Link
               href="/admin"
-              className="px-3 py-1.5 rounded-[8px] border border-border text-xs font-semibold text-ink-muted hover:bg-surface-raised transition"
+              className="px-3 py-1.5 rounded-[8px] border border-border text-sm font-semibold text-ink-muted hover:bg-surface-raised transition"
             >
               ← Overview
             </Link>
             <Link
               href="/admin/events"
-              className="px-3 py-1.5 rounded-[8px] border border-border text-xs font-semibold text-ink-muted hover:bg-surface-raised transition"
+              className="px-3 py-1.5 rounded-[8px] border border-border text-sm font-semibold text-ink-muted hover:bg-surface-raised transition"
             >
               Events Catalog
             </Link>
             <Link
               href="/admin/users"
-              className="px-3 py-1.5 rounded-[8px] border border-border text-xs font-semibold text-ink-muted hover:bg-surface-raised transition"
+              className="px-3 py-1.5 rounded-[8px] border border-border text-sm font-semibold text-ink-muted hover:bg-surface-raised transition"
             >
               User Accounts
             </Link>
@@ -273,7 +273,7 @@ export default function AdminLogsPage() {
               <History className="w-7 h-7 text-accent" />
               <span>System Activity Logs</span>
             </h1>
-            <p className="text-xs sm:text-sm text-ink-muted mt-1">
+            <p className="text-sm sm:text-[15px] text-ink-muted mt-1">
               Full audit trail recording user logins, event registrations, coordinator approvals, award updates, and email dispatches.
             </p>
           </div>
@@ -281,7 +281,7 @@ export default function AdminLogsPage() {
           <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={exportCSV}
-              className="tap-target inline-flex items-center gap-1.5 px-3.5 py-2 rounded-[8px] text-xs font-bold border border-border-strong bg-surface text-ink-muted hover:bg-surface-raised transition cursor-pointer"
+              className="tap-target inline-flex items-center gap-1.5 px-3.5 py-2 rounded-[8px] text-sm font-bold border border-border-strong bg-surface text-ink-muted hover:bg-surface-raised transition cursor-pointer"
             >
               <Download className="w-3.5 h-3.5" />
               <span>Export CSV</span>
@@ -289,7 +289,7 @@ export default function AdminLogsPage() {
             <button
               onClick={() => fetchLogs()}
               disabled={refreshing}
-              className="tap-target inline-flex items-center gap-1.5 px-3.5 py-2 rounded-[8px] text-xs font-bold bg-surface-inverse text-white hover:opacity-90 transition cursor-pointer disabled:opacity-50"
+              className="tap-target inline-flex items-center gap-1.5 px-3.5 py-2 rounded-[8px] text-sm font-bold bg-surface-inverse text-white hover:opacity-90 transition cursor-pointer disabled:opacity-50"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} />
               <span>Refresh</span>
@@ -301,7 +301,7 @@ export default function AdminLogsPage() {
         <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-border">
           <button
             onClick={() => handleCategoryChange("ALL")}
-            className={`tap-target px-3 py-1.5 rounded-[8px] text-xs font-bold transition cursor-pointer inline-flex items-center gap-1.5 ${
+            className={`tap-target px-3 py-1.5 rounded-[8px] text-sm font-bold transition cursor-pointer inline-flex items-center gap-1.5 ${
               category === "ALL"
                 ? "bg-accent text-accent-ink border border-accent"
                 : "bg-surface text-ink-muted hover:text-ink border border-border"
@@ -313,7 +313,7 @@ export default function AdminLogsPage() {
 
           <button
             onClick={() => handleCategoryChange("REGISTRATION")}
-            className={`tap-target px-3 py-1.5 rounded-[8px] text-xs font-bold transition cursor-pointer inline-flex items-center gap-1.5 ${
+            className={`tap-target px-3 py-1.5 rounded-[8px] text-sm font-bold transition cursor-pointer inline-flex items-center gap-1.5 ${
               category === "REGISTRATION"
                 ? "bg-accent text-accent-ink border border-accent"
                 : "bg-surface text-ink-muted hover:text-ink border border-border"
@@ -325,7 +325,7 @@ export default function AdminLogsPage() {
 
           <button
             onClick={() => handleCategoryChange("AUTH")}
-            className={`tap-target px-3 py-1.5 rounded-[8px] text-xs font-bold transition cursor-pointer inline-flex items-center gap-1.5 ${
+            className={`tap-target px-3 py-1.5 rounded-[8px] text-sm font-bold transition cursor-pointer inline-flex items-center gap-1.5 ${
               category === "AUTH"
                 ? "bg-accent text-accent-ink border border-accent"
                 : "bg-surface text-ink-muted hover:text-ink border border-border"
@@ -337,7 +337,7 @@ export default function AdminLogsPage() {
 
           <button
             onClick={() => handleCategoryChange("EVENT")}
-            className={`tap-target px-3 py-1.5 rounded-[8px] text-xs font-bold transition cursor-pointer inline-flex items-center gap-1.5 ${
+            className={`tap-target px-3 py-1.5 rounded-[8px] text-sm font-bold transition cursor-pointer inline-flex items-center gap-1.5 ${
               category === "EVENT"
                 ? "bg-accent text-accent-ink border border-accent"
                 : "bg-surface text-ink-muted hover:text-ink border border-border"
@@ -349,7 +349,7 @@ export default function AdminLogsPage() {
 
           <button
             onClick={() => handleCategoryChange("EMAIL")}
-            className={`tap-target px-3 py-1.5 rounded-[8px] text-xs font-bold transition cursor-pointer inline-flex items-center gap-1.5 ${
+            className={`tap-target px-3 py-1.5 rounded-[8px] text-sm font-bold transition cursor-pointer inline-flex items-center gap-1.5 ${
               category === "EMAIL"
                 ? "bg-accent text-accent-ink border border-accent"
                 : "bg-surface text-ink-muted hover:text-ink border border-border"
@@ -361,7 +361,7 @@ export default function AdminLogsPage() {
 
           <button
             onClick={() => handleCategoryChange("USER")}
-            className={`tap-target px-3 py-1.5 rounded-[8px] text-xs font-bold transition cursor-pointer inline-flex items-center gap-1.5 ${
+            className={`tap-target px-3 py-1.5 rounded-[8px] text-sm font-bold transition cursor-pointer inline-flex items-center gap-1.5 ${
               category === "USER"
                 ? "bg-accent text-accent-ink border border-accent"
                 : "bg-surface text-ink-muted hover:text-ink border border-border"
@@ -381,12 +381,12 @@ export default function AdminLogsPage() {
               placeholder="Search by actor name, student email, target event name, or action keyword..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full h-11 bg-surface border border-border-strong rounded-[8px] pl-10 pr-4 text-xs sm:text-sm text-ink focus:outline-none focus:border-accent"
+              className="w-full h-11 bg-surface border border-border-strong rounded-[8px] pl-10 pr-4 text-sm sm:text-[15px] text-ink focus:outline-none focus:border-accent"
             />
           </div>
           <button
             type="submit"
-            className="tap-target px-5 h-11 rounded-[8px] bg-accent text-white font-bold text-xs hover:bg-accent-hover transition cursor-pointer shrink-0"
+            className="tap-target px-5 h-11 rounded-[8px] bg-accent text-white font-bold text-sm hover:bg-accent-hover transition cursor-pointer shrink-0"
           >
             Search
           </button>
@@ -397,7 +397,7 @@ export default function AdminLogsPage() {
                 setSearch("");
                 setPage(1);
               }}
-              className="tap-target px-3 h-11 rounded-[8px] bg-surface-raised text-ink-muted font-bold text-xs hover:bg-surface-sunken transition cursor-pointer"
+              className="tap-target px-3 h-11 rounded-[8px] bg-surface-raised text-ink-muted font-bold text-sm hover:bg-surface-sunken transition cursor-pointer"
             >
               Clear
             </button>
@@ -407,9 +407,9 @@ export default function AdminLogsPage() {
         {/* Activity Logs Table */}
         <div className="bg-surface rounded-2xl border border-border shadow-card overflow-hidden">
           <div className="table-responsive">
-            <table className="w-full text-left border-collapse text-xs">
+            <table className="w-full text-left border-collapse text-sm">
               <thead>
-                <tr className="border-b border-border bg-surface-raised/75 text-ink-muted font-bold text-[11px] uppercase tracking-wider">
+                <tr className="border-b border-border bg-surface-raised/75 text-ink-muted font-bold text-xs uppercase tracking-wider">
                   <th className="p-3.5 pl-5">Timestamp</th>
                   <th className="p-3.5">Actor / User</th>
                   <th className="p-3.5">Action Type</th>
@@ -423,7 +423,7 @@ export default function AdminLogsPage() {
                     <td colSpan={5} className="p-12 text-center text-ink-subtle">
                       <History className="w-8 h-8 text-ink-disabled mx-auto mb-2" />
                       <p className="font-semibold text-ink-muted">No activity logs found</p>
-                      <p className="text-xs text-ink-subtle mt-0.5">
+                      <p className="text-sm text-ink-subtle mt-0.5">
                         Activities will be logged automatically as students register, coordinators approve, and admins configure the platform.
                       </p>
                     </td>
@@ -445,7 +445,7 @@ export default function AdminLogsPage() {
                       <tr key={log.id} className="hover:bg-surface-raised/70 transition-colors">
                         <td className="p-3.5 pl-5 whitespace-nowrap text-ink-muted">
                           <div className="font-bold text-ink">{formattedDate}</div>
-                          <div className="text-[11px] text-ink-subtle tabular-nums">{formattedTime}</div>
+                          <div className="text-xs text-ink-subtle tabular-nums">{formattedTime}</div>
                         </td>
 
                         <td className="p-3.5">
@@ -453,7 +453,7 @@ export default function AdminLogsPage() {
                             <span className="font-bold text-ink">{log.actorName || "System"}</span>
                             {getRoleBadge(log.actorRole)}
                           </div>
-                          <div className="text-[11px] text-ink-muted truncate max-w-[200px]">
+                          <div className="text-xs text-ink-muted truncate max-w-[200px]">
                             {log.actorEmail || "automated@system"}
                           </div>
                         </td>
@@ -467,7 +467,7 @@ export default function AdminLogsPage() {
                             {log.targetTitle || log.action}
                           </div>
                           {log.targetType && (
-                            <div className="text-[11px] text-ink-subtle mt-0.5">
+                            <div className="text-xs text-ink-subtle mt-0.5">
                               Entity: <span className="font-medium text-ink-muted">{log.targetType}</span>
                             </div>
                           )}
@@ -476,7 +476,7 @@ export default function AdminLogsPage() {
                         <td className="p-3.5 pr-5 text-right whitespace-nowrap">
                           <button
                             onClick={() => setSelectedLog(log)}
-                            className="tap-target inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold text-ink-muted bg-surface-raised hover:bg-surface-sunken rounded-[8px] transition-colors cursor-pointer"
+                            className="tap-target inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold text-ink-muted bg-surface-raised hover:bg-surface-sunken rounded-[8px] transition-colors cursor-pointer"
                           >
                             <Eye className="w-3 h-3" />
                             <span>Inspect</span>
@@ -492,7 +492,7 @@ export default function AdminLogsPage() {
 
           {/* Pagination Controls */}
           {totalPages > 1 && (
-            <div className="p-4 border-t border-border flex items-center justify-between gap-4 text-xs text-ink-muted">
+            <div className="p-4 border-t border-border flex items-center justify-between gap-4 text-sm text-ink-muted">
               <div>
                 Showing page <span className="font-bold text-ink">{page}</span> of{" "}
                 <span className="font-bold text-ink">{totalPages}</span> ({totalCount} total activities)
@@ -535,7 +535,7 @@ export default function AdminLogsPage() {
               </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 text-xs bg-surface-raised p-4 rounded-2xl border border-border/80">
+            <div className="grid grid-cols-2 gap-3 text-sm bg-surface-raised p-4 rounded-2xl border border-border/80">
               <div>
                 <span className="text-ink-subtle font-medium">Action</span>
                 <div className="mt-0.5">{getActionBadge(selectedLog.action)}</div>
@@ -551,18 +551,18 @@ export default function AdminLogsPage() {
                 <div className="font-bold text-ink mt-0.5">
                   {selectedLog.actorName || "Unknown"} ({selectedLog.actorRole || "N/A"})
                 </div>
-                <div className="text-[11px] text-ink-muted font-mono">{selectedLog.actorEmail || "None"}</div>
+                <div className="text-xs text-ink-muted font-mono">{selectedLog.actorEmail || "None"}</div>
               </div>
               <div>
                 <span className="text-ink-subtle font-medium">Target Resource</span>
                 <div className="font-bold text-ink mt-0.5">{selectedLog.targetTitle || "None"}</div>
-                <div className="text-[11px] text-ink-muted">{selectedLog.targetType || "System"}</div>
+                <div className="text-xs text-ink-muted">{selectedLog.targetType || "System"}</div>
               </div>
             </div>
 
             <div>
-              <span className="block text-xs font-bold text-ink-muted mb-1.5">Payload & Metadata</span>
-              <pre className="p-3.5 bg-surface-raised text-ink rounded-2xl font-mono text-[11px] leading-relaxed overflow-x-auto max-h-60 border border-border">
+              <span className="block text-sm font-bold text-ink-muted mb-1.5">Payload & Metadata</span>
+              <pre className="p-3.5 bg-surface-raised text-ink rounded-2xl font-mono text-xs leading-relaxed overflow-x-auto max-h-60 border border-border">
                 {selectedLog.details
                   ? (() => {
                       try {
@@ -578,7 +578,7 @@ export default function AdminLogsPage() {
             <div className="pt-2 flex justify-end">
               <button
                 onClick={() => setSelectedLog(null)}
-                className="tap-target px-4 py-2 rounded-[8px] text-xs font-bold bg-surface-inverse text-white hover:opacity-90 transition cursor-pointer"
+                className="tap-target px-4 py-2 rounded-[8px] text-sm font-bold bg-surface-inverse text-white hover:opacity-90 transition cursor-pointer"
               >
                 Close Record
               </button>

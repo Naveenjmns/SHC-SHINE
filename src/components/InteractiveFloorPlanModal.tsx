@@ -32,7 +32,7 @@ const Venue3D = dynamic(() => import("@/components/Venue3D"), {
   loading: () => (
     <div className="absolute inset-0 flex flex-col items-center justify-center text-ink-muted space-y-3 z-20 bg-canvas">
       <div className="w-10 h-10 border-3 border-accent/20 border-t-accent rounded-full animate-spin" />
-      <p className="text-xs font-semibold text-ink-muted">Initializing 3D Venue Simulator...</p>
+      <p className="text-sm font-semibold text-ink-muted">Initializing 3D Venue Simulator...</p>
     </div>
   ),
 });
@@ -752,13 +752,13 @@ export default function InteractiveFloorPlanModal({
                   {title}
                 </h2>
                 {currentZoneDisplayName && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-accent-muted text-accent-strong shrink-0">
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-accent-muted text-accent-strong shrink-0">
                     <span className="w-1.5 h-1.5 rounded-full bg-accent animate-ping" />
                     <span>Target: {currentZoneDisplayName}</span>
                   </span>
                 )}
               </div>
-              <p className="text-xs text-ink-muted truncate">
+              <p className="text-sm text-ink-muted truncate">
                 {subtitle || "Interactive Blueprint • Sacred Heart College (Autonomous) Campus"}
               </p>
             </div>
@@ -772,7 +772,7 @@ export default function InteractiveFloorPlanModal({
                 type="button"
                 onClick={() => handleComputeRoute()}
                 disabled={navigating}
-                className="tap-target hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] bg-accent hover:bg-accent-hover text-accent-ink text-xs font-semibold hover:shadow-button transition"
+                className="tap-target hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] bg-accent hover:bg-accent-hover text-accent-ink text-sm font-semibold hover:shadow-button transition"
               >
                 <Route className={`w-3.5 h-3.5 ${navigating ? "animate-spin" : ""}`} />
                 <span>{navigating ? "Routing..." : "Navigate Me"}</span>
@@ -780,7 +780,7 @@ export default function InteractiveFloorPlanModal({
             )}
 
             {/* 2D / 3D Mode Selector */}
-            <div className="hidden sm:flex items-center p-0.5 bg-surface-raised border border-border rounded-[8px] text-xs font-semibold">
+            <div className="hidden sm:flex items-center p-0.5 bg-surface-raised border border-border rounded-[8px] text-sm font-semibold">
               <button
                 type="button"
                 onClick={() => setActiveTab("2D")}
@@ -829,12 +829,12 @@ export default function InteractiveFloorPlanModal({
         </header>
 
         {/* ==================== SUB-BAR: ORIGIN & QUICK DESTINATION SELECTOR ==================== */}
-        <div className="px-4 sm:px-6 py-2 bg-canvas border-b border-border flex flex-wrap items-center justify-between gap-2 text-xs">
+        <div className="px-4 sm:px-6 py-2 bg-canvas border-b border-border flex flex-wrap items-center justify-between gap-2 text-sm">
           <div className="flex items-center gap-2 flex-wrap">
             {/* Origin indicator with selector */}
             <div className="flex items-center gap-1.5 bg-surface border border-border px-2.5 py-1 rounded-[8px] text-ink">
               <span className="w-2 h-2 rounded-full bg-blob-magenta animate-pulse" />
-              <span className="text-[11px] text-ink-muted">Origin:</span>
+              <span className="text-xs text-ink-muted">Origin:</span>
               <select
                 value={userWaypointId}
                 onChange={(e) => {
@@ -846,7 +846,7 @@ export default function InteractiveFloorPlanModal({
                     handleComputeRoute();
                   }
                 }}
-                className="bg-transparent font-semibold text-ink text-xs focus:outline-none cursor-pointer"
+                className="bg-transparent font-semibold text-ink text-sm focus:outline-none cursor-pointer"
               >
                 {availableWaypoints.length > 0 ? (
                   availableWaypoints.map((w) => (
@@ -865,7 +865,7 @@ export default function InteractiveFloorPlanModal({
             {/* Target Destination Selector */}
             <div className="flex items-center gap-1.5 bg-surface border border-border px-2.5 py-1 rounded-[8px] text-ink">
               <MapPin className="w-3 h-3 text-accent" />
-              <span className="text-[11px] text-ink-muted">Target:</span>
+              <span className="text-xs text-ink-muted">Target:</span>
               <select
                 value={selectedZoneId || ""}
                 onChange={(e) => {
@@ -877,7 +877,7 @@ export default function InteractiveFloorPlanModal({
                     handleClearRoute();
                   }
                 }}
-                className="bg-transparent font-semibold text-ink text-xs focus:outline-none cursor-pointer max-w-[140px] sm:max-w-none truncate"
+                className="bg-transparent font-semibold text-ink text-sm focus:outline-none cursor-pointer max-w-[140px] sm:max-w-none truncate"
               >
                 <option value="" className="bg-surface text-ink-muted">Select Venue Destination...</option>
                 {availableZones.map((z) => (
@@ -894,7 +894,7 @@ export default function InteractiveFloorPlanModal({
                 type="button"
                 onClick={() => handleComputeRoute()}
                 disabled={navigating}
-                className="sm:hidden tap-target inline-flex items-center gap-1 px-2.5 py-1 rounded-[8px] bg-accent hover:bg-accent-hover text-accent-ink text-xs font-semibold"
+                className="sm:hidden tap-target inline-flex items-center gap-1 px-2.5 py-1 rounded-[8px] bg-accent hover:bg-accent-hover text-accent-ink text-sm font-semibold"
               >
                 <Route className="w-3 h-3" />
                 <span>Navigate</span>
@@ -908,7 +908,7 @@ export default function InteractiveFloorPlanModal({
               type="button"
               onClick={handleOutdoorGeolocation}
               disabled={locatingGeo}
-              className="inline-flex items-center gap-1 text-[11px] font-semibold text-ink-muted hover:text-ink px-2 py-1 rounded-[8px] bg-surface border border-border hover:bg-surface-raised transition"
+              className="inline-flex items-center gap-1 text-xs font-semibold text-ink-muted hover:text-ink px-2 py-1 rounded-[8px] bg-surface border border-border hover:bg-surface-raised transition"
               title="Detect campus proximity using GPS"
             >
               <Locate className={`w-3 h-3 ${locatingGeo ? "animate-spin text-accent" : ""}`} />
@@ -918,7 +918,7 @@ export default function InteractiveFloorPlanModal({
             <button
               type="button"
               onClick={() => setShowPrivacyNotice(!showPrivacyNotice)}
-              className="text-[11px] text-ink-muted hover:text-ink inline-flex items-center gap-1"
+              className="text-xs text-ink-muted hover:text-ink inline-flex items-center gap-1"
               title="Zero tracking privacy policy"
             >
               <ShieldCheck className="w-3 h-3 text-success" />
@@ -929,7 +929,7 @@ export default function InteractiveFloorPlanModal({
 
         {/* Geolocation feedback banner */}
         {geoNotice && (
-          <div className="px-4 py-1.5 bg-success-surface border-b border-success-border text-[11px] text-success-ink flex items-center justify-between">
+          <div className="px-4 py-1.5 bg-success-surface border-b border-success-border text-xs text-success-ink flex items-center justify-between">
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-3.5 h-3.5 text-success shrink-0" />
               <span>{geoNotice}</span>
@@ -937,7 +937,7 @@ export default function InteractiveFloorPlanModal({
             <button
               type="button"
               onClick={() => setGeoNotice(null)}
-              className="text-success-ink hover:text-ink ml-2 text-xs"
+              className="text-success-ink hover:text-ink ml-2 text-sm"
             >
               ×
             </button>
@@ -946,7 +946,7 @@ export default function InteractiveFloorPlanModal({
 
         {/* Privacy notice banner */}
         {showPrivacyNotice && (
-          <div className="px-4 py-2 bg-surface-raised border-b border-border text-[11px] text-ink-muted flex items-center justify-between">
+          <div className="px-4 py-2 bg-surface-raised border-b border-border text-xs text-ink-muted flex items-center justify-between">
             <div className="flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-success shrink-0" />
               <span>
@@ -978,7 +978,7 @@ export default function InteractiveFloorPlanModal({
           {loading ? (
             <div className="absolute inset-0 flex flex-col items-center justify-center text-ink-muted space-y-3 z-20">
               <div className="w-10 h-10 border-3 border-accent/20 border-t-accent rounded-full animate-spin" />
-              <p className="text-xs font-semibold text-ink-muted">Loading campus blueprint...</p>
+              <p className="text-sm font-semibold text-ink-muted">Loading campus blueprint...</p>
             </div>
           ) : loadError ? (
             <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6 z-20">
@@ -986,13 +986,13 @@ export default function InteractiveFloorPlanModal({
                 <Info className="w-6 h-6" />
               </div>
               <h3 className="text-base font-bold text-ink mb-1">Floor Plan Preview Unavailable</h3>
-              <p className="text-xs text-ink-muted max-w-sm mb-4">
+              <p className="text-sm text-ink-muted max-w-sm mb-4">
                 The floor plan map is currently being updated or finalized by event coordinators.
               </p>
               <button
                 type="button"
                 onClick={onClose}
-                className="tap-target px-4 py-2 bg-surface border border-border hover:border-accent hover:text-accent text-ink text-xs font-semibold rounded-[8px] transition-colors"
+                className="tap-target px-4 py-2 bg-surface border border-border hover:border-accent hover:text-accent text-ink text-sm font-semibold rounded-[8px] transition-colors"
               >
                 Close Map
               </button>
@@ -1093,10 +1093,10 @@ export default function InteractiveFloorPlanModal({
               <div className="bg-surface border border-border px-3.5 py-2 rounded-2xl shadow-popover flex items-center gap-2">
                 <MapPin className="w-3.5 h-3.5 text-accent" />
                 <div>
-                  <span className="eyebrow text-[10px] block">
+                  <span className="eyebrow text-xs block">
                     {hoveredZoneName ? "Inspecting Room" : "Target Venue Room"}
                   </span>
-                  <span className="text-xs font-bold text-ink">
+                  <span className="text-sm font-bold text-ink">
                     {hoveredZoneName || currentZoneDisplayName}
                   </span>
                 </div>
@@ -1111,10 +1111,10 @@ export default function InteractiveFloorPlanModal({
                 <div className="flex items-center gap-2">
                   <Navigation className="w-4 h-4 text-accent" />
                   <div>
-                    <span className="text-xs font-bold text-ink block">
+                    <span className="text-sm font-bold text-ink block">
                       Turn-by-Turn Directions
                     </span>
-                    <span className="text-[10px] text-ink-muted tabular-nums">
+                    <span className="text-xs text-ink-muted tabular-nums">
                       {activeRoute.totalDistance}m • ~{Math.max(1, Math.round(activeRoute.totalDistance / 60))} min walk
                     </span>
                   </div>
@@ -1124,17 +1124,17 @@ export default function InteractiveFloorPlanModal({
                   <button
                     type="button"
                     onClick={handleClearRoute}
-                    className="text-[11px] font-semibold text-ink-muted hover:text-accent hover:border-accent px-2 py-1 rounded-[8px] bg-surface border border-border transition"
+                    className="text-xs font-semibold text-ink-muted hover:text-accent hover:border-accent px-2 py-1 rounded-[8px] bg-surface border border-border transition"
                   >
                     Clear Route
                   </button>
                 </div>
               </div>
 
-              <div className="p-3.5 max-h-56 overflow-y-auto space-y-2.5 text-xs text-ink-muted">
+              <div className="p-3.5 max-h-56 overflow-y-auto space-y-2.5 text-sm text-ink-muted">
                 {activeRoute.steps.map((step: string, idx: number) => (
                   <div key={idx} className="flex items-start gap-2.5">
-                    <span className={`w-5 h-5 rounded-full shrink-0 flex items-center justify-center text-[10px] font-bold mt-0.5 ${
+                    <span className={`w-5 h-5 rounded-full shrink-0 flex items-center justify-center text-xs font-bold mt-0.5 ${
                       idx === 0
                         ? "bg-blob-magenta/15 text-ink border border-blob-magenta/50"
                         : idx === activeRoute.steps.length - 1
@@ -1154,7 +1154,7 @@ export default function InteractiveFloorPlanModal({
 
           {/* ==================== MOBILE 2D/3D SWITCHER ==================== */}
           <div className="sm:hidden absolute top-4 left-1/2 -translate-x-1/2 z-30">
-            <div className="flex items-center p-0.5 bg-surface-raised border border-border rounded-[8px] text-xs font-semibold shadow-popover">
+            <div className="flex items-center p-0.5 bg-surface-raised border border-border rounded-[8px] text-sm font-semibold shadow-popover">
               <button
                 type="button"
                 onClick={() => setActiveTab("2D")}
@@ -1183,10 +1183,10 @@ export default function InteractiveFloorPlanModal({
         </div>
 
         {/* ==================== BOTTOM LEGEND & AMENITIES TOOLBAR ==================== */}
-        <footer className="px-4 sm:px-6 py-3 border-t border-border bg-surface shrink-0 flex flex-wrap items-center justify-between gap-3 text-xs">
+        <footer className="px-4 sm:px-6 py-3 border-t border-border bg-surface shrink-0 flex flex-wrap items-center justify-between gap-3 text-sm">
           {/* Amenities Filter Pills */}
           <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-[11px] font-semibold text-ink-muted mr-1 flex items-center gap-1">
+            <span className="text-xs font-semibold text-ink-muted mr-1 flex items-center gap-1">
               <Layers className="w-3.5 h-3.5 text-ink-subtle" />
               <span>Amenities:</span>
             </span>
@@ -1197,7 +1197,7 @@ export default function InteractiveFloorPlanModal({
                 setShowAmenities(true);
                 setAmenityFilter("ALL");
               }}
-              className={`tap-target px-2.5 py-1 rounded-full text-[11px] font-semibold transition-colors cursor-pointer ${
+              className={`tap-target px-2.5 py-1 rounded-full text-xs font-semibold transition-colors cursor-pointer ${
                 showAmenities && amenityFilter === "ALL"
                   ? "bg-accent-muted text-accent-strong border border-accent/40"
                   : "bg-surface text-ink-muted hover:text-ink border border-border"
@@ -1212,7 +1212,7 @@ export default function InteractiveFloorPlanModal({
                 setShowAmenities(true);
                 setAmenityFilter("RESTROOM");
               }}
-              className={`tap-target px-2.5 py-1 rounded-full text-[11px] font-semibold transition-colors cursor-pointer inline-flex items-center gap-1 ${
+              className={`tap-target px-2.5 py-1 rounded-full text-xs font-semibold transition-colors cursor-pointer inline-flex items-center gap-1 ${
                 showAmenities && amenityFilter === "RESTROOM"
                   ? "bg-accent-muted text-accent-strong border border-accent/40"
                   : "bg-surface text-ink-muted hover:text-ink border border-border"
@@ -1228,7 +1228,7 @@ export default function InteractiveFloorPlanModal({
                 setShowAmenities(true);
                 setAmenityFilter("WATER");
               }}
-              className={`tap-target px-2.5 py-1 rounded-full text-[11px] font-semibold transition-colors cursor-pointer inline-flex items-center gap-1 ${
+              className={`tap-target px-2.5 py-1 rounded-full text-xs font-semibold transition-colors cursor-pointer inline-flex items-center gap-1 ${
                 showAmenities && amenityFilter === "WATER"
                   ? "bg-accent-muted text-accent-strong border border-accent/40"
                   : "bg-surface text-ink-muted hover:text-ink border border-border"
@@ -1244,7 +1244,7 @@ export default function InteractiveFloorPlanModal({
                 setShowAmenities(true);
                 setAmenityFilter("FOOD");
               }}
-              className={`tap-target px-2.5 py-1 rounded-full text-[11px] font-semibold transition-colors cursor-pointer inline-flex items-center gap-1 ${
+              className={`tap-target px-2.5 py-1 rounded-full text-xs font-semibold transition-colors cursor-pointer inline-flex items-center gap-1 ${
                 showAmenities && amenityFilter === "FOOD"
                   ? "bg-accent-muted text-accent-strong border border-accent/40"
                   : "bg-surface text-ink-muted hover:text-ink border border-border"
@@ -1260,7 +1260,7 @@ export default function InteractiveFloorPlanModal({
                 setShowAmenities(true);
                 setAmenityFilter("HELPDESK");
               }}
-              className={`tap-target px-2.5 py-1 rounded-full text-[11px] font-semibold transition-colors cursor-pointer inline-flex items-center gap-1 ${
+              className={`tap-target px-2.5 py-1 rounded-full text-xs font-semibold transition-colors cursor-pointer inline-flex items-center gap-1 ${
                 showAmenities && amenityFilter === "HELPDESK"
                   ? "bg-accent-muted text-accent-strong border border-accent/40"
                   : "bg-surface text-ink-muted hover:text-ink border border-border"
@@ -1273,14 +1273,14 @@ export default function InteractiveFloorPlanModal({
             <button
               type="button"
               onClick={() => setShowAmenities(!showAmenities)}
-              className="text-[11px] text-accent hover:text-accent-strong ml-1 underline cursor-pointer"
+              className="text-xs text-accent hover:text-accent-strong ml-1 underline cursor-pointer"
             >
               {showAmenities ? "Hide All" : "Show All"}
             </button>
           </div>
 
           {/* Legend Guide */}
-          <div className="flex items-center gap-4 text-[11px] text-ink-muted font-medium">
+          <div className="flex items-center gap-4 text-xs text-ink-muted font-medium">
             <div className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-full bg-blob-magenta animate-pulse" />
               <span className="text-ink font-semibold">You Are Here</span>
@@ -1289,7 +1289,7 @@ export default function InteractiveFloorPlanModal({
               <span className="w-2.5 h-2.5 rounded-full bg-accent animate-pulse" />
               <span className="text-ink font-semibold">Assigned Venue</span>
             </div>
-            <div className="text-[10px] text-ink-subtle tabular-nums hidden md:inline-block">
+            <div className="text-xs text-ink-subtle tabular-nums hidden md:inline-block">
               {Math.round(scale * 100)}% Zoom
             </div>
           </div>

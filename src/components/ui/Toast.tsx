@@ -137,9 +137,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           >
             <div className="shrink-0 mt-0.5">{toastIcon[item.type]}</div>
 
-            <div className="flex-1 text-xs leading-relaxed">
+            <div className="flex-1 text-sm leading-relaxed">
               {item.title && (
-                <div className="font-semibold text-sm mb-0.5 text-ink">
+                <div className="font-semibold text-[15px] mb-0.5 text-ink">
                   {item.title}
                 </div>
               )}
@@ -185,7 +185,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 <h3 className="text-base font-bold text-ink leading-tight">
                   {confirmModal.options.title}
                 </h3>
-                <div className="text-xs text-ink-muted leading-relaxed whitespace-pre-line">
+                <div className="text-sm text-ink-muted leading-relaxed whitespace-pre-line">
                   {confirmModal.options.message}
                 </div>
               </div>
@@ -195,14 +195,14 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               <button
                 type="button"
                 onClick={() => handleConfirmClose(false)}
-                className="h-10 px-4 rounded-[8px] text-xs font-semibold text-ink bg-surface-raised hover:bg-surface-sunken border border-border transition-colors cursor-pointer"
+                className="h-10 px-4 rounded-[8px] text-sm font-semibold text-ink bg-surface-raised hover:bg-surface-sunken border border-border transition-colors cursor-pointer"
               >
                 {confirmModal.options.cancelText || "Cancel"}
               </button>
               <button
                 type="button"
                 onClick={() => handleConfirmClose(true)}
-                className={`h-10 px-4 rounded-[8px] text-xs font-semibold transition-colors cursor-pointer ${
+                className={`h-10 px-4 rounded-[8px] text-sm font-semibold transition-colors cursor-pointer ${
                   confirmModal.options.isDestructive
                     ? "bg-danger hover:bg-danger/90 text-white"
                     : "bg-accent hover:bg-accent-hover text-accent-ink"

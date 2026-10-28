@@ -27,10 +27,10 @@ export default function FooterLinksGrid({
     <>
       {/* Col 2: Navigation Links */}
       <div>
-        <h4 className="text-xs font-semibold text-ink-muted uppercase tracking-[0.08em] mb-4">
+        <h4 className="text-sm font-semibold text-ink-muted uppercase tracking-[0.08em] mb-4">
           Quick Links
         </h4>
-        <ul className="space-y-3 text-sm">
+        <ul className="space-y-3 text-[15px]">
           <li>
             <Link href="/#about" className="text-ink font-medium hover:text-accent transition-colors">
               About {eventName}
@@ -78,10 +78,10 @@ export default function FooterLinksGrid({
 
       {/* Col 3: Fest Arenas */}
       <div>
-        <h4 className="text-xs font-semibold text-ink-muted uppercase tracking-[0.08em] mb-4">
+        <h4 className="text-sm font-semibold text-ink-muted uppercase tracking-[0.08em] mb-4">
           Fest Arenas
         </h4>
-        <ul className="space-y-3 text-sm">
+        <ul className="space-y-3 text-[15px]">
           <li>
             <Link
               href="/events?category=ON_STAGE"
@@ -105,10 +105,10 @@ export default function FooterLinksGrid({
 
       {/* Col 4: Reach Us */}
       <div>
-        <h4 className="text-xs font-semibold text-ink-muted uppercase tracking-[0.08em] mb-4">
+        <h4 className="text-sm font-semibold text-ink-muted uppercase tracking-[0.08em] mb-4">
           Reach Us
         </h4>
-        <div className="space-y-2 text-sm text-ink-muted leading-relaxed">
+        <div className="space-y-2 text-[15px] text-ink-muted leading-relaxed">
           <div className="text-ink font-semibold">{institutionName}</div>
           <div>{location}</div>
           <div className="pt-1">

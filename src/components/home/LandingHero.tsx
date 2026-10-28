@@ -40,7 +40,7 @@ export default function LandingHero({ edition }: LandingHeroProps) {
           </h1>
 
           {acronymExpansion && (
-            <p className="mt-3 text-sm font-semibold text-ink-muted">
+            <p className="mt-3 text-[15px] font-semibold text-ink-muted">
               {acronymExpansion}
             </p>
           )}
@@ -106,7 +106,7 @@ export default function LandingHero({ edition }: LandingHeroProps) {
                 )}
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-medium text-ink-muted truncate">{institutionName}</p>
+                <p className="text-[15px] font-medium text-ink-muted truncate">{institutionName}</p>
                 <p className="text-xl font-bold text-ink truncate">
                   {eventName} {editionYear}
                 </p>

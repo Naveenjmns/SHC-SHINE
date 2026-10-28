@@ -42,7 +42,7 @@ export default function StageHeaderBanner({
     if (accreditationText.includes("\n")) {
       const lines = accreditationText.split("\n").map((l) => l.trim()).filter(Boolean);
       return (
-        <div className="text-[10px] sm:text-xs md:text-sm font-semibold text-[#C9D7E6] leading-tight mt-1 mb-1.5 flex flex-col items-center">
+        <div className="text-xs sm:text-sm md:text-[15px] font-semibold text-[#C9D7E6] leading-tight mt-1 mb-1.5 flex flex-col items-center">
           {lines.map((line, idx) => (
             <span key={idx}>{line}</span>
           ))}
@@ -57,7 +57,7 @@ export default function StageHeaderBanner({
       const line1 = rawPart1.endsWith(",") ? rawPart1 : `${rawPart1},`;
       const line2 = match[2].trim();
       return (
-        <div className="text-[10px] sm:text-xs md:text-sm font-semibold text-[#C9D7E6] leading-tight mt-1 mb-1.5 flex flex-col items-center">
+        <div className="text-xs sm:text-sm md:text-[15px] font-semibold text-[#C9D7E6] leading-tight mt-1 mb-1.5 flex flex-col items-center">
           <span>{line1}</span>
           <span>{line2}</span>
         </div>
@@ -65,7 +65,7 @@ export default function StageHeaderBanner({
     }
 
     return (
-      <p className="text-[10px] sm:text-xs md:text-sm font-semibold text-[#C9D7E6] leading-tight mt-1 mb-1.5">
+      <p className="text-xs sm:text-sm md:text-[15px] font-semibold text-[#C9D7E6] leading-tight mt-1 mb-1.5">
         {accreditationText}
       </p>
     );
@@ -123,13 +123,13 @@ export default function StageHeaderBanner({
 
           {/* CENTER: Clean 2-Line Accreditation Text Column (College Details) */}
           <div className="flex-1 min-w-[200px] text-center px-1 sm:px-4">
-            <h2 className="text-xs sm:text-xl md:text-2xl lg:text-3xl font-bold uppercase tracking-wide text-white">
+            <h2 className="text-sm sm:text-xl md:text-2xl lg:text-3xl font-bold uppercase tracking-wide text-white">
               {institutionName}
             </h2>
 
             {renderAccreditationText()}
 
-            <h3 className="text-xs sm:text-lg md:text-xl lg:text-2xl font-bold uppercase tracking-wide text-[#7FB2FF]">
+            <h3 className="text-sm sm:text-lg md:text-xl lg:text-2xl font-bold uppercase tracking-wide text-[#7FB2FF]">
               {hostDept}
             </h3>
           </div>

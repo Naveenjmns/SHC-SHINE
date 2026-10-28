@@ -863,7 +863,7 @@ export default function Venue3D({
         </div>
         <div>
           <h3 className="text-base font-bold text-ink mb-1">3D Graphics Hardware Acceleration Unavailable</h3>
-          <p className="text-xs text-ink-muted max-w-sm">
+          <p className="text-sm text-ink-muted max-w-sm">
             Your browser or device does not have WebGL acceleration enabled. Switching back to high-resolution 2D blueprint.
           </p>
         </div>
@@ -871,7 +871,7 @@ export default function Venue3D({
           <button
             type="button"
             onClick={onFallback2D}
-            className="px-4 py-2 rounded-[8px] bg-accent hover:bg-accent-hover text-accent-ink text-xs font-semibold transition"
+            className="px-4 py-2 rounded-[8px] bg-accent hover:bg-accent-hover text-accent-ink text-sm font-semibold transition"
           >
             Switch to 2D Blueprint
           </button>
@@ -913,15 +913,15 @@ export default function Venue3D({
       {/* Floating 3D Navigation Overlay */}
       <div className="absolute top-4 left-4 z-20 flex items-center gap-2">
         {/* Floor Level Selector */}
-        <div className="flex items-center p-1 bg-surface border border-border rounded-[8px] text-xs font-semibold shadow-popover">
-          <span className="eyebrow text-[10px] px-2 flex items-center gap-1">
+        <div className="flex items-center p-1 bg-surface border border-border rounded-[8px] text-sm font-semibold shadow-popover">
+          <span className="eyebrow text-xs px-2 flex items-center gap-1">
             <Layers className="w-3 h-3 text-accent" />
             <span>Floor:</span>
           </span>
           <button
             type="button"
             onClick={() => setActiveFloor("ALL")}
-            className={`px-2.5 py-1 rounded-[6px] text-xs font-semibold transition ${
+            className={`px-2.5 py-1 rounded-[6px] text-sm font-semibold transition ${
               activeFloor === "ALL"
                 ? "bg-accent text-accent-ink"
                 : "text-ink-muted hover:text-ink hover:bg-surface-raised"
@@ -932,7 +932,7 @@ export default function Venue3D({
           <button
             type="button"
             onClick={() => setActiveFloor(1)}
-            className={`px-2.5 py-1 rounded-[6px] text-xs font-semibold transition ${
+            className={`px-2.5 py-1 rounded-[6px] text-sm font-semibold transition ${
               activeFloor === 1
                 ? "bg-accent text-accent-ink"
                 : "text-ink-muted hover:text-ink hover:bg-surface-raised"
@@ -943,7 +943,7 @@ export default function Venue3D({
           <button
             type="button"
             onClick={() => setActiveFloor(2)}
-            className={`px-2.5 py-1 rounded-[6px] text-xs font-semibold transition ${
+            className={`px-2.5 py-1 rounded-[6px] text-sm font-semibold transition ${
               activeFloor === 2
                 ? "bg-accent text-accent-ink"
                 : "text-ink-muted hover:text-ink hover:bg-surface-raised"
@@ -956,7 +956,7 @@ export default function Venue3D({
 
       {/* Interaction Hint in bottom right */}
       <div className="absolute bottom-4 right-4 z-20 pointer-events-none hidden sm:block">
-        <div className="bg-surface border border-border px-3 py-1.5 rounded-[8px] text-[10px] text-ink-muted shadow-popover flex items-center gap-2">
+        <div className="bg-surface border border-border px-3 py-1.5 rounded-[8px] text-xs text-ink-muted shadow-popover flex items-center gap-2">
           <span>Rotate: Left Click + Drag</span>
           <span>•</span>
           <span>Pan: Right Click + Drag</span>

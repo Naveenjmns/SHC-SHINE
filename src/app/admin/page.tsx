@@ -136,7 +136,7 @@ export default function AdminOverviewPage() {
       <div className="min-h-screen bg-canvas flex items-center justify-center p-6">
         <div className="flex flex-col items-center gap-3">
           <RefreshCw className="w-8 h-8 animate-spin text-accent" />
-          <p className="text-xs font-semibold text-ink-muted uppercase tracking-wider">
+          <p className="text-sm font-semibold text-ink-muted uppercase tracking-wider">
             Loading Admin Console...
           </p>
         </div>
@@ -151,39 +151,58 @@ export default function AdminOverviewPage() {
         onOpenCheckIn={() => setShowCheckInModal(true)}
       />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full space-y-6">
-        {/* Navigation Tabs Bar */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 border-b border-border">
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => {
-                  setActiveTab(tab.id as any);
-                  if (tab.id === "reports" && !reportsData) {
-                    loadReports();
-                  }
-                }}
-                className={`px-3 py-2 text-xs font-semibold rounded-[8px] transition-colors cursor-pointer flex items-center gap-2 whitespace-nowrap ${
-                  isActive
-                    ? "bg-surface text-accent border border-border shadow-card"
-                    : "text-ink-muted hover:text-ink hover:bg-surface/50"
-                }`}
-              >
-                <Icon className={`w-3.5 h-3.5 ${isActive ? "text-accent" : "text-ink-muted"}`} />
-                <span>{tab.label}</span>
-                {tab.badge !== undefined && tab.badge > 0 && (
-                  <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-surface-raised border border-border text-ink">
-                    {tab.badge}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-10 flex-1 w-full space-y-6">
+        {/* Navigation tabs — sticky, swipeable on phones */}
+        <nav
+          aria-label="Admin sections"
+          className="sticky top-16 z-20 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-2 bg-canvas/95 backdrop-blur-md"
+        >
+          <div className="relative">
+            <div
+              role="tablist"
+              className="flex items-center gap-1.5 overflow-x-auto no-scrollbar snap-x [mask-image:linear-gradient(to_right,black_calc(100%-2rem),transparent)] lg:[mask-image:none] pr-8 lg:pr-0"
+            >
+              {tabs.map((tab) => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={isActive}
+                    ref={(el) => {
+                      if (isActive && el) el.scrollIntoView({ block: "nearest", inline: "nearest" });
+                    }}
+                    onClick={() => {
+                      setActiveTab(tab.id as any);
+                      if (tab.id === "reports" && !reportsData) {
+                        loadReports();
+                      }
+                    }}
+                    className={`snap-start shrink-0 min-h-[44px] px-4 text-[15px] font-semibold rounded-full transition-colors cursor-pointer flex items-center gap-2 whitespace-nowrap ${
+                      isActive
+                        ? "bg-surface-inverse text-white"
+                        : "text-ink-muted hover:text-ink hover:bg-surface-raised"
+                    }`}
+                  >
+                    <Icon className="w-[18px] h-[18px] shrink-0" />
+                    <span>{tab.label}</span>
+                    {tab.badge !== undefined && tab.badge > 0 && (
+                      <span
+                        className={`min-w-6 h-6 px-1.5 inline-flex items-center justify-center rounded-full text-xs font-bold tabular-nums ${
+                          isActive ? "bg-white/20 text-white" : "bg-accent-muted text-accent-strong"
+                        }`}
+                      >
+                        {tab.badge}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </nav>
 
         {/* Tab Views */}
         {activeTab === "overview" && stats && (

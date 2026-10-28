@@ -116,7 +116,7 @@ export default function BadgeDetailPage() {
     return (
       <div className="min-h-screen bg-canvas flex flex-col items-center justify-center p-4">
         <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin mb-3" />
-        <p className="text-sm font-semibold text-ink-muted">
+        <p className="text-[15px] font-semibold text-ink-muted">
           Loading Official Delegate Pass...
         </p>
       </div>
@@ -130,7 +130,7 @@ export default function BadgeDetailPage() {
           <AlertCircle className="w-6 h-6 text-danger" />
         </div>
         <h1 className="text-2xl font-bold text-ink mb-2">Invalid or Expired Badge</h1>
-        <p className="text-sm text-ink-muted max-w-sm mb-6">
+        <p className="text-[15px] text-ink-muted max-w-sm mb-6">
           {error || "The badge code provided does not exist in the fest registry."}
         </p>
         <Link href="/">
@@ -169,7 +169,7 @@ export default function BadgeDetailPage() {
           variant="outline"
           size="sm"
           onClick={handleBack}
-          className="text-xs gap-1.5"
+          className="text-sm gap-1.5"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Back</span>
@@ -180,7 +180,7 @@ export default function BadgeDetailPage() {
             variant="outline"
             size="sm"
             onClick={handleShare}
-            className="text-xs gap-1.5"
+            className="text-sm gap-1.5"
           >
             <Share2 className="w-3.5 h-3.5" />
             <span>{copied ? "Link Copied!" : "Share Pass"}</span>
@@ -189,7 +189,7 @@ export default function BadgeDetailPage() {
             variant="primary"
             size="sm"
             onClick={handlePrint}
-            className="text-xs gap-1.5"
+            className="text-sm gap-1.5"
           >
             <Printer className="w-3.5 h-3.5" />
             <span>Print Badge</span>

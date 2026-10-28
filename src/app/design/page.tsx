@@ -39,13 +39,13 @@ export default function DesignSystemPage() {
             <ShieldAlert className="w-6 h-6" />
           </div>
           <h1 className="text-xl font-bold text-ink">Admin Access Required</h1>
-          <p className="text-sm text-ink-muted">
+          <p className="text-[15px] text-ink-muted">
             The Design System and Token Matrix route is restricted to administrative personnel.
           </p>
           <div className="pt-2">
             <Link
               href="/"
-              className="inline-flex items-center justify-center h-10 px-4 rounded-[8px] bg-accent text-accent-ink font-semibold text-sm hover:bg-accent-hover transition-colors"
+              className="inline-flex items-center justify-center h-10 px-4 rounded-[8px] bg-accent text-accent-ink font-semibold text-[15px] hover:bg-accent-hover transition-colors"
             >
               Return to Homepage
             </Link>
@@ -73,7 +73,7 @@ export default function DesignSystemPage() {
                 <span className="pill-badge">v3 tokens</span>
                 <h1 className="text-base font-bold text-ink">Design System & Token Matrix</h1>
               </div>
-              <p className="text-xs text-ink-muted hidden sm:block">
+              <p className="text-sm text-ink-muted hidden sm:block">
                 Navy ink on cool marble · Signal Blue accent (#006BFF) · WCAG AA
               </p>
             </div>
@@ -84,7 +84,7 @@ export default function DesignSystemPage() {
               href="https://github.com/Naveenjmns/SHC-SHINE/blob/redesign/ui-v2/docs/DESIGN_SYSTEM.md"
               target="_blank"
               rel="noreferrer"
-              className="h-9 px-3 rounded-[8px] border border-border bg-surface hover:bg-surface-raised text-xs font-medium text-ink flex items-center gap-1.5 transition-colors"
+              className="h-9 px-3 rounded-[8px] border border-border bg-surface hover:bg-surface-raised text-sm font-medium text-ink flex items-center gap-1.5 transition-colors"
             >
               <BookOpen className="w-3.5 h-3.5" /> Spec Doc
             </a>
@@ -101,13 +101,13 @@ export default function DesignSystemPage() {
               <Layers className="w-5 h-5 text-accent" />
               <h2 className="text-xl font-bold text-ink">SHINE Design System v3</h2>
             </div>
-            <p className="text-sm text-ink-muted max-w-2xl">
+            <p className="text-[15px] text-ink-muted max-w-2xl">
               Navy ink (#0B3558) on a Cloud canvas (#F8F9FB) with white cards, one Signal Blue action color (#006BFF),
               Manrope throughout, 8/16/24px radii and blue-tinted elevation. Accent stays overridable per edition.
             </p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-success-surface text-success-ink border border-success-border">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold bg-success-surface text-success-ink border border-success-border">
               WCAG AA Verified
             </span>
           </div>

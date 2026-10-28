@@ -149,7 +149,7 @@ export function TabsTrigger({
       aria-selected={isSelected}
       aria-controls={`tabpanel-${value}`}
       onClick={() => context.setActiveTab(value)}
-      className={`min-h-[44px] sm:min-h-[36px] px-3.5 py-1.5 rounded-[8px] text-sm font-semibold select-none transition-all flex items-center justify-center gap-1.5 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+      className={`min-h-[44px] sm:min-h-[40px] px-4 py-2 rounded-[8px] text-[15px] font-semibold select-none transition-all flex items-center justify-center gap-1.5 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-accent ${
         isSelected
           ? "bg-surface text-accent shadow-card"
           : "text-ink-muted hover:text-ink"

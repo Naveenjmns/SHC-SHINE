@@ -33,7 +33,7 @@ export default function RegisterStepper({ currentStep, onStepClick }: RegisterSt
               }`}
             >
               <div
-                className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-xs font-bold transition-colors ${
+                className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-sm font-bold transition-colors ${
                   isCurrent
                     ? "bg-accent text-accent-ink"
                     : isCompleted
@@ -46,13 +46,13 @@ export default function RegisterStepper({ currentStep, onStepClick }: RegisterSt
 
               <div className="min-w-0">
                 <div
-                  className={`text-sm font-semibold truncate ${
+                  className={`text-[15px] font-semibold truncate ${
                     isCurrent ? "text-accent font-bold" : isCompleted ? "text-ink" : "text-ink-subtle"
                   }`}
                 >
                   {s.title}
                 </div>
-                <div className="text-xs text-ink-muted truncate hidden sm:block">
+                <div className="text-sm text-ink-muted truncate hidden sm:block">
                   {s.subtitle}
                 </div>
               </div>

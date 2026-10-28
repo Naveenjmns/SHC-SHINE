@@ -43,19 +43,19 @@ export default function RegistrationSuccessView({ delegation }: RegistrationSucc
           <h1 className="text-2xl sm:text-3xl font-bold text-ink">
             Registration Confirmed!
           </h1>
-          <p className="text-sm text-ink-muted max-w-md mx-auto">
+          <p className="text-[15px] text-ink-muted max-w-md mx-auto">
             Your delegation has been registered for SHINE 2026. Digital QR passes have been generated below.
           </p>
         </div>
 
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-surface-raised border border-border text-xs font-mono text-ink-muted">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-surface-raised border border-border text-sm font-mono text-ink-muted">
           <span>Delegation ID:</span>
           <span className="font-bold text-accent">{delegation.id}</span>
         </div>
       </Card>
 
       {/* College Info */}
-      <Card className="p-5 flex items-center justify-between gap-3 text-sm">
+      <Card className="p-5 flex items-center justify-between gap-3 text-[15px]">
         <div className="flex items-center gap-2.5">
           <Building2 className="w-4 h-4 text-accent shrink-0" />
           <div>
@@ -76,7 +76,7 @@ export default function RegistrationSuccessView({ delegation }: RegistrationSucc
 
       {/* Delegates Badges List */}
       <div className="space-y-3">
-        <h3 className="text-sm font-semibold text-ink">
+        <h3 className="text-[15px] font-semibold text-ink">
           Delegate Badges & QR Tokens ({delegation.members.length})
         </h3>
 
@@ -85,8 +85,8 @@ export default function RegistrationSuccessView({ delegation }: RegistrationSucc
             <Card key={member.id} className="p-5 space-y-3">
               <div className="flex items-start justify-between gap-2">
                 <div className="space-y-0.5">
-                  <div className="font-bold text-sm text-ink">{member.name}</div>
-                  <div className="text-xs text-ink-muted truncate">{member.email}</div>
+                  <div className="font-bold text-[15px] text-ink">{member.name}</div>
+                  <div className="text-sm text-ink-muted truncate">{member.email}</div>
                 </div>
 
                 <Badge
@@ -97,7 +97,7 @@ export default function RegistrationSuccessView({ delegation }: RegistrationSucc
                 </Badge>
               </div>
 
-              <div className="p-2.5 rounded-[8px] bg-surface-raised space-y-1 font-mono text-xs">
+              <div className="p-2.5 rounded-[8px] bg-surface-raised space-y-1 font-mono text-sm">
                 <div className="flex justify-between">
                   <span className="text-ink-subtle">Badge:</span>
                   <span className="font-bold text-ink">{member.badgeCode}</span>
@@ -119,7 +119,7 @@ export default function RegistrationSuccessView({ delegation }: RegistrationSucc
                   </Button>
                 </Link>
 
-                <span className="text-[11px] text-ink-subtle">Delegate #{idx + 1}</span>
+                <span className="text-xs text-ink-subtle">Delegate #{idx + 1}</span>
               </div>
             </Card>
           ))}

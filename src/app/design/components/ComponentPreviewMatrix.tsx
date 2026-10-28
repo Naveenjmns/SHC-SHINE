@@ -33,7 +33,7 @@ export default function ComponentPreviewMatrix() {
       <div>
         <p className="eyebrow">Components</p>
         <h2 className="text-2xl font-bold text-ink mt-1">5. UI Component Library (src/components/ui/)</h2>
-        <p className="text-sm text-ink-muted mt-1">
+        <p className="text-[15px] text-ink-muted mt-1">
           Zero external UI framework dependencies. 100% token-based: 8px controls, 16px cards, 24px modals,
           blue-tinted elevation, accessible ARIA roles and touch targets of at least 44px.
         </p>

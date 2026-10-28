@@ -114,7 +114,7 @@ export default function EventCard(props: EventCardProps) {
           </CardDescription>
         </CardHeader>
 
-        <CardContent className="space-y-2 pt-2 text-sm text-ink-muted">
+        <CardContent className="space-y-2 pt-2 text-[15px] text-ink-muted">
           <div className="flex items-center gap-2 tabular-nums">
             <Clock className="w-4 h-4 text-ink-subtle shrink-0" />
             <span>
