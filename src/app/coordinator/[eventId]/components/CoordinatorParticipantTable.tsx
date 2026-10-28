@@ -28,7 +28,7 @@ export interface ParticipantRow {
   } | null;
   delegationMember?: {
     badgeCode: string;
-    foodTokenCode: string;
+    foodTokenCode?: string;
     eventCheckedIn?: boolean;
   } | null;
   attended?: boolean;
@@ -81,7 +81,7 @@ export default function CoordinatorParticipantTable({
       </TableHeader>
       <TableBody>
         {participants.map((row) => {
-          const isAttended = Boolean(row.attended || row.delegationMember?.eventCheckedIn);
+          const isAttended = Boolean(row.attended);
           const collegeName = row.delegation?.collegeName || row.user.college || "Independent";
           const badgeCode = row.delegationMember?.badgeCode || "N/A";
 
@@ -151,7 +151,7 @@ export default function CoordinatorParticipantTable({
                       id: row.id,
                       name: row.user.name,
                       college: collegeName,
-                      score: row.score || null,
+                      score: row.score ?? null,
                       result: row.result || null,
                     })
                   }

@@ -19,7 +19,6 @@ export const dynamic = "force-dynamic";
  */
 export async function GET(req: Request) {
   try {
-    startReminderScheduler();
     const { searchParams } = new URL(req.url);
     const cronSecret = process.env.CRON_SECRET;
 
@@ -31,12 +30,16 @@ export async function GET(req: Request) {
         return NextResponse.json({ success: false, message: "Cron trigger is not configured." }, { status: 503 });
       }
     } else {
+      // Header only: a ?secret= query value would be written to proxy/access logs
       const authHeader = req.headers.get("authorization") || "";
-      const provided = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : searchParams.get("secret") || "";
+      const provided = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
       if (!safeEqual(provided, cronSecret)) {
         return NextResponse.json({ success: false, message: "Unauthorized cron trigger." }, { status: 401 });
       }
     }
+
+    // Only authorised callers may (re)start the in-process scheduler
+    startReminderScheduler();
 
     const forceEventId = cronSecret ? searchParams.get("forceEventId") || undefined : undefined;
     const forceAll = cronSecret ? searchParams.get("forceAll") === "true" : false;

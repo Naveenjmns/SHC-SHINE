@@ -74,7 +74,7 @@ export default function Loading() {
 
         {/* Wordmark */}
         <h1 className="text-3xl sm:text-4xl font-bold mb-2 text-ink">
-          SHINE <span className="text-accent">FEST</span>
+          COLLEGE <span className="text-accent">FEST</span>
         </h1>
 
         {/* Stage narrative */}

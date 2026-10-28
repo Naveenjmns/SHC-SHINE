@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { safeJson } from "@/lib/safeFetch";
 import { extractLookupCode } from "@/lib/cameraScanner";
 import { ScanPopup } from "../components/FoodScanResultCard";
@@ -22,11 +22,18 @@ export function useFoodClaims({
 
   const lastScannedCodeRef = useRef<string>("");
   const lastScannedTimeRef = useRef<number>(0);
+  // Refs (not state) for the guards: the camera fires decodes faster than React re-renders,
+  // so state-based checks would let two scans through at once
+  const processingRef = useRef(false);
+  const popupRef = useRef<ScanPopup | null>(null);
+  useEffect(() => {
+    popupRef.current = popup;
+  }, [popup]);
 
-  const handleDetectedCode = async (rawCode: string) => {
+  const detectCode = async (rawCode: string) => {
     const { code: normalizedCode } = extractLookupCode(rawCode);
     const code = (normalizedCode || rawCode).trim();
-    if (!code || processing || popup?.status === "eligible") return;
+    if (!code || processingRef.current || popupRef.current?.status === "eligible") return;
 
     const now = Date.now();
     if (
@@ -38,6 +45,7 @@ export function useFoodClaims({
 
     lastScannedCodeRef.current = code;
     lastScannedTimeRef.current = now;
+    processingRef.current = true;
     setProcessing(true);
 
     try {
@@ -155,6 +163,7 @@ export function useFoodClaims({
         message: "Failed to communicate with server.",
       });
     } finally {
+      processingRef.current = false;
       setProcessing(false);
     }
   };
@@ -198,6 +207,14 @@ export function useFoodClaims({
     }
   };
 
+  // The camera library keeps the callback it was started with, so hand it a stable function that
+  // always runs the latest handler (current auto-claim setting, sound toggle, etc.)
+  const latestDetectRef = useRef(detectCode);
+  useEffect(() => {
+    latestDetectRef.current = detectCode;
+  });
+  const handleDetectedCode = useCallback((rawCode: string) => latestDetectRef.current(rawCode), []);
+
   const handleRejectClaim = (delegateName: string) => {
     playSound("warning");
     setPopup({
@@ -225,7 +242,13 @@ export function useFoodClaims({
           message: data.message || "Food claim reset to unclaimed.",
         });
         onRefreshStats();
+      } else {
+        playSound("error");
+        setPopup({ status: "error", title: "Reset Failed", message: data.message || "Could not reset this claim." });
       }
+    } catch {
+      playSound("error");
+      setPopup({ status: "error", title: "Reset Failed", message: "Network error. Please try again." });
     } finally {
       setActionLoading(false);
     }
@@ -256,7 +279,13 @@ export function useFoodClaims({
             : null
         );
         onRefreshStats();
+      } else {
+        playSound("error");
+        setPopup((prev) => (prev ? { ...prev, message: data.message || "Could not change the meal preference." } : prev));
       }
+    } catch {
+      playSound("error");
+      setPopup((prev) => (prev ? { ...prev, message: "Network error. Please try again." } : prev));
     } finally {
       setActionLoading(false);
     }

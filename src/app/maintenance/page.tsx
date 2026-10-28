@@ -77,7 +77,7 @@ export default function MaintenancePage() {
 
       {/* Footer */}
       <div className="w-full pt-6 mt-4 border-t border-border text-xs text-ink-subtle">
-        Sacred Heart College • SHINE Fest Operations
+        Event Platform • Fest Operations
       </div>
     </ErrorPerspectiveStage>
   );

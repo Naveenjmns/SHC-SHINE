@@ -80,7 +80,7 @@ export function parseCameraError(err: any): CameraErrorInfo {
       steps: [
         "Mobile (Chrome / Edge / PWA): Tap the tune/settings icon (🔒 or ⚙️) in the address bar → Site Settings → Camera → tap 'Allow' or 'Reset'.",
         "iOS Safari / PWA: Open iOS Settings → Safari (or the installed PWA) → Camera → select 'Allow' or 'Ask'.",
-        "Android System: Open Android Settings → Apps → Chrome/SHINE → Permissions → Camera → 'Allow only while using the app'.",
+        "Android System: Open Android Settings → Apps → Chrome → Permissions → Camera → 'Allow only while using the app'.",
         "Laptops (Windows/Mac): Check Windows Privacy settings (Win+I → Privacy → Camera → On) or Mac System Preferences → Privacy → Camera.",
         "Instant fallback: Tap 'Upload QR / Snap Photo' below to capture a picture of the QR code immediately!",
       ],

@@ -85,7 +85,7 @@ export async function GET(
           select: {
             id: true,
             badgeCode: true,
-            foodTokenCode: true,
+            // SECURITY: the meal token is redeemable on its own; coordinators don't need it
             eventCheckedIn: true,
             eventCheckedInAt: true,
             foodTokenClaimed: true,

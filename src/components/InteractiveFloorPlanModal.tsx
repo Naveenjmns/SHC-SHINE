@@ -55,7 +55,7 @@ export default function InteractiveFloorPlanModal({
   onClose,
   floorPlanUrl = "/uploads/campus-floorplan.svg",
   highlightZoneId,
-  title = "SHINE Indoor Venue Floor Plan",
+  title = "Venue Floor Plan",
   subtitle,
   initialFromWaypointId,
 }: InteractiveFloorPlanModalProps) {
@@ -107,6 +107,43 @@ export default function InteractiveFloorPlanModal({
   const [geoNotice, setGeoNotice] = useState<string | null>(null);
   const [locatingGeo, setLocatingGeo] = useState(false);
   const [showPrivacyNotice, setShowPrivacyNotice] = useState(false);
+
+  // Campus GPS position & institution name come from the active edition (admin configured)
+  const [campusGeo, setCampusGeo] = useState<{
+    lat: number | null;
+    lng: number | null;
+    institutionName: string | null;
+  }>({ lat: null, lng: null, institutionName: null });
+  const campusGeoConfigured =
+    typeof campusGeo.lat === "number" &&
+    Number.isFinite(campusGeo.lat) &&
+    typeof campusGeo.lng === "number" &&
+    Number.isFinite(campusGeo.lng);
+  const campusLabel = campusGeo.institutionName?.trim() || "campus";
+
+  useEffect(() => {
+    if (!isOpen) return;
+    let isMounted = true;
+
+    fetch("/api/edition/active")
+      .then((res) => safeJson(res, { success: false, edition: null }))
+      .then((data) => {
+        if (!isMounted) return;
+        const edition = data?.edition;
+        const lat = edition?.campusLatitude;
+        const lng = edition?.campusLongitude;
+        setCampusGeo({
+          lat: lat === null || lat === undefined || lat === "" ? null : Number(lat),
+          lng: lng === null || lng === undefined || lng === "" ? null : Number(lng),
+          institutionName: edition?.institutionName || null,
+        });
+      })
+      .catch((err) => console.warn("Could not load edition campus location:", err));
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isOpen]);
 
   // Load available zones & graph nodes for selectors
   useEffect(() => {
@@ -179,7 +216,7 @@ export default function InteractiveFloorPlanModal({
   // 2. Center and highlight target room once SVG is rendered
   const focusZone = useCallback((zoneId: string, zoomLevel = 1.6) => {
     if (!svgWrapperRef.current || !containerRef.current) return;
-    const targetEl = svgWrapperRef.current.querySelector(`#${zoneId}`) as SVGGraphicsElement | null;
+    const targetEl = svgWrapperRef.current.querySelector(`#${CSS.escape(zoneId)}`) as SVGGraphicsElement | null;
     if (!targetEl || typeof targetEl.getBBox !== "function") return;
 
     try {
@@ -244,7 +281,7 @@ export default function InteractiveFloorPlanModal({
     });
 
     if (activeZone) {
-      const targetShape = wrapper.querySelector(`#${activeZone}`);
+      const targetShape = wrapper.querySelector(`#${CSS.escape(activeZone)}`);
       if (targetShape) {
         targetShape.classList.add("pulse-room");
       }
@@ -349,7 +386,7 @@ export default function InteractiveFloorPlanModal({
     // 1. Locate starting waypoint coordinates
     let startX = 100;
     let startY = 500;
-    const startNodeEl = svg.querySelector(`#${userWaypointId}`) as SVGCircleElement | null;
+    const startNodeEl = svg.querySelector(`#${CSS.escape(userWaypointId)}`) as SVGCircleElement | null;
     if (startNodeEl) {
       const cx = startNodeEl.getAttribute("cx") || startNodeEl.getAttribute("x");
       const cy = startNodeEl.getAttribute("cy") || startNodeEl.getAttribute("y");
@@ -503,6 +540,12 @@ export default function InteractiveFloorPlanModal({
       setGeoNotice("Browser Geolocation is not supported on this device.");
       return;
     }
+    if (!campusGeoConfigured) {
+      setGeoNotice("Campus location not configured.");
+      return;
+    }
+    const campusLat = campusGeo.lat as number;
+    const campusLng = campusGeo.lng as number;
 
     setLocatingGeo(true);
     setGeoNotice("Detecting GPS proximity to campus...");
@@ -512,16 +555,12 @@ export default function InteractiveFloorPlanModal({
         setLocatingGeo(false);
         const { latitude, longitude } = pos.coords;
 
-        // Sacred Heart College (Autonomous), Tirupattur: 12.5028° N, 78.5724° E
-        const SHC_LAT = 12.5028;
-        const SHC_LNG = 78.5724;
-
         // Haversine formula for distance in meters
         const R = 6371e3;
         const φ1 = (latitude * Math.PI) / 180;
-        const φ2 = (SHC_LAT * Math.PI) / 180;
-        const Δφ = ((SHC_LAT - latitude) * Math.PI) / 180;
-        const Δλ = ((SHC_LNG - longitude) * Math.PI) / 180;
+        const φ2 = (campusLat * Math.PI) / 180;
+        const Δφ = ((campusLat - latitude) * Math.PI) / 180;
+        const Δλ = ((campusLng - longitude) * Math.PI) / 180;
 
         const a =
           Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
@@ -535,11 +574,11 @@ export default function InteractiveFloorPlanModal({
             localStorage.setItem("shine_last_waypoint", "wp-entrance");
           } catch {}
           setGeoNotice(
-            `Approaching Sacred Heart College campus (${distMeters}m away). Starting indoor navigation from Main Entrance Gate.`
+            `Approaching ${campusLabel} (${distMeters}m away). Starting indoor navigation from Main Entrance Gate.`
           );
         } else {
           setGeoNotice(
-            `You are ${(distMeters / 1000).toFixed(1)}km from Sacred Heart College. Starting default orientation at Main Entrance Gate.`
+            `You are ${(distMeters / 1000).toFixed(1)}km from ${campusLabel}. Starting default orientation at Main Entrance Gate.`
           );
         }
       },
@@ -620,6 +659,9 @@ export default function InteractiveFloorPlanModal({
       if (e.key === "Escape") {
         onClose();
       }
+      // Zoom shortcuts must not fire while typing in a field or using a dropdown
+      const target = e.target as HTMLElement | null;
+      if (target && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName))) return;
       if (e.key === "+" || e.key === "=") {
         setScale((prev) => Math.min(prev * 1.2, 4.5));
       }
@@ -766,7 +808,7 @@ export default function InteractiveFloorPlanModal({
                 )}
               </div>
               <p className="text-sm text-ink-muted truncate">
-                {subtitle || "Interactive Blueprint • Sacred Heart College (Autonomous) Campus"}
+                {subtitle || "Interactive Blueprint"}
               </p>
             </div>
           </div>
@@ -914,9 +956,9 @@ export default function InteractiveFloorPlanModal({
             <button
               type="button"
               onClick={handleOutdoorGeolocation}
-              disabled={locatingGeo}
-              className="inline-flex items-center gap-1 text-xs font-semibold text-ink-muted hover:text-ink px-2 py-1 rounded-[8px] bg-surface border border-border hover:bg-surface-raised transition"
-              title="Detect campus proximity using GPS"
+              disabled={locatingGeo || !campusGeoConfigured}
+              className="inline-flex items-center gap-1 text-xs font-semibold text-ink-muted hover:text-ink px-2 py-1 rounded-[8px] bg-surface border border-border hover:bg-surface-raised transition disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:text-ink-muted disabled:hover:bg-surface"
+              title={campusGeoConfigured ? "Detect campus proximity using GPS" : "Campus location not configured"}
             >
               <Locate className={`w-3 h-3 ${locatingGeo ? "animate-spin text-accent" : ""}`} />
               <span>{locatingGeo ? "Locating..." : "Outdoor GPS"}</span>

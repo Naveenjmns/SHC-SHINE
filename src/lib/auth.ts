@@ -97,11 +97,32 @@ export const authOptions: AuthOptions = {
         token.phone = user.phone;
       }
       if (token.id) {
-        // SECURITY: Re-read role from the database so demoted or deleted users lose access immediately
-        const dbUser = await prisma.user.findUnique({
-          where: { id: token.id as string },
-          select: { role: true, college: true, phone: true },
-        });
+        // SECURITY: Re-read role from the database so demoted or deleted users lose access immediately.
+        // Both lookups run on every session read, so they are issued in parallel.
+        const email = typeof token.email === "string" ? token.email : null;
+        const [dbUser, isAssigned] = await Promise.all([
+          prisma.user.findUnique({
+            where: { id: token.id as string },
+            select: { role: true, college: true, phone: true },
+          }),
+          // Same assignment rule as the coordinator APIs: by account id or by the event's coordinator email
+          prisma.event.findFirst({
+            where: {
+              OR: [
+                { staffCoordinatorId: token.id as string },
+                { studentCoordinatorId: token.id as string },
+                { coordinatorId: token.id as string },
+                ...(email
+                  ? [
+                      { staffCoordinatorEmail: { equals: email, mode: "insensitive" as const } },
+                      { studentCoordinatorEmail: { equals: email, mode: "insensitive" as const } },
+                    ]
+                  : []),
+              ],
+            },
+            select: { id: true },
+          }),
+        ]);
         if (!dbUser) {
           // Account was deleted: strip all identity claims so every role/ID check fails closed
           return {} as typeof token;
@@ -109,17 +130,6 @@ export const authOptions: AuthOptions = {
         token.role = dbUser.role;
         token.college = dbUser.college;
         token.phone = dbUser.phone;
-
-        const isAssigned = await prisma.event.findFirst({
-          where: {
-            OR: [
-              { staffCoordinatorId: token.id as string },
-              { studentCoordinatorId: token.id as string },
-              { coordinatorId: token.id as string },
-            ],
-          },
-          select: { id: true },
-        });
         token.isEventCoordinator = !!isAssigned;
       }
       return token;

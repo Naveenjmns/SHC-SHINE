@@ -75,14 +75,25 @@ export default function CoordinatorEventDeskPage({
   const handleToggleAttendance = async (registrationId: string, currentAttended: boolean) => {
     setIsProcessing(true);
     try {
-      const res = await fetch("/api/checkin/event", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          registrationId,
-          attended: !currentAttended,
-        }),
-      });
+      // Delegates with a pass go through the check-in desk API (same approval guards as scanning);
+      // older individual registrations without a pass fall back to the registration PATCH
+      const row = registrations.find((r) => r.id === registrationId);
+      const badgeCode = row?.delegationMember?.badgeCode;
+      const res = badgeCode
+        ? await fetch("/api/checkin", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              code: badgeCode,
+              action: currentAttended ? "EVENT_UNCHECK" : "EVENT_CHECKIN",
+              eventId,
+            }),
+          })
+        : await fetch(`/api/coordinator/registrations/${encodeURIComponent(registrationId)}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ attended: !currentAttended }),
+          });
 
       const data = await safeJson(res, { success: false });
       if (!res.ok || !data.success) {
@@ -120,9 +131,8 @@ export default function CoordinatorEventDeskPage({
     );
   }
 
-  const checkedInCount = registrations.filter(
-    (r) => r.attended || r.delegationMember?.eventCheckedIn
-  ).length;
+  // Per-event attendance: delegationMember.eventCheckedIn means "checked in to any event"
+  const checkedInCount = registrations.filter((r) => r.attended).length;
   const pendingCount = registrations.length - checkedInCount;
 
   const filteredParticipants = registrations.filter((r) => {

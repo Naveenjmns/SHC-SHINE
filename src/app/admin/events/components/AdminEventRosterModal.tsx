@@ -31,7 +31,7 @@ export default function AdminEventRosterModal({
     async function loadParticipants() {
       setLoading(true);
       try {
-        const res = await fetch(`/api/admin/events/${event?.id}/participants`);
+        const res = await fetch(`/api/coordinator/events/${encodeURIComponent(event?.id || "")}/registrations`);
         const data = await safeJson(res, { success: false, registrations: [] });
         if (isMounted && data.success) {
           setParticipants(data.registrations || []);

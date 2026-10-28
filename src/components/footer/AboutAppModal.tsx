@@ -19,9 +19,19 @@ import { Button } from "@/components/ui";
 interface AboutAppModalProps {
   isOpen: boolean;
   onClose: () => void;
+  /** Fest display name from the active edition (e.g. festTitle(edition)) */
+  eventName?: string | null;
+  hostDepartment?: string | null;
+  institutionName?: string | null;
 }
 
-export default function AboutAppModal({ isOpen, onClose }: AboutAppModalProps) {
+export default function AboutAppModal({
+  isOpen,
+  onClose,
+  eventName,
+  hostDepartment,
+  institutionName,
+}: AboutAppModalProps) {
   if (!isOpen) return null;
 
   return (
@@ -29,7 +39,7 @@ export default function AboutAppModal({ isOpen, onClose }: AboutAppModalProps) {
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0b3558]/50 backdrop-blur-xs animate-in fade-in duration-150"
       role="dialog"
       aria-modal="true"
-      aria-label="About SHINE Platform"
+      aria-label={eventName ? `About ${eventName} Platform` : "About Fest Platform"}
       onClick={onClose}
     >
       <div
@@ -45,7 +55,7 @@ export default function AboutAppModal({ isOpen, onClose }: AboutAppModalProps) {
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-base font-bold text-ink">
-                  SHINE Platform OS
+                  {eventName ? `${eventName} Platform OS` : "Fest Platform OS"}
                 </h3>
                 <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-accent-muted text-accent-strong">
                   v2.0
@@ -131,8 +141,12 @@ export default function AboutAppModal({ isOpen, onClose }: AboutAppModalProps) {
         {/* Institution Attribution */}
         <div className="p-4 rounded-2xl bg-surface-raised border border-border flex items-center justify-between gap-3 text-sm">
           <div>
-            <div className="font-bold text-ink">Department of Computer Applications (PG)</div>
-            <div className="text-xs text-ink-muted">Sacred Heart College (Autonomous), Tirupattur</div>
+            {hostDepartment && (
+              <div className="font-bold text-ink">{hostDepartment}</div>
+            )}
+            {institutionName && (
+              <div className="text-xs text-ink-muted">{institutionName}</div>
+            )}
           </div>
           <Button variant="secondary" size="sm" onClick={onClose} className="text-sm shrink-0">
             Close

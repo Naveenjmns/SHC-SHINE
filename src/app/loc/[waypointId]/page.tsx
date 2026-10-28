@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import InteractiveFloorPlanModal from "@/components/InteractiveFloorPlanModal";
 import { safeJson } from "@/lib/safeFetch";
+import { festTitle, type ActiveEditionConfig } from "@/lib/editionDefaults";
 
 interface ZoneOption {
   id: string;
@@ -33,6 +34,13 @@ export default function CheckpointLocationPage() {
   const [selectedDestination, setSelectedDestination] = useState<string>("");
   const [mapModalOpen, setMapModalOpen] = useState(false);
   const [floorPlanUrl, setFloorPlanUrl] = useState<string>("/uploads/campus-floorplan.svg");
+  const [edition, setEdition] = useState<Partial<ActiveEditionConfig> | null>(null);
+
+  const festName = festTitle(edition);
+  const footerText = [edition?.institutionName, edition?.hostDepartment]
+    .map((part) => part?.trim())
+    .filter(Boolean)
+    .join(" • ");
 
   // Derive human-readable waypoint name
   const waypointDisplayName = useMemo(() => {
@@ -72,7 +80,20 @@ export default function CheckpointLocationPage() {
       }
     }
 
+    async function loadEdition() {
+      try {
+        const res = await fetch("/api/edition/active");
+        const data = await safeJson(res, { success: false, edition: null });
+        if (isMounted && data?.edition) {
+          setEdition(data.edition);
+        }
+      } catch (err) {
+        console.warn("Could not fetch active edition:", err);
+      }
+    }
+
     loadData();
+    loadEdition();
     return () => {
       isMounted = false;
     };
@@ -91,11 +112,11 @@ export default function CheckpointLocationPage() {
       <header className="relative z-10 px-4 sm:px-8 py-5 border-b border-border bg-surface/90 backdrop-blur-md flex items-center justify-between">
         <Link href="/" className="flex items-center gap-3 group">
           <div className="w-9 h-9 rounded-[8px] bg-accent flex items-center justify-center text-accent-ink font-bold text-[15px]">
-            S
+            {festName.charAt(0).toUpperCase()}
           </div>
           <div>
             <span className="text-[15px] font-bold text-ink block">
-              SHINE 2026
+              {festName}
             </span>
             <span className="text-sm text-ink-muted font-medium">
               Indoor Wayfinding & Checkpoints
@@ -242,11 +263,11 @@ export default function CheckpointLocationPage() {
       </main>
 
       {/* Footer */}
-      <footer className="relative z-10 py-4 px-4 text-center text-sm text-ink-muted border-t border-border bg-surface">
-        <p>
-          Sacred Heart College (Autonomous), Tirupattur • Department of Computer Science
-        </p>
-      </footer>
+      {footerText && (
+        <footer className="relative z-10 py-4 px-4 text-center text-sm text-ink-muted border-t border-border bg-surface">
+          <p>{footerText}</p>
+        </footer>
+      )}
 
       {/* Modal Instance */}
       <InteractiveFloorPlanModal
@@ -255,7 +276,7 @@ export default function CheckpointLocationPage() {
         floorPlanUrl={floorPlanUrl}
         highlightZoneId={selectedDestination || undefined}
         initialFromWaypointId={waypointId}
-        title="SHINE Indoor Venue Floor Plan"
+        title="Venue Floor Plan"
         subtitle={`Starting from ${waypointDisplayName} (${waypointId})`}
       />
     </div>

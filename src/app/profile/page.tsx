@@ -96,7 +96,8 @@ export default function ProfilePage() {
           name: name.trim(),
           phone: phone.trim() || null,
           college: college.trim() || null,
-          foodPreference,
+          // Students' meal preference is locked after registration; the server ignores it for them
+          ...(profile?.role !== "STUDENT" ? { foodPreference } : {}),
         }),
       });
       const data = await safeJson(res);
@@ -116,8 +117,8 @@ export default function ProfilePage() {
   const handleChangePassword = async (currentPass: string, newPass: string): Promise<boolean> => {
     setChangingPassword(true);
     try {
-      const res = await fetch("/api/profile/change-password", {
-        method: "POST",
+      const res = await fetch("/api/profile", {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ currentPassword: currentPass, newPassword: newPass }),
       });
@@ -219,6 +220,7 @@ export default function ProfilePage() {
             setCollege={setCollege}
             foodPreference={foodPreference}
             setFoodPreference={setFoodPreference}
+            foodPreferenceLocked={profile.role === "STUDENT"}
             onSave={handleUpdateProfile}
             saving={saving}
           />

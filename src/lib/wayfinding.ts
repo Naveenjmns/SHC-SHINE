@@ -299,7 +299,7 @@ export function shortestPath(
   for (const edge of graph.edges) {
     const listA = adj.get(edge.a);
     const listB = adj.get(edge.b);
-    const weight = edge.weight || 10;
+    const weight = edge.weight ?? 10;
     const isStair = !!edge.isStairOrLift;
 
     if (listA) listA.push({ neighborId: edge.b, weight, isStair });
@@ -479,7 +479,9 @@ export function validateGraph(
   for (const zone of zones) {
     // Look for matching entrance waypoint
     const matchingNode = graph.nodes.find(
-      (n) => n.zoneId === zone.id || n.id === `wp-${zone.id}` || n.id.includes(zone.id)
+      // Exact zone match or an id like "wp-<zone>-entrance"; a plain substring match would make
+      // "hall-1" match "wp-hall-10" and report an unreachable room as reachable
+      (n) => n.zoneId === zone.id || n.id === `wp-${zone.id}` || n.id.startsWith(`wp-${zone.id}-`)
     );
 
     if (!matchingNode || !visited.has(matchingNode.id)) {

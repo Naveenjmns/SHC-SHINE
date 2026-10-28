@@ -135,3 +135,27 @@ export function isSafeRelativePath(target: string | null | undefined): target is
   if (target.startsWith("//") || target.startsWith("/\\")) return false;
   return !/[\u0000-\u001f]/.test(target);
 }
+
+/**
+ * Validates the optional-or-required scalar fields of an event create/update body.
+ * Only fields that are present (not undefined) are checked. Returns an error message or null.
+ */
+export function validateEventFields(fields: {
+  category?: unknown;
+  dateTime?: unknown;
+  prelimsDateTime?: unknown;
+  capacity?: unknown;
+}): string | null {
+  if (fields.category !== undefined && fields.category !== "ON_STAGE" && fields.category !== "OFF_STAGE") {
+    return "Category must be ON_STAGE or OFF_STAGE.";
+  }
+  const isBadDate = (v: unknown) =>
+    v !== undefined && v !== null && v !== "" && Number.isNaN(new Date(v as string).getTime());
+  if (isBadDate(fields.dateTime)) return "Date/time is not a valid date.";
+  if (isBadDate(fields.prelimsDateTime)) return "Prelims date/time is not a valid date.";
+  if (fields.capacity !== undefined && fields.capacity !== null && fields.capacity !== "") {
+    const n = Number(fields.capacity);
+    if (!Number.isInteger(n) || n < 1) return "Capacity must be a whole number of at least 1, or left empty.";
+  }
+  return null;
+}

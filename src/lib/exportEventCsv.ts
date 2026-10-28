@@ -1,3 +1,4 @@
+import { csvCell } from "./csv";
 /**
  * Utility for exporting individual event participant rosters in standard SHINE'26 CSV format.
  *
@@ -51,10 +52,7 @@ export function generateEventParticipantsCsv(
   registrations: EventCsvRegistration[]
 ): string {
   // Helper to safely escape CSV cell values
-  const esc = (val: string | number | null | undefined): string => {
-    if (val === null || val === undefined) return '""';
-    return `"${String(val).replace(/"/g, '""')}"`;
-  };
+  const esc = csvCell;
 
   const eventCategoryLabel =
     event.category === "ON_STAGE"

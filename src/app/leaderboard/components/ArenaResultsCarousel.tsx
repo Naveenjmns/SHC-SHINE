@@ -159,10 +159,12 @@ export default function ArenaResultsCarousel({
       </div>
 
       {/* Venue Room */}
-      <p className="text-[15px] sm:text-base font-medium text-ink-muted flex items-center justify-center gap-1.5 pb-2">
-        <MapPin className="w-4 h-4 text-accent" />
-        <span>{currentEvent.venue || "Sacred Heart College Campus"}</span>
-      </p>
+      {currentEvent.venue && (
+        <p className="text-[15px] sm:text-base font-medium text-ink-muted flex items-center justify-center gap-1.5 pb-2">
+          <MapPin className="w-4 h-4 text-accent" />
+          <span>{currentEvent.venue}</span>
+        </p>
+      )}
 
       {/* 3-Tier Podium */}
       <LeaderboardPodium first={first} second={second} third={third} />

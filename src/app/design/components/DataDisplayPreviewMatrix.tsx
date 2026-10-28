@@ -79,7 +79,7 @@ export default function DataDisplayPreviewMatrix() {
           <Badge variant="rejected">Rejected</Badge>
           <Badge variant="live">Live Now</Badge>
           <Badge variant="closed">Closed</Badge>
-          <Badge variant="accent">SHINE 2026</Badge>
+          <Badge variant="accent">Sample Event</Badge>
           <Badge variant="gold">1st Place Gold</Badge>
           <Badge variant="info">System Notice</Badge>
           <Badge variant="neutral">Default Tag</Badge>
@@ -133,11 +133,11 @@ export default function DataDisplayPreviewMatrix() {
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell className="text-ink-muted">Loyola College (Autonomous)</TableCell>
+                  <TableCell className="text-ink-muted">Sample College</TableCell>
                   <TableCell>
                     <Badge variant="confirmed" size="sm">Confirmed</Badge>
                   </TableCell>
-                  <TableCell className="font-mono text-sm text-ink-muted">SHINE26-DEMO-RAHUL</TableCell>
+                  <TableCell className="font-mono text-sm text-ink-muted">FEST-DEMO-RAHUL</TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu
                       trigger={
@@ -175,7 +175,7 @@ export default function DataDisplayPreviewMatrix() {
                   <TableCell>
                     <Badge variant="pending" size="sm">Pending</Badge>
                   </TableCell>
-                  <TableCell className="font-mono text-sm text-ink-muted">SHINE26-REG-9812</TableCell>
+                  <TableCell className="font-mono text-sm text-ink-muted">FEST-REG-9812</TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu
                       trigger={
@@ -298,7 +298,7 @@ export default function DataDisplayPreviewMatrix() {
             label="College Affiliation"
             options={[
               { value: "ALL", label: "All Affiliated Colleges" },
-              { value: "SHC", label: "Sacred Heart College (Host)" },
+              { value: "HOST", label: "Host College" },
               { value: "EXT", label: "External Institutions" },
             ]}
           />

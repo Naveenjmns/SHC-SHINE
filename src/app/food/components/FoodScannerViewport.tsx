@@ -36,6 +36,8 @@ export default function FoodScannerViewport({
   const scannerRef = useRef<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isStoppingCameraRef = useRef(false);
+  // Set on unmount so a camera start that resolves afterwards is stopped immediately
+  const unmountedRef = useRef(false);
 
   const stopScanner = async () => {
     if (isStoppingCameraRef.current) return;
@@ -139,6 +141,10 @@ export default function FoodScannerViewport({
         }
       }
 
+      if (unmountedRef.current) {
+        await stopScanner();
+        return;
+      }
       setCameraActive(true);
       const cameras = await getAvailableCameras(Html5Qrcode);
       setAvailableCameras(cameras);
@@ -184,7 +190,9 @@ export default function FoodScannerViewport({
   };
 
   useEffect(() => {
+    unmountedRef.current = false;
     return () => {
+      unmountedRef.current = true;
       stopScanner();
     };
   }, []);

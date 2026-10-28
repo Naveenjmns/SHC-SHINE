@@ -1,6 +1,7 @@
 import nodemailer from "nodemailer";
 import prisma from "@/lib/prisma";
 import { decryptSecret, escapeHtml } from "@/lib/security";
+import { getActiveEdition, festTitle, type ActiveEditionConfig } from "@/lib/eventService";
 
 /** Recursively HTML-escape every string in a payload (for use inside HTML email bodies only). */
 function escapeHtmlDeep<T>(value: T): T {
@@ -12,6 +13,33 @@ function escapeHtmlDeep<T>(value: T): T {
     ) as T;
   }
   return value;
+}
+
+/**
+ * Sender address: SMTP "From email" → GMAIL_USER → SMTP_FROM_EMAIL. Never falls back to a
+ * hard-coded mailbox — an unconfigured deployment fails loudly instead.
+ */
+export function resolveSenderEmail(config?: { fromEmail?: string | null } | null): string {
+  const addr = config?.fromEmail?.trim() || process.env.GMAIL_USER?.trim() || process.env.SMTP_FROM_EMAIL?.trim();
+  if (!addr) {
+    throw new Error(
+      "No sender address configured. Set the From email in the admin SMTP settings, or GMAIL_USER / SMTP_FROM_EMAIL in the environment."
+    );
+  }
+  return addr;
+}
+
+/** Sender display name: SMTP "From name" → "<Fest title> Organizing Committee". */
+export function resolveSenderName(
+  config?: { fromName?: string | null } | null,
+  edition?: { name?: string | null; edition?: string | null } | null
+): string {
+  return config?.fromName?.trim() || `${festTitle(edition)} Organizing Committee`;
+}
+
+/** Institution line for email headers/footers — empty string when the edition has none configured. */
+function institutionOf(edition: ActiveEditionConfig): string {
+  return edition.institutionName?.trim() || "";
 }
 
 export interface SmtpConfig {
@@ -39,7 +67,7 @@ export async function getSmtpSettings(): Promise<SmtpConfig | null> {
         user: setting.user,
         password: setting.password ? decryptSecret(setting.password) : undefined,
         fromEmail: setting.fromEmail || setting.user,
-        fromName: setting.fromName || "Event Coordination Team",
+        fromName: setting.fromName || "",
         replyTo: setting.replyTo,
       };
     }
@@ -53,7 +81,7 @@ export async function getSmtpSettings(): Promise<SmtpConfig | null> {
         user: process.env.SMTP_USER,
         password: process.env.SMTP_PASSWORD,
         fromEmail: process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER,
-        fromName: process.env.SMTP_FROM_NAME || "Event Coordination Team",
+        fromName: process.env.SMTP_FROM_NAME || "",
         replyTo: process.env.SMTP_REPLY_TO,
       };
     }
@@ -128,8 +156,9 @@ export function buildNodemailerTransport(config: SmtpConfig) {
     greetingTimeout: 15000,   // 15 seconds
     socketTimeout: 20000,     // 20 seconds
     tls: {
-      // Allow cloud container outbound TLS without strict rejection on intermediate certs
-      rejectUnauthorized: false,
+      // SECURITY: Verify the SMTP server certificate, otherwise anyone on the network path can
+      // capture the SMTP credentials. Only relax this for a self-signed relay you control.
+      rejectUnauthorized: process.env.SMTP_ALLOW_INSECURE_TLS !== "true",
     },
   } as any);
 }
@@ -238,8 +267,10 @@ export async function dispatchMail(options: DispatchMailOptions): Promise<{ succ
   if (isGmailApiConfigured()) {
     try {
       const accessToken = await getGmailAccessToken();
-      const senderEmail = options.fromEmail || process.env.GMAIL_USER || "shine.mca.shctpt@gmail.com";
-      const senderName = options.fromName || "SHINE '26 — Sacred Heart College";
+      // The Gmail API sends as the authorised account; another From address may be rejected or
+      // rewritten unless it is a verified alias, so GMAIL_USER takes precedence here
+      const senderEmail = process.env.GMAIL_USER?.trim() || options.fromEmail || resolveSenderEmail(null);
+      const senderName = options.fromName || resolveSenderName(null, await getActiveEdition());
 
       const boundary = `====_Boundary_${Date.now()}_====`;
       const subjectBase64 = Buffer.from(options.subject).toString("base64");
@@ -247,10 +278,14 @@ export async function dispatchMail(options: DispatchMailOptions): Promise<{ succ
       const htmlBase64 = Buffer.from(options.html).toString("base64");
       const fromNameBase64 = Buffer.from(senderName).toString("base64");
 
+      // SECURITY: addresses go into raw MIME headers; strip CR/LF and angle brackets so a crafted
+      // value can never start a new header line (header injection)
+      const headerAddr = (v: string) => v.replace(/[\r\n<>]/g, "").trim();
+
       const mimeLines = [
-        `From: =?utf-8?B?${fromNameBase64}?= <${senderEmail}>`,
-        `To: <${options.to}>`,
-        options.replyTo ? `Reply-To: <${options.replyTo}>` : null,
+        `From: =?utf-8?B?${fromNameBase64}?= <${headerAddr(senderEmail)}>`,
+        `To: <${headerAddr(options.to)}>`,
+        options.replyTo ? `Reply-To: <${headerAddr(options.replyTo)}>` : null,
         `Subject: =?utf-8?B?${subjectBase64}?=`,
         `MIME-Version: 1.0`,
         `Content-Type: multipart/alternative; boundary="${boundary}"`,
@@ -296,8 +331,10 @@ export async function dispatchMail(options: DispatchMailOptions): Promise<{ succ
 
   // Fallback to standard SMTP
   const { transporter, config } = await createTransporter();
+  const smtpSenderName = options.fromName || resolveSenderName(config, await getActiveEdition());
+  const smtpSenderEmail = options.fromEmail || resolveSenderEmail(config);
   const info = await transporter.sendMail({
-    from: `"${options.fromName || config.fromName}" <${options.fromEmail || config.fromEmail}>`,
+    from: `"${smtpSenderName}" <${smtpSenderEmail}>`,
     to: options.to,
     replyTo: options.replyTo || config.replyTo || undefined,
     subject: options.subject,
@@ -311,12 +348,14 @@ export async function dispatchMail(options: DispatchMailOptions): Promise<{ succ
 export async function testSmtpConnection(testRecipient: string): Promise<{ success: boolean; message: string }> {
   try {
     if (isGmailApiConfigured()) {
-      const senderEmail = process.env.GMAIL_USER || "shine.mca.shctpt@gmail.com";
+      const testEdition = await getActiveEdition();
+      const testFestTitle = festTitle(testEdition);
+      const senderEmail = resolveSenderEmail({ fromEmail: process.env.GMAIL_USER });
       await dispatchMail({
         to: testRecipient,
         fromEmail: senderEmail,
-        fromName: "SHINE '26 Mail Dispatcher",
-        subject: `[Test] Gmail REST API Verified — SHINE '26 Event System`,
+        fromName: `${testFestTitle} Mail Dispatcher`,
+        subject: `[Test] Gmail REST API Verified — ${testFestTitle} Event System`,
         isSystemTest: true,
         text: `Hello,\n\nThis is a confirmation that your Google Cloud Gmail REST API is successfully connected and verified over HTTPS (Port 443).\n\nSender: ${senderEmail}\nSent at: ${new Date().toLocaleString()}`,
         html: `
@@ -332,7 +371,7 @@ export async function testSmtpConnection(testRecipient: string): Promise<{ succe
               <p style="margin: 4px 0;"><strong>Timestamp:</strong> ${new Date().toLocaleString()}</p>
             </div>
             <p style="font-size: 12px; color: #A6BBD1; margin-bottom: 0;">
-              Automated test triggered from SHINE '26 Admin Console.
+              Automated test triggered from the ${escapeHtml(testFestTitle)} Admin Console.
             </p>
           </div>
         `,
@@ -345,13 +384,15 @@ export async function testSmtpConnection(testRecipient: string): Promise<{ succe
     }
 
     const { transporter, config } = await createTransporter();
+    const testSenderName = resolveSenderName(config, await getActiveEdition());
+    const testSenderEmail = resolveSenderEmail(config);
 
     // Verify SMTP connection
     await transporter.verify();
 
     // Send a test verification email
     await transporter.sendMail({
-      from: `"${config.fromName}" <${config.fromEmail}>`,
+      from: `"${testSenderName}" <${testSenderEmail}>`,
       to: testRecipient,
       subject: `[Test] SMTP Configuration Verified — Event Management System`,
       text: `Hello,\n\nThis is a confirmation that your SMTP configuration is successfully connected and verified.\n\nSent at: ${new Date().toLocaleString()}`,
@@ -364,7 +405,7 @@ export async function testSmtpConnection(testRecipient: string): Promise<{ succe
           <div style="background: #F8F9FB; padding: 12px 16px; border-radius: 8px; font-size: 13px; color: #476788; margin: 20px 0;">
             <p style="margin: 4px 0;"><strong>Host:</strong> ${config.host}:465</p>
             <p style="margin: 4px 0;"><strong>SSL/TLS:</strong> Enabled (Direct SSL Port 465)</p>
-            <p style="margin: 4px 0;"><strong>Sender:</strong> ${config.fromName} (${config.fromEmail})</p>
+            <p style="margin: 4px 0;"><strong>Sender:</strong> ${escapeHtml(testSenderName)} (${escapeHtml(testSenderEmail)})</p>
             <p style="margin: 4px 0;"><strong>Timestamp:</strong> ${new Date().toLocaleString()}</p>
           </div>
           <p style="font-size: 12px; color: #A6BBD1; margin-bottom: 0;">
@@ -390,8 +431,8 @@ export async function sendBroadcastEmail({
   recipients,
   subject,
   message,
-  eventName = "Event Fest",
-  institutionName = "College Campus",
+  eventName,
+  institutionName,
 }: {
   recipients: { email: string; name: string }[];
   subject: string;
@@ -406,8 +447,12 @@ export async function sendBroadcastEmail({
     throw new Error("No email service configured (Gmail REST API or SMTP).");
   }
 
-  const senderEmail = process.env.GMAIL_USER || config?.fromEmail || "shine.mca.shctpt@gmail.com";
-  const senderName = config?.fromName || "SHINE '26 Organizing Committee";
+  // Fest / institution text comes from the active edition (fetched once for the whole batch)
+  const activeEdition = await getActiveEdition();
+  const festName = eventName?.trim() || festTitle(activeEdition);
+  const institution = institutionName?.trim() || institutionOf(activeEdition);
+  const senderEmail = resolveSenderEmail(config);
+  const senderName = resolveSenderName(config, activeEdition);
 
   // Convert plaintext newlines into HTML paragraphs/breaks
   const formattedHtmlContent = escapeHtml(message)
@@ -424,11 +469,11 @@ export async function sendBroadcastEmail({
           <div style="background-color: #ffffff; border-radius: 16px; border: 1px solid #D4E0ED; overflow: hidden; box-shadow: 0 4px 15px rgba(71,103,136,0.04);">
             <!-- Branded Header -->
             <div style="background: #0B3558; padding: 28px 32px; border-bottom: 3px solid #006BFF;">
-              <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.15em; color: #D9A441; text-transform: uppercase; margin-bottom: 6px;">
-                ${escapeHtml(institutionName)}
-              </div>
+              ${institution ? `<div style="font-size: 11px; font-weight: 700; letter-spacing: 0.15em; color: #D9A441; text-transform: uppercase; margin-bottom: 6px;">
+                ${escapeHtml(institution)}
+              </div>` : ""}
               <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.02em;">
-                ${escapeHtml(eventName)}
+                ${escapeHtml(festName)}
               </h1>
             </div>
 
@@ -444,13 +489,13 @@ export async function sendBroadcastEmail({
 
               <div style="margin-top: 32px; padding-top: 20px; border-top: 1px solid #F0F3F8; font-size: 13px; color: #476788;">
                 <p style="margin: 0 0 4px 0; font-weight: 600; color: #0B3558;">Coordination & Organizing Committee</p>
-                <p style="margin: 0;">${escapeHtml(institutionName)}</p>
+                ${institution ? `<p style="margin: 0;">${escapeHtml(institution)}</p>` : ""}
               </div>
             </div>
 
             <!-- Footer -->
             <div style="background-color: #F0F3F8; padding: 16px 32px; font-size: 11px; color: #A6BBD1; text-align: center; border-top: 1px solid #D4E0ED;">
-              <p style="margin: 0;">You received this announcement because you are registered for ${escapeHtml(eventName)}.</p>
+              <p style="margin: 0;">You received this announcement because you are registered for ${escapeHtml(festName)}.</p>
             </div>
           </div>
         </div>
@@ -462,7 +507,7 @@ export async function sendBroadcastEmail({
         to: recipient.email,
         replyTo: config?.replyTo || undefined,
         subject: subject,
-        text: `Dear ${recipient.name},\n\n${message}\n\n---\n${eventName} Organizing Committee\n${institutionName}`,
+        text: `Dear ${recipient.name},\n\n${message}\n\n---\n${festName} Organizing Committee${institution ? `\n${institution}` : ""}`,
         html: personalizedHtml,
       });
 
@@ -505,7 +550,10 @@ export interface DelegateRegistrationEmailPayload {
  * Sends a personalized registration confirmation email to each registered student delegate.
  * Includes student portal login credentials, portal access link, badge pass link, scannable food token, and full event schedule.
  */
-export async function sendDelegateRegistrationEmail(payload: DelegateRegistrationEmailPayload): Promise<boolean> {
+export async function sendDelegateRegistrationEmail(
+  payload: DelegateRegistrationEmailPayload,
+  edition?: ActiveEditionConfig
+): Promise<boolean> {
   try {
     const triggerSettings = await getEmailNotificationSettings();
     if (!triggerSettings.emailServiceEnabled || !triggerSettings.sendOnRegistration) {
@@ -520,16 +568,15 @@ export async function sendDelegateRegistrationEmail(payload: DelegateRegistratio
       return false;
     }
 
-    const activeEdition = await prisma.eventEdition.findFirst({ where: { isActive: true } });
-    const eventName = activeEdition?.name || "SHINE";
-    const editionYear = activeEdition?.edition || "2027";
-    const institutionName = activeEdition?.institutionName || "Sacred Heart College (Autonomous)";
+    const activeEdition = edition ?? (await getActiveEdition());
+    const festName = festTitle(activeEdition);
+    const institutionName = institutionOf(activeEdition);
 
     // Resolve Student Portal credentials & URL
     const studentUserId = payload.userId || payload.toEmail;
     const studentPassword = payload.password || (payload.password === null ? "Your existing account password" : "Your registered 10-digit mobile number (unless you have changed it)");
     const baseUrl = (process.env.NEXTAUTH_URL || "").replace(/\/$/, "");
-    const basePortalUrl = payload.portalUrl || (baseUrl ? `${baseUrl}/login` : "https://shc-shine.up.railway.app/login");
+    const basePortalUrl = payload.portalUrl || (baseUrl ? `${baseUrl}/login` : "/login");
     const loginPortalUrl = basePortalUrl.includes("?")
       ? basePortalUrl
       : `${basePortalUrl}?email=${encodeURIComponent(studentUserId)}`;
@@ -568,11 +615,11 @@ export async function sendDelegateRegistrationEmail(payload: DelegateRegistratio
         <div style="background-color: #ffffff; border-radius: 20px; border: 1px solid #D4E0ED; overflow: hidden; box-shadow: 0 4px 20px rgba(71,103,136,0.06);">
           <!-- Header -->
           <div style="background: #0B3558; padding: 28px 32px; border-bottom: 3px solid #006BFF;">
-            <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.15em; color: #D9A441; text-transform: uppercase; margin-bottom: 4px;">
+            ${institutionName ? `<div style="font-size: 11px; font-weight: 700; letter-spacing: 0.15em; color: #D9A441; text-transform: uppercase; margin-bottom: 4px;">
               ${escapeHtml(institutionName)}
-            </div>
+            </div>` : ""}
             <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 800;">
-              ${escapeHtml(eventName)} ${escapeHtml(editionYear)} — Registration Confirmed
+              ${escapeHtml(festName)} — Registration Confirmed
             </h1>
             <div style="color: #A6BBD1; font-size: 13px; margin-top: 4px;">
               Student Portal Access & Official Pass Details
@@ -683,7 +730,7 @@ export async function sendDelegateRegistrationEmail(payload: DelegateRegistratio
 
             <div style="margin-top: 32px; padding-top: 20px; border-top: 1px solid #F0F3F8; font-size: 12px; color: #476788;">
               <p style="margin: 0 0 4px 0; font-weight: 700; color: #0B3558;">Symposium Executive Committee</p>
-              <p style="margin: 0;">${escapeHtml(institutionName)}</p>
+              ${institutionName ? `<p style="margin: 0;">${escapeHtml(institutionName)}</p>` : ""}
             </div>
           </div>
         </div>
@@ -693,7 +740,7 @@ export async function sendDelegateRegistrationEmail(payload: DelegateRegistratio
     const textContent = `
 Dear ${payload.delegateName},
 
-Welcome! Your registration for ${eventName} ${editionYear} as part of the ${payload.collegeName} contingent has been successfully received.
+Welcome! Your registration for ${festName} as part of the ${payload.collegeName} contingent has been successfully received.
 
 ============================================================
 STUDENT PORTAL LOGIN CREDENTIALS
@@ -717,19 +764,19 @@ REGISTERED COMPETITIONS & SCHEDULE
 ${payload.events.length > 0 ? payload.events.map(ev => `• ${ev.name} (${ev.category === "ON_STAGE" ? "On-Stage" : "Off-Stage"})${ev.venue ? ` | Venue: ${ev.venue}` : ""}${ev.time ? ` | Time: ${ev.time}` : ""}${ev.staffCoordinator ? ` | Staff: ${ev.staffCoordinator}` : ""}${ev.studentCoordinator ? ` | Student: ${ev.studentCoordinator}` : ""}`).join("\n") : "General Fest Attendee"}
 
 ---
-Symposium Executive Committee
-${institutionName}
+Symposium Executive Committee${institutionName ? `
+${institutionName}` : ""}
 `.trim();
 
-    const senderEmail = process.env.GMAIL_USER || config?.fromEmail || "shine.mca.shctpt@gmail.com";
-    const senderName = config?.fromName || "Symposium Executive Committee";
+    const senderEmail = resolveSenderEmail(config);
+    const senderName = resolveSenderName(config, activeEdition);
 
     await dispatchMail({
       fromName: senderName,
       fromEmail: senderEmail,
       to: payload.toEmail,
       replyTo: config?.replyTo || undefined,
-      subject: `Registration Confirmed: ${payload.delegateName} — Student Portal Login & Pass (${eventName} ${editionYear})`,
+      subject: `Registration Confirmed: ${payload.delegateName} — Student Portal Login & Pass (${festName})`,
       text: textContent,
       html,
     });
@@ -766,7 +813,10 @@ export interface CoordinatorAlertPayload {
  * Sends an immediate alert to the host Staff Coordinator and Student Coordinator
  * when an outer college delegation registers participants for their specific event.
  */
-export async function sendCoordinatorRegistrationAlert(payload: CoordinatorAlertPayload): Promise<boolean> {
+export async function sendCoordinatorRegistrationAlert(
+  payload: CoordinatorAlertPayload,
+  edition?: ActiveEditionConfig
+): Promise<boolean> {
   try {
     const triggerSettings = await getEmailNotificationSettings();
     if (!triggerSettings.emailServiceEnabled || !triggerSettings.sendOnCoordinatorAlert) {
@@ -781,9 +831,8 @@ export async function sendCoordinatorRegistrationAlert(payload: CoordinatorAlert
       return false;
     }
 
-    const activeEdition = await prisma.eventEdition.findFirst({ where: { isActive: true } });
-    const eventName = activeEdition?.name || "SHINE";
-    const editionYear = activeEdition?.edition || "2027";
+    const activeEdition = edition ?? (await getActiveEdition());
+    const festName = festTitle(activeEdition);
 
     // SECURITY: HTML-escaped copy of user-supplied fields for the HTML body only
     const h = escapeHtmlDeep(payload);
@@ -802,7 +851,7 @@ export async function sendCoordinatorRegistrationAlert(payload: CoordinatorAlert
           <!-- Header -->
           <div style="background: #0B3558; padding: 24px 30px; border-bottom: 3px solid #006BFF;">
             <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.15em; color: #D9A441; text-transform: uppercase; margin-bottom: 4px;">
-              ${escapeHtml(eventName)} ${escapeHtml(editionYear)} — Coordinator Alert
+              ${escapeHtml(festName)} — Coordinator Alert
             </div>
             <h1 style="color: #ffffff; margin: 0; font-size: 20px; font-weight: 800;">
               New Delegation Entered: ${h.eventName}
@@ -863,8 +912,8 @@ export async function sendCoordinatorRegistrationAlert(payload: CoordinatorAlert
       </div>
     `;
 
-    const senderEmail = process.env.GMAIL_USER || config?.fromEmail || "shine.mca.shctpt@gmail.com";
-    const senderName = config?.fromName || "SHINE '26 Coordinator Alert";
+    const senderEmail = resolveSenderEmail(config);
+    const senderName = resolveSenderName(config, activeEdition);
 
     await dispatchMail({
       fromName: senderName,
@@ -886,7 +935,10 @@ export async function sendCoordinatorRegistrationAlert(payload: CoordinatorAlert
  * Sends official approved ID Card and Food Voucher pass email to an individual delegate.
  * Triggered when Registration Desk collects payment and approves delegation.
  */
-export async function sendApprovedDelegatePassEmail(payload: DelegateRegistrationEmailPayload): Promise<boolean> {
+export async function sendApprovedDelegatePassEmail(
+  payload: DelegateRegistrationEmailPayload,
+  edition?: ActiveEditionConfig
+): Promise<boolean> {
   try {
     const triggerSettings = await getEmailNotificationSettings();
     if (!triggerSettings.emailServiceEnabled || !triggerSettings.sendOnApproval) {
@@ -901,16 +953,15 @@ export async function sendApprovedDelegatePassEmail(payload: DelegateRegistratio
       return false;
     }
 
-    const activeEdition = await prisma.eventEdition.findFirst({ where: { isActive: true } });
-    const eventName = activeEdition?.name || "SHINE";
-    const editionYear = activeEdition?.edition || "2027";
-    const institutionName = activeEdition?.institutionName || "Sacred Heart College (Autonomous)";
+    const activeEdition = edition ?? (await getActiveEdition());
+    const festName = festTitle(activeEdition);
+    const institutionName = institutionOf(activeEdition);
 
     // Resolve Student Portal credentials & URL
     const studentUserId = payload.userId || payload.toEmail;
     const studentPassword = payload.password || (payload.password === null ? "Your existing account password" : "Your registered 10-digit mobile number (unless you have changed it)");
     const baseUrl = (process.env.NEXTAUTH_URL || "").replace(/\/$/, "");
-    const basePortalUrl = payload.portalUrl || (baseUrl ? `${baseUrl}/login` : "https://shc-shine.up.railway.app/login");
+    const basePortalUrl = payload.portalUrl || (baseUrl ? `${baseUrl}/login` : "/login");
     const loginPortalUrl = basePortalUrl.includes("?")
       ? basePortalUrl
       : `${basePortalUrl}?email=${encodeURIComponent(studentUserId)}`;
@@ -943,13 +994,13 @@ export async function sendApprovedDelegatePassEmail(payload: DelegateRegistratio
         <div style="background-color: #ffffff; border-radius: 20px; border: 1px solid #D4E0ED; overflow: hidden; box-shadow: 0 4px 20px rgba(71,103,136,0.06);">
           <!-- Header -->
           <div style="background: linear-gradient(135deg, #065F46 0%, #047857 100%); padding: 26px 32px; border-bottom: 3px solid #10B981;">
-            <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.15em; color: #A7F3D0; text-transform: uppercase; margin-bottom: 4px;">
+            ${institutionName ? `<div style="font-size: 11px; font-weight: 700; letter-spacing: 0.15em; color: #A7F3D0; text-transform: uppercase; margin-bottom: 4px;">
               ${escapeHtml(institutionName)}
-            </div>
+            </div>` : ""}
             <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 800;">
               Registration Approved & Passes Ready
             </h1>
-            <div style="color: #D1FAE5; font-size: 13px; margin-top: 4px;">${escapeHtml(eventName)} ${escapeHtml(editionYear)} • Official Digital ID & Food Token</div>
+            <div style="color: #D1FAE5; font-size: 13px; margin-top: 4px;">${escapeHtml(festName)} • Official Digital ID & Food Token</div>
           </div>
 
           <!-- Body -->
@@ -1040,7 +1091,7 @@ export async function sendApprovedDelegatePassEmail(payload: DelegateRegistratio
 
             <div style="margin-top: 30px; padding-top: 18px; border-top: 1px solid #F0F3F8; font-size: 12px; color: #476788;">
               <p style="margin: 0 0 4px 0; font-weight: 700; color: #0B3558;">Symposium Executive Committee</p>
-              <p style="margin: 0;">${escapeHtml(institutionName)}</p>
+              ${institutionName ? `<p style="margin: 0;">${escapeHtml(institutionName)}</p>` : ""}
             </div>
           </div>
         </div>
@@ -1050,7 +1101,7 @@ export async function sendApprovedDelegatePassEmail(payload: DelegateRegistratio
     const textContent = `
 Dear ${payload.delegateName},
 
-Congratulations! Your registration for ${eventName} ${editionYear} has been approved by the Registration Desk.
+Congratulations! Your registration for ${festName} has been approved by the Registration Desk.
 
 ============================================================
 STUDENT PORTAL LOGIN CREDENTIALS
@@ -1073,19 +1124,19 @@ REGISTERED COMPETITIONS
 ${payload.events.length > 0 ? payload.events.map(ev => `• ${ev.name} (${ev.category === "ON_STAGE" ? "On-Stage" : "Off-Stage"})${ev.venue ? ` | Venue: ${ev.venue}` : ""}${ev.time ? ` | Time: ${ev.time}` : ""}`).join("\n") : "General Fest Attendee"}
 
 ---
-Symposium Executive Committee
-${institutionName}
+Symposium Executive Committee${institutionName ? `
+${institutionName}` : ""}
 `.trim();
 
-    const senderEmail = process.env.GMAIL_USER || config?.fromEmail || "shine.mca.shctpt@gmail.com";
-    const senderName = config?.fromName || "Symposium Executive Committee";
+    const senderEmail = resolveSenderEmail(config);
+    const senderName = resolveSenderName(config, activeEdition);
 
     await dispatchMail({
       fromName: senderName,
       fromEmail: senderEmail,
       to: payload.toEmail,
       replyTo: config?.replyTo || undefined,
-      subject: `Approved ID Pass: ${payload.delegateName} — Portal Login & Pass (${eventName} ${editionYear})`,
+      subject: `Approved ID Pass: ${payload.delegateName} — Portal Login & Pass (${festName})`,
       text: textContent,
       html,
     });
@@ -1121,7 +1172,10 @@ export interface TeamLeadConsolidatedEmailPayload {
  * Sends a consolidated team pass dossier to the Team Lead upon Desk payment & approval.
  * Contains the team lead's own pass plus every team member's badge, food token, and pass link.
  */
-export async function sendTeamLeadConsolidatedPassEmail(payload: TeamLeadConsolidatedEmailPayload): Promise<boolean> {
+export async function sendTeamLeadConsolidatedPassEmail(
+  payload: TeamLeadConsolidatedEmailPayload,
+  edition?: ActiveEditionConfig
+): Promise<boolean> {
   try {
     const triggerSettings = await getEmailNotificationSettings();
     if (!triggerSettings.emailServiceEnabled || !triggerSettings.sendOnTeamLeadApproval) {
@@ -1136,10 +1190,9 @@ export async function sendTeamLeadConsolidatedPassEmail(payload: TeamLeadConsoli
       return false;
     }
 
-    const activeEdition = await prisma.eventEdition.findFirst({ where: { isActive: true } });
-    const eventName = activeEdition?.name || "SHINE";
-    const editionYear = activeEdition?.edition || "2027";
-    const institutionName = activeEdition?.institutionName || "Sacred Heart College (Autonomous)";
+    const activeEdition = edition ?? (await getActiveEdition());
+    const festName = festTitle(activeEdition);
+    const institutionName = institutionOf(activeEdition);
 
     // SECURITY: HTML-escaped copy of user-supplied fields for the HTML body only
     const h = escapeHtmlDeep(payload);
@@ -1181,13 +1234,13 @@ export async function sendTeamLeadConsolidatedPassEmail(payload: TeamLeadConsoli
         <div style="background-color: #ffffff; border-radius: 20px; border: 1px solid #D4E0ED; overflow: hidden; box-shadow: 0 4px 20px rgba(71,103,136,0.06);">
           <!-- Header -->
           <div style="background: #0B3558; padding: 28px 32px; border-bottom: 3px solid #006BFF;">
-            <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.15em; color: #D9A441; text-transform: uppercase; margin-bottom: 4px;">
+            ${institutionName ? `<div style="font-size: 11px; font-weight: 700; letter-spacing: 0.15em; color: #D9A441; text-transform: uppercase; margin-bottom: 4px;">
               ${escapeHtml(institutionName)}
-            </div>
+            </div>` : ""}
             <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 800;">
               Team Dossier: All Member ID Passes & Food Tokens
             </h1>
-            <div style="color: #A6BBD1; font-size: 13px; margin-top: 4px;">${escapeHtml(eventName)} ${escapeHtml(editionYear)} • Team Lead Consolidated Roster</div>
+            <div style="color: #A6BBD1; font-size: 13px; margin-top: 4px;">${escapeHtml(festName)} • Team Lead Consolidated Roster</div>
           </div>
 
           <!-- Body -->
@@ -1209,15 +1262,15 @@ export async function sendTeamLeadConsolidatedPassEmail(payload: TeamLeadConsoli
 
             <div style="margin-top: 30px; padding-top: 18px; border-top: 1px solid #F0F3F8; font-size: 12px; color: #476788;">
               <p style="margin: 0 0 4px 0; font-weight: 700; color: #0B3558;">Registration & Helpdesk Team</p>
-              <p style="margin: 0;">${escapeHtml(institutionName)}</p>
+              ${institutionName ? `<p style="margin: 0;">${escapeHtml(institutionName)}</p>` : ""}
             </div>
           </div>
         </div>
       </div>
     `;
 
-    const senderEmail = process.env.GMAIL_USER || config?.fromEmail || "shine.mca.shctpt@gmail.com";
-    const senderName = config?.fromName || "Registration & Helpdesk Team";
+    const senderEmail = resolveSenderEmail(config);
+    const senderName = resolveSenderName(config, activeEdition);
 
     await dispatchMail({
       fromName: senderName,
@@ -1260,7 +1313,10 @@ export interface EventReminderEmailPayload {
  * Sends an urgent competition start reminder email to registered student delegates 10 minutes prior to event start.
  * Includes venue, start time, digital badge pass QR link, and coordinator hotline numbers.
  */
-export async function sendEventReminderEmail(payload: EventReminderEmailPayload): Promise<boolean> {
+export async function sendEventReminderEmail(
+  payload: EventReminderEmailPayload,
+  edition?: ActiveEditionConfig
+): Promise<boolean> {
   try {
     const triggerSettings = await getEmailNotificationSettings();
     if (!triggerSettings.emailServiceEnabled || !triggerSettings.sendOnEventReminder) {
@@ -1275,10 +1331,9 @@ export async function sendEventReminderEmail(payload: EventReminderEmailPayload)
       return false;
     }
 
-    const activeEdition = await prisma.eventEdition.findFirst({ where: { isActive: true } });
-    const eventName = activeEdition?.name || "SHINE";
-    const editionYear = activeEdition?.edition || "2027";
-    const institutionName = activeEdition?.institutionName || "Sacred Heart College (Autonomous)";
+    const activeEdition = edition ?? (await getActiveEdition());
+    const festName = festTitle(activeEdition);
+    const institutionName = institutionOf(activeEdition);
 
     const minutesStr = payload.minutesUntilStart ? `${payload.minutesUntilStart}` : "10";
     const roundTitle = payload.isPrelims ? "Preliminary Screening Round" : "Final / Main Arena";
@@ -1295,9 +1350,9 @@ export async function sendEventReminderEmail(payload: EventReminderEmailPayload)
           <!-- Header with Amber/Orange Fest Theme -->
           <div style="background: #0B3558; padding: 26px 32px; border-bottom: 3px solid #006BFF;">
             <div style="display: flex; align-items: center; justify-content: space-between;">
-              <span style="font-size: 11px; font-weight: 800; letter-spacing: 0.15em; color: #D9A441; text-transform: uppercase;">
+              ${institutionName ? `<span style="font-size: 11px; font-weight: 800; letter-spacing: 0.15em; color: #D9A441; text-transform: uppercase;">
                 ${escapeHtml(institutionName)}
-              </span>
+              </span>` : ""}
               <span style="background-color: #006BFF; color: #ffffff; font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.08em;">
                 Starts in ~${escapeHtml(minutesStr)} Mins
               </span>
@@ -1306,7 +1361,7 @@ export async function sendEventReminderEmail(payload: EventReminderEmailPayload)
               ${h.eventName} Starting Soon!
             </h1>
             <div style="color: #D4E0ED; font-size: 13px; margin-top: 4px;">
-              ${escapeHtml(eventName)} ${escapeHtml(editionYear)} • ${escapeHtml(roundTitle)}
+              ${escapeHtml(festName)} • ${escapeHtml(roundTitle)}
             </div>
           </div>
 
@@ -1416,7 +1471,7 @@ export async function sendEventReminderEmail(payload: EventReminderEmailPayload)
 
             <div style="margin-top: 28px; padding-top: 18px; border-top: 1px solid #F0F3F8; font-size: 12px; color: #476788;">
               <p style="margin: 0 0 4px 0; font-weight: 700; color: #0B3558;">Fest Operations & Arena Management</p>
-              <p style="margin: 0;">${escapeHtml(institutionName)}</p>
+              ${institutionName ? `<p style="margin: 0;">${escapeHtml(institutionName)}</p>` : ""}
             </div>
           </div>
         </div>
@@ -1452,12 +1507,12 @@ ${payload.staffCoordinator ? `Staff Incharge: ${payload.staffCoordinator.name} (
 Please proceed to the venue immediately with your College ID card and Digital Pass.
 
 ---
-Fest Operations & Arena Management
-${institutionName}
+Fest Operations & Arena Management${institutionName ? `
+${institutionName}` : ""}
 `.trim();
 
-    const senderEmail = process.env.GMAIL_USER || config?.fromEmail || "shine.mca.shctpt@gmail.com";
-    const senderName = config?.fromName || "Fest Operations & Arena Management";
+    const senderEmail = resolveSenderEmail(config);
+    const senderName = resolveSenderName(config, activeEdition);
 
     await dispatchMail({
       fromName: senderName,

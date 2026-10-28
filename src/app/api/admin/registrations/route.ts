@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { RegistrationStatus } from "@prisma/client";
+import { getAppOrigin } from "@/lib/security";
 
 // GET /api/admin/registrations - List all registrations across the fest
 export async function GET(req: Request) {
@@ -120,9 +121,7 @@ export async function PATCH(req: Request) {
     const body = await req.json();
     const { registrationId, delegationId, action, status, result, score } = body;
 
-    const hostHeader = req.headers.get("host") || "localhost:3000";
-    const protocol = hostHeader.includes("localhost") ? "http" : "https";
-    const origin = `${protocol}://${hostHeader}`;
+    const origin = getAppOrigin(req);
 
     // Handle College / Delegation Batch Approval & Rejection
     if (action === "REJECT_COLLEGE") {
@@ -143,7 +142,8 @@ export async function PATCH(req: Request) {
         });
         const userIds = users.map((u) => u.id);
         await prisma.registration.updateMany({
-          where: { userId: { in: userIds } },
+          // Only individual registrants: delegation registrations are handled via delegationId
+          where: { userId: { in: userIds }, delegationId: null },
           data: { status: RegistrationStatus.REJECTED, prelimsStatus: null, result: null },
         });
       }
@@ -160,7 +160,8 @@ export async function PATCH(req: Request) {
         });
         const userIds = users.map((u) => u.id);
         await prisma.registration.updateMany({
-          where: { userId: { in: userIds } },
+          // Only individual registrants: delegation registrations are handled via delegationId
+          where: { userId: { in: userIds }, delegationId: null },
           data: { status: RegistrationStatus.CONFIRMED },
         });
         return NextResponse.json({ success: true, message: `All student registrations for ${collegeName} have been APPROVED!` });
@@ -217,7 +218,7 @@ export async function PATCH(req: Request) {
             venueZoneId: r.event.venueZoneId || null,
             venueZoneLabel: zoneLabel,
             mapUrl: r.event.venueZoneId ? `${origin}/loc/${r.event.venueZoneId}` : `${origin}/events`,
-            time: r.event.dateTime ? new Date(r.event.dateTime).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) : null,
+            time: r.event.dateTime ? new Date(r.event.dateTime).toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit" }) : null,
           };
         });
 
@@ -304,6 +305,11 @@ export async function PATCH(req: Request) {
       updateData.score = score === "" || score === null ? null : parseFloat(score);
     }
 
+    const before = await prisma.registration.findUnique({ where: { id: registrationId }, select: { status: true } });
+    if (!before) {
+      return NextResponse.json({ success: false, message: "Registration not found." }, { status: 404 });
+    }
+
     const updated = await prisma.registration.update({
       where: { id: registrationId },
       data: updateData,
@@ -315,13 +321,13 @@ export async function PATCH(req: Request) {
       },
     });
 
-    // If marked CONFIRMED individually, send approved pass email with portal credentials
-    if (status === "CONFIRMED" && updated.delegationMember) {
+    // If newly marked CONFIRMED individually, send approved pass email (not again on re-saves)
+    if (status === "CONFIRMED" && before.status !== "CONFIRMED" && updated.delegationMember) {
       const { sendApprovedDelegatePassEmail } = await import("@/lib/emailService");
       sendApprovedDelegatePassEmail({
         toEmail: updated.user.email,
         delegateName: updated.user.name,
-        collegeName: updated.delegation?.collegeName || updated.user.college || "SHINE 26",
+        collegeName: updated.delegation?.collegeName || updated.user.college || "Delegation",
         teamName: updated.delegation?.teamName,
         badgeCode: updated.delegationMember.badgeCode,
         foodTokenCode: updated.delegationMember.foodTokenCode,
@@ -360,15 +366,21 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ success: false, message: "Unauthorized. Admin access required." }, { status: 403 });
     }
 
-    let clearStudentAccounts = true;
+    // SAFETY: Destructive wipe. Require an explicit confirmation token, and only delete
+    // student accounts when that is asked for explicitly (never by default or on a bad body).
+    let body: { confirm?: unknown; clearStudentAccounts?: unknown } = {};
     try {
-      const body = await req.json();
-      if (body && typeof body.clearStudentAccounts === "boolean") {
-        clearStudentAccounts = body.clearStudentAccounts;
-      }
+      body = (await req.json()) || {};
     } catch {
-      // Body may be empty or not provided
+      // Body missing or invalid: treated as unconfirmed below
     }
+    if (body.confirm !== "RESET") {
+      return NextResponse.json(
+        { success: false, message: 'Reset not confirmed. Send { "confirm": "RESET" } to clear all registrations.' },
+        { status: 400 }
+      );
+    }
+    const clearStudentAccounts = body.clearStudentAccounts === true;
 
     // Execute in a transaction to guarantee atomic wipe
     const [deletedRegs, deletedMembers, deletedDelegations, deletedStudents] = await prisma.$transaction(

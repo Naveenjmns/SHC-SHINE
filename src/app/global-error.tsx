@@ -16,7 +16,7 @@ export default function GlobalError({
   return (
     <html lang="en">
       <head>
-        <title>SHINE 26 • System Recovery</title>
+        <title>System Recovery</title>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <style>{`
           * { box-sizing: border-box; margin: 0; padding: 0; }

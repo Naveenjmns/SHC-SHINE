@@ -17,6 +17,8 @@ import AdminEventsTable, { CoordinatorUser, EventItem } from "./components/Admin
 import AdminEventFormModal from "./components/AdminEventFormModal";
 import AdminEventRosterModal from "./components/AdminEventRosterModal";
 
+const PUBLIC_MAIL_DOMAINS = new Set(["gmail.com", "googlemail.com", "yahoo.com", "outlook.com", "hotmail.com", "live.com", "icloud.com"]);
+
 export default function AdminEventsPage() {
   const { toast, confirmAction } = useToast();
 
@@ -29,6 +31,9 @@ export default function AdminEventsPage() {
     second: "Cash Prize + Merit Certificate",
     third: "Distinction Certificate",
   });
+
+  // Active edition start date: the default day pre-filled for new events
+  const [festStartDate, setFestStartDate] = useState<string | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -47,7 +52,7 @@ export default function AdminEventsPage() {
     setLoading(true);
     try {
       const [eventsRes, coordsRes, zonesRes, edRes] = await Promise.all([
-        fetch("/api/events"),
+        fetch("/api/events?all=1"),
         fetch("/api/admin/users?role=COORDINATOR"),
         fetch("/api/admin/floorplan/zones"),
         fetch("/api/admin/edition"),
@@ -62,11 +67,21 @@ export default function AdminEventsPage() {
 
       if (eventsData.success) setEvents(eventsData.events || []);
       if (coordsData.success && coordsData.users) {
-        setStaffCoordinators(coordsData.users.filter((u: any) => u.email?.endsWith("@shctpt.edu") || u.role === "COORDINATOR"));
+        // Host-institution staff = coordinators, plus accounts on the edition's contact-email domain
+        // (skipped for public webmail domains, which would match everyone)
+        const contactDomain = String(edData?.edition?.contactEmail || "").split("@")[1]?.trim().toLowerCase();
+        const staffDomain =
+          contactDomain && !PUBLIC_MAIL_DOMAINS.has(contactDomain) ? `@${contactDomain}` : null;
+        setStaffCoordinators(
+          coordsData.users.filter(
+            (u: any) => u.role === "COORDINATOR" || (staffDomain && u.email?.toLowerCase().endsWith(staffDomain))
+          )
+        );
         setStudentCoordinators(coordsData.users);
       }
       if (zonesData.success && zonesData.zones) setFloorPlanZones(zonesData.zones);
       if (edData.success && edData.edition) {
+        setFestStartDate(edData.edition.startDate || null);
         setCentralizedPrizes({
           first: edData.edition.defaultFirstPrize || "Cash Prize + Trophy + Certificate",
           second: edData.edition.defaultSecondPrize || "Cash Prize + Merit Certificate",
@@ -280,6 +295,7 @@ export default function AdminEventsPage() {
         studentCoordinators={studentCoordinators}
         floorPlanZones={floorPlanZones}
         centralizedPrizes={centralizedPrizes}
+        festStartDate={festStartDate}
         onSave={handleSave}
         saving={saving}
       />

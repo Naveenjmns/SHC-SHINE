@@ -39,7 +39,7 @@ export default function CheckInModal({
     setSearchError(null);
 
     try {
-      const res = await fetch(`/api/checkin/lookup?query=${encodeURIComponent(code.trim())}`);
+      const res = await fetch(`/api/checkin?code=${encodeURIComponent(code.trim())}`);
       const data = await safeJson(res, { success: false, member: null });
 
       if (!res.ok || !data.success || !data.member) {
@@ -58,14 +58,17 @@ export default function CheckInModal({
   };
 
   const handleToggleEventCheckIn = async (registrationId: string, currentAttended: boolean) => {
+    const registration = memberResult?.registrations.find((r) => r.registrationId === registrationId);
+    if (!memberResult || !registration) return;
     setIsProcessing(true);
     try {
-      const res = await fetch("/api/checkin/event", {
+      const res = await fetch("/api/checkin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          registrationId,
-          attended: !currentAttended,
+          code: memberResult.badgeCode,
+          action: currentAttended ? "EVENT_UNCHECK" : "EVENT_CHECKIN",
+          eventId: registration.eventId,
         }),
       });
 
@@ -92,13 +95,14 @@ export default function CheckInModal({
     }
   };
 
-  const handleClaimFood = async (memberId: string) => {
+  const handleClaimFood = async () => {
+    if (!memberResult) return;
     setIsProcessing(true);
     try {
-      const res = await fetch("/api/checkin/food", {
+      const res = await fetch("/api/checkin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ memberId }),
+        body: JSON.stringify({ code: memberResult.foodTokenCode, action: "FOOD_CLAIM" }),
       });
 
       const data = await safeJson(res, { success: false });
@@ -125,7 +129,7 @@ export default function CheckInModal({
         isOpen={isOpen}
         onClose={onClose}
         title="Delegate Check-In Desk"
-        description="Fast lookup by badge code, phone, email, or camera QR scan"
+        description="Fast lookup by badge code, meal token code, or camera QR scan"
         maxWidth="lg"
       >
         <div className="space-y-6">
@@ -133,7 +137,7 @@ export default function CheckInModal({
           <div className="flex gap-2">
             <div className="flex-1">
               <Input
-                placeholder="Enter badge code, phone number, or name..."
+                placeholder="Enter badge code or meal token code..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleLookup(searchQuery)}

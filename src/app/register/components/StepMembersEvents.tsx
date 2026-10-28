@@ -26,13 +26,19 @@ export interface EventOption {
   name: string;
   category: "ON_STAGE" | "OFF_STAGE";
   fee: number;
+  hasPrelims?: boolean;
 }
+
+/** Server rule (/api/register): each delegate may enter at most this many competitions */
+export const MAX_EVENTS_PER_DELEGATE = 2;
 
 export interface MemberState {
   name: string;
   email: string;
   phone: string;
   eventIds: string[];
+  /** Events (with a prelims round) this delegate is nominated to attend the prelims for */
+  prelimsEventIds: string[];
   foodPreference: "VEG" | "NON_VEG";
 }
 
@@ -61,11 +67,28 @@ export default function StepMembersEvents({
   const offStageEvents = events.filter((e) => e.category === "OFF_STAGE");
 
   const toggleEvent = (memberIdx: number, eventId: string) => {
-    const current = members[memberIdx].eventIds;
-    const next = current.includes(eventId)
-      ? current.filter((id) => id !== eventId)
-      : [...current, eventId];
-    onUpdateMember(memberIdx, { eventIds: next });
+    const member = members[memberIdx];
+    const isRemoving = member.eventIds.includes(eventId);
+    if (!isRemoving && member.eventIds.length >= MAX_EVENTS_PER_DELEGATE) return;
+    onUpdateMember(memberIdx, {
+      eventIds: isRemoving ? member.eventIds.filter((id) => id !== eventId) : [...member.eventIds, eventId],
+      // A delegate can only be nominated for the prelims of an event they are entered in
+      prelimsEventIds: isRemoving ? member.prelimsEventIds.filter((id) => id !== eventId) : member.prelimsEventIds,
+    });
+  };
+
+  // Only one delegate per college may be nominated for each event's prelims
+  const nominateForPrelims = (memberIdx: number, eventId: string, nominate: boolean) => {
+    members.forEach((m, i) => {
+      const has = m.prelimsEventIds.includes(eventId);
+      if (i === memberIdx && nominate !== has) {
+        onUpdateMember(i, {
+          prelimsEventIds: nominate ? [...m.prelimsEventIds, eventId] : m.prelimsEventIds.filter((id) => id !== eventId),
+        });
+      } else if (i !== memberIdx && nominate && has) {
+        onUpdateMember(i, { prelimsEventIds: m.prelimsEventIds.filter((id) => id !== eventId) });
+      }
+    });
   };
 
   return (
@@ -185,7 +208,7 @@ export default function StepMembersEvents({
                     Assign Competitions for {member.name || `Delegate #${idx + 1}`} *
                   </div>
                   <span className="text-sm text-ink-subtle">
-                    {member.eventIds.length} assigned
+                    {member.eventIds.length} of {MAX_EVENTS_PER_DELEGATE} assigned
                   </span>
                 </div>
 
@@ -199,29 +222,48 @@ export default function StepMembersEvents({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
                   {events.map((evt) => {
                     const isChecked = member.eventIds.includes(evt.id);
+                    const isDisabled = !isChecked && member.eventIds.length >= MAX_EVENTS_PER_DELEGATE;
+                    const isNominated = member.prelimsEventIds.includes(evt.id);
 
                     return (
-                      <label
+                      <div
                         key={evt.id}
-                        className={`p-2.5 rounded-[8px] border transition-colors flex items-start gap-2.5 cursor-pointer select-none ${
+                        className={`p-2.5 rounded-[8px] border transition-colors space-y-2 ${
                           isChecked
                             ? "bg-accent-muted border-accent text-ink"
+                            : isDisabled
+                            ? "bg-surface border-border text-ink-subtle opacity-60"
                             : "bg-surface border-border hover:bg-surface-raised text-ink-muted"
                         }`}
                       >
-                        <input
-                          type="checkbox"
-                          checked={isChecked}
-                          onChange={() => toggleEvent(idx, evt.id)}
-                          className="mt-0.5 rounded-[4px] border-border text-accent focus:ring-accent"
-                        />
-                        <div className="min-w-0">
-                          <div className="font-semibold truncate">{evt.name}</div>
-                          <div className="text-xs text-ink-subtle">
-                            {evt.category === "ON_STAGE" ? "On-Stage Arena" : "Off-Stage Challenge"}
+                        <label className={`flex items-start gap-2.5 select-none ${isDisabled ? "cursor-not-allowed" : "cursor-pointer"}`}>
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            disabled={isDisabled}
+                            onChange={() => toggleEvent(idx, evt.id)}
+                            className="mt-0.5 rounded-[4px] border-border text-accent focus:ring-accent"
+                          />
+                          <div className="min-w-0">
+                            <div className="font-semibold truncate">{evt.name}</div>
+                            <div className="text-xs text-ink-subtle">
+                              {evt.category === "ON_STAGE" ? "On-Stage Arena" : "Off-Stage Challenge"}
+                              {evt.hasPrelims ? " · Has prelims round" : ""}
+                            </div>
                           </div>
-                        </div>
-                      </label>
+                        </label>
+                        {isChecked && evt.hasPrelims && (
+                          <label className="flex items-center gap-2 pl-6 text-xs text-ink cursor-pointer select-none">
+                            <input
+                              type="checkbox"
+                              checked={isNominated}
+                              onChange={(e) => nominateForPrelims(idx, evt.id, e.target.checked)}
+                              className="rounded-[4px] border-border text-accent focus:ring-accent"
+                            />
+                            Attends the prelims for our college
+                          </label>
+                        )}
+                      </div>
                     );
                   })}
                 </div>

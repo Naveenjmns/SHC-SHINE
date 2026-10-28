@@ -6,6 +6,7 @@ import { EventCategory } from "@prisma/client";
 import { logActivity } from "@/lib/activityLogger";
 import { revalidatePath } from "next/cache";
 import { validateZoneExists } from "@/lib/svgSanitizer";
+import { validateEventFields } from "@/lib/validators";
 import { getActiveEdition } from "@/lib/eventService";
 
 
@@ -116,6 +117,11 @@ export async function PUT(
       secondPrize,
       thirdPrize,
     } = body;
+
+    const fieldError = validateEventFields({ category, dateTime, prelimsDateTime, capacity });
+    if (fieldError) {
+      return NextResponse.json({ success: false, message: fieldError }, { status: 400 });
+    }
 
     const activeEdition = await getActiveEdition();
 

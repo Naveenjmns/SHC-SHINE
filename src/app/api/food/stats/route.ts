@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { mealEligibleMemberWhere } from "@/lib/eligibility";
+import { DEFAULT_EDITION_CONFIG } from "@/lib/eventService";
 
 export const dynamic = "force-dynamic";
 
@@ -14,17 +16,13 @@ export async function GET(req: NextRequest) {
     ) {
       return NextResponse.json(
         { success: false, message: "Unauthorized. Food Committee or Admin login required." },
-        { status: 401 }
+        { status: session ? 403 : 401 }
       );
     }
 
-    // Only count members whose delegation is PAID (eligible for meals)
+    // Count exactly the members the food desk will serve (shared eligibility rule)
     const paidDelegates = await prisma.delegationMember.findMany({
-      where: {
-        delegation: {
-          paymentStatus: "PAID",
-        },
-      },
+      where: mealEligibleMemberWhere,
       select: {
         id: true,
         name: true,
@@ -119,9 +117,9 @@ export async function GET(req: NextRequest) {
         },
       },
       edition: activeEdition || {
-        diningHallVenue: "SGB Quadrangle Dining Hall",
-        diningFacilityInfo: "Sacred Heart College (Autonomous)",
-        mealOptions: "BOTH",
+        diningHallVenue: DEFAULT_EDITION_CONFIG.diningHallVenue,
+        diningFacilityInfo: DEFAULT_EDITION_CONFIG.diningFacilityInfo,
+        mealOptions: DEFAULT_EDITION_CONFIG.mealOptions,
       },
       recentClaims,
     });

@@ -17,47 +17,51 @@ export const viewport: Viewport = {
   themeColor: "#F8F9FB",
 };
 
-export const metadata: Metadata = {
-  title: "SHINE — Intercollegiate Symposium & Event Management Platform",
-  description:
-    "SHINE is the premier intercollegiate symposium and event management platform. Register delegations, explore competitions, track live podiums, and manage accreditation dossiers.",
-  applicationName: "SHINE",
-  manifest: "/manifest.webmanifest",
-  keywords: [
-    "SHINE",
-    "college fest",
-    "symposium",
-    "intercollegiate",
-    "tech fest",
-    "event management",
-    "competitions",
-  ],
-  authors: [{ name: "SHINE Engineering Team" }],
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
-    title: "SHINE",
-  },
-  formatDetection: {
-    telephone: false,
-  },
-  icons: {
-    icon: [
-      { url: "/icons/favicon-32x32.png", sizes: "32x32", type: "image/png" },
-      { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
-    ],
-    apple: [
-      { url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
-    ],
-  },
-  openGraph: {
-    title: "SHINE | Intercollegiate Symposium & Event Management Platform",
-    description:
-      "Join SHINE — the premier intercollegiate fest. On-stage & off-stage competitions, digital gate passes, live leaderboards, and more!",
-    type: "website",
-    locale: "en_IN",
-  },
-};
+// Titles and descriptions come from the active edition, so the app carries no institution names
+export async function generateMetadata(): Promise<Metadata> {
+  let edition: Awaited<ReturnType<typeof getActiveEdition>> | null = null;
+  try {
+    edition = await getActiveEdition();
+  } catch {
+    // Fall back to neutral defaults below
+  }
+  const title = festTitle(edition);
+  const host = [edition?.hostDepartment, edition?.institutionName].filter(Boolean).join(", ");
+  const description =
+    edition?.description ||
+    `${title}: intercollegiate fest and event management platform${host ? ` by ${host}` : ""}. Register delegations, explore competitions, track live podiums and digital passes.`;
+
+  return {
+    title: edition?.tagline ? `${title} — ${edition.tagline}` : title,
+    description,
+    applicationName: title,
+    manifest: "/manifest.webmanifest",
+    keywords: [edition?.name, edition?.institutionShortName, "college fest", "symposium", "intercollegiate", "tech fest", "event management", "competitions"].filter(
+      (k): k is string => Boolean(k)
+    ),
+    appleWebApp: {
+      capable: true,
+      statusBarStyle: "default",
+      title,
+    },
+    formatDetection: {
+      telephone: false,
+    },
+    icons: {
+      icon: [
+        { url: "/icons/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+        { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
+      ],
+      apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+    },
+    openGraph: {
+      title,
+      description,
+      type: "website",
+      locale: "en_IN",
+    },
+  };
+}
 
 import AuthProvider from "@/components/AuthProvider";
 import { ToastProvider } from "@/components/ToastProvider";
@@ -65,7 +69,7 @@ import PwaRegister from "@/components/PwaRegister";
 import InstallPwaPrompt from "@/components/InstallPwaPrompt";
 import ThemeInjector from "@/components/ThemeInjector";
 import MobileTabBar from "@/components/layout/MobileTabBar";
-import { getActiveEdition } from "@/lib/eventService";
+import { getActiveEdition, festTitle } from "@/lib/eventService";
 
 export default async function RootLayout({
   children,

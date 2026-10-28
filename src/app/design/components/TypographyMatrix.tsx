@@ -8,7 +8,7 @@ const TYPE_SCALE = [
     sizePx: "12px",
     weight: "500 / 600",
     role: "Captions, badge text, eyebrows, table metadata",
-    sample: "Sacred Heart College · SHINE 2026 event platform",
+    sample: "Your College · Your Fest event platform",
   },
   {
     token: "text-sm",
@@ -50,14 +50,14 @@ const TYPE_SCALE = [
     sizePx: "48px",
     weight: "700",
     role: "Public section headings (or .text-fluid-h1)",
-    sample: "Sacred Heart College Fest 2026",
+    sample: "Your College Fest",
   },
   {
     token: "text-4xl",
     sizePx: "64px",
     weight: "700",
     role: "Hero headline (or .text-fluid-hero, up to 80px)",
-    sample: "SHINE 2026",
+    sample: "Your Fest",
   },
 ];
 
@@ -102,7 +102,7 @@ export default function TypographyMatrix() {
 
         <div className="p-6 border border-border rounded-2xl bg-surface shadow-card">
           <div className="eyebrow">Code &amp; IDs</div>
-          <div className="text-xl font-medium font-mono text-ink mt-1">SHINE26-DEMO</div>
+          <div className="text-xl font-medium font-mono text-ink mt-1">FEST-DEMO</div>
           <div className="text-xs text-ink-subtle mt-1">
             <code className="font-mono">font-mono</code> only for machine values: badge codes, registration IDs, tokens.
           </div>

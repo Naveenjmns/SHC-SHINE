@@ -1,5 +1,6 @@
 "use client";
 
+import { csvCell } from "@/lib/csv";
 import React from "react";
 import Link from "next/link";
 import {
@@ -13,6 +14,7 @@ import {
   Trophy,
 } from "lucide-react";
 import { Button } from "@/components/ui";
+import { festTitle } from "@/lib/editionDefaults";
 
 interface AdminReportsTabProps {
   reportsData: any;
@@ -26,6 +28,7 @@ export default function AdminReportsTab({
   onRefreshReports,
 }: AdminReportsTabProps) {
   const summary = reportsData?.summary;
+  const fileSlug = festTitle({ name: summary?.festName, edition: summary?.festEdition }).replace(/[^A-Za-z0-9]+/g, "_");
 
   const downloadCsv = (filename: string, headers: string[], rows: any[][]) => {
     const csvContent = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
@@ -54,25 +57,25 @@ export default function AdminReportsTab({
     ];
     const rows = reportsData.masterStudentRoster.map((s: any, idx: number) => [
       idx + 1,
-      `"${s.name.replace(/"/g, '""')}"`,
-      `"${s.email}"`,
-      `"${s.phone}"`,
-      `"${s.college.replace(/"/g, '""')}"`,
-      `"${(s.department || "").replace(/"/g, '""')}"`,
+      csvCell(s.name),
+      csvCell(s.email),
+      csvCell(s.phone),
+      csvCell(s.college),
+      csvCell((s.department || "")),
       s.isTeamLead ? "YES" : "NO",
-      `"${s.badgeCode || "-"}"`,
+      csvCell(s.badgeCode || "-"),
       s.attended ? "PRESENT" : "ABSENT",
-      `"${s.events.map((e: any) => e.eventName).join("; ")}"`,
+      csvCell(s.events.map((e: any) => e.eventName).join("; ")),
     ]);
     downloadCsv(
-      `${summary?.festName || "SHINE"}_Master_Roster.csv`,
+      `${fileSlug}_Master_Roster.csv`,
       headers,
       rows
     );
   };
 
   const handleDownloadCollegesSummary = () => {
-    if (!reportsData?.collegesSummary) return;
+    if (!reportsData?.delegations) return;
     const headers = [
       "S.No",
       "College Name",
@@ -83,18 +86,18 @@ export default function AdminReportsTab({
       "Payment Status",
       "Total Fee",
     ];
-    const rows = reportsData.collegesSummary.map((c: any, idx: number) => [
+    const rows = reportsData.delegations.map((c: any, idx: number) => [
       idx + 1,
-      `"${c.collegeName.replace(/"/g, '""')}"`,
-      `"${(c.teamLeadName || "").replace(/"/g, '""')}"`,
-      `"${c.teamLeadPhone || ""}"`,
-      c.totalStudents,
-      c.attendedStudents,
+      csvCell(c.collegeName),
+      csvCell((c.teamLeadName || "")),
+      csvCell(c.teamLeadPhone || ""),
+      c.memberCount,
+      c.checkedInCount,
       c.paymentStatus,
-      c.totalAmount,
+      c.totalFee,
     ]);
     downloadCsv(
-      `${summary?.festName || "SHINE"}_Colleges_Summary.csv`,
+      `${fileSlug}_Colleges_Summary.csv`,
       headers,
       rows
     );
@@ -114,11 +117,13 @@ export default function AdminReportsTab({
             </span>
           </div>
           <h2 className="text-base sm:text-lg font-bold text-ink">
-            {summary?.festName || "SHINE"} {summary?.festEdition || "2026"} — Official Report Hub
+            {festTitle({ name: summary?.festName, edition: summary?.festEdition })} — Official Report Hub
           </h2>
-          <p className="text-sm text-ink-muted mt-0.5">
-            {summary?.institutionName || "College Campus"} · {summary?.hostDepartment || "Department"}
-          </p>
+          {(summary?.institutionName || summary?.hostDepartment) && (
+            <p className="text-sm text-ink-muted mt-0.5">
+              {[summary?.institutionName, summary?.hostDepartment].filter(Boolean).join(" · ")}
+            </p>
+          )}
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
@@ -233,7 +238,7 @@ export default function AdminReportsTab({
                     College Delegations Summary
                   </span>
                   <span className="text-xs font-mono bg-surface border border-border px-1.5 py-0.5 rounded text-ink-muted">
-                    {reportsData.collegesSummary?.length || 0} colleges
+                    {reportsData.delegations?.length || 0} colleges
                   </span>
                 </div>
                 <p className="text-xs text-ink-muted">

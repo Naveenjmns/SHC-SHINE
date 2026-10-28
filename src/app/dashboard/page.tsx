@@ -15,12 +15,15 @@ import QuickActions from "@/components/layout/QuickActions";
 import { LogOut, Building2, MapPin, QrCode, UtensilsCrossed, Trophy } from "lucide-react";
 import { formatTimeSafe } from "@/lib/dateUtils";
 import { safeJson } from "@/lib/safeFetch";
+import { festTitle } from "@/lib/editionDefaults";
 
 export default function StudentDashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
   const [loading, setLoading] = useState(true);
+  // Reference time for "Up Next", captured once per visit (render must stay pure)
+  const [pageOpenedAt] = useState(() => Date.now());
   const [registrations, setRegistrations] = useState<any[]>([]);
   const [pass, setPass] = useState<any | null>(null);
   const [delegation, setDelegation] = useState<any | null>(null);
@@ -68,16 +71,20 @@ export default function StudentDashboardPage() {
     );
   }
 
-  // Find the earliest upcoming registered event
+  // Earliest registered event that has not finished yet. Events have no end time, so one stays
+  // "live" for a grace window after it starts and then drops off the card.
+  const LIVE_GRACE_MS = 3 * 60 * 60 * 1000;
+  const cutoff = pageOpenedAt - LIVE_GRACE_MS;
   const upcomingEvents = registrations
+    .filter((r) => r.status !== "REJECTED")
     .map((r) => r.event)
-    .filter(Boolean)
+    .filter((ev) => ev && new Date(ev.dateTime).getTime() > cutoff)
     .sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime());
 
   const nextEvent: DashboardEvent | null = upcomingEvents[0] || null;
   const fullName = session?.user?.name || pass?.name || "Delegate";
   const firstName = fullName.split(" ")[0];
-  const collegeName = delegation?.collegeName || session?.user?.college || "Sacred Heart College";
+  const collegeName = delegation?.collegeName || session?.user?.college || "";
 
   return (
     <div className="min-h-screen bg-canvas text-ink flex flex-col">
@@ -85,13 +92,15 @@ export default function StudentDashboardPage() {
 
       <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 pt-24 pb-16 space-y-6 sm:space-y-8">
         <AppHero
-          eyebrow="Student portal · SHINE 2026"
+          eyebrow={`Student portal · ${festTitle(editionInfo)}`}
           title={<>Welcome, {firstName}</>}
           subtitle={
-            <span className="inline-flex items-center gap-2">
-              <Building2 className="w-4 h-4 shrink-0" />
-              <span className="truncate">{collegeName}</span>
-            </span>
+            collegeName && (
+              <span className="inline-flex items-center gap-2">
+                <Building2 className="w-4 h-4 shrink-0" />
+                <span className="truncate">{collegeName}</span>
+              </span>
+            )
           }
           actions={
             <button
@@ -138,7 +147,7 @@ export default function StudentDashboardPage() {
           <div id="pass" className="scroll-mt-24">
           <StudentPassCard
             pass={pass}
-            collegeName={delegation?.collegeName || session?.user?.college}
+            collegeName={collegeName}
           />
           </div>
           <div id="food" className="scroll-mt-24">

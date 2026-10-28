@@ -19,7 +19,7 @@ export interface DelegationInfo {
   department: string;
   teamName: string;
   teamLeadName: string;
-  teamLeadPhone: string;
+  teamLeadPhone: string | null;
   staffInchargeName: string | null;
   staffInchargePhone: string | null;
   paymentStatus: string;
@@ -32,6 +32,7 @@ export interface FestInfo {
   institutionName: string;
   departmentName: string;
   venue: string;
+  diningHallVenue?: string | null;
   floorPlanUrl?: string | null;
   startDate: string;
   endDate: string | null;
@@ -84,12 +85,16 @@ export default function DigitalBadgeCard({
       <div className="bg-surface-raised border-b border-border p-6 relative">
         <div className="flex justify-between items-start gap-4">
           <div>
-            <div className="eyebrow text-accent mb-0.5">
-              {fest.institutionName || "Sacred Heart College (Autonomous)"}
-            </div>
-            <div className="text-sm text-ink-muted font-medium mb-2">
-              {fest.departmentName || "Department of Computer Applications (PG)"}
-            </div>
+            {fest.institutionName && (
+              <div className="eyebrow text-accent mb-0.5">
+                {fest.institutionName}
+              </div>
+            )}
+            {fest.departmentName && (
+              <div className="text-sm text-ink-muted font-medium mb-2">
+                {fest.departmentName}
+              </div>
+            )}
 
             <h1 className="text-2xl font-bold tracking-tight text-ink flex items-baseline gap-2">
               <span>{fest.name}</span>

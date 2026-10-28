@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { PAID_STATUSES } from "@/lib/eligibility";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
@@ -46,41 +47,18 @@ export async function GET() {
       }),
     ]);
 
-    // Calculate real revenue from paid/verified delegations and confirmed registrations:
+    // Collected revenue is money actually received (PAID / VERIFIED). Approving a registration
+    // individually does not collect the delegation fee, so it stays in pending revenue.
     const [paidDelegations, pendingDelegations] = await Promise.all([
       prisma.delegation.findMany({
-        where: {
-          OR: [
-            { paymentStatus: "PAID" },
-            { paymentStatus: "VERIFIED" },
-            {
-              AND: [
-                { paymentStatus: { not: "REJECTED" } },
-                {
-                  registrations: {
-                    some: {
-                      status: "CONFIRMED",
-                    },
-                  },
-                },
-              ],
-            },
-          ],
-        },
+        where: { paymentStatus: { in: [...PAID_STATUSES] } },
         select: {
           id: true,
           totalFee: true,
         },
       }),
       prisma.delegation.findMany({
-        where: {
-          paymentStatus: "PENDING",
-          registrations: {
-            none: {
-              status: "CONFIRMED",
-            },
-          },
-        },
+        where: { paymentStatus: "PENDING" },
         select: {
           totalFee: true,
         },
@@ -163,9 +141,11 @@ export async function GET() {
       prisma.registration.findMany({
         where: {
           status: "PENDING",
-          delegation: {
-            paymentStatus: { notIn: ["PAID", "VERIFIED"] },
-          },
+          // Unpaid delegation members, plus individual registrants who have no delegation at all
+          OR: [
+            { delegation: { paymentStatus: { notIn: [...PAID_STATUSES] } } },
+            { delegationId: null },
+          ],
         },
         select: { userId: true, user: { select: { email: true } } },
       }),

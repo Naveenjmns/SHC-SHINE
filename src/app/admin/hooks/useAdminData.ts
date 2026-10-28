@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useToast } from "@/components/ToastProvider";
 import { safeJson } from "@/lib/safeFetch";
 import type { StatsData, EventBreakdown } from "../components/AdminOverviewTab";
@@ -8,12 +8,70 @@ import type { RegistrationRecord, CollegeGroup } from "../components/AdminRegist
 import type { EventEditionItem } from "../components/AdminEditionsTab";
 import type { WaypointNode, WaypointEdge } from "@/lib/wayfinding";
 import { downloadEventParticipantsCSV } from "@/lib/exportEventCsv";
-import {
-  resolveEditionTheme,
-  DEFAULT_PRIMARY_ACCENT,
-  DEFAULT_SECONDARY_ACCENT,
-  DEFAULT_BG_COLOR,
-} from "@/lib/colorUtils";
+import { resolveEditionTheme } from "@/lib/colorUtils";
+import { DEFAULT_EDITION_CONFIG } from "@/lib/editionDefaults";
+
+// Form state for the Branding / Institution tabs, built from one edition record
+function formFromEdition(ed: EventEditionItem) {
+  const theme = resolveEditionTheme(
+    ed.themePrimaryAccent || DEFAULT_EDITION_CONFIG.themePrimaryAccent,
+    ed.themeSecondaryAccent || DEFAULT_EDITION_CONFIG.themeSecondaryAccent,
+    ed.themeBgColor || DEFAULT_EDITION_CONFIG.themeBgColor
+  );
+  return {
+    name: ed.name || DEFAULT_EDITION_CONFIG.name,
+    edition: ed.edition || DEFAULT_EDITION_CONFIG.edition,
+    tagline: ed.tagline || "",
+    metadataText: ed.metadataText || "",
+    venue: ed.venue || "",
+    startDate: ed.startDate ? new Date(ed.startDate).toISOString().slice(0, 16) : "",
+    logoUrl: ed.logoUrl || "",
+    primaryCtaText: ed.primaryCtaText || DEFAULT_EDITION_CONFIG.primaryCtaText || "",
+    primaryCtaLink: ed.primaryCtaLink || DEFAULT_EDITION_CONFIG.primaryCtaLink || "",
+    // Legacy orange defaults resolve to the current system palette
+    themePrimaryAccent: theme.primary,
+    themeSecondaryAccent: theme.secondary,
+    themeBgColor: theme.bg,
+    institutionName: ed.institutionName || "",
+    institutionShortName: ed.institutionShortName || "",
+    institutionLocation: ed.institutionLocation || "",
+    institutionAbout: ed.institutionAbout || "",
+    accreditationText: ed.accreditationText || "",
+    institutionCrestUrl: ed.institutionCrestUrl || "",
+    jubileeBadgeUrl: ed.jubileeBadgeUrl || "",
+    hostDepartment: ed.hostDepartment || "",
+    departmentAbout: ed.departmentAbout || "",
+    departmentProgram: ed.departmentProgram || "",
+    deptLogoUrl: ed.deptLogoUrl || "",
+    acronymExpansion: ed.acronymExpansion || "",
+    stageHeaderBannerUrl: ed.stageHeaderBannerUrl || "",
+    contactEmail: ed.contactEmail || "",
+    contactPhone: ed.contactPhone || "",
+    websiteUrl: ed.websiteUrl || "",
+    diningHallVenue: ed.diningHallVenue || "",
+    diningFacilityInfo: ed.diningFacilityInfo || "",
+    mealOptions: ed.mealOptions || "BOTH",
+    participantFee: ed.participantFee || 0,
+    isRegistrationOpen: ed.isRegistrationOpen ?? true,
+    registrationClosedNotice: ed.registrationClosedNotice || "",
+    prizePool: ed.prizePool || "",
+    expectedDelegates: ed.expectedDelegates || "",
+    rulesEligibilityTitle: ed.rulesEligibilityTitle || DEFAULT_EDITION_CONFIG.rulesEligibilityTitle || "",
+    rulesEligibilityText: ed.rulesEligibilityText || "",
+    rulesTimingsTitle: ed.rulesTimingsTitle || DEFAULT_EDITION_CONFIG.rulesTimingsTitle || "",
+    rulesTimingsText: ed.rulesTimingsText || "",
+    rulesChampionshipTitle: ed.rulesChampionshipTitle || DEFAULT_EDITION_CONFIG.rulesChampionshipTitle || "",
+    rulesChampionshipText: ed.rulesChampionshipText || "",
+    defaultFirstPrize: ed.defaultFirstPrize || DEFAULT_EDITION_CONFIG.defaultFirstPrize || "",
+    defaultSecondPrize: ed.defaultSecondPrize || DEFAULT_EDITION_CONFIG.defaultSecondPrize || "",
+    defaultThirdPrize: ed.defaultThirdPrize || DEFAULT_EDITION_CONFIG.defaultThirdPrize || "",
+    showStageModeInStudentPortal: Boolean(ed.showStageModeInStudentPortal),
+    floorPlanUrl: ed.floorPlanUrl || DEFAULT_EDITION_CONFIG.floorPlanUrl || "",
+    // Campus GPS for the floor plan's "distance to campus" check ("" = disabled)
+    campusLatitude: ed.campusLatitude ?? "",
+    campusLongitude: ed.campusLongitude ?? "",
+  };
+}
 
 export function useAdminData() {
   const { toast, confirmAction } = useToast();
@@ -27,6 +85,10 @@ export function useAdminData() {
   const [registrations, setRegistrations] = useState<RegistrationRecord[]>([]);
   const [editions, setEditions] = useState<EventEditionItem[]>([]);
   const [activeEdition, setActiveEdition] = useState<EventEditionItem | null>(null);
+  // Edition whose settings the Branding / Institution tabs edit (null = the active edition)
+  const [editingEditionId, setEditingEditionId] = useState<string | null>(null);
+  const editingEditionIdRef = useRef<string | null>(null);
+  const editingEdition = editions.find((e) => e.id === editingEditionId) || activeEdition;
   const [reportsData, setReportsData] = useState<any | null>(null);
   const [loadingReports, setLoadingReports] = useState(false);
   const [downloadingEventId, setDownloadingEventId] = useState<string | null>(null);
@@ -36,55 +98,8 @@ export function useAdminData() {
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [searchTerm, setSearchTerm] = useState("");
 
-  const [brandingForm, setBrandingForm] = useState<any>({
-    name: "SHINE",
-    edition: "26",
-    tagline: "",
-    metadataText: "",
-    venue: "",
-    startDate: "2026-09-17T09:30",
-    logoUrl: "",
-    primaryCtaText: "EXPLORE SHINE →",
-    primaryCtaLink: "#events",
-    themePrimaryAccent: DEFAULT_PRIMARY_ACCENT,
-    themeSecondaryAccent: DEFAULT_SECONDARY_ACCENT,
-    themeBgColor: DEFAULT_BG_COLOR,
-    institutionName: "",
-    institutionShortName: "SHC",
-    institutionLocation: "",
-    institutionAbout: "",
-    accreditationText: "",
-    institutionCrestUrl: "",
-    jubileeBadgeUrl: "",
-    hostDepartment: "",
-    departmentAbout: "",
-    departmentProgram: "MCA Program",
-    deptLogoUrl: "",
-    acronymExpansion: "",
-    stageHeaderBannerUrl: "",
-    contactEmail: "",
-    contactPhone: "",
-    websiteUrl: "",
-    diningHallVenue: "",
-    diningFacilityInfo: "",
-    mealOptions: "BOTH",
-    participantFee: 0,
-    isRegistrationOpen: true,
-    registrationClosedNotice: "",
-    prizePool: "₹25K+",
-    expectedDelegates: "500+",
-    rulesEligibilityTitle: "Eligibility & Registration",
-    rulesEligibilityText: "",
-    rulesTimingsTitle: "Reporting & Timings",
-    rulesTimingsText: "",
-    rulesChampionshipTitle: "Overall Championship",
-    rulesChampionshipText: "",
-    defaultFirstPrize: "Cash Prize + Trophy + Certificate",
-    defaultSecondPrize: "Cash Prize + Merit Certificate",
-    defaultThirdPrize: "Distinction Certificate",
-    showStageModeInStudentPortal: false,
-    floorPlanUrl: "/uploads/campus-floorplan.svg",
-  });
+  // Neutral defaults until an edition loads — never institution-specific text
+  const [brandingForm, setBrandingForm] = useState<any>(() => formFromEdition({} as EventEditionItem));
 
   const [smtpForm, setSmtpForm] = useState({
     host: "",
@@ -145,7 +160,7 @@ export function useAdminData() {
         safeJson(regRes, { success: false, registrations: [] }),
         safeJson(edRes, { success: false, editions: [] }),
         safeJson(smtpRes, { success: false, smtp: null }),
-        safeJson(historyRes, { success: false, history: [] }),
+        safeJson(historyRes, { success: false, broadcasts: [] }),
       ]);
 
       if (statsData.success) {
@@ -161,66 +176,15 @@ export function useAdminData() {
         setEditions(edData.editions);
         const active = edData.editions.find((e: any) => e.isActive) || edData.editions[0] || null;
         setActiveEdition(active);
+        // Keep editing the edition picked via "Configure", if it still exists
+        const target = edData.editions.find((e: EventEditionItem) => e.id === editingEditionIdRef.current) || active;
+        if (target?.id !== editingEditionIdRef.current) editingEditionIdRef.current = null;
+        setEditingEditionId(editingEditionIdRef.current);
 
-        if (active) {
-          const theme = resolveEditionTheme(
-            active.themePrimaryAccent,
-            active.themeSecondaryAccent,
-            active.themeBgColor
-          );
-          setBrandingForm({
-            name: active.name || "SHINE",
-            edition: active.edition || "26",
-            tagline: active.tagline || "",
-            metadataText: active.metadataText || "",
-            venue: active.venue || "",
-            startDate: active.startDate ? new Date(active.startDate).toISOString().slice(0, 16) : "2026-09-17T09:30",
-            logoUrl: active.logoUrl || "",
-            primaryCtaText: active.primaryCtaText || "EXPLORE SHINE →",
-            primaryCtaLink: active.primaryCtaLink || "#events",
-            themePrimaryAccent: theme.primary,
-            themeSecondaryAccent: theme.secondary,
-            themeBgColor: theme.bg,
-            institutionName: active.institutionName || "",
-            institutionShortName: active.institutionShortName || "SHC",
-            institutionLocation: active.institutionLocation || "",
-            institutionAbout: active.institutionAbout || "",
-            accreditationText: active.accreditationText || "",
-            institutionCrestUrl: active.institutionCrestUrl || "",
-            jubileeBadgeUrl: active.jubileeBadgeUrl || "",
-            hostDepartment: active.hostDepartment || "",
-            departmentAbout: active.departmentAbout || "",
-            departmentProgram: active.departmentProgram || "MCA Program",
-            deptLogoUrl: active.deptLogoUrl || "",
-            acronymExpansion: active.acronymExpansion || "",
-            stageHeaderBannerUrl: active.stageHeaderBannerUrl || "",
-            contactEmail: active.contactEmail || "",
-            contactPhone: active.contactPhone || "",
-            websiteUrl: active.websiteUrl || "",
-            diningHallVenue: active.diningHallVenue || "",
-            diningFacilityInfo: active.diningFacilityInfo || "",
-            mealOptions: active.mealOptions || "BOTH",
-            participantFee: active.participantFee || 0,
-            isRegistrationOpen: active.isRegistrationOpen ?? true,
-            registrationClosedNotice: active.registrationClosedNotice || "",
-            prizePool: active.prizePool || "₹25K+",
-            expectedDelegates: active.expectedDelegates || "500+",
-            rulesEligibilityTitle: active.rulesEligibilityTitle || "Eligibility & Registration",
-            rulesEligibilityText: active.rulesEligibilityText || "",
-            rulesTimingsTitle: active.rulesTimingsTitle || "Reporting & Timings",
-            rulesTimingsText: active.rulesTimingsText || "",
-            rulesChampionshipTitle: active.rulesChampionshipTitle || "Overall Championship",
-            rulesChampionshipText: active.rulesChampionshipText || "",
-            defaultFirstPrize: active.defaultFirstPrize || "Cash Prize + Trophy + Certificate",
-            defaultSecondPrize: active.defaultSecondPrize || "Cash Prize + Merit Certificate",
-            defaultThirdPrize: active.defaultThirdPrize || "Distinction Certificate",
-            showStageModeInStudentPortal: Boolean(active.showStageModeInStudentPortal),
-            floorPlanUrl: active.floorPlanUrl || "/uploads/campus-floorplan.svg",
-          });
+        if (target) {
+          setBrandingForm(formFromEdition(target));
 
-          if (active.waypointGraph) {
-            setGraphData(active.waypointGraph);
-          }
+          setGraphData(target.waypointGraph || { nodes: [], edges: [] });
         }
       }
 
@@ -239,8 +203,8 @@ export function useAdminData() {
         }
       }
 
-      if (historyData.success && historyData.history) {
-        setBroadcastHistory(historyData.history);
+      if (historyData.success && historyData.broadcasts) {
+        setBroadcastHistory(historyData.broadcasts);
       }
     } catch (err: any) {
       toast.error(err.message || "Failed to load dashboard data");
@@ -258,8 +222,10 @@ export function useAdminData() {
     try {
       const res = await fetch("/api/admin/reports");
       const data = await safeJson(res);
-      if (data.success) {
-        setReportsData(data);
+      if (data.success && data.report) {
+        setReportsData(data.report);
+      } else {
+        toast.error(data.message || "Failed to load reports");
       }
     } catch (err: any) {
       toast.error(err.message || "Failed to load reports");
@@ -267,6 +233,23 @@ export function useAdminData() {
       setLoadingReports(false);
     }
   }, [toast]);
+
+  // All edition settings (branding, institution, toggles) are saved through PATCH /api/admin/edition
+  const patchEdition = async (editionId: string | undefined, fields: Record<string, unknown>) => {
+    if (!editionId) {
+      throw new Error("Create an edition first before saving settings.");
+    }
+    const res = await fetch("/api/admin/edition", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: editionId, ...fields }),
+    });
+    const data = await safeJson(res);
+    if (!res.ok || !data.success) {
+      throw new Error(data.message || data.error || "Failed to save settings");
+    }
+    return data;
+  };
 
   // Live-preview theme edits across the console (ThemeInjector listens for this)
   useEffect(() => {
@@ -284,18 +267,9 @@ export function useAdminData() {
   const handleSaveBranding = async () => {
     setSaving(true);
     try {
-      const res = await fetch("/api/admin/edition", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...brandingForm, id: activeEdition?.id }),
-      });
-      const data = await safeJson(res);
-      if (res.ok && data.success) {
-        toast.success("Settings saved successfully.");
-        loadAdminData();
-      } else {
-        throw new Error(data.error || data.message || "Failed to save settings");
-      }
+      await patchEdition(editingEdition?.id, brandingForm);
+      toast.success("Settings saved successfully.");
+      loadAdminData();
     } catch (err: any) {
       toast.error(err.message);
     } finally {
@@ -304,19 +278,17 @@ export function useAdminData() {
   };
 
   const handleToggleRegistration = async () => {
-    const nextState = !brandingForm.isRegistrationOpen;
+    const nextState = !(activeEdition?.isRegistrationOpen ?? true);
     setSaving(true);
     try {
-      const res = await fetch("/api/admin/edition", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...brandingForm, id: activeEdition?.id, isRegistrationOpen: nextState }),
-      });
-      const data = await safeJson(res);
-      if (res.ok && data.success) {
+      await patchEdition(activeEdition?.id, { isRegistrationOpen: nextState });
+      if (!editingEditionId || editingEditionId === activeEdition?.id) {
         setBrandingForm((prev: any) => ({ ...prev, isRegistrationOpen: nextState }));
-        toast.success(nextState ? "Public registration reopened." : "Registration frozen.");
       }
+      setActiveEdition((prev) => (prev ? { ...prev, isRegistrationOpen: nextState } : prev));
+      toast.success(nextState ? "Public registration reopened." : "Registration frozen.");
+    } catch (err: any) {
+      toast.error(err.message);
     } finally {
       setSaving(false);
     }
@@ -325,16 +297,14 @@ export function useAdminData() {
   const handleToggleStageMode = async (enabled: boolean) => {
     setSaving(true);
     try {
-      const res = await fetch("/api/admin/edition", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...brandingForm, id: activeEdition?.id, showStageModeInStudentPortal: enabled }),
-      });
-      const data = await safeJson(res);
-      if (res.ok && data.success) {
+      await patchEdition(activeEdition?.id, { showStageModeInStudentPortal: enabled });
+      if (!editingEditionId || editingEditionId === activeEdition?.id) {
         setBrandingForm((prev: any) => ({ ...prev, showStageModeInStudentPortal: enabled }));
-        toast.success(enabled ? "Stage Mode published to students." : "Stage Mode hidden.");
       }
+      setActiveEdition((prev) => (prev ? { ...prev, showStageModeInStudentPortal: enabled } : prev));
+      toast.success(enabled ? "Stage Mode published to students." : "Stage Mode hidden.");
+    } catch (err: any) {
+      toast.error(err.message);
     } finally {
       setSaving(false);
     }
@@ -343,11 +313,17 @@ export function useAdminData() {
   const handleMakeEditionActive = async (id: string) => {
     setSaving(true);
     try {
-      const res = await fetch(`/api/admin/editions/${id}/activate`, { method: "POST" });
+      const res = await fetch("/api/admin/edition", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, makeActive: true }),
+      });
       const data = await safeJson(res);
       if (res.ok && data.success) {
         toast.success("Active edition updated.");
         loadAdminData();
+      } else {
+        toast.error(data.message || data.error || "Failed to activate edition.");
       }
     } finally {
       setSaving(false);
@@ -359,12 +335,14 @@ export function useAdminData() {
       const res = await fetch("/api/admin/registrations", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, status }),
+        body: JSON.stringify({ registrationId: id, status }),
       });
       const data = await safeJson(res);
       if (res.ok && data.success) {
         toast.success(`Registration marked as ${status.toLowerCase()}.`);
         loadAdminData();
+      } else {
+        toast.error(data.message || "Failed to update registration");
       }
     } catch (err: any) {
       toast.error(err.message || "Failed to update registration");
@@ -373,16 +351,21 @@ export function useAdminData() {
 
   const handleApproveCollege = async (group: CollegeGroup) => {
     try {
-      const ids = group.registrations.map((r) => r.id);
-      const res = await fetch("/api/admin/registrations/batch", {
+      const res = await fetch("/api/admin/registrations", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ids, status: "CONFIRMED" }),
+        body: JSON.stringify({
+          action: "APPROVE_COLLEGE",
+          delegationId: group.delegationId,
+          collegeName: group.delegationId ? undefined : group.collegeName,
+        }),
       });
       const data = await safeJson(res);
       if (res.ok && data.success) {
         toast.success(`Approved ${group.uniqueStudentsCount} participants from ${group.collegeName}.`);
         loadAdminData();
+      } else {
+        toast.error(data.message || "Failed to batch approve");
       }
     } catch (err: any) {
       toast.error(err.message || "Failed to batch approve");
@@ -399,11 +382,14 @@ export function useAdminData() {
     if (!confirmed) return;
 
     try {
-      const ids = group.registrations.map((r) => r.id);
-      const res = await fetch("/api/admin/registrations/batch", {
+      const res = await fetch("/api/admin/registrations", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ids, status: "REJECTED" }),
+        body: JSON.stringify({
+          action: "REJECT_COLLEGE",
+          delegationId: group.delegationId,
+          collegeName: group.delegationId ? undefined : group.collegeName,
+        }),
       });
       const data = await safeJson(res);
       if (res.ok && data.success) {
@@ -426,10 +412,10 @@ export function useAdminData() {
     if (!confirmed) return;
 
     try {
-      const res = await fetch(`/api/admin/delegations/${delegationId}/payment`, {
-        method: "POST",
+      const res = await fetch("/api/admin/registrations", {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "PAID" }),
+        body: JSON.stringify({ action: "COLLECT_PAYMENT_APPROVE_DELEGATION", delegationId }),
       });
       const data = await safeJson(res);
       if (res.ok && data.success) {
@@ -455,7 +441,9 @@ export function useAdminData() {
       const data = await safeJson(res);
       if (res.ok && data.success) {
         toast.success("SMTP configuration saved.");
-        setSmtpForm((prev) => ({ ...prev, hasPassword: true, password: "" }));
+        setSmtpForm((prev) => ({ ...prev, hasPassword: prev.hasPassword || Boolean(prev.password), password: "" }));
+      } else {
+        toast.error(data.message || data.error || "Failed to save SMTP configuration.");
       }
     } finally {
       setSavingSmtp(false);
@@ -470,10 +458,13 @@ export function useAdminData() {
       const res = await fetch("/api/admin/smtp/test", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ to: testEmailAddress }),
+        body: JSON.stringify({ testEmail: testEmailAddress }),
       });
-      const data = await safeJson(res);
-      setSmtpTestResult(data);
+      const data = await safeJson(res, { success: false });
+      setSmtpTestResult({
+        success: Boolean(data.success),
+        message: data.message || data.error || (data.success ? "Test email sent." : "Test email failed."),
+      });
     } finally {
       setTestingSmtp(false);
     }
@@ -483,15 +474,17 @@ export function useAdminData() {
     setSavingTriggerKey(key);
     try {
       const updated = { ...emailTriggers, [key]: val };
-      const res = await fetch("/api/admin/email-triggers", {
+      const res = await fetch("/api/admin/smtp/triggers", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updated),
+        body: JSON.stringify({ emailTriggers: updated }),
       });
       const data = await safeJson(res);
       if (res.ok && data.success) {
         setEmailTriggers(updated);
         toast.success("Email trigger updated.");
+      } else {
+        toast.error(data.message || data.error || "Failed to update email trigger.");
       }
     } finally {
       setSavingTriggerKey(null);
@@ -502,16 +495,22 @@ export function useAdminData() {
     e.preventDefault();
     setSendingBroadcast(true);
     try {
-      const res = await fetch("/api/admin/broadcast", {
+      if (broadcastForm.targetAudience === "EVENT" && !broadcastForm.targetEventId) {
+        toast.error("Select the event whose participants should receive this broadcast.");
+        return;
+      }
+      const res = await fetch("/api/admin/email/broadcast", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(broadcastForm),
       });
       const data = await safeJson(res);
       if (res.ok && data.success) {
-        toast.success("Broadcast dispatched successfully.");
+        toast.success(data.message || "Broadcast dispatched successfully.");
         setBroadcastForm({ targetAudience: "ALL", targetEventId: "", subject: "", message: "" });
         loadAdminData();
+      } else {
+        toast.error(data.message || data.error || "Failed to send broadcast.");
       }
     } finally {
       setSendingBroadcast(false);
@@ -524,14 +523,157 @@ export function useAdminData() {
       const res = await fetch("/api/admin/floorplan/graph", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ graph: graphData }),
+        body: JSON.stringify({ nodes: graphData.nodes, edges: graphData.edges }),
       });
       const data = await safeJson(res);
       if (res.ok && data.success) {
         toast.success("A* Wayfinding Graph saved.");
+      } else {
+        toast.error(data.message || data.error || "Failed to save graph.");
       }
     } finally {
       setSavingGraph(false);
+    }
+  };
+
+  const uploadAsset = async (file: File, isFloorPlan = false): Promise<string | null> => {
+    const fd = new FormData();
+    fd.append("file", file);
+    if (isFloorPlan) fd.append("isFloorPlan", "true");
+    try {
+      const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
+      const data = await safeJson(res, { success: false });
+      if (res.ok && data.success && data.url) return data.url as string;
+      toast.error(data.error || data.message || "Upload failed.");
+    } catch (err: any) {
+      toast.error(err.message || "Upload failed.");
+    }
+    return null;
+  };
+
+  const handleUploadField = async (field: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const url = await uploadAsset(file);
+    if (url) setBrandingForm((prev: any) => ({ ...prev, [field]: url }));
+  };
+
+  const handleUploadFloorPlan = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingFloorPlan(true);
+    try {
+      const url = await uploadAsset(file, true);
+      if (url) setBrandingForm((prev: any) => ({ ...prev, floorPlanUrl: url }));
+    } finally {
+      setUploadingFloorPlan(false);
+    }
+  };
+
+  const handleScanZones = async () => {
+    setLoadingZones(true);
+    try {
+      const url = brandingForm.floorPlanUrl ? `?url=${encodeURIComponent(brandingForm.floorPlanUrl)}` : "";
+      const res = await fetch(`/api/admin/floorplan/zones${url}`);
+      const data = await safeJson(res, { success: false, zones: [] });
+      if (data.success) {
+        setDetectedZones(data.zones || []);
+        toast.success(`Detected ${data.zones?.length || 0} zones.`);
+      } else {
+        toast.error(data.error || "Failed to scan zones.");
+      }
+    } finally {
+      setLoadingZones(false);
+    }
+  };
+
+  // Navigation & schedule items are separate records, saved immediately through their own APIs
+  const updateEditionList = (key: "navItems" | "scheduleItems", update: (items: any[]) => any[]) => {
+    const targetId = editingEdition?.id;
+    if (!targetId) return;
+    const apply = (ed: EventEditionItem) => (ed.id === targetId ? { ...ed, [key]: update(ed[key] || []) } : ed);
+    setEditions((prev) => prev.map(apply));
+    setActiveEdition((prev) => (prev ? apply(prev) : prev));
+  };
+
+  const selectEditionForEdit = (ed: EventEditionItem) => {
+    const id = ed.id === activeEdition?.id ? null : ed.id;
+    editingEditionIdRef.current = id;
+    setEditingEditionId(id);
+    setBrandingForm(formFromEdition(ed));
+    setGraphData(ed.waypointGraph || { nodes: [], edges: [] });
+  };
+
+  const editionItemRequest = async (path: string, init: RequestInit, failMessage: string) => {
+    const res = await fetch(path, { headers: { "Content-Type": "application/json" }, ...init });
+    const data = await safeJson(res, { success: false });
+    if (!res.ok || !data.success) {
+      toast.error(data.error || data.message || failMessage);
+      return null;
+    }
+    return data;
+  };
+
+  const handleAddNavItem = async (label: string, url: string) => {
+    if (!editingEdition?.id) return;
+    const order = (editingEdition.navItems?.length || 0) + 1;
+    const data = await editionItemRequest(
+      "/api/admin/navigation",
+      { method: "POST", body: JSON.stringify({ editionId: editingEdition.id, label, url, order }) },
+      "Failed to add navigation link."
+    );
+    if (data?.item) updateEditionList("navItems", (items) => [...items, data.item]);
+  };
+
+  const handleDeleteNavItem = async (id: string) => {
+    const data = await editionItemRequest(`/api/admin/navigation?id=${encodeURIComponent(id)}`, { method: "DELETE" }, "Failed to delete navigation link.");
+    if (data) updateEditionList("navItems", (items) => items.filter((n) => n.id !== id));
+  };
+
+  const handleToggleNavItem = async (id: string, isEnabled: boolean) => {
+    const data = await editionItemRequest(
+      "/api/admin/navigation",
+      { method: "PATCH", body: JSON.stringify({ id, isEnabled }) },
+      "Failed to update navigation link."
+    );
+    if (data) updateEditionList("navItems", (items) => items.map((n) => (n.id === id ? { ...n, isEnabled } : n)));
+  };
+
+  const handleAddScheduleItem = async (item: any) => {
+    if (!editingEdition?.id) return;
+    const data = await editionItemRequest(
+      "/api/admin/schedule",
+      { method: "POST", body: JSON.stringify({ ...item, editionId: editingEdition.id }) },
+      "Failed to add schedule item."
+    );
+    if (data?.item) updateEditionList("scheduleItems", (items) => [...items, data.item]);
+  };
+
+  const handleDeleteScheduleItem = async (id: string) => {
+    const data = await editionItemRequest(`/api/admin/schedule?id=${encodeURIComponent(id)}`, { method: "DELETE" }, "Failed to delete schedule item.");
+    if (data) updateEditionList("scheduleItems", (items) => items.filter((it) => it.id !== id));
+  };
+
+  const handleResetData = async () => {
+    const confirmed = await confirmAction({
+      title: "Reset all registrations?",
+      message:
+        "This permanently deletes every registration, delegation, badge and meal token. Events, editions, staff accounts and settings are kept. Student login accounts are also kept.",
+      confirmText: "Delete all registrations",
+      isDestructive: true,
+    });
+    if (!confirmed) return;
+    const res = await fetch("/api/admin/registrations", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ confirm: "RESET", clearStudentAccounts: false }),
+    });
+    const data = await safeJson(res, { success: false });
+    if (res.ok && data.success) {
+      toast.success(data.message || "All registrations cleared.");
+      loadAdminData();
+    } else {
+      toast.error(data.message || "Failed to reset registrations.");
     }
   };
 
@@ -540,7 +682,7 @@ export function useAdminData() {
     const map = new Map<string, CollegeGroup>();
 
     registrations.forEach((reg) => {
-      const collegeName = reg.delegation?.collegeName || reg.user.collegeName || "Individual Students";
+      const collegeName = reg.delegation?.collegeName || reg.user.college || "Individual Students";
       const key = collegeName.toLowerCase().trim();
 
       if (!map.has(key)) {
@@ -553,7 +695,7 @@ export function useAdminData() {
           staffInchargeName: reg.delegation?.staffInchargeName || undefined,
           delegationId: reg.delegation?.id,
           paymentStatus: reg.delegation?.paymentStatus || "PENDING",
-          totalFee: reg.delegation?.totalAmount || reg.event.fee,
+          totalFee: reg.delegation?.totalFee ?? reg.event.fee,
           registrations: [],
           pendingCount: 0,
           confirmedCount: 0,
@@ -584,7 +726,7 @@ export function useAdminData() {
         const q = searchTerm.toLowerCase();
         return (
           r.user.name.toLowerCase().includes(q) ||
-          r.user.collegeName.toLowerCase().includes(q) ||
+          (r.delegation?.collegeName || r.user.college || "").toLowerCase().includes(q) ||
           r.event.name.toLowerCase().includes(q)
         );
       }
@@ -600,6 +742,8 @@ export function useAdminData() {
     registrations,
     editions,
     activeEdition,
+    editingEdition,
+    selectEditionForEdit,
     reportsData,
     loadingReports,
     loadReports,
@@ -638,6 +782,15 @@ export function useAdminData() {
     setDetectedZones,
     loadingZones,
     uploadingFloorPlan,
+    handleUploadField,
+    handleUploadFloorPlan,
+    handleScanZones,
+    handleAddNavItem,
+    handleDeleteNavItem,
+    handleToggleNavItem,
+    handleAddScheduleItem,
+    handleDeleteScheduleItem,
+    handleResetData,
     handleSaveBranding,
     handleToggleRegistration,
     handleToggleStageMode,

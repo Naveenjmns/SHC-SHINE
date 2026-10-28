@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { getActiveEdition } from "@/lib/eventService";
+import { getActiveEdition, DEFAULT_EDITION_CONFIG } from "@/lib/eventService";
 import { generateFoodTokenQr, generateEventPassQr } from "@/lib/badgeService";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -93,22 +95,33 @@ export async function GET(
       (await prisma.eventEdition.findFirst({ where: { isActive: true } })) ||
       (await getActiveEdition());
 
+    // SECURITY: The badge URL is printed in the pass QR and shareable, so anyone may hold it.
+    // Contact details and the meal token (redeemable on its own) are only shown to the pass
+    // owner or to admin / food desk staff.
+    const session = await getServerSession(authOptions);
+    const canSeePrivate =
+      !!session &&
+      (session.user.role === "ADMIN" ||
+        session.user.role === "FOOD_COORDINATOR" ||
+        (!!session.user.email && session.user.email.toLowerCase() === member.email.toLowerCase()));
+
     return NextResponse.json(
       {
         success: true,
         badge: {
           badgeCode: member.badgeCode,
           name: member.name,
-          email: member.email,
-          phone: member.phone,
-          foodTokenCode: member.foodTokenCode,
+          isOwnerView: canSeePrivate,
+          email: canSeePrivate ? member.email : null,
+          phone: canSeePrivate ? member.phone : null,
+          foodTokenCode: canSeePrivate ? member.foodTokenCode : null,
           foodPreference: (member as any).foodPreference || "VEG",
           eventCheckedIn: member.eventCheckedIn,
           eventCheckedInAt: member.eventCheckedInAt,
           foodTokenClaimed: member.foodTokenClaimed,
           foodClaimedAt: member.foodClaimedAt,
           qrData: member.qrData,
-          foodQrData: member.foodQrData,
+          foodQrData: canSeePrivate ? member.foodQrData : null,
           createdAt: member.createdAt,
           delegation: {
             id: member.delegation.id,
@@ -116,9 +129,9 @@ export async function GET(
             department: member.delegation.department,
             teamName: member.delegation.teamName,
             teamLeadName: member.delegation.teamLeadName,
-            teamLeadPhone: member.delegation.teamLeadPhone,
+            teamLeadPhone: canSeePrivate ? member.delegation.teamLeadPhone : null,
             staffInchargeName: member.delegation.staffInchargeName,
-            staffInchargePhone: member.delegation.staffInchargePhone,
+            staffInchargePhone: canSeePrivate ? member.delegation.staffInchargePhone : null,
             paymentStatus: member.delegation.paymentStatus,
           },
           events: member.registrations.map((r) => ({
@@ -136,13 +149,14 @@ export async function GET(
             studentIncharge: r.event.studentCoordinator?.name || null,
           })),
           fest: {
-            name: liveEdition?.name || "SHINE",
-            edition: liveEdition?.edition || "'26",
-            tagline: liveEdition?.tagline || "National Level Intercollegiate IT Fest",
-            institutionName: liveEdition?.institutionName || "Sacred Heart College (Autonomous)",
-            departmentName: liveEdition?.hostDepartment || "Department of Computer Applications (PG)",
-            venue: liveEdition?.venue || "SGB Main Auditorium, Sacred Heart College (Autonomous), Tirupattur",
-            floorPlanUrl: liveEdition?.floorPlanUrl || "/uploads/campus-floorplan.svg",
+            name: liveEdition?.name || DEFAULT_EDITION_CONFIG.name,
+            edition: liveEdition?.edition || DEFAULT_EDITION_CONFIG.edition,
+            tagline: liveEdition?.tagline || DEFAULT_EDITION_CONFIG.tagline,
+            institutionName: liveEdition?.institutionName || DEFAULT_EDITION_CONFIG.institutionName,
+            departmentName: liveEdition?.hostDepartment || DEFAULT_EDITION_CONFIG.hostDepartment,
+            venue: liveEdition?.venue || DEFAULT_EDITION_CONFIG.venue,
+            diningHallVenue: (liveEdition as any)?.diningHallVenue || DEFAULT_EDITION_CONFIG.diningHallVenue,
+            floorPlanUrl: liveEdition?.floorPlanUrl || DEFAULT_EDITION_CONFIG.floorPlanUrl,
             startDate: liveEdition?.startDate || null,
             endDate: liveEdition?.endDate || null,
           },

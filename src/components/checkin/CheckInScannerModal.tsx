@@ -33,69 +33,98 @@ export default function CheckInScannerModal({
 
   const scannerRef = useRef<any>(null);
   const scannerContainerId = "checkin-scanner-viewport";
+  // Bumped by "Retry Camera" to restart the scanner with the same camera selection
+  const [startAttempt, setStartAttempt] = useState(0);
 
-  // Check cameras when opened
+  // Latest callbacks, so the running scanner never calls a stale onScanSuccess/onClose
+  const onScanSuccessRef = useRef(onScanSuccess);
+  const onCloseRef = useRef(onClose);
   useEffect(() => {
-    if (!isOpen) {
-      stopScanner();
-      return;
-    }
+    onScanSuccessRef.current = onScanSuccess;
+    onCloseRef.current = onClose;
+  });
 
-    async function initCameras() {
-      try {
-        const cams = await getAvailableCameras();
-        setCameras(cams);
-        if (cams.length > 0) {
-          // Prefer back camera if available
-          const backCam = cams.find((c) => c.label.toLowerCase().includes("back"));
-          setSelectedCameraId(backCam ? backCam.id : cams[0].id);
+  const stopScanner = async () => {
+    const scanner = scannerRef.current;
+    scannerRef.current = null;
+    setScannerActive(false);
+    if (!scanner) return;
+    try {
+      if (scanner.isScanning) await scanner.stop();
+      await scanner.clear();
+    } catch (e) {
+      console.error("Error stopping checkin scanner:", e);
+    }
+  };
+
+  // List cameras when opened. Before permission is granted browsers return devices with an empty
+  // deviceId, so those are ignored and the scanner falls back to facingMode (which prompts).
+  useEffect(() => {
+    if (!isOpen) return;
+    let cancelled = false;
+    getAvailableCameras()
+      .then((cams) => {
+        if (cancelled) return;
+        const usable = cams.filter((c) => c.id);
+        setCameras(usable);
+        if (usable.length > 0) {
+          const backCam = usable.find((c) => /back|rear|environment/i.test(c.label));
+          setSelectedCameraId((prev) => prev ?? (backCam ? backCam.id : usable[0].id));
         }
-      } catch (err) {
-        setCameraError(parseCameraError(err));
-      }
-    }
-    initCameras();
-
+      })
+      .catch((err) => !cancelled && setCameraError(parseCameraError(err)));
     return () => {
-      stopScanner();
+      cancelled = true;
     };
   }, [isOpen]);
 
-  // Start Html5Qrcode when camera ID is selected
+  // Start Html5Qrcode whenever the modal opens, the camera changes or a retry is requested
   useEffect(() => {
-    if (!isOpen || !selectedCameraId) return;
+    if (!isOpen) return;
 
     let isMounted = true;
+    let scanner: any = null;
+    let hasFired = false;
 
     async function startScanner() {
       try {
         const { Html5Qrcode } = await import("html5-qrcode");
         if (!isMounted) return;
 
-        if (scannerRef.current) {
-          await stopScanner();
-        }
-
-        const scanner = new Html5Qrcode(scannerContainerId);
+        await stopScanner();
+        scanner = new Html5Qrcode(scannerContainerId);
         scannerRef.current = scanner;
 
         await scanner.start(
-          selectedCameraId,
+          selectedCameraId || { facingMode: "environment" },
           {
             fps: 10,
             qrbox: { width: 250, height: 250 },
             aspectRatio: 1.0,
           },
           (decodedText: string) => {
-            onScanSuccess(decodedText);
-            onClose();
+            // The decoder keeps firing until stopped; report only the first read
+            if (hasFired) return;
+            hasFired = true;
+            onScanSuccessRef.current(decodedText);
+            onCloseRef.current();
           },
           () => {}
         );
 
-        if (isMounted) {
-          setScannerActive(true);
-          setCameraError(null);
+        if (!isMounted) {
+          // Closed while the camera was starting: stop the stream we just opened
+          await scanner.stop().catch(() => {});
+          await scanner.clear();
+          return;
+        }
+        setScannerActive(true);
+        setCameraError(null);
+
+        // Permission is granted now, so real device ids/labels are available for switching
+        if (!selectedCameraId) {
+          const cams = (await getAvailableCameras()).filter((c) => c.id);
+          if (isMounted) setCameras(cams);
         }
       } catch (err) {
         if (isMounted) {
@@ -109,25 +138,9 @@ export default function CheckInScannerModal({
 
     return () => {
       isMounted = false;
-      stopScanner();
+      if (scannerRef.current === scanner) stopScanner();
     };
-  }, [isOpen, selectedCameraId]);
-
-  const stopScanner = async () => {
-    if (scannerRef.current) {
-      try {
-        if (scannerRef.current.isScanning) {
-          await scannerRef.current.stop();
-        }
-        await scannerRef.current.clear();
-      } catch (e) {
-        console.error("Error stopping checkin scanner:", e);
-      } finally {
-        scannerRef.current = null;
-        setScannerActive(false);
-      }
-    }
-  };
+  }, [isOpen, selectedCameraId, startAttempt]);
 
   const switchCamera = () => {
     if (cameras.length <= 1) return;
@@ -178,7 +191,10 @@ export default function CheckInScannerModal({
               <Button
                 variant="secondary"
                 size="sm"
-                onClick={() => setSelectedCameraId(selectedCameraId)}
+                onClick={() => {
+                  setCameraError(null);
+                  setStartAttempt((n) => n + 1);
+                }}
                 leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
               >
                 Retry Camera

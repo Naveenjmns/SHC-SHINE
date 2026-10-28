@@ -5,26 +5,35 @@ import Link from "next/link";
 import { signOutAndClearCache } from "@/lib/signOutAndClearCache";
 import { LogOut, QrCode, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui";
+import { DEFAULT_EDITION_CONFIG } from "@/lib/editionDefaults";
 
 interface AdminHeaderProps {
+  festName?: string;
   editionNumber?: string;
   onOpenCheckIn: () => void;
 }
 
 export default function AdminHeader({
-  editionNumber = "26",
+  festName = DEFAULT_EDITION_CONFIG.name,
+  editionNumber = "",
   onOpenCheckIn,
 }: AdminHeaderProps) {
   return (
     <header className="bg-surface/95 backdrop-blur-md border-b border-border sticky top-0 z-30">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
         <Link href="/" className="flex items-center gap-2.5 min-w-0 min-h-[44px]">
-          <span className="w-8 h-8 rounded-[8px] bg-accent text-accent-ink flex items-center justify-center font-bold shrink-0">
-            S
-          </span>
+          {festName && (
+            <span
+              aria-hidden="true"
+              className="w-8 h-8 rounded-[8px] bg-accent text-accent-ink flex items-center justify-center font-bold shrink-0"
+            >
+              {festName.trim().charAt(0).toUpperCase()}
+            </span>
+          )}
           <span className="leading-tight min-w-0">
             <span className="block text-base font-bold text-ink truncate">
-              SHINE <span className="text-accent">{editionNumber}</span>
+              {festName}
+              {editionNumber && <span className="text-accent"> {editionNumber}</span>}
             </span>
             <span className="block text-xs font-medium text-ink-muted truncate">Admin console</span>
           </span>

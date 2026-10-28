@@ -199,6 +199,10 @@ export function deriveAccentPalette(
   };
 }
 
+export function isHexColor(value: unknown): value is string {
+  return typeof value === "string" && /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(value.trim());
+}
+
 /**
  * Generates the CSS rule string to apply to :root and [data-theme="dark"]
  * Zero decorative gradients, zero glowing drop-shadows.
@@ -208,6 +212,10 @@ export function generateThemeCss(
   secondaryAccent: string = DEFAULT_SECONDARY_ACCENT,
   bgColor: string = DEFAULT_BG_COLOR
 ): string {
+  // SECURITY: The output is injected into a <style> tag, so only plain hex colours may pass through
+  primaryAccent = isHexColor(primaryAccent) ? primaryAccent : DEFAULT_PRIMARY_ACCENT;
+  secondaryAccent = isHexColor(secondaryAccent) ? secondaryAccent : DEFAULT_SECONDARY_ACCENT;
+  bgColor = isHexColor(bgColor) ? bgColor : DEFAULT_BG_COLOR;
   const palette = deriveAccentPalette(primaryAccent, secondaryAccent, bgColor);
 
   // Doubled :root outranks the base tokens regardless of stylesheet load order
@@ -254,7 +262,7 @@ export const INSTITUTION_THEME_PRESETS: ThemePreset[] = [
   {
     id: "signal-blue",
     name: "Signal Blue",
-    institutionType: "Sacred Heart College (Default)",
+    institutionType: "Default",
     primary: "#006BFF",
     secondary: "#D9A441",
     bg: "#F8F9FB",
@@ -262,8 +270,8 @@ export const INSTITUTION_THEME_PRESETS: ThemePreset[] = [
   },
   {
     id: "shine-orange",
-    name: "SHINE Solar Ember",
-    institutionType: "Classic SHINE",
+    name: "Solar Ember",
+    institutionType: "Classic",
     primary: "#FF6B1A",
     secondary: "#D9A441",
     bg: "#FFFFFF",

@@ -247,7 +247,7 @@ export default function AdminSmtpTab({
                 <Input
                   value={smtpForm.fromName}
                   onChange={(e) => setSmtpForm({ ...smtpForm, fromName: e.target.value })}
-                  placeholder="SHINE Coordination"
+                  placeholder="e.g. Fest Organizing Committee"
                   className="text-sm h-8"
                 />
               </div>
@@ -257,7 +257,7 @@ export default function AdminSmtpTab({
                   type="email"
                   value={smtpForm.fromEmail}
                   onChange={(e) => setSmtpForm({ ...smtpForm, fromEmail: e.target.value })}
-                  placeholder="noreply@shctpt.edu"
+                  placeholder="noreply@college.edu"
                   className="text-sm h-8 font-mono"
                 />
               </div>
@@ -386,6 +386,27 @@ export default function AdminSmtpTab({
               Dispatch Announcement
             </Button>
           </form>
+
+          {/* Recent broadcasts (sending happens in the background; status updates on refresh) */}
+          {broadcastHistory.length > 0 && (
+            <div className="mt-5 pt-4 border-t border-border space-y-2">
+              <div className="text-xs font-semibold uppercase tracking-wider text-ink-muted">
+                Recent Broadcasts
+              </div>
+              <ul className="space-y-1.5">
+                {broadcastHistory.slice(0, 5).map((b) => (
+                  <li key={b.id} className="flex items-center justify-between gap-2 text-sm">
+                    <span className="truncate text-ink" title={b.subject}>
+                      {b.subject}
+                    </span>
+                    <span className="shrink-0 text-ink-muted">
+                      {b.status === "SENDING" ? "Sending…" : `${b.status} · ${b.recipientCount} delivered`}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       </div>
     </div>

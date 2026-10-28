@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { signOutAndClearCache } from "@/lib/signOutAndClearCache";
-import { ActiveEditionConfig } from "@/lib/eventService";
+import { ActiveEditionConfig, DEFAULT_EDITION_CONFIG, festTitle } from "@/lib/editionDefaults";
 import { Sparkles, User, LogOut, LayoutDashboard, Monitor, Menu, X } from "lucide-react";
 
 interface NavbarProps {
@@ -56,16 +56,11 @@ export default function Navbar({ edition }: NavbarProps) {
     return "Student Portal";
   };
 
-  const eventName = activeEdition?.name || "SHINE";
-  const editionYear = activeEdition?.edition || "2026";
-  const logoUrl = activeEdition?.logoUrl;
-  const navItems = activeEdition?.navItems || [
-    { id: "1", label: "About", url: "#about", order: 1, isEnabled: true },
-    { id: "2", label: "Schedule", url: "#schedule", order: 2, isEnabled: true },
-    { id: "3", label: "Events", url: "#events", order: 3, isEnabled: true },
-    { id: "4", label: "Rules", url: "#rules", order: 4, isEnabled: true },
-    { id: "5", label: "Stage View", url: "/leaderboard", order: 5, isEnabled: true },
-  ];
+  const eventName = activeEdition?.name || DEFAULT_EDITION_CONFIG.name;
+  const editionYear = activeEdition?.edition || DEFAULT_EDITION_CONFIG.edition;
+  const fullTitle = festTitle(activeEdition);
+  const logoUrl = activeEdition?.logoUrl || DEFAULT_EDITION_CONFIG.logoUrl;
+  const navItems = activeEdition?.navItems || DEFAULT_EDITION_CONFIG.navItems;
 
   return (
     <nav
@@ -102,7 +97,13 @@ export default function Navbar({ edition }: NavbarProps) {
 
           <div className="leading-tight">
             <span className="text-lg font-bold text-ink block">
-              {eventName} <span className="text-accent">{editionYear}</span>
+              {eventName}
+              {editionYear && (
+                <>
+                  {" "}
+                  <span className="text-accent">{editionYear}</span>
+                </>
+              )}
             </span>
             <span className="text-xs font-medium text-ink-muted block truncate max-w-[150px] sm:max-w-[220px]">
               {activeEdition?.institutionShortName || activeEdition?.institutionName || "College Symposium"}
@@ -213,7 +214,7 @@ export default function Navbar({ edition }: NavbarProps) {
               <span className="flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-accent shrink-0" />
                 <span>
-                  <span className="block text-base font-semibold text-ink">Install the {eventName} app</span>
+                  <span className="block text-base font-semibold text-ink">Install the {fullTitle} app</span>
                   <span className="block text-[15px] text-ink-muted">Offline passes & live results</span>
                 </span>
               </span>

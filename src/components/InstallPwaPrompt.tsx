@@ -109,7 +109,7 @@ export default function InstallPwaPrompt() {
 
         <div className="flex items-start gap-3.5">
           <div className="w-12 h-12 rounded-2xl bg-accent flex items-center justify-center text-accent-ink font-bold text-xl shrink-0">
-            S
+            <Download className="w-5 h-5" />
           </div>
 
           <div className="flex-1 pr-4">
@@ -120,7 +120,7 @@ export default function InstallPwaPrompt() {
             <h4
               className="text-base font-bold text-ink leading-tight mt-0.5"
             >
-              Install SHINE 26
+              Install App
             </h4>
             <p className="text-sm text-ink-muted mt-1 leading-normal">
               Instant access to QR gate passes, live jury leaderboards & food tokens. Works offline on your device.

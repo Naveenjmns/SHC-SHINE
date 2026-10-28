@@ -1,17 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Radio } from "lucide-react";
+import { Clock, Radio } from "lucide-react";
 import { parseDateSafe, formatDateSafe, formatTimeSafe } from "@/lib/dateUtils";
 
 interface CountdownTimerProps {
   targetDate?: Date | string | null;
   eventDateText?: string;
+  /** Display name used in the "underway" banner (e.g. festTitle(edition)); generic when omitted */
+  eventName?: string;
 }
 
 export default function CountdownTimer({
-  targetDate = "2026-09-17T09:30:00+05:30",
+  targetDate = null,
   eventDateText,
+  eventName,
 }: CountdownTimerProps) {
   // Initialize with static values to avoid hydration mismatch.
   // Date.now() differs between server (ISR build time) and client (page load time),
@@ -25,17 +28,18 @@ export default function CountdownTimer({
   });
   const [mounted, setMounted] = useState(false);
 
+  const parsedTargetDate = targetDate ? parseDateSafe(targetDate) : null;
+  const hasValidTarget = !!parsedTargetDate && !isNaN(parsedTargetDate.getTime());
+
   const getFormattedDateText = () => {
     if (eventDateText) return eventDateText;
-    if (!targetDate) return "17-09-2026 09:30 AM";
+    if (!hasValidTarget || !parsedTargetDate) return "Date to be announced";
     try {
-      const d = parseDateSafe(targetDate);
-      if (!d || isNaN(d.getTime())) return "17-09-2026 09:30 AM";
-      const datePart = formatDateSafe(d, { day: "2-digit", month: "2-digit", year: "numeric" });
-      const timePart = formatTimeSafe(d, { hour: "2-digit", minute: "2-digit", hour12: true });
+      const datePart = formatDateSafe(parsedTargetDate, { day: "2-digit", month: "2-digit", year: "numeric" });
+      const timePart = formatTimeSafe(parsedTargetDate, { hour: "2-digit", minute: "2-digit", hour12: true });
       return `${datePart.replace(/\//g, "-")} ${timePart}`;
     } catch {
-      return "17-09-2026 09:30 AM";
+      return "Date to be announced";
     }
   };
 
@@ -43,10 +47,13 @@ export default function CountdownTimer({
 
   useEffect(() => {
     const calculateTimeLeft = () => {
-      const parsedTarget = parseDateSafe(targetDate);
-      const target = parsedTarget
-        ? parsedTarget.getTime()
-        : new Date("2026-09-17T09:30:00+05:30").getTime();
+      const parsedTarget = targetDate ? parseDateSafe(targetDate) : null;
+      if (!parsedTarget || isNaN(parsedTarget.getTime())) {
+        // No configured date: keep the countdown hidden instead of counting to a made-up date
+        setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0, isLive: false });
+        return;
+      }
+      const target = parsedTarget.getTime();
       const now = Date.now();
       const diff = target - now;
 
@@ -73,6 +80,19 @@ export default function CountdownTimer({
 
   const formatTwoDigits = (num: number) => String(num).padStart(2, "0");
 
+  if (!hasValidTarget) {
+    return (
+      <div className="w-full">
+        <div className="flex items-center justify-center gap-2 text-center px-2">
+          <Clock className="w-4 h-4 text-accent shrink-0" />
+          <span className="text-[15px] font-semibold text-ink-muted">
+            {eventDateText || "Date to be announced"}
+          </span>
+        </div>
+      </div>
+    );
+  }
+
   if (timeLeft.isLive) {
     return (
       <div className="w-full rounded-2xl bg-accent text-accent-ink p-6 text-center">
@@ -85,7 +105,7 @@ export default function CountdownTimer({
         </div>
         <h3 className="mt-3 text-2xl sm:text-3xl font-bold text-accent-ink flex items-center justify-center gap-2">
           <Radio className="w-6 h-6 shrink-0" />
-          The fest is underway
+          {eventName ? `${eventName} is underway` : "The fest is underway"}
         </h3>
         <p className="text-[15px] opacity-90 mt-1">Started {displayDateText}</p>
       </div>

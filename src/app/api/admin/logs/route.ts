@@ -13,8 +13,9 @@ export async function GET(req: NextRequest) {
     }
 
     const { searchParams } = new URL(req.url);
-    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
-    const limit = Math.min(100, Math.max(10, parseInt(searchParams.get("limit") || "50", 10)));
+    // Non-numeric values would give NaN and break skip/take, so fall back to the defaults
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10) || 1);
+    const limit = Math.min(100, Math.max(10, parseInt(searchParams.get("limit") || "50", 10) || 50));
     const search = searchParams.get("search")?.trim();
     const category = searchParams.get("category")?.toUpperCase() || "ALL";
 

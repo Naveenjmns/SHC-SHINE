@@ -20,8 +20,31 @@ import {
 } from "lucide-react";
 import { safeJson } from "@/lib/safeFetch";
 import { isSafeRelativePath } from "@/lib/validators";
+import { festTitle } from "@/lib/editionDefaults";
 
-function LoginForm() {
+/** Active edition's fest title ("<name> <edition>"), with a neutral fallback until it loads */
+function useFestTitle() {
+  const [eventTitle, setEventTitle] = useState(() => festTitle(null));
+
+  useEffect(() => {
+    let isMounted = true;
+    fetch("/api/edition/active")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (isMounted && data?.success && data?.edition) {
+          setEventTitle(festTitle(data.edition));
+        }
+      })
+      .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  return eventTitle;
+}
+
+function LoginForm({ eventTitle }: { eventTitle: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   // SECURITY: Only honour same-origin relative callback paths (blocks open redirects and javascript: URIs)
@@ -71,13 +94,14 @@ function LoginForm() {
           // ignore session fetch error
         }
 
+        // Route by the account's real role only (guessing from words in the email sent e.g. a
+        // coordinator with "food" in their address to /food, which then bounced them away)
         let target = "/dashboard";
-        const normalizedInput = email.toLowerCase().trim();
-        if (role === "ADMIN" || normalizedInput.includes("admin")) {
+        if (role === "ADMIN") {
           target = "/admin";
-        } else if (role === "FOOD_COORDINATOR" || normalizedInput.includes("food")) {
+        } else if (role === "FOOD_COORDINATOR") {
           target = "/food";
-        } else if (role === "COORDINATOR" || normalizedInput.includes("coord")) {
+        } else if (role === "COORDINATOR") {
           target = "/coordinator";
         }
         window.location.href = target;
@@ -100,7 +124,7 @@ function LoginForm() {
           </span>
 
           <h2 className="text-xl sm:text-2xl font-bold text-ink tracking-tight">
-            Sign in to <span className="text-accent">SHINE 26</span>
+            Sign in to <span className="text-accent">{eventTitle}</span>
           </h2>
           <p className="text-[15px] text-ink-muted mt-1.5 leading-relaxed">
             Access your verified delegate badge, event registrations, or coordination desk.
@@ -246,6 +270,8 @@ function LoginForm() {
 }
 
 export default function LoginPage() {
+  const eventTitle = useFestTitle();
+
   return (
     <main className="min-h-screen flex flex-col bg-canvas text-ink relative overflow-x-hidden">
       <Navbar />
@@ -256,7 +282,7 @@ export default function LoginPage() {
           <div className="flex flex-col items-start text-left">
             <span className="eyebrow mb-4">Delegate &amp; staff portal</span>
             <h1 className="text-fluid-h1 text-ink">
-              Welcome back to <span className="text-accent">SHINE 26</span>
+              Welcome back to <span className="text-accent">{eventTitle}</span>
             </h1>
             <p className="mt-5 text-lg text-ink-muted leading-relaxed max-w-lg">
               Sign in to view your digital delegate pass, track event registrations, or open your coordination desk.
@@ -295,7 +321,7 @@ export default function LoginPage() {
                 </div>
               }
             >
-              <LoginForm />
+              <LoginForm eventTitle={eventTitle} />
             </Suspense>
           </div>
         </div>

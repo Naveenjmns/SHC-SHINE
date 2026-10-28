@@ -99,7 +99,7 @@ export default function DesignSystemPage() {
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <Layers className="w-5 h-5 text-accent" />
-              <h2 className="text-xl font-bold text-ink">SHINE Design System v3</h2>
+              <h2 className="text-xl font-bold text-ink">Design System v3</h2>
             </div>
             <p className="text-[15px] text-ink-muted max-w-2xl">
               Navy ink (#0B3558) on a Cloud canvas (#F8F9FB) with white cards, one Signal Blue action color (#006BFF),

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useSyncExternalStore } from "react";
 import { useSession } from "next-auth/react";
 import { signOutAndClearCache } from "@/lib/signOutAndClearCache";
 import Link from "next/link";
@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Button, Input } from "@/components/ui";
 import { safeJson } from "@/lib/safeFetch";
+import { DEFAULT_EDITION_CONFIG } from "@/lib/editionDefaults";
 import FoodDistributionStats, {
   FoodStats,
   FoodEditionInfo,
@@ -25,6 +26,41 @@ import FoodRecentHistory, { RecentClaim } from "./components/FoodRecentHistory";
 import FoodScannerViewport from "./components/FoodScannerViewport";
 import { playScannerTone } from "./lib/foodAudio";
 import { useFoodClaims } from "./hooks/useFoodClaims";
+
+// Auto-claim preference persisted per device. Read through useSyncExternalStore so the server
+// render (default: on) and the first client render agree, then the saved value applies.
+const AUTO_CLAIM_KEY = "shine_auto_claim";
+const AUTO_CLAIM_EVENT = "shine:auto-claim-change";
+let inMemoryAutoClaim: boolean | null = null; // used when storage is unavailable (private mode)
+
+function readAutoClaim(): boolean {
+  try {
+    const saved = localStorage.getItem(AUTO_CLAIM_KEY);
+    if (saved !== null) return saved === "true";
+  } catch {
+    // Storage blocked: fall back to the in-memory choice
+  }
+  return inMemoryAutoClaim ?? true;
+}
+
+function writeAutoClaim(value: boolean) {
+  inMemoryAutoClaim = value;
+  try {
+    localStorage.setItem(AUTO_CLAIM_KEY, String(value));
+  } catch {
+    // Storage blocked: the in-memory value still applies for this session
+  }
+  window.dispatchEvent(new Event(AUTO_CLAIM_EVENT));
+}
+
+function subscribeAutoClaim(onChange: () => void) {
+  window.addEventListener("storage", onChange);
+  window.addEventListener(AUTO_CLAIM_EVENT, onChange);
+  return () => {
+    window.removeEventListener("storage", onChange);
+    window.removeEventListener(AUTO_CLAIM_EVENT, onChange);
+  };
+}
 
 export default function FoodCoordinatorPage() {
   const { data: session, status } = useSession();
@@ -37,22 +73,10 @@ export default function FoodCoordinatorPage() {
   const [showCheckInModal, setShowCheckInModal] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
 
-  const [autoClaim, setAutoClaim] = useState<boolean>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("shine_auto_claim");
-      if (saved !== null) return saved === "true";
-    }
-    return true;
-  });
+  const autoClaim = useSyncExternalStore(subscribeAutoClaim, readAutoClaim, () => true);
 
   const toggleAutoClaim = () => {
-    setAutoClaim((prev) => {
-      const next = !prev;
-      if (typeof window !== "undefined") {
-        localStorage.setItem("shine_auto_claim", String(next));
-      }
-      return next;
-    });
+    writeAutoClaim(!autoClaim);
   };
 
   const playSound = (type: "success" | "warning" | "error") => {
@@ -112,7 +136,13 @@ export default function FoodCoordinatorPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link href="/" className="font-semibold text-[15px] tracking-tight text-ink">
-              SHINE <span className="text-accent">{edition?.edition || "26"}</span>
+              {edition?.name?.trim() || DEFAULT_EDITION_CONFIG.name}
+              {edition?.edition?.trim() && (
+                <>
+                  {" "}
+                  <span className="text-accent">{edition.edition.trim()}</span>
+                </>
+              )}
             </Link>
             <span className="text-border-strong">/</span>
             <div className="pill-badge">

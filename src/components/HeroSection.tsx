@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import ParticleField from "@/components/ParticleField";
-import { ActiveEditionConfig } from "@/lib/eventService";
+import { ActiveEditionConfig, DEFAULT_EDITION_CONFIG, festTitle } from "@/lib/editionDefaults";
 import { Sparkles, Calendar, MapPin, ArrowRight, ShieldCheck } from "lucide-react";
 
 interface HeroSectionProps {
@@ -9,15 +9,16 @@ interface HeroSectionProps {
 }
 
 export default function HeroSection({ edition }: HeroSectionProps) {
-  const eventName = edition?.name || "SHINE";
-  const editionYear = edition?.edition || "2026";
-  const tagline = edition?.tagline || "Where Ideas Begin to Shine";
+  const eventName = edition?.name || DEFAULT_EDITION_CONFIG.name;
+  const editionYear = edition?.edition || DEFAULT_EDITION_CONFIG.edition;
+  const fullTitle = festTitle(edition);
+  const tagline = edition?.tagline || DEFAULT_EDITION_CONFIG.tagline;
   const metadataText = edition?.metadataText || "TECHNOLOGY • INNOVATION • CREATIVITY";
-  const acronymExpansion = edition?.acronymExpansion || "SACRED HEART INFORMATICS NETWORK FOR ENTERPRISES";
-  const primaryCtaText = edition?.primaryCtaText || "EXPLORE SHINE →";
-  const primaryCtaLink = edition?.primaryCtaLink || "#events";
-  const logoUrl = edition?.logoUrl;
-  const venue = edition?.venue || "SGB Main Auditorium, Sacred Heart College (Autonomous), Tirupattur";
+  const acronymExpansion = edition?.acronymExpansion || DEFAULT_EDITION_CONFIG.acronymExpansion;
+  const primaryCtaText = edition?.primaryCtaText || DEFAULT_EDITION_CONFIG.primaryCtaText || "EXPLORE EVENTS →";
+  const primaryCtaLink = edition?.primaryCtaLink || DEFAULT_EDITION_CONFIG.primaryCtaLink || "#events";
+  const logoUrl = edition?.logoUrl || DEFAULT_EDITION_CONFIG.logoUrl;
+  const institutionLabel = edition?.institutionShortName || edition?.institutionName;
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-canvas text-ink pt-24 pb-20 border-b border-border">
@@ -41,7 +42,7 @@ export default function HeroSection({ edition }: HeroSectionProps) {
               />
               <img
                 src={logoUrl}
-                alt={`${eventName} ${editionYear} Logo`}
+                alt={`${fullTitle} Logo`}
                 width={768}
                 height={512}
                 loading="eager"
@@ -64,7 +65,7 @@ export default function HeroSection({ edition }: HeroSectionProps) {
                 className="pill-badge mt-4"
               >
                 <Sparkles className="w-4 h-4" />
-                <span>{edition?.institutionShortName || edition?.institutionName || "College"} • Symposium</span>
+                <span>{institutionLabel ? `${institutionLabel} • Symposium` : "Symposium"}</span>
               </div>
             </div>
           )}
@@ -73,12 +74,17 @@ export default function HeroSection({ edition }: HeroSectionProps) {
         {/* Stage 3: Event Title & Edition */}
         <div className="max-w-5xl mx-auto mb-3 md:mb-4 animate-stage-title">
           <h1 className="text-fluid-hero font-bold text-ink tracking-tight">
-            {eventName}{" "}
-            <span className="text-accent">{editionYear}</span>
+            {eventName}
+            {editionYear && (
+              <>
+                {" "}
+                <span className="text-accent">{editionYear}</span>
+              </>
+            )}
           </h1>
         </div>
 
-        {/* Acronym Expansion right under SHINE 26 */}
+        {/* Acronym Expansion right under the fest title */}
         {acronymExpansion && (
           <div className="mb-5 md:mb-6 animate-stage-title px-2">
             <span className="inline-block px-4 py-1.5 rounded-full bg-accent-muted text-sm sm:text-[15px] font-semibold text-accent-strong break-words max-w-[92vw]">

@@ -6,6 +6,7 @@ import bcrypt from "bcryptjs";
 import { Role } from "@prisma/client";
 import { logActivity } from "@/lib/activityLogger";
 import { isValidEmail, isValidPhone } from "@/lib/validators";
+import { getActiveEdition } from "@/lib/eventService";
 
 // GET /api/admin/users - List users with filters
 export async function GET(req: Request) {
@@ -97,7 +98,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { name, email, phone, college, role, password } = body;
+    const { name, email, phone, college, role, password, assignedEventIds } = body;
 
     if (!name || !email || !password || !role) {
       return NextResponse.json(
@@ -134,13 +135,15 @@ export async function POST(req: Request) {
     }
 
     const passwordHash = await bcrypt.hash(password.trim(), 10);
+    // Staff accounts default to the host institution configured on the active edition (if any)
+    const hostInstitution = college?.trim() ? null : (await getActiveEdition()).institutionName?.trim() || null;
 
     const newUser = await prisma.user.create({
       data: {
         name: name.trim(),
         email: normalizedEmail,
         phone: phone ? phone.trim() : null,
-        college: college ? college.trim() : "Sacred Heart College (Autonomous)",
+        college: college?.trim() || hostInstitution,
         role: role as Role,
         passwordHash,
       },
@@ -154,6 +157,14 @@ export async function POST(req: Request) {
         createdAt: true,
       },
     });
+
+    // Attach the events chosen in the create form (previously dropped silently)
+    if (newUser.role === "COORDINATOR" && Array.isArray(assignedEventIds) && assignedEventIds.length > 0) {
+      await prisma.event.updateMany({
+        where: { id: { in: assignedEventIds.filter((x: unknown) => typeof x === "string") } },
+        data: { coordinatorId: newUser.id },
+      });
+    }
 
     await logActivity({
       action: "USER_CREATED",

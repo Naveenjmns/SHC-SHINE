@@ -55,7 +55,7 @@ For an in-depth, step-by-step operations manual for all user roles, consult:
 
 ## 🔑 Demo & Testing Credentials (local development only)
 
-> ⚠️ These accounts are created by `npm run seed` / `npm run create-credentials`, which refuse to run when `NODE_ENV=production`. Never create them on a deployed database — use `npm run create-admin -- --password <strong-secret>` instead.
+> ⚠️ These accounts are created by `npm run seed` / `npm run create-credentials`, which refuse to run when `NODE_ENV=production`; `npm run seed` also wipes every table and refuses any non-localhost `DATABASE_URL` unless `ALLOW_DEMO_SEED=true`. Never create them on a deployed database — use `npm run create-admin -- --password <strong-secret>` instead.
 
 | Role | Email | Password | Target Portal |
 |---|---|---|---|

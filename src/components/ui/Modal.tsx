@@ -71,7 +71,8 @@ export function Modal({
 
     dialog.addEventListener("cancel", handleCancel);
     return () => dialog.removeEventListener("cancel", handleCancel);
-  }, [onClose]);
+    // isOpen: the <dialog> only mounts while open, so the listener must attach after it appears
+  }, [onClose, isOpen]);
 
   // Handle backdrop clicks
   const handleBackdropClick = (e: React.MouseEvent<HTMLDialogElement>) => {

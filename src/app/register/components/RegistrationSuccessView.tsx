@@ -17,6 +17,7 @@ interface DelegationResult {
   collegeName: string;
   teamLeadName: string;
   totalFee: number;
+  paymentStatus?: string;
   members: RegisteredMemberResult[];
 }
 
@@ -25,6 +26,7 @@ interface RegistrationSuccessViewProps {
 }
 
 export default function RegistrationSuccessView({ delegation }: RegistrationSuccessViewProps) {
+  const isPaymentPending = delegation.paymentStatus === "PENDING" && delegation.totalFee > 0;
   const handlePrint = () => {
     if (typeof window !== "undefined") {
       window.print();
@@ -41,10 +43,12 @@ export default function RegistrationSuccessView({ delegation }: RegistrationSucc
 
         <div className="space-y-1">
           <h1 className="text-2xl sm:text-3xl font-bold text-ink">
-            Registration Confirmed!
+            {isPaymentPending ? "Registration Received" : "Registration Confirmed!"}
           </h1>
           <p className="text-[15px] text-ink-muted max-w-md mx-auto">
-            Your delegation has been registered for SHINE 2026. Digital QR passes have been generated below.
+            {isPaymentPending
+              ? `Your delegation is registered. Pay the fee of ₹${delegation.totalFee} at the registration desk to activate the passes below.`
+              : "Your delegation has been registered. Digital QR passes have been generated below."}
           </p>
         </div>
 

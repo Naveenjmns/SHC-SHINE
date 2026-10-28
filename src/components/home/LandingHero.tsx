@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui";
 import CountdownTimer from "@/components/CountdownTimer";
-import { ActiveEditionConfig } from "@/lib/eventService";
+import { ActiveEditionConfig, DEFAULT_EDITION_CONFIG, festTitle } from "@/lib/editionDefaults";
 import { Calendar, MapPin, ArrowRight, Trophy, Sparkles, Building2 } from "lucide-react";
 import { formatDateSafe } from "@/lib/dateUtils";
 
@@ -14,29 +14,38 @@ interface LandingHeroProps {
 }
 
 export default function LandingHero({ edition }: LandingHeroProps) {
-  const eventName = edition?.name || "SHINE";
-  const editionYear = edition?.edition || "2026";
-  const acronymExpansion =
-    edition?.acronymExpansion || "Sacred Heart Informatics Network for Enterprises";
-  const institutionName =
-    edition?.institutionName || "Sacred Heart College (Autonomous), Tirupattur";
-  const venue =
-    edition?.venue || "SGB Main Auditorium, Sacred Heart College, Tirupattur";
-  const targetDate = edition?.startDate || "2026-10-15T09:00:00.000Z";
-  const logoUrl = edition?.logoUrl;
+  const eventName = edition?.name || DEFAULT_EDITION_CONFIG.name;
+  const editionYear = edition?.edition || DEFAULT_EDITION_CONFIG.edition;
+  const fullTitle = festTitle(edition);
+  const acronymExpansion = edition?.acronymExpansion || DEFAULT_EDITION_CONFIG.acronymExpansion;
+  const institutionName = edition?.institutionName || DEFAULT_EDITION_CONFIG.institutionName;
+  const accreditationText = edition?.accreditationText || DEFAULT_EDITION_CONFIG.accreditationText;
+  const venue = edition?.venue || DEFAULT_EDITION_CONFIG.venue;
+  const targetDate = edition?.startDate || DEFAULT_EDITION_CONFIG.startDate;
+  const description = edition?.description || DEFAULT_EDITION_CONFIG.description;
+  const logoUrl = edition?.logoUrl || DEFAULT_EDITION_CONFIG.logoUrl;
+  const institutionBadge = [accreditationText, institutionName].filter(Boolean).join(" · ");
 
   return (
     <section className="relative overflow-hidden bg-canvas text-ink pt-28 pb-20 lg:pt-36 lg:pb-28">
       <div className="container-shine grid grid-cols-1 lg:grid-cols-[1.1fr_1fr] gap-14 lg:gap-16 items-center">
         {/* Left column — headline, copy, CTAs */}
         <div className="flex flex-col items-start text-left">
-          <span className="pill-badge mb-6 select-none max-w-full">
-            <Sparkles className="w-3.5 h-3.5 shrink-0" />
-            <span className="truncate">NAAC A++ · {institutionName}</span>
-          </span>
+          {institutionBadge && (
+            <span className="pill-badge mb-6 select-none max-w-full">
+              <Sparkles className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">{institutionBadge}</span>
+            </span>
+          )}
 
           <h1 className="text-fluid-hero text-ink">
-            {eventName} <span className="text-accent">{editionYear}</span>
+            {eventName}
+            {editionYear && (
+              <>
+                {" "}
+                <span className="text-accent">{editionYear}</span>
+              </>
+            )}
           </h1>
 
           {acronymExpansion && (
@@ -45,10 +54,11 @@ export default function LandingHero({ edition }: LandingHeroProps) {
             </p>
           )}
 
-          <p className="mt-5 text-lg sm:text-xl text-ink-muted leading-relaxed max-w-xl">
-            {edition?.description ||
-              "National Inter-Collegiate Technical Fest organized by the Department of Computer Applications (PG). Bringing together technical excellence, innovation, and leadership."}
-          </p>
+          {description && (
+            <p className="mt-5 text-lg sm:text-xl text-ink-muted leading-relaxed max-w-xl">
+              {description}
+            </p>
+          )}
 
           <div className="mt-9 flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
             <Link href="/register" className="w-full sm:w-auto">
@@ -95,7 +105,7 @@ export default function LandingHero({ edition }: LandingHeroProps) {
                 {logoUrl ? (
                   <Image
                     src={logoUrl}
-                    alt={`${eventName} ${editionYear} Logo`}
+                    alt={`${fullTitle} Logo`}
                     width={56}
                     height={56}
                     priority
@@ -106,10 +116,10 @@ export default function LandingHero({ edition }: LandingHeroProps) {
                 )}
               </div>
               <div className="min-w-0">
-                <p className="text-[15px] font-medium text-ink-muted truncate">{institutionName}</p>
-                <p className="text-xl font-bold text-ink truncate">
-                  {eventName} {editionYear}
-                </p>
+                {institutionName && (
+                  <p className="text-[15px] font-medium text-ink-muted truncate">{institutionName}</p>
+                )}
+                <p className="text-xl font-bold text-ink truncate">{fullTitle}</p>
               </div>
             </div>
 
@@ -117,16 +127,18 @@ export default function LandingHero({ edition }: LandingHeroProps) {
               <div className="flex items-start gap-3">
                 <Calendar className="w-5 h-5 text-ink-muted shrink-0 mt-0.5" />
                 <span className="text-base font-semibold text-ink">
-                  {formatDateSafe(targetDate)}
+                  {targetDate ? formatDateSafe(targetDate) : "Date to be announced"}
                 </span>
               </div>
-              <div className="flex items-start gap-3">
-                <MapPin className="w-5 h-5 text-ink-muted shrink-0 mt-0.5" />
-                <span className="text-base text-ink-muted">{venue}</span>
-              </div>
+              {venue && (
+                <div className="flex items-start gap-3">
+                  <MapPin className="w-5 h-5 text-ink-muted shrink-0 mt-0.5" />
+                  <span className="text-base text-ink-muted">{venue}</span>
+                </div>
+              )}
 
               <div className="pt-2">
-                <CountdownTimer targetDate={targetDate} />
+                <CountdownTimer targetDate={targetDate} eventName={fullTitle} />
               </div>
             </div>
 

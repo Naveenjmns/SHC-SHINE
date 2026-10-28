@@ -1,5 +1,6 @@
 import prisma from "@/lib/prisma";
 import { sendEventReminderEmail, getEmailNotificationSettings } from "@/lib/emailService";
+import { getActiveEdition } from "@/lib/eventService";
 import { formatTimeSafe, formatDateSafe } from "@/lib/dateUtils";
 import { logActivity } from "@/lib/activityLogger";
 
@@ -71,7 +72,9 @@ async function runReminderSweep(options?: ReminderCheckOptions): Promise<Reminde
   const windowStart = new Date(now.getTime() - 2 * 60 * 1000); // 2 mins past leeway
   const windowEnd = new Date(now.getTime() + 15 * 60 * 1000); // 15 mins ahead
 
-  const baseUrl = options?.origin || (process.env.NEXTAUTH_URL || "https://shc-shine.up.railway.app").replace(/\/$/, "");
+  const baseUrl = options?.origin || (process.env.NEXTAUTH_URL || "").replace(/\/$/, "");
+  // Fest / institution branding for every reminder in this sweep (fetched once, not per recipient)
+  const activeEdition = await getActiveEdition();
 
   let remindersSent = 0;
   let errors = 0;
@@ -109,8 +112,10 @@ async function runReminderSweep(options?: ReminderCheckOptions): Promise<Reminde
         (eventTime >= windowStart && eventTime <= windowEnd);
 
       if (isMainEventUpcoming) {
+        // Rejected entries must not be told to report; pending ones may still pay at the desk
         const registrationWhere: any = {
           eventId: event.id,
+          status: { not: "REJECTED" },
         };
         if (!options?.forceAll) {
           registrationWhere.reminderSentAt = null;
@@ -147,7 +152,7 @@ async function runReminderSweep(options?: ReminderCheckOptions): Promise<Reminde
           for (const reg of registrations) {
             const studentEmail = reg.user.email;
             const studentName = reg.user.name || reg.delegationMember?.name || "Delegate";
-            const badgeCode = reg.delegationMember?.badgeCode || `SHINE-${reg.id.slice(-4).toUpperCase()}`;
+            const badgeCode = reg.delegationMember?.badgeCode || `REG-${reg.id.slice(-4).toUpperCase()}`;
             const badgeUrl = `${baseUrl}/badge/${badgeCode}`;
             const portalUrl = `${baseUrl}/login?email=${encodeURIComponent(studentEmail)}`;
 
@@ -200,7 +205,7 @@ async function runReminderSweep(options?: ReminderCheckOptions): Promise<Reminde
                 rules: event.rules,
                 staffCoordinator: staffIncharge ? { name: staffIncharge.name, phone: staffIncharge.phone } : null,
                 studentCoordinator: studentIncharge ? { name: studentIncharge.name, phone: studentIncharge.phone } : null,
-              });
+              }, activeEdition);
 
               if (sent) {
                 await prisma.registration.update({
@@ -261,6 +266,7 @@ async function runReminderSweep(options?: ReminderCheckOptions): Promise<Reminde
           const prelimsRegWhere: any = {
             eventId: event.id,
             isPrelimsParticipant: true,
+            status: { not: "REJECTED" },
           };
           if (!options?.forceAll) {
             prelimsRegWhere.prelimsReminderSentAt = null;
@@ -297,7 +303,7 @@ async function runReminderSweep(options?: ReminderCheckOptions): Promise<Reminde
             for (const reg of prelimsRegs) {
               const studentEmail = reg.user.email;
               const studentName = reg.user.name || reg.delegationMember?.name || "Delegate";
-              const badgeCode = reg.delegationMember?.badgeCode || `SHINE-${reg.id.slice(-4).toUpperCase()}`;
+              const badgeCode = reg.delegationMember?.badgeCode || `REG-${reg.id.slice(-4).toUpperCase()}`;
               const badgeUrl = `${baseUrl}/badge/${badgeCode}`;
               const portalUrl = `${baseUrl}/login?email=${encodeURIComponent(studentEmail)}`;
 
@@ -350,7 +356,7 @@ async function runReminderSweep(options?: ReminderCheckOptions): Promise<Reminde
                   rules: event.prelimsRules || event.rules,
                   staffCoordinator: staffIncharge ? { name: staffIncharge.name, phone: staffIncharge.phone } : null,
                   studentCoordinator: studentIncharge ? { name: studentIncharge.name, phone: studentIncharge.phone } : null,
-                });
+                }, activeEdition);
 
                 if (sent) {
                   await prisma.registration.update({

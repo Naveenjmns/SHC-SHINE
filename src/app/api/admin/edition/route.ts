@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { logActivity } from "@/lib/activityLogger";
 import { revalidatePath, revalidateTag } from "next/cache";
+import { isHexColor } from "@/lib/colorUtils";
 
 export const dynamic = "force-dynamic";
 
@@ -67,7 +68,7 @@ export async function GET() {
   }
 }
 
-// POST: Create a new Event Edition (e.g. SHINE 2027)
+// POST: Create a new Event Edition (e.g. next year's fest)
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -84,44 +85,71 @@ export async function POST(req: NextRequest) {
 
     const slug = `${name.toLowerCase()}-${edition.toLowerCase()}`.replace(/[^a-z0-9-]/g, "-");
 
-    // If making active, deactivate all other editions first
-    if (makeActive) {
-      await prisma.eventEdition.updateMany({ data: { isActive: false } });
-    }
+    // A new edition is usually the same institution in a new year: carry the institution, venue,
+    // branding and campus details over from the current edition instead of inventing defaults.
+    // Fest-specific copy (dates, rules, prizes) starts empty for the admin to fill in.
+    const previous = await prisma.eventEdition.findFirst({ where: { isActive: true } });
+    const carried = previous
+      ? {
+          venue: previous.venue,
+          institutionName: previous.institutionName,
+          institutionCrestUrl: previous.institutionCrestUrl,
+          accreditationText: previous.accreditationText,
+          jubileeBadgeUrl: previous.jubileeBadgeUrl,
+          hostDepartment: previous.hostDepartment,
+          acronymExpansion: previous.acronymExpansion,
+          deptLogoUrl: previous.deptLogoUrl,
+          institutionShortName: previous.institutionShortName,
+          institutionLocation: previous.institutionLocation,
+          institutionAbout: previous.institutionAbout,
+          departmentAbout: previous.departmentAbout,
+          departmentProgram: previous.departmentProgram,
+          contactEmail: previous.contactEmail,
+          contactPhone: previous.contactPhone,
+          websiteUrl: previous.websiteUrl,
+          diningHallVenue: previous.diningHallVenue,
+          diningFacilityInfo: previous.diningFacilityInfo,
+          mealOptions: previous.mealOptions,
+          floorPlanUrl: previous.floorPlanUrl,
+          campusLatitude: previous.campusLatitude,
+          campusLongitude: previous.campusLongitude,
+          themePrimaryAccent: previous.themePrimaryAccent,
+          themeSecondaryAccent: previous.themeSecondaryAccent,
+          themeBgColor: previous.themeBgColor,
+        }
+      : {};
 
     const newEdition = await prisma.eventEdition.create({
       data: {
+        ...carried,
         name,
         edition,
         slug,
         isActive: !!makeActive,
         status: "LIVE",
-        tagline: tagline || "Where Ideas Begin to Shine",
-        metadataText: metadataText || "TECHNOLOGY • INNOVATION • CREATIVITY",
-        description,
-        venue,
-        logoUrl,
+        tagline: tagline || null,
+        metadataText: metadataText || null,
+        description: description || null,
+        ...(venue ? { venue } : {}),
+        logoUrl: logoUrl || null,
         primaryCtaText: "EXPLORE " + name.toUpperCase() + " →",
         primaryCtaLink: "#events",
-        themePrimaryAccent: "#006BFF",
-        themeSecondaryAccent: "#D9A441",
-        themeBgColor: "#F8F9FB",
-        prizePool: body.prizePool || "₹25K+",
-        expectedDelegates: body.expectedDelegates || "500+",
+        prizePool: body.prizePool || null,
+        expectedDelegates: body.expectedDelegates || null,
         rulesEligibilityTitle: body.rulesEligibilityTitle || "Eligibility & Registration",
-        rulesEligibilityText:
-          body.rulesEligibilityText ||
-          "Open to all bona fide UG and PG students of Computer Science, Applications, IT, and related engineering disciplines with valid college ID cards.",
+        rulesEligibilityText: body.rulesEligibilityText || null,
         rulesTimingsTitle: body.rulesTimingsTitle || "Reporting & Timings",
-        rulesTimingsText:
-          body.rulesTimingsText ||
-          "Participants must report at the registration desk by 09:00 AM sharp on Sep 17, 2026. Spot registrations close at 10:30 AM.",
+        rulesTimingsText: body.rulesTimingsText || null,
         rulesChampionshipTitle: body.rulesChampionshipTitle || "Overall Championship",
-        rulesChampionshipText:
-          body.rulesChampionshipText ||
-          "The institution securing maximum cumulative points across both On-Stage and Off-Stage events will be crowned the SHINE Overall Champions.",
+        rulesChampionshipText: body.rulesChampionshipText || null,
       },
     });
+
+    // Deactivate the others only after the new edition exists, so a failed create (e.g. duplicate
+    // slug) cannot leave the site without an active edition
+    if (makeActive) {
+      await prisma.eventEdition.updateMany({ where: { id: { not: newEdition.id } }, data: { isActive: false } });
+    }
 
     // Create default navigation items for the new edition
     const defaultNavs = [
@@ -162,8 +190,25 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Edition ID is required" }, { status: 400 });
     }
 
-    if (makeActive) {
-      await prisma.eventEdition.updateMany({ data: { isActive: false } });
+    for (const key of ["themePrimaryAccent", "themeSecondaryAccent", "themeBgColor"]) {
+      const val = updateData[key];
+      if (val !== undefined && val !== null && val !== "" && !isHexColor(val)) {
+        return NextResponse.json(
+          { success: false, error: `${key} must be a hex colour such as #FF6B1A.` },
+          { status: 400 }
+        );
+      }
+    }
+    if (
+      updateData.floorPlanUrl &&
+      (typeof updateData.floorPlanUrl !== "string" ||
+        !updateData.floorPlanUrl.startsWith("/uploads/") ||
+        updateData.floorPlanUrl.includes(".."))
+    ) {
+      return NextResponse.json(
+        { success: false, error: "floorPlanUrl must be an uploaded file path under /uploads/." },
+        { status: 400 }
+      );
     }
 
     const allowedKeys = [
@@ -219,8 +264,9 @@ export async function PATCH(req: NextRequest) {
       "defaultThirdPrize",
       "showStageModeInStudentPortal",
       "floorPlanUrl",
+      "campusLatitude",
+      "campusLongitude",
       "waypointGraph",
-      "isActive",
       "status",
     ];
 
@@ -232,6 +278,10 @@ export async function PATCH(req: NextRequest) {
           sanitizedData[key] = new Date(val);
         } else if (key === "participantFee") {
           sanitizedData[key] = parseFloat(val) || 0;
+        } else if (key === "campusLatitude" || key === "campusLongitude") {
+          const n = val === "" || val === null ? null : Number(val);
+          const limit = key === "campusLatitude" ? 90 : 180;
+          sanitizedData[key] = n !== null && Number.isFinite(n) && Math.abs(n) <= limit ? n : null;
         } else if (key === "isRegistrationOpen" || key === "showStageModeInStudentPortal") {
           sanitizedData[key] = Boolean(val);
         } else if (key === "mealOptions") {
@@ -276,9 +326,13 @@ export async function PATCH(req: NextRequest) {
 
     let updated: any;
     try {
-      updated = await prisma.eventEdition.update({
-        where: { id },
-        data: safePrismaData,
+      // Deactivating the others and updating this edition happen together, so a failed update
+      // (e.g. unknown id) can never leave the site with no active edition
+      updated = await prisma.$transaction(async (tx) => {
+        if (makeActive) {
+          await tx.eventEdition.updateMany({ where: { id: { not: id } }, data: { isActive: false } });
+        }
+        return tx.eventEdition.update({ where: { id }, data: safePrismaData });
       });
     } catch (prismaErr: any) {
       console.error("Prisma update error in edition PATCH:", prismaErr);

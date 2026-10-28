@@ -40,9 +40,11 @@ export default function FoodTokenCard({ foodPass, diningVenue }: FoodTokenCardPr
             </Badge>
           </div>
           <CardTitle className="text-base">Lunch Coupon & Token</CardTitle>
-          <CardDescription className="text-sm truncate">
-            {diningVenue || "SGB Quadrangle Dining Hall"}
-          </CardDescription>
+          {diningVenue && (
+            <CardDescription className="text-sm truncate">
+              {diningVenue}
+            </CardDescription>
+          )}
         </CardHeader>
 
         <CardContent className="space-y-3 pt-1">

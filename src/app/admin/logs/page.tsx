@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { csvCell } from "@/lib/csv";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -78,7 +79,11 @@ export default function AdminLogsPage() {
   // Inspector Modal
   const [selectedLog, setSelectedLog] = useState<ActivityLogItem | null>(null);
 
+  // Each keystroke triggers a fetch; only the newest request may update the list
+  const requestSeqRef = useRef(0);
+
   const fetchLogs = useCallback(async () => {
+    const seq = ++requestSeqRef.current;
     try {
       setRefreshing(true);
       const params = new URLSearchParams();
@@ -89,6 +94,7 @@ export default function AdminLogsPage() {
 
       const res = await fetch(`/api/admin/logs?${params.toString()}`);
       const data = await safeJson(res, { success: false, logs: [], pagination: { totalPages: 1, totalCount: 0 } });
+      if (seq !== requestSeqRef.current) return;
       if (data.success) {
         setLogs(data.logs || []);
         setTotalPages(data.pagination?.totalPages || 1);
@@ -101,8 +107,10 @@ export default function AdminLogsPage() {
       console.error("Error fetching logs:", err);
       toast.error("Network error loading activity logs.");
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      if (seq === requestSeqRef.current) {
+        setLoading(false);
+        setRefreshing(false);
+      }
     }
   }, [category, page, search, toast]);
 
@@ -150,14 +158,14 @@ export default function AdminLogsPage() {
     ];
 
     const rows = logs.map((l) => [
-      `"${new Date(l.createdAt).toISOString()}"`,
-      `"${l.action}"`,
-      `"${l.actorName || ""}"`,
-      `"${l.actorEmail || ""}"`,
-      `"${l.actorRole || ""}"`,
-      `"${l.targetType || ""}"`,
-      `"${(l.targetTitle || "").replace(/"/g, '""')}"`,
-      `"${(l.details || "").replace(/"/g, '""')}"`,
+      csvCell(new Date(l.createdAt).toISOString()),
+      csvCell(l.action),
+      csvCell(l.actorName || ""),
+      csvCell(l.actorEmail || ""),
+      csvCell(l.actorRole || ""),
+      csvCell(l.targetType || ""),
+      csvCell((l.targetTitle || "")),
+      csvCell((l.details || "")),
     ]);
 
     const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
@@ -229,10 +237,10 @@ export default function AdminLogsPage() {
           <div className="flex items-center gap-3">
             <Link href="/" className="flex items-center gap-2">
               <span className="w-7 h-7 rounded-[8px] bg-accent flex items-center justify-center text-white font-bold text-[15px]">
-                S
+                E
               </span>
               <span className="font-bold text-[15px] tracking-tight text-ink">
-                SHINE <span className="text-accent">ADMIN</span>
+                EVENT <span className="text-accent">ADMIN</span>
               </span>
             </Link>
             <span className="text-ink-disabled">/</span>

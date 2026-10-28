@@ -6,6 +6,7 @@ import { logActivity } from "@/lib/activityLogger";
 import { buildSecureErrorResponse } from "@/lib/security";
 
 import { extractLookupCode } from "@/lib/cameraScanner";
+import { isMealEligible } from "@/lib/eligibility";
 
 export const dynamic = "force-dynamic";
 
@@ -42,7 +43,7 @@ export async function GET(req: NextRequest) {
     ) {
       return NextResponse.json(
         { success: false, message: "Unauthorized. Staff, Coordinator, or Food Committee login required." },
-        { status: 401 }
+        { status: session ? 403 : 401 }
       );
     }
 
@@ -146,10 +147,7 @@ export async function GET(req: NextRequest) {
     });
     const assignedEventIds = new Set(userAssignedEvents.map((e) => e.id));
 
-    const isApproved =
-      member.delegation.paymentStatus === "PAID" ||
-      member.delegation.paymentStatus === "VERIFIED" ||
-      member.registrations.some((r) => r.status === "CONFIRMED");
+    const isApproved = isMealEligible(member.delegation.paymentStatus, member.registrations);
 
     const allEventsAttended = member.registrations.length > 0 && member.registrations.every((r) => r.attended);
 
@@ -233,14 +231,14 @@ export async function POST(req: NextRequest) {
     ) {
       return NextResponse.json(
         { success: false, message: "Unauthorized. Staff, Coordinator, or Food Committee login required." },
-        { status: 401 }
+        { status: session ? 403 : 401 }
       );
     }
 
     const body = await req.json();
     const { code: rawCode, action, eventId } = body;
 
-    if (!rawCode || !action) {
+    if (typeof rawCode !== "string" || !rawCode.trim() || typeof action !== "string" || !action) {
       return NextResponse.json(
         { success: false, message: "Code and action are required." },
         { status: 400 }
@@ -300,10 +298,7 @@ export async function POST(req: NextRequest) {
       }
 
       // Approval & Payment Guard: Must be approved and paid at registration desk
-      const isApproved =
-        member.delegation.paymentStatus === "PAID" ||
-        member.delegation.paymentStatus === "VERIFIED" ||
-        member.registrations.some((r) => r.status === "CONFIRMED");
+      const isApproved = isMealEligible(member.delegation.paymentStatus, member.registrations);
 
       if (!isApproved) {
         return NextResponse.json(
@@ -386,7 +381,7 @@ export async function POST(req: NextRequest) {
             isExpired: true,
             message: `QR Code Expired / Already Scanned: ${member.name} (${member.delegation.collegeName}) was already checked in for "${targetEvent.name}" on ${
               reg.checkedInAt
-                ? new Date(reg.checkedInAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })
+                ? new Date(reg.checkedInAt).toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit" })
                 : "earlier today"
             } by ${reg.checkedInBy || "Coordinator"}. This single-use QR pass has expired.`,
           },
@@ -566,10 +561,7 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      const isApproved =
-        member.delegation.paymentStatus === "PAID" ||
-        member.delegation.paymentStatus === "VERIFIED" ||
-        member.registrations.some((r) => r.status === "CONFIRMED");
+      const isApproved = isMealEligible(member.delegation.paymentStatus, member.registrations);
 
       if (!isApproved) {
         return NextResponse.json(
@@ -593,7 +585,7 @@ export async function POST(req: NextRequest) {
             foodPreference: (member as any).foodPreference || "VEG",
             message: `QR Token Expired / Already Redeemed: Food token was ALREADY claimed by ${member.name} (${member.delegation.collegeName}) on ${
               member.foodClaimedAt
-                ? new Date(member.foodClaimedAt).toLocaleTimeString("en-IN", {
+                ? new Date(member.foodClaimedAt).toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata",
                     hour: "2-digit",
                     minute: "2-digit",
                   })
@@ -676,6 +668,20 @@ export async function POST(req: NextRequest) {
         );
       }
 
+      // A food desk volunteer may only undo a fresh claim (mis-scan / wrong person), otherwise a
+      // meal could be issued, reset and issued again. Admins can reset at any time.
+      const UNDO_WINDOW_MS = 5 * 60 * 1000;
+      const claimAge = member.foodClaimedAt ? Date.now() - new Date(member.foodClaimedAt).getTime() : Infinity;
+      if (!isAdmin && member.foodTokenClaimed && claimAge > UNDO_WINDOW_MS) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "This meal was claimed more than 5 minutes ago. Ask an administrator to reset it.",
+          },
+          { status: 403 }
+        );
+      }
+
       const updated = await prisma.delegationMember.update({
         where: { id: member.id },
         data: {
@@ -725,6 +731,19 @@ export async function POST(req: NextRequest) {
       }
 
       const newPref = body.preference === "NON_VEG" ? "NON_VEG" : "VEG";
+      // Respect the edition's meal policy, same as registration does
+      if (newPref === "NON_VEG" && member.delegation.editionId) {
+        const edition = await prisma.eventEdition.findUnique({
+          where: { id: member.delegation.editionId },
+          select: { mealOptions: true },
+        });
+        if (edition?.mealOptions === "VEG_ONLY") {
+          return NextResponse.json(
+            { success: false, message: "This edition serves vegetarian meals only." },
+            { status: 400 }
+          );
+        }
+      }
       const updated = await prisma.delegationMember.update({
         where: { id: member.id },
         data: {

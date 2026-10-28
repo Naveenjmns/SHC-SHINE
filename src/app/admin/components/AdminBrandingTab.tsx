@@ -112,7 +112,7 @@ export default function AdminBrandingTab({
               <Input
                 value={brandingForm.tagline}
                 onChange={(e) => setBrandingForm({ ...brandingForm, tagline: e.target.value })}
-                placeholder="Where Ideas Begin to Shine"
+                placeholder="e.g. Where Ideas Take Flight"
                 className="text-sm"
               />
             </div>
@@ -192,7 +192,7 @@ export default function AdminBrandingTab({
 
           {/* Navigation Links */}
           <AdminNavItemsEditor
-            navItems={activeEdition.navItems || []}
+            navItems={activeEdition?.navItems || []}
             onAddNavItem={onAddNavItem}
             onDeleteNavItem={onDeleteNavItem}
             onToggleNavItem={onToggleNavItem}
@@ -297,7 +297,7 @@ export default function AdminBrandingTab({
 
           {/* Schedule Manager */}
           <AdminScheduleManager
-            scheduleItems={activeEdition.scheduleItems || []}
+            scheduleItems={activeEdition?.scheduleItems || []}
             onAddScheduleItem={onAddScheduleItem}
             onDeleteScheduleItem={onDeleteScheduleItem}
           />

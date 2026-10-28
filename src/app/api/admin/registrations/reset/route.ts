@@ -11,15 +11,21 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, message: "Unauthorized. Admin access required." }, { status: 403 });
     }
 
-    let clearStudentAccounts = true;
+    // SAFETY: Destructive wipe. Require an explicit confirmation token, and only delete
+    // student accounts when that is asked for explicitly (never by default or on a bad body).
+    let body: { confirm?: unknown; clearStudentAccounts?: unknown } = {};
     try {
-      const body = await req.json();
-      if (body && typeof body.clearStudentAccounts === "boolean") {
-        clearStudentAccounts = body.clearStudentAccounts;
-      }
+      body = (await req.json()) || {};
     } catch {
-      // Body may be empty
+      // Body missing or invalid: treated as unconfirmed below
     }
+    if (body.confirm !== "RESET") {
+      return NextResponse.json(
+        { success: false, message: 'Reset not confirmed. Send { "confirm": "RESET" } to clear all registrations.' },
+        { status: 400 }
+      );
+    }
+    const clearStudentAccounts = body.clearStudentAccounts === true;
 
     const [deletedRegs, deletedMembers, deletedDelegations, deletedStudents] = await prisma.$transaction(
       async (tx) => {

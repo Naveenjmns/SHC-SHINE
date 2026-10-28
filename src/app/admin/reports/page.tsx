@@ -1,5 +1,6 @@
 "use client";
 
+import { csvCell } from "@/lib/csv";
 import { useEffect, useState, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
@@ -38,6 +39,12 @@ import {
 import { safeJson } from "@/lib/safeFetch";
 import { parseDateSafe } from "@/lib/dateUtils";
 import { downloadEventParticipantsCSV } from "@/lib/exportEventCsv";
+import { festTitle } from "@/lib/editionDefaults";
+
+/** Filename-safe "<Fest>_<Edition>" prefix for exported report CSVs */
+function reportFileSlug(summary: { festName?: string | null; festEdition?: string | null } | null | undefined): string {
+  return festTitle({ name: summary?.festName, edition: summary?.festEdition }).replace(/[^A-Za-z0-9]+/g, "_");
+}
 
 interface ReportData {
   edition?: {
@@ -50,15 +57,15 @@ interface ReportData {
   summary: {
     festName: string;
     festEdition: string;
-    tagline: string;
-    institutionName: string;
-    accreditationText: string;
-    hostDepartment: string;
-    venue: string;
+    tagline: string | null;
+    institutionName: string | null;
+    accreditationText: string | null;
+    hostDepartment: string | null;
+    venue: string | null;
     startDate?: string | null;
     endDate?: string | null;
-    contactEmail: string;
-    contactPhone: string;
+    contactEmail: string | null;
+    contactPhone: string | null;
     totalEvents: number;
     onStageEventsCount: number;
     offStageEventsCount: number;
@@ -358,24 +365,24 @@ export default function AdminReportsPage() {
 
     const rows = data.masterStudentRoster.map((s, idx) => [
       idx + 1,
-      `"${s.name.replace(/"/g, '""')}"`,
-      `"${s.email}"`,
-      `"${s.phone}"`,
-      `"${s.college.replace(/"/g, '""')}"`,
-      `"${(s.department || "").replace(/"/g, '""')}"`,
-      `"${(s.teamName || "").replace(/"/g, '""')}"`,
+      csvCell(s.name),
+      csvCell(s.email),
+      csvCell(s.phone),
+      csvCell(s.college),
+      csvCell((s.department || "")),
+      csvCell((s.teamName || "")),
       s.isTeamLead ? "YES" : "NO",
       s.foodPreference === "NON_VEG" ? "NON-VEGETARIAN" : "VEGETARIAN",
-      `"${s.badgeCode || "—"}"`,
-      `"${s.foodTokenCode || "—"}"`,
+      csvCell(s.badgeCode || "—"),
+      csvCell(s.foodTokenCode || "—"),
       s.attended ? "PRESENT" : "ABSENT",
-      `"${s.checkedInAt ? new Date(s.checkedInAt).toLocaleString() : "—"}"`,
+      csvCell(s.checkedInAt ? new Date(s.checkedInAt).toLocaleString() : "—"),
       s.events.length,
-      `"${s.events.map((e) => e.eventName).join("; ")}"`,
+      csvCell(s.events.map((e) => e.eventName).join("; ")),
     ]);
 
     const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
-    downloadCsv(`${data.summary.festName}_${data.summary.festEdition}_Master_Student_Roster.csv`, csv);
+    downloadCsv(`${reportFileSlug(data.summary)}_Master_Student_Roster.csv`, csv);
   };
 
   // 2. Export Prelims to Mains Progression CSV
@@ -401,24 +408,24 @@ export default function AdminReportsPage() {
 
     const rows = data.prelimsProgression.map((p, idx) => [
       idx + 1,
-      `"${p.eventName.replace(/"/g, '""')}"`,
+      csvCell(p.eventName),
       p.eventCategory,
-      `"${(p.prelimsVenue || "").replace(/"/g, '""')}"`,
-      `"${p.prelimsDateTime ? new Date(p.prelimsDateTime).toLocaleString() : "—"}"`,
-      `"${p.studentName.replace(/"/g, '""')}"`,
-      `"${p.studentEmail}"`,
-      `"${p.studentPhone}"`,
-      `"${p.collegeName.replace(/"/g, '""')}"`,
+      csvCell((p.prelimsVenue || "")),
+      csvCell(p.prelimsDateTime ? new Date(p.prelimsDateTime).toLocaleString() : "—"),
+      csvCell(p.studentName),
+      csvCell(p.studentEmail),
+      csvCell(p.studentPhone),
+      csvCell(p.collegeName),
       p.prelimsStatus,
       p.prelimsScore ?? "—",
-      `"${(p.prelimsNotes || "").replace(/"/g, '""')}"`,
+      csvCell((p.prelimsNotes || "")),
       p.clearedToMains ? "QUALIFIED" : "ELIMINATED / PENDING",
       p.mainsScore ?? "—",
-      `"${(p.finalResult || "").replace(/"/g, '""')}"`,
+      csvCell((p.finalResult || "")),
     ]);
 
     const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
-    downloadCsv(`${data.summary.festName}_${data.summary.festEdition}_Prelims_Mains_Progression.csv`, csv);
+    downloadCsv(`${reportFileSlug(data.summary)}_Prelims_Mains_Progression.csv`, csv);
   };
 
   // 3. Export Final Results & Winners CSV
@@ -438,18 +445,18 @@ export default function AdminReportsPage() {
 
     const rows = data.finalResults.map((r, idx) => [
       idx + 1,
-      `"${r.eventName.replace(/"/g, '""')}"`,
+      csvCell(r.eventName),
       r.eventCategory,
-      `"${r.result.replace(/"/g, '""')}"`,
+      csvCell(r.result),
       r.rank === 99 ? "Mention" : `${r.rank}`,
-      `"${r.studentName.replace(/"/g, '""')}"`,
-      `"${r.studentEmail}"`,
-      `"${r.collegeName.replace(/"/g, '""')}"`,
+      csvCell(r.studentName),
+      csvCell(r.studentEmail),
+      csvCell(r.collegeName),
       r.score ?? "—",
     ]);
 
     const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
-    downloadCsv(`${data.summary.festName}_${data.summary.festEdition}_Final_Results_Winners.csv`, csv);
+    downloadCsv(`${reportFileSlug(data.summary)}_Final_Results_Winners.csv`, csv);
   };
 
   // 4. Export Complete Events & Coordinators Directory CSV
@@ -480,21 +487,21 @@ export default function AdminReportsPage() {
 
     const rows = data.events.map((ev, idx) => [
       idx + 1,
-      `"${ev.name.replace(/"/g, '""')}"`,
+      csvCell(ev.name),
       ev.category,
-      `"${ev.venue.replace(/"/g, '""')}"`,
-      `"${new Date(ev.dateTime).toLocaleString()}"`,
+      csvCell(ev.venue),
+      csvCell(new Date(ev.dateTime).toLocaleString()),
       ev.fee,
       ev.capacity ?? "Unlimited",
       ev.hasPrelims ? "YES" : "NO",
-      `"${(ev.prelimsVenue || "").replace(/"/g, '""')}"`,
-      `"${ev.prelimsDateTime ? new Date(ev.prelimsDateTime).toLocaleString() : "—"}"`,
-      `"${ev.staffCoordinator.name.replace(/"/g, '""')}"`,
-      `"${ev.staffCoordinator.email}"`,
-      `"${ev.staffCoordinator.phone}"`,
-      `"${ev.studentCoordinator.name.replace(/"/g, '""')}"`,
-      `"${ev.studentCoordinator.email}"`,
-      `"${ev.studentCoordinator.phone}"`,
+      csvCell((ev.prelimsVenue || "")),
+      csvCell(ev.prelimsDateTime ? new Date(ev.prelimsDateTime).toLocaleString() : "—"),
+      csvCell(ev.staffCoordinator.name),
+      csvCell(ev.staffCoordinator.email),
+      csvCell(ev.staffCoordinator.phone),
+      csvCell(ev.studentCoordinator.name),
+      csvCell(ev.studentCoordinator.email),
+      csvCell(ev.studentCoordinator.phone),
       ev.registrationsCount,
       ev.attendedCount,
       ev.prelimsCount,
@@ -502,7 +509,7 @@ export default function AdminReportsPage() {
     ]);
 
     const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
-    downloadCsv(`${data.summary.festName}_${data.summary.festEdition}_Events_Coordinators_Directory.csv`, csv);
+    downloadCsv(`${reportFileSlug(data.summary)}_Events_Coordinators_Directory.csv`, csv);
   };
 
   // 5. Export College Championship Leaderboard CSV
@@ -522,7 +529,7 @@ export default function AdminReportsPage() {
 
     const rows = data.championshipLeaderboard.map((c, idx) => [
       idx + 1,
-      `"${c.collegeName.replace(/"/g, '""')}"`,
+      csvCell(c.collegeName),
       c.goldCount,
       c.silverCount,
       c.bronzeCount,
@@ -533,7 +540,7 @@ export default function AdminReportsPage() {
     ]);
 
     const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
-    downloadCsv(`${data.summary.festName}_${data.summary.festEdition}_College_Championship_Standings.csv`, csv);
+    downloadCsv(`${reportFileSlug(data.summary)}_College_Championship_Standings.csv`, csv);
   };
 
   // 6. Export Catering & Food Vendor List CSV
@@ -553,18 +560,18 @@ export default function AdminReportsPage() {
 
     const rows = data.cateringRoster.map((r, idx) => [
       idx + 1,
-      `"${r.name.replace(/"/g, '""')}"`,
-      `"${r.collegeName.replace(/"/g, '""')}"`,
+      csvCell(r.name),
+      csvCell(r.collegeName),
       r.foodPreference === "NON_VEG" ? "NON-VEGETARIAN (🍗)" : "VEGETARIAN (🥗)",
-      `"${r.foodTokenCode}"`,
-      `"${r.badgeCode}"`,
+      csvCell(r.foodTokenCode),
+      csvCell(r.badgeCode),
       r.foodTokenClaimed ? "SERVED" : "PENDING",
-      `"${r.foodClaimedAt ? new Date(r.foodClaimedAt).toLocaleString() : "—"}"`,
-      `"${r.foodClaimedBy || "—"}"`,
+      csvCell(r.foodClaimedAt ? new Date(r.foodClaimedAt).toLocaleString() : "—"),
+      csvCell(r.foodClaimedBy || "—"),
     ]);
 
     const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
-    downloadCsv(`${data.summary.festName}_${data.summary.festEdition}_Catering_Vendor_List.csv`, csv);
+    downloadCsv(`${reportFileSlug(data.summary)}_Catering_Vendor_List.csv`, csv);
   };
 
   // Filtered master student list based on search and event filter
@@ -706,6 +713,7 @@ export default function AdminReportsPage() {
   }
 
   const { summary } = data;
+  const festLabel = festTitle({ name: summary.festName, edition: summary.festEdition });
 
   return (
     <div className="min-h-screen bg-canvas text-ink print:bg-surface print:text-ink">
@@ -834,7 +842,7 @@ export default function AdminReportsPage() {
                   Official Event Report
                 </span>
                 <span className="text-xs text-ink-muted font-semibold">
-                  Edition: {summary.festName} {summary.festEdition}
+                  Edition: {festLabel}
                 </span>
               </div>
               <h1 className="text-[15px] sm:text-base font-bold text-ink flex items-center gap-1.5">
@@ -990,15 +998,21 @@ export default function AdminReportsPage() {
               <Landmark className="w-4 h-4 text-accent" />
               <span>Official Institutional Event Documentation</span>
             </div>
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-ink tracking-tight">
-              {summary.institutionName}
-            </h1>
-            <p className="text-xs sm:text-sm text-ink-muted font-medium max-w-3xl mx-auto mt-1 leading-relaxed">
-              {summary.accreditationText}
-            </p>
-            <div className="mt-2 inline-block px-4 py-1 rounded-full bg-surface-raised text-ink text-sm font-bold uppercase tracking-wider">
-              {summary.hostDepartment}
-            </div>
+            {summary.institutionName && (
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-ink tracking-tight">
+                {summary.institutionName}
+              </h1>
+            )}
+            {summary.accreditationText && (
+              <p className="text-xs sm:text-sm text-ink-muted font-medium max-w-3xl mx-auto mt-1 leading-relaxed">
+                {summary.accreditationText}
+              </p>
+            )}
+            {summary.hostDepartment && (
+              <div className="mt-2 inline-block px-4 py-1 rounded-full bg-surface-raised text-ink text-sm font-bold uppercase tracking-wider">
+                {summary.hostDepartment}
+              </div>
+            )}
           </div>
 
           {/* Event Wordmark & Metadata Title */}
@@ -1007,32 +1021,35 @@ export default function AdminReportsPage() {
               OFFICIAL EVENT REPORT & ANNUAL DOCUMENTATION
             </span>
             <h2 className="text-2xl sm:text-3xl font-bold text-ink mt-1">
-              {summary.festName} {summary.festEdition} — Consolidated Report
+              {festLabel} — Consolidated Report
             </h2>
-            <p className="text-sm italic text-ink-muted mt-0.5">
-              &ldquo;{summary.tagline}&rdquo;
-            </p>
+            {summary.tagline && (
+              <p className="text-sm italic text-ink-muted mt-0.5">
+                &ldquo;{summary.tagline}&rdquo;
+              </p>
+            )}
 
             <div className="mt-3 flex flex-wrap items-center justify-center gap-4 text-sm text-ink-muted font-medium">
-              <span className="flex items-center gap-1">
-                <MapPin className="w-3.5 h-3.5 text-ink-subtle" />
-                <span>Venue: <strong>{summary.venue}</strong></span>
-              </span>
-              <span className="flex items-center gap-1">
-                <Calendar className="w-3.5 h-3.5 text-ink-subtle" />
-                <span>
-                  Date:{" "}
-                  <strong>
-                    {summary.startDate
-                      ? formatReportDate(summary.startDate)
-                      : "Annual Symposium 2026"}
-                  </strong>
+              {summary.venue && (
+                <span className="flex items-center gap-1">
+                  <MapPin className="w-3.5 h-3.5 text-ink-subtle" />
+                  <span>Venue: <strong>{summary.venue}</strong></span>
                 </span>
-              </span>
-              <span className="flex items-center gap-1">
-                <Mail className="w-3.5 h-3.5 text-ink-subtle" />
-                <span>{summary.contactEmail}</span>
-              </span>
+              )}
+              {summary.startDate && (
+                <span className="flex items-center gap-1">
+                  <Calendar className="w-3.5 h-3.5 text-ink-subtle" />
+                  <span>
+                    Date: <strong>{formatReportDate(summary.startDate)}</strong>
+                  </span>
+                </span>
+              )}
+              {summary.contactEmail && (
+                <span className="flex items-center gap-1">
+                  <Mail className="w-3.5 h-3.5 text-ink-subtle" />
+                  <span>{summary.contactEmail}</span>
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -1297,7 +1314,7 @@ export default function AdminReportsPage() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
                 <div>
                   <h4 className="text-sm font-bold text-ink">
-                    Official Indoor Floor Plan — Sacred Heart College Campus
+                    Official Indoor Floor Plan{summary.institutionName ? ` — ${summary.institutionName} Campus` : ""}
                   </h4>
                   <p className="text-xs text-ink-muted print:text-[7pt]">
                     Active map layout with delineated competition halls, preliminary screening rooms, amenities, and wayfinding checkpoints.
@@ -1396,7 +1413,7 @@ export default function AdminReportsPage() {
                             )}
                           </td>
                           <td className="p-2 border border-border text-ink-muted">
-                            {z.mainEvents[0]?.venue || z.prelimsEvents[0]?.venue || "Sacred Heart College Campus"}
+                            {z.mainEvents[0]?.venue || z.prelimsEvents[0]?.venue || summary.venue || "—"}
                           </td>
                           <td className="p-2 border border-border">
                             <div className="font-mono text-xs print:text-[6.5pt] text-ink-muted">
@@ -2123,8 +2140,13 @@ export default function AdminReportsPage() {
             <p className="text-sm text-ink-muted leading-relaxed mt-1">
               This is to officially certify that the data, competition rosters, prelims progression evaluation, and
               final results recorded in this document have been validated against official symposium records for{" "}
-              <strong>{summary.festName} {summary.festEdition}</strong> organized by the{" "}
-              <strong>{summary.hostDepartment}</strong>, {summary.institutionName}. This document constitutes the
+              <strong>{festLabel}</strong>
+              {summary.hostDepartment && (
+                <>
+                  {" "}organized by the <strong>{summary.hostDepartment}</strong>
+                </>
+              )}
+              {summary.institutionName && <>, {summary.institutionName}</>}. This document constitutes the
               official verified record for submission to the <strong>Internal Quality Assurance Cell (IQAC)</strong>,{" "}
               <strong>College Annual Report & Academic Portfolios</strong>, and Institutional Quality Audits.
             </p>
@@ -2144,7 +2166,7 @@ export default function AdminReportsPage() {
               <div className="h-10" />
               <div className="border-t border-border-strong pt-2">
                 <div className="text-sm font-bold text-ink uppercase">Student Coordinator</div>
-                <div className="text-xs text-ink-muted font-semibold">{summary.festName} {summary.festEdition}</div>
+                <div className="text-xs text-ink-muted font-semibold">{festLabel}</div>
               </div>
             </div>
 

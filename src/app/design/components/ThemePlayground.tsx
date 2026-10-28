@@ -212,7 +212,7 @@ export default function ThemePlayground() {
             className="p-4 rounded-[8px] border border-border text-center space-y-1"
             style={{ backgroundColor: bgColor, color: fgColor }}
           >
-            <div className="text-base font-bold">SHINE 2026 Sample Text Preview</div>
+            <div className="text-base font-bold">Sample Event Text Preview</div>
             <div className="text-sm opacity-90">
               The quick brown fox jumps over the lazy dog. 1234567890
             </div>
