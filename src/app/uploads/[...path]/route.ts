@@ -43,6 +43,31 @@ const OPTIMIZABLE_MIMES = new Set([
 // WebP quality for on-the-fly conversion
 const WEBP_QUALITY = 80;
 
+// Allowed resize targets for ?w= / ?h=
+const ALLOWED_DIMENSIONS = [64, 128, 256, 384, 512, 768, 1024, 1280, 1920];
+
+function snapDimension(raw: string | null): number | undefined {
+  if (!raw) return undefined;
+  const requested = parseInt(raw, 10);
+  if (!Number.isFinite(requested) || requested <= 0) return undefined;
+  return ALLOWED_DIMENSIONS.find((d) => d >= requested) ?? ALLOWED_DIMENSIONS[ALLOWED_DIMENSIONS.length - 1];
+}
+
+// SVGs are active documents: if opened directly they must not be able to run script
+const SVG_SECURITY_HEADERS: Record<string, string> = {
+  "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; img-src data:; sandbox",
+  "X-Content-Type-Options": "nosniff",
+};
+
+function responseHeaders(mimeType: string): Record<string, string> {
+  return {
+    "Content-Type": mimeType,
+    "Cache-Control": "public, max-age=31536000, immutable",
+    "X-Content-Type-Options": "nosniff",
+    ...(mimeType === "image/svg+xml" ? SVG_SECURITY_HEADERS : {}),
+  };
+}
+
 /**
  * On-the-fly image optimization: converts PNG/JPEG to WebP,
  * optionally resizes based on query params (?w=256&h=256).
@@ -103,7 +128,8 @@ export async function GET(
     const fullPath = path.join(uploadsDir, safeSubPath);
 
     // Verify file stays within uploadsDir
-    if (!fullPath.startsWith(uploadsDir)) {
+    const relative = path.relative(uploadsDir, fullPath);
+    if (relative.startsWith("..") || path.isAbsolute(relative)) {
       return new NextResponse("Access Denied", { status: 403 });
     }
 
@@ -113,8 +139,9 @@ export async function GET(
     const url = new URL(req.url);
     const wParam = url.searchParams.get("w");
     const hParam = url.searchParams.get("h");
-    const maxWidth = wParam ? parseInt(wParam, 10) : undefined;
-    const maxHeight = hParam ? parseInt(hParam, 10) : undefined;
+    // SECURITY: Snap requested sizes to a fixed set so the on-disk cache cannot grow without bound
+    const maxWidth = snapDimension(wParam);
+    const maxHeight = snapDimension(hParam);
 
     // Check if we have a cached optimized version on disk
     const ext = path.extname(filename).toLowerCase();
@@ -132,10 +159,7 @@ export async function GET(
       const cached = await fs.promises.readFile(cachePath);
       return new NextResponse(new Uint8Array(cached), {
         status: 200,
-        headers: {
-          "Content-Type": "image/webp",
-          "Cache-Control": "public, max-age=31536000, immutable",
-        },
+        headers: responseHeaders("image/webp"),
       });
     }
 
@@ -168,19 +192,13 @@ export async function GET(
 
       return new NextResponse(new Uint8Array(optimized.buffer), {
         status: 200,
-        headers: {
-          "Content-Type": optimized.mimeType,
-          "Cache-Control": "public, max-age=31536000, immutable",
-        },
+        headers: responseHeaders(optimized.mimeType),
       });
     }
 
     return new NextResponse(new Uint8Array(result.data), {
       status: 200,
-      headers: {
-        "Content-Type": result.mimeType,
-        "Cache-Control": "public, max-age=31536000, immutable",
-      },
+      headers: responseHeaders(result.mimeType),
     });
   } catch (error: any) {
     console.error("Error serving upload file:", error);

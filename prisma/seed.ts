@@ -22,6 +22,12 @@ const RegistrationStatus = {
 const prisma = new PrismaClient();
 
 async function main() {
+  // SECURITY: Demo accounts use publicly documented passwords — never create them in production
+  if (process.env.NODE_ENV === "production" && process.env.ALLOW_DEMO_SEED !== "true") {
+    throw new Error(
+      "Refusing to create demo accounts with known passwords in production. Set ALLOW_DEMO_SEED=true only for a throwaway environment."
+    );
+  }
   console.log("🌱 Starting database seed for SHINE Reusable Platform...");
 
   // Clean existing data
@@ -77,7 +83,6 @@ async function main() {
   const foodCoordPasswordHash = await bcrypt.hash("food123", 10);
   const studentPasswordHash = await bcrypt.hash("student123", 10);
 
-  const railwayAdminPasswordHash = await bcrypt.hash("RailwayAdmin2026!", 10);
 
   const admin = await prisma.user.create({
     data: {
@@ -85,17 +90,6 @@ async function main() {
       email: "admin@shctpt.edu",
       phone: "+91 9876543210",
       passwordHash: adminPasswordHash,
-      role: Role.ADMIN,
-      college: "Sacred Heart College (Autonomous), Tirupattur",
-    },
-  });
-
-  const railwayAdmin = await prisma.user.create({
-    data: {
-      name: "Railway Admin",
-      email: "railway.admin@shctpt.edu",
-      phone: "+91 9876543210",
-      passwordHash: railwayAdminPasswordHash,
       role: Role.ADMIN,
       college: "Sacred Heart College (Autonomous), Tirupattur",
     },

@@ -7,6 +7,14 @@ import { safeJson } from "@/lib/safeFetch";
 import ArenaResultsCarousel, { EventWithResults } from "./components/ArenaResultsCarousel";
 import ProjectorControlsBar from "./components/ProjectorControlsBar";
 
+function toggleFullscreen() {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch(() => {});
+  } else {
+    document.exitFullscreen().catch(() => {});
+  }
+}
+
 export default function StageLeaderboardPage() {
   const [edition, setEdition] = useState<ActiveEditionConfig | null>(null);
   const [events, setEvents] = useState<EventWithResults[]>([]);
@@ -71,14 +79,6 @@ export default function StageLeaderboardPage() {
     }, 7000);
     return () => clearInterval(interval);
   }, [autoRotate, events.length]);
-
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(() => {});
-    } else {
-      document.exitFullscreen().catch(() => {});
-    }
-  };
 
   const currentEvent = events[activeEventIndex];
 

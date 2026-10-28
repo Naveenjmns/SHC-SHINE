@@ -1,24 +1,38 @@
 import QRCode from "qrcode";
+import { randomInt } from "crypto";
+
+// Unambiguous uppercase alphabet (no 0/O, 1/I/L) so codes can be typed from a printed badge
+const CODE_ALPHABET = "23456789ABCDEFGHJKMNPQRSTUVWXYZ";
+
+/**
+ * Cryptographically random code segment. Badge and food codes act as bearer
+ * credentials (the public /badge/<code> page and food counters accept them),
+ * so they must not be guessable: 10 chars ≈ 49 bits of entropy.
+ */
+function randomCodeSegment(length: number = 10): string {
+  let out = "";
+  for (let i = 0; i < length; i++) {
+    out += CODE_ALPHABET[randomInt(CODE_ALPHABET.length)];
+  }
+  return out;
+}
 
 /**
  * Generates a clean, unique Delegate Badge Code.
- * Example: "SHN27-DEL-4819"
+ * Example: "SHN27-DEL-7KQ4M9XR2T"
  */
 export function generateBadgeCode(editionYear: string = "2027"): string {
   const shortYear = editionYear.slice(-2);
-  const randomHex = Math.random().toString(36).substring(2, 6).toUpperCase();
-  const timestampPart = Date.now().toString(36).slice(-2).toUpperCase();
-  return `SHN${shortYear}-DEL-${timestampPart}${randomHex}`;
+  return `SHN${shortYear}-DEL-${randomCodeSegment()}`;
 }
 
 /**
  * Generates a unique Food & Refreshment Token code.
- * Example: "FT-4819-MEAL"
+ * Independent of the badge code so one cannot be derived from the other.
+ * Example: "FT-H3M8Q2ZK7P-MEAL"
  */
-export function generateFoodTokenCode(badgeCode?: string): string {
-  const seed = badgeCode ? badgeCode.split("-").pop() || "" : Math.random().toString(36).substring(2, 6).toUpperCase();
-  const randomSuffix = Math.random().toString(36).substring(2, 4).toUpperCase();
-  return `FT-${seed}${randomSuffix}-MEAL`;
+export function generateFoodTokenCode(): string {
+  return `FT-${randomCodeSegment()}-MEAL`;
 }
 
 /**

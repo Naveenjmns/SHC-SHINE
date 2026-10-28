@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSession, signOut } from "next-auth/react";
+import { useSession } from "next-auth/react";
+import { signOutAndClearCache } from "@/lib/signOutAndClearCache";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Trophy, FolderOpen, Theater, Laptop, MapPin, Clock, CheckCircle2, QrCode, User } from "lucide-react";
@@ -177,7 +178,7 @@ export default function CoordinatorDashboard() {
               <span>My Profile</span>
             </Link>
             <button
-              onClick={() => signOut({ callbackUrl: "/" })}
+              onClick={() => signOutAndClearCache({ callbackUrl: "/" })}
               className="tap-target px-3 py-1.5 text-sm font-medium text-ink-muted hover:text-danger transition-colors"
             >
               Sign Out

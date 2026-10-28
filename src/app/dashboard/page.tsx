@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useSession, signOut } from "next-auth/react";
+import { useSession } from "next-auth/react";
+import { signOutAndClearCache } from "@/lib/signOutAndClearCache";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -95,7 +96,7 @@ export default function StudentDashboardPage() {
           actions={
             <button
               type="button"
-              onClick={() => signOut({ callbackUrl: "/" })}
+              onClick={() => signOutAndClearCache({ callbackUrl: "/" })}
               className={heroGhostButtonClass}
             >
               <LogOut />

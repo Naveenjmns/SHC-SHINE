@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useSession, signOut } from "next-auth/react";
+import { useSession } from "next-auth/react";
+import { signOutAndClearCache } from "@/lib/signOutAndClearCache";
 import { ActiveEditionConfig } from "@/lib/eventService";
 import { Sparkles, User, LogOut, LayoutDashboard, Monitor, Menu, X } from "lucide-react";
 
@@ -135,7 +136,7 @@ export default function Navbar({ edition }: NavbarProps) {
                 <User className="w-5 h-5" />
               </Link>
               <button
-                onClick={() => signOut({ callbackUrl: "/" })}
+                onClick={() => signOutAndClearCache({ callbackUrl: "/" })}
                 className="w-10 h-10 flex items-center justify-center text-ink-muted hover:text-danger rounded-[8px] hover:bg-surface-raised transition-colors cursor-pointer"
                 title="Sign Out"
                 aria-label="Sign Out"
@@ -242,7 +243,7 @@ export default function Navbar({ edition }: NavbarProps) {
                 <button
                   onClick={() => {
                     setMobileOpen(false);
-                    signOut({ callbackUrl: "/" });
+                    signOutAndClearCache({ callbackUrl: "/" });
                   }}
                   className="min-h-[44px] w-full text-center text-base font-semibold text-danger rounded-[8px] hover:bg-danger-surface transition-colors cursor-pointer"
                 >

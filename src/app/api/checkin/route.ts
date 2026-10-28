@@ -9,6 +9,26 @@ import { extractLookupCode } from "@/lib/cameraScanner";
 
 export const dynamic = "force-dynamic";
 
+type EventCoordinatorFields = {
+  staffCoordinatorId: string | null;
+  studentCoordinatorId: string | null;
+  coordinatorId: string | null;
+  staffCoordinatorEmail: string | null;
+  studentCoordinatorEmail: string | null;
+};
+
+// Scoped Coordinator Rule: a coordinator may only act on events they are assigned to
+function isAssignedToEvent(event: EventCoordinatorFields, userId: string, email?: string | null): boolean {
+  const normalizedEmail = email?.toLowerCase();
+  return (
+    event.staffCoordinatorId === userId ||
+    event.studentCoordinatorId === userId ||
+    event.coordinatorId === userId ||
+    (!!normalizedEmail && event.staffCoordinatorEmail?.toLowerCase() === normalizedEmail) ||
+    (!!normalizedEmail && event.studentCoordinatorEmail?.toLowerCase() === normalizedEmail)
+  );
+}
+
 // GET: Lookup delegate by Badge Code or Food Token Code
 export async function GET(req: NextRequest) {
   try {
@@ -320,15 +340,7 @@ export async function POST(req: NextRequest) {
       }
 
       // Scoped Coordinator Rule: Coordinator of Event A cannot check in for Event B
-      const isAssigned =
-        isAdmin ||
-        targetEvent.staffCoordinatorId === session.user.id ||
-        targetEvent.studentCoordinatorId === session.user.id ||
-        targetEvent.coordinatorId === session.user.id ||
-        (targetEvent.staffCoordinatorEmail &&
-          targetEvent.staffCoordinatorEmail.toLowerCase() === session.user.email?.toLowerCase()) ||
-        (targetEvent.studentCoordinatorEmail &&
-          targetEvent.studentCoordinatorEmail.toLowerCase() === session.user.email?.toLowerCase());
+      const isAssigned = isAdmin || isAssignedToEvent(targetEvent, session.user.id, session.user.email);
 
       if (!isAssigned) {
         return NextResponse.json(
@@ -382,15 +394,27 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      // Mark this specific event registration as attended
-      await prisma.registration.update({
-        where: { id: reg.id },
+      // Mark this specific event registration as attended.
+      // Conditional update so two simultaneous scans cannot both succeed.
+      const checkInResult = await prisma.registration.updateMany({
+        where: { id: reg.id, attended: false },
         data: {
           attended: true,
           checkedInAt: new Date(),
           checkedInBy: actorName,
         },
       });
+      if (checkInResult.count === 0) {
+        return NextResponse.json(
+          {
+            success: false,
+            alreadyCheckedIn: true,
+            isExpired: true,
+            message: `QR Code Expired / Already Scanned: ${member.name} was just checked in for "${targetEvent.name}" by another scanner.`,
+          },
+          { status: 409 }
+        );
+      }
 
       // Check overall student attendance across all registered events
       const allRegs = await prisma.registration.findMany({
@@ -455,6 +479,29 @@ export async function POST(req: NextRequest) {
           { status: 403 }
         );
       }
+      // Scoped Coordinator Rule: non-admins may only revert check-ins for their own assigned event
+      if (!isAdmin) {
+        if (!eventId) {
+          return NextResponse.json(
+            {
+              success: false,
+              message: "Event ID is required. Coordinators can only revert check-ins for their own assigned event.",
+            },
+            { status: 400 }
+          );
+        }
+        const targetEvent = await prisma.event.findUnique({ where: { id: eventId } });
+        if (!targetEvent || !isAssignedToEvent(targetEvent, session.user.id, session.user.email)) {
+          return NextResponse.json(
+            {
+              success: false,
+              message: "Unauthorized: You can only revert check-ins for events you are assigned to coordinate.",
+            },
+            { status: 403 }
+          );
+        }
+      }
+
       if (eventId) {
         await prisma.registration.updateMany({
           where: { delegationMemberId: member.id, eventId },
@@ -561,14 +608,28 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      const updated = await prisma.delegationMember.update({
-        where: { id: member.id },
+      // Conditional update so two counters scanning the same token cannot both issue a meal
+      const claimResult = await prisma.delegationMember.updateMany({
+        where: { id: member.id, foodTokenClaimed: false },
         data: {
           foodTokenClaimed: true,
           foodClaimedAt: new Date(),
           foodClaimedBy: actorName,
         },
       });
+      if (claimResult.count === 0) {
+        return NextResponse.json(
+          {
+            success: false,
+            alreadyClaimed: true,
+            isExpired: true,
+            foodPreference: (member as any).foodPreference || "VEG",
+            message: `QR Token Expired / Already Redeemed: Food token for ${member.name} was just claimed at another counter. Tokens are single-use.`,
+          },
+          { status: 409 }
+        );
+      }
+      const updated = await prisma.delegationMember.findUniqueOrThrow({ where: { id: member.id } });
 
       const pref = (member as any).foodPreference || "VEG";
 

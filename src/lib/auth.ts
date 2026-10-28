@@ -4,6 +4,10 @@ import bcrypt from "bcryptjs";
 import prisma from "@/lib/prisma";
 import { Role } from "@prisma/client";
 import { logActivity } from "@/lib/activityLogger";
+import { checkRateLimit, getClientIpFromHeaders } from "@/lib/security";
+
+const INVALID_CREDENTIALS_MESSAGE =
+  "Invalid email/mobile or password. (Student delegates: your default password is your registered 10-digit mobile number)";
 
 export const authOptions: AuthOptions = {
   session: {
@@ -17,13 +21,21 @@ export const authOptions: AuthOptions = {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         if (!credentials?.email || !credentials?.password) {
           throw new Error("Please provide both email/mobile and password.");
         }
 
         const input = credentials.email.toLowerCase().trim();
         const inputDigits = input.replace(/\D/g, "");
+
+        // SECURITY: Throttle brute-force attempts per IP and per account identifier
+        const clientIp = getClientIpFromHeaders(req?.headers as Record<string, string | string[] | undefined> | undefined);
+        const ipCheck = checkRateLimit(`login-ip:${clientIp}`, 20, 20 / 300);
+        const accountCheck = checkRateLimit(`login-account:${input}`, 10, 10 / 600);
+        if (!ipCheck.allowed || !accountCheck.allowed) {
+          throw new Error("Too many login attempts. Please wait a few minutes and try again.");
+        }
 
         const emailVariants = Array.from(
           new Set(
@@ -35,56 +47,34 @@ export const authOptions: AuthOptions = {
           )
         );
 
-        // Support lookup by email, exact phone, or matching phone digits
-        const user = await prisma.user.findFirst({
+        // SECURITY: Look up by email or by a full 10-digit mobile number only.
+        // Partial-digit matching would let a fragment of a number resolve to an arbitrary account.
+        const phoneLast10 = inputDigits.length >= 10 ? inputDigits.slice(-10) : null;
+        const candidates = await prisma.user.findMany({
           where: {
             OR: [
               ...emailVariants.map((e) => ({ email: e })),
               { phone: input },
-              ...(inputDigits.length >= 7
-                ? [
-                    { phone: { endsWith: inputDigits } },
-                    { phone: { contains: inputDigits } },
-                  ]
-                : []),
+              ...(phoneLast10 ? [{ phone: { endsWith: phoneLast10 } }] : []),
             ],
           },
+          take: 5,
         });
 
-        if (!user) {
-          throw new Error("No user found with this email address or mobile number.");
-        }
-
-        if (!user.passwordHash) {
-          throw new Error("Account has no password set. Please register or contact support.");
-        }
+        // Prefer an exact email match; for phone logins require the number to identify exactly one account
+        const user =
+          candidates.find((u) => emailVariants.includes(u.email.toLowerCase())) ||
+          (candidates.length === 1 ? candidates[0] : null);
 
         const typedPassword = credentials.password.trim();
 
-        // SECURITY: Only use bcrypt.compare for password verification.
-        // The phone number is the default password for students — it must match
-        // exactly as hashed during registration. No plaintext digit comparison.
-        let isValid = await bcrypt.compare(typedPassword, user.passwordHash);
+        // SECURITY: Verify only the password the user typed. Same generic error for
+        // unknown accounts and wrong passwords to avoid account enumeration.
+        const isValid =
+          !!user?.passwordHash && (await bcrypt.compare(typedPassword, user.passwordHash));
 
-        // Fallback: If the student's default password was hashed from the raw
-        // phone string (e.g. "+91 9840123456"), try comparing against the
-        // raw phone and just the digits.
-        if (!isValid && user.phone) {
-          const rawPhone = user.phone.trim();
-          const phoneDigits = rawPhone.replace(/\D/g, "");
-
-          // Try bcrypt compare with raw phone string
-          if (!isValid) {
-            isValid = await bcrypt.compare(rawPhone, user.passwordHash).catch(() => false);
-          }
-          // Try bcrypt compare with just the digits
-          if (!isValid && phoneDigits !== rawPhone) {
-            isValid = await bcrypt.compare(phoneDigits, user.passwordHash).catch(() => false);
-          }
-        }
-
-        if (!isValid) {
-          throw new Error("Incorrect password. (For student delegates, your default password is your registered Mobile Number)");
+        if (!user || !isValid) {
+          throw new Error(INVALID_CREDENTIALS_MESSAGE);
         }
 
         return {
@@ -107,6 +97,19 @@ export const authOptions: AuthOptions = {
         token.phone = user.phone;
       }
       if (token.id) {
+        // SECURITY: Re-read role from the database so demoted or deleted users lose access immediately
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          select: { role: true, college: true, phone: true },
+        });
+        if (!dbUser) {
+          // Account was deleted: strip all identity claims so every role/ID check fails closed
+          return {} as typeof token;
+        }
+        token.role = dbUser.role;
+        token.college = dbUser.college;
+        token.phone = dbUser.phone;
+
         const isAssigned = await prisma.event.findFirst({
           where: {
             OR: [

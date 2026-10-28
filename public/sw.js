@@ -1,5 +1,14 @@
 // SHINE 26 Event Platform — High-Performance Service Worker
-const CACHE_NAME = "shine26-cache-v2";
+// v3: purge caches from earlier versions that stored authenticated pages
+const CACHE_NAME = "shine26-cache-v3";
+
+// Authenticated or per-user pages must never be written to the shared cache:
+// scanner/registration devices are shared between staff and the cache outlives logout.
+const PRIVATE_PATH_PREFIXES = ["/dashboard", "/admin", "/coordinator", "/food", "/profile", "/badge", "/api"];
+
+function isPrivatePath(pathname) {
+  return PRIVATE_PATH_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(prefix + "/"));
+}
 const STATIC_ASSETS = [
   "/",
   "/offline.html",
@@ -60,8 +69,8 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       fetch(req)
         .then((networkRes) => {
-          // Clone and cache the successfully loaded page
-          if (networkRes.status === 200) {
+          // Clone and cache the successfully loaded page (public pages only)
+          if (networkRes.status === 200 && !isPrivatePath(url.pathname)) {
             const resClone = networkRes.clone();
             caches.open(CACHE_NAME).then((cache) => {
               cache.put(req, resClone);
@@ -71,7 +80,7 @@ self.addEventListener("fetch", (event) => {
         })
         .catch(async () => {
           // Try to return cached page or fallback to offline.html
-          const cachedRes = await caches.match(req);
+          const cachedRes = isPrivatePath(url.pathname) ? null : await caches.match(req);
           if (cachedRes) return cachedRes;
           return caches.match("/offline.html");
         })
@@ -117,5 +126,9 @@ self.addEventListener("fetch", (event) => {
 self.addEventListener("message", (event) => {
   if (event.data && event.data.type === "SKIP_WAITING") {
     self.skipWaiting();
+  }
+  // Sent by the app on sign-out: drop every cached response
+  if (event.data && event.data.type === "CLEAR_CACHE") {
+    event.waitUntil(caches.keys().then((keys) => Promise.all(keys.map((key) => caches.delete(key)))));
   }
 });

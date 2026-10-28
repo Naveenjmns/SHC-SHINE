@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { useSession, signOut } from "next-auth/react";
+import { useSession } from "next-auth/react";
+import { signOutAndClearCache } from "@/lib/signOutAndClearCache";
 import Link from "next/link";
 import CheckInModal from "@/components/CheckInModal";
 import {
@@ -154,7 +155,7 @@ export default function FoodCoordinatorPage() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => signOut({ callbackUrl: "/login" })}
+              onClick={() => signOutAndClearCache({ callbackUrl: "/login" })}
               className="text-sm text-ink-muted hover:text-danger"
             >
               <LogOut className="w-3.5 h-3.5" />

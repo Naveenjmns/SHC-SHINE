@@ -4,6 +4,12 @@ import bcrypt from "bcryptjs";
 const prisma = new PrismaClient();
 
 async function main() {
+  // SECURITY: Demo accounts use publicly documented passwords — never create them in production
+  if (process.env.NODE_ENV === "production" && process.env.ALLOW_DEMO_SEED !== "true") {
+    throw new Error(
+      "Refusing to create demo accounts with known passwords in production. Set ALLOW_DEMO_SEED=true only for a throwaway environment."
+    );
+  }
   console.log("⚡ Creating / Updating Demo Credentials for SHINE 26...\n");
 
   // 1. System Administrator

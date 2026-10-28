@@ -34,6 +34,12 @@ const nextConfig: NextConfig = {
             key: "X-DNS-Prefetch-Control",
             value: "on",
           },
+          {
+            // Non-breaking CSP baseline: blocks clickjacking, plugin content, <base> hijacking
+            // and cross-site form posts without restricting Next.js inline scripts.
+            key: "Content-Security-Policy",
+            value: "frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'",
+          },
         ],
       },
       {

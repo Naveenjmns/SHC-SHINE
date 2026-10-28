@@ -2,29 +2,15 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 
-// ─── Security Headers applied to every response ────────────────────────────
-const SECURITY_HEADERS: Record<string, string> = {
-  "X-Content-Type-Options": "nosniff",
-  "X-Frame-Options": "DENY",
-  "X-XSS-Protection": "1; mode=block",
-  "Referrer-Policy": "strict-origin-when-cross-origin",
-  "Permissions-Policy":
-    "camera=(self), microphone=(), geolocation=(), interest-cohort=()",
-  "Strict-Transport-Security": "max-age=63072000; includeSubDomains; preload",
-  "X-DNS-Prefetch-Control": "on",
-};
-
+// Security headers (including CSP) are applied to every route in next.config.ts.
+// Proxy only removes fingerprinting headers on the responses it produces.
 function applySecurityHeaders(response: NextResponse): NextResponse {
-  for (const [key, value] of Object.entries(SECURITY_HEADERS)) {
-    response.headers.set(key, value);
-  }
-  // Remove the server header to hide backend technology
   response.headers.delete("x-powered-by");
   response.headers.delete("server");
   return response;
 }
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   // Paths that require authentication
@@ -75,8 +61,8 @@ export async function middleware(req: NextRequest) {
     });
   }
 
-  // If not authenticated, redirect to login
-  if (!token) {
+  // If not authenticated (or the account was deleted and its claims stripped), redirect to login
+  if (!token || !token.id) {
     const loginUrl = new URL("/login", req.url);
     loginUrl.searchParams.set("callbackUrl", pathname);
     const response = NextResponse.redirect(loginUrl);

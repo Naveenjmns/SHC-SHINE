@@ -124,3 +124,14 @@ export function formatPhoneNumber(phone: string): string {
   }
   return phone.trim();
 }
+
+/**
+ * Validate a post-login redirect target: only same-origin relative paths are allowed.
+ * Rejects absolute URLs, protocol-relative URLs ("//evil.com") and javascript: URIs.
+ */
+export function isSafeRelativePath(target: string | null | undefined): target is string {
+  if (!target || typeof target !== "string") return false;
+  if (!target.startsWith("/")) return false;
+  if (target.startsWith("//") || target.startsWith("/\\")) return false;
+  return !/[\u0000-\u001f]/.test(target);
+}
